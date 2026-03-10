@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "EAFC Platform",
+    "slug": "eafc-platform",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F0F0F"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0F0F0F"
+      },
+      "package": "com.eafc.platform"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.eafc.platform"
+    },
+    "plugins": [
+      "expo-image-picker",
+      "expo-av"
+    ]
+  }
+}
