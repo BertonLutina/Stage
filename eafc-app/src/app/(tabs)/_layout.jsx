@@ -1,6 +1,7 @@
 import React from 'react';
-import { Platform, View, Text } from 'react-native';
+import { Platform } from 'react-native';
 import { Tabs } from 'expo-router';
+import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import useThemeStore from '../../store/themeStore';
 
 const DARK = {
@@ -17,81 +18,67 @@ const LIGHT = {
   muted: '#6B7280',
 };
 
-function TabIcon({ label, icon, focused }) {
-  const { theme } = useThemeStore();
-  const C = theme === 'dark' ? DARK : LIGHT;
-  return (
-    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontSize: 20 }}>{icon}</Text>
-      <Text style={{ fontSize: 11, marginTop: 2, color: focused ? C.primary : C.muted }}>
-        {label}
-      </Text>
-    </View>
-  );
-}
+const SCREENS = [
+  { name: 'dashboard',   title: 'Home',        icon: '🏠' },
+  { name: 'matches',     title: 'Matches',     icon: '⚽' },
+  { name: 'tournaments', title: 'Tournaments', icon: '🏆' },
+  { name: 'teams',       title: 'Clubs',       icon: '🛡️' },
+  { name: 'profile',     title: 'Profile',     icon: '👤' },
+];
 
 export default function TabsLayout() {
   const { theme } = useThemeStore();
   const C = theme === 'dark' ? DARK : LIGHT;
-  const isIOS = Platform.OS === 'ios';
+
+  const sharedScreenOptions = {
+    headerShown: false,
+    tabBarActiveTintColor: C.primary,
+    tabBarInactiveTintColor: C.muted,
+  };
+
+  if (Platform.OS === 'ios') {
+    return (
+      <NativeTabs
+        screenOptions={{
+          ...sharedScreenOptions,
+          tabBarStyle: { backgroundColor: C.surface },
+        }}
+      >
+        {SCREENS.map(({ name, title, icon }) => (
+          <NativeTabs.Screen
+            key={name}
+            name={name}
+            options={{ title, tabBarIcon: () => icon }}
+          />
+        ))}
+      </NativeTabs>
+    );
+  }
 
   return (
     <Tabs
       screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: C.primary,
-        tabBarInactiveTintColor: C.muted,
-        ...(isIOS
-          ? {
-              tabBarVariant: 'uiTabBar',
-              tabBarStyle: {
-                backgroundColor: C.surface,
-              },
-            }
-          : {
-              tabBarStyle: {
-                backgroundColor: C.surface,
-                borderTopColor: C.border,
-                height: 60,
-              },
-            }),
+        ...sharedScreenOptions,
+        tabBarStyle: {
+          backgroundColor: C.surface,
+          borderTopColor: C.border,
+          height: 60,
+          paddingBottom: 6,
+        },
+        tabBarLabelStyle: { fontSize: 11 },
       }}
     >
-      <Tabs.Screen
-        name="social/feedscreen"
-        options={{
-          title: 'Feed',
-          tabBarIcon: ({ focused }) => <TabIcon label="Feed" icon="🏠" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="tournaments/fixturesscreen"
-        options={{
-          title: 'Fixtures',
-          tabBarIcon: ({ focused }) => <TabIcon label="Fixtures" icon="📅" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="social/reelsscreen"
-        options={{
-          title: 'Reels',
-          tabBarIcon: ({ focused }) => <TabIcon label="Reels" icon="🎬" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="tournaments/tournamentlistscreen"
-        options={{
-          title: 'Tournaments',
-          tabBarIcon: ({ focused }) => <TabIcon label="Tournaments" icon="🏆" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile/profilescreen"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ focused }) => <TabIcon label="Profile" icon="👤" focused={focused} />,
-        }}
-      />
+      {SCREENS.map(({ name, title, icon }) => (
+        <Tabs.Screen
+          key={name}
+          name={name}
+          options={{
+            title,
+            tabBarIcon: () => icon,
+          }}
+        />
+      ))}
+      <Tabs.Screen name="social" options={{ href: null }} />
     </Tabs>
   );
 }
