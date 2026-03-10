@@ -82,6 +82,7 @@ describe('POST /tournaments/:id/join', () => {
   it('allows a team to join a draft tournament', async () => {
     mockPool.query
       .mockResolvedValueOnce([[MOCK_TOURNAMENT]])
+      .mockResolvedValueOnce([[{ id: 'team-uuid-join', owner_id: OWNER_ID }]])
       .mockResolvedValueOnce([[]])
       .mockResolvedValueOnce([{ insertId: 1 }]);
 
@@ -95,7 +96,8 @@ describe('POST /tournaments/:id/join', () => {
   });
 
   it('returns 400 if tournament is not in draft status', async () => {
-    mockPool.query.mockResolvedValueOnce([[{ ...MOCK_TOURNAMENT, status: 'active' }]]);
+    mockPool.query
+      .mockResolvedValueOnce([[{ ...MOCK_TOURNAMENT, status: 'active' }]]);
 
     const res = await request(app)
       .post('/tournaments/tourn-uuid-9999/join')
@@ -106,10 +108,24 @@ describe('POST /tournaments/:id/join', () => {
     expect(res.body.message).toMatch(/already started/i);
   });
 
+  it('returns 403 if user does not own the team', async () => {
+    mockPool.query
+      .mockResolvedValueOnce([[MOCK_TOURNAMENT]])
+      .mockResolvedValueOnce([[{ id: 'team-uuid-join', owner_id: 'other-user-id' }]]);
+
+    const res = await request(app)
+      .post('/tournaments/tourn-uuid-9999/join')
+      .set('Authorization', TOKEN)
+      .send({ team_id: 'team-uuid-join' });
+
+    expect(res.status).toBe(403);
+  });
+
   it('returns 400 if tournament is full', async () => {
     const fullTeams = Array.from({ length: 8 }, (_, i) => ({ team_id: `t${i}` }));
     mockPool.query
       .mockResolvedValueOnce([[MOCK_TOURNAMENT]])
+      .mockResolvedValueOnce([[{ id: 'team-too-many', owner_id: OWNER_ID }]])
       .mockResolvedValueOnce([fullTeams]);
 
     const res = await request(app)

@@ -1,5 +1,15 @@
 const socialModel = require('../models/socialModel');
+const { pool } = require('../config/db');
 const { successResponse, errorResponse, paginate } = require('../utils/helpers');
+
+async function isTeamMember(userId, teamId) {
+  if (!teamId) return true;
+  const [rows] = await pool.query(
+    'SELECT 1 FROM team_players WHERE team_id = ? AND user_id = ? LIMIT 1',
+    [teamId, userId]
+  );
+  return rows.length > 0;
+}
 
 async function follow(req, res, next) {
   try {
@@ -21,6 +31,7 @@ async function unfollow(req, res, next) {
 async function createPost(req, res, next) {
   try {
     const { content, team_id } = req.body;
+    if (!(await isTeamMember(req.userId, team_id))) return errorResponse(res, 'Forbidden: not a member of this team', 403);
     const mediaUrl = req.file ? `/uploads/${req.file.filename}` : null;
     const mediaType = req.file ? (req.file.mimetype.startsWith('video') ? 'video' : 'image') : 'none';
     const post = await socialModel.createPost(req.userId, team_id, content, mediaUrl, mediaType);
@@ -55,6 +66,7 @@ async function addComment(req, res, next) {
 async function createReel(req, res, next) {
   try {
     const { team_id, video_url, thumbnail_url, title } = req.body;
+    if (!(await isTeamMember(req.userId, team_id))) return errorResponse(res, 'Forbidden: not a member of this team', 403);
     const videoUrl = video_url || (req.file ? `/uploads/${req.file.filename}` : null);
     if (!videoUrl) return errorResponse(res, 'Video URL required', 400);
     const reel = await socialModel.createReel(req.userId, team_id, videoUrl, thumbnail_url, title);

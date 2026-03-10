@@ -1,3 +1,16 @@
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  getItem: jest.fn(() => Promise.resolve(null)),
+  setItem: jest.fn(() => Promise.resolve()),
+  removeItem: jest.fn(() => Promise.resolve()),
+}));
+
+jest.mock('nativewind', () => ({
+  styled: (Component) => Component,
+  useColorScheme: () => ({ colorScheme: 'dark' }),
+  cssInterop: () => {},
+  remapProps: () => {},
+}));
+
 jest.mock('react-native-safe-area-context', () => {
   const RN = jest.requireActual('react-native');
   return {

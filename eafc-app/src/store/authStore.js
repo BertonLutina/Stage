@@ -1,11 +1,22 @@
 import { create } from 'zustand';
 import api from '../utils/api';
-import { setTokens, clearTokens } from '../services/tokenService';
+import { getAccessToken, setTokens, clearTokens } from '../services/tokenService';
 
 const useAuthStore = create((set) => ({
   user: null,
   loading: false,
   error: null,
+
+  initialize: async () => {
+    try {
+      const token = await getAccessToken();
+      if (!token) return;
+      const { data } = await api.get('/users/me');
+      set({ user: data.data });
+    } catch {
+      await clearTokens();
+    }
+  },
 
   login: async (email, password) => {
     set({ loading: true, error: null });
@@ -21,7 +32,9 @@ const useAuthStore = create((set) => ({
   register: async (payload) => {
     set({ loading: true, error: null });
     try {
+      console.log("registering user", payload)
       const { data } = await api.post('/auth/register', payload);
+      console.log(data)
       await setTokens(data.data.accessToken, data.data.refreshToken);
       set({ user: data.data.user, loading: false });
     } catch (err) {

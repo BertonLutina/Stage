@@ -1,10 +1,11 @@
 import useAuthStore from '../../store/authStore';
-import { setTokens, clearTokens } from '../../services/tokenService';
+import { setTokens, clearTokens, getAccessToken } from '../../services/tokenService';
 
 jest.mock('../../utils/api', () => ({
   __esModule: true,
   default: {
     post: jest.fn(),
+    get: jest.fn(),
   },
 }));
 jest.mock('../../services/tokenService');
@@ -23,6 +24,37 @@ const MOCK_USER = {
   email: 'test@eafc.com',
   gamer_tag: 'TestPlayer_99',
 };
+
+describe('authStore – initialize', () => {
+  it('restores user from stored token via /users/me', async () => {
+    getAccessToken.mockResolvedValueOnce('stored-token');
+    api.get.mockResolvedValueOnce({ data: { data: MOCK_USER } });
+
+    await useAuthStore.getState().initialize();
+
+    expect(useAuthStore.getState().user).toEqual(MOCK_USER);
+    expect(api.get).toHaveBeenCalledWith('/users/me');
+  });
+
+  it('does nothing when no token stored', async () => {
+    getAccessToken.mockResolvedValueOnce(null);
+
+    await useAuthStore.getState().initialize();
+
+    expect(useAuthStore.getState().user).toBeNull();
+    expect(api.get).not.toHaveBeenCalled();
+  });
+
+  it('clears tokens when /users/me fails', async () => {
+    getAccessToken.mockResolvedValueOnce('expired-token');
+    api.get.mockRejectedValueOnce(new Error('401'));
+
+    await useAuthStore.getState().initialize();
+
+    expect(clearTokens).toHaveBeenCalledTimes(1);
+    expect(useAuthStore.getState().user).toBeNull();
+  });
+});
 
 describe('authStore – login', () => {
   it('sets user and tokens on successful login', async () => {

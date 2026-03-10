@@ -9,8 +9,8 @@ function errorResponse(res, message = 'Error', statusCode = 500, errors = null) 
 }
 
 function paginate(page = 1, limit = 20) {
-  const p = Math.max(1, parseInt(page));
-  const l = Math.min(100, Math.max(1, parseInt(limit)));
+  const p = Math.max(1, parseInt(page) || 1);
+  const l = Math.min(100, Math.max(1, parseInt(limit) || 20));
   return { offset: (p - 1) * l, limit: l, page: p };
 }
 

@@ -2,17 +2,33 @@
 module.exports = {
   content: ['./src/**/*.{js,jsx,ts,tsx}', './index.js'],
   presets: [require('nativewind/preset')],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        primary: '#F5C518',
-        secondary: '#22C55E',
-        accent: '#3B82F6',
-        dark: '#0F0F0F',
-        surface: '#1A1A2E',
-        card: '#16213E',
-        muted: '#6B7280',
-        border: '#2D2D4E',
+        // Brand colors
+        primary: '#5FE3E8',   // Neon Cyan - main glow
+        accent: '#8CF5F8',    // Electric Cyan - brightest highlight
+        secondary: '#22C55E', // Green - keep as success/confirm
+
+        // Stadium blues (dark mode)
+        dark: '#07163A',          // Midnight Blue - outer
+        darkSurface: '#0A1F4A',   // Deep Navy Blue - main bg
+        darkCard: '#1A3566',      // Soft Navy - cards/inner glow
+        darkBorder: '#1A3566',
+        darkMuted: '#6B7280',
+
+        // Stadium lines detail
+        lineMain: '#5FE3E8',  // same as primary
+        lineInner: '#2CCFD6', // Cool Aqua
+
+        // Light theme (keep simple for now)
+        light: '#F9FAFB',
+        lightSurface: '#FFFFFF',
+        lightCard: '#F3F4F6',
+        lightBorder: '#E5E7EB',
+        lightMuted: '#6B7280',
+
         danger: '#EF4444',
       },
       fontFamily: {

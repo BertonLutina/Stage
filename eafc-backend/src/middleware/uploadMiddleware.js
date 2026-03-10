@@ -1,21 +1,28 @@
 const multer = require('multer');
-const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
+
+const MIME_TO_EXT = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/gif': '.gif',
+  'image/webp': '.webp',
+  'video/mp4': '.mp4',
+  'video/quicktime': '.mov',
+};
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, process.env.UPLOAD_DIR || 'uploads');
   },
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
+    const ext = MIME_TO_EXT[file.mimetype] || '.bin';
     cb(null, `${uuidv4()}${ext}`);
   },
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime'];
-  if (allowed.includes(file.mimetype)) {
+  if (MIME_TO_EXT[file.mimetype]) {
     cb(null, true);
   } else {
     cb(new Error('Unsupported file type'), false);

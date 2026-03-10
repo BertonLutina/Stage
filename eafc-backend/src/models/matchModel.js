@@ -23,7 +23,25 @@ async function findById(id) {
   return match;
 }
 
+async function canUpdateScore(matchId, userId) {
+  const [rows] = await pool.query(
+    `SELECT 1 FROM matches m
+     JOIN tournaments t ON m.tournament_id = t.id
+     JOIN team_players tp ON tp.team_id IN (m.home_team_id, m.away_team_id)
+     WHERE m.id = ? AND (t.owner_id = ? OR tp.user_id = ?)
+     LIMIT 1`,
+    [matchId, userId, userId]
+  );
+  return rows.length > 0;
+}
+
 async function updateScore(id, homeScore, awayScore, userId) {
+  const allowed = await canUpdateScore(id, userId);
+  if (!allowed) {
+    const err = new Error('Forbidden');
+    err.status = 403;
+    throw err;
+  }
   await pool.query(
     "UPDATE matches SET home_score = ?, away_score = ?, status = 'completed', played_at = NOW() WHERE id = ?",
     [homeScore, awayScore, id]

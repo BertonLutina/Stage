@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, Text } from 'react-native';
+import useThemeStore from '../store/themeStore';
 
 import FeedScreen from '../screens/social/FeedScreen';
 import FixturesScreen from '../screens/tournaments/FixturesScreen';
@@ -31,28 +32,51 @@ import TeamDashboardScreen from '../screens/dashboard/TeamDashboardScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-const COLORS = { primary: '#F5C518', dark: '#0F0F0F', surface: '#1A1A2E', muted: '#6B7280' };
+const DARK = {
+  primary: '#5FE3E8',
+  bg: '#07163A',
+  surface: '#0A1F4A',
+  card: '#1A3566',
+  border: '#1A3566',
+  text: '#FFFFFF',
+  muted: '#6B7280',
+};
+
+const LIGHT = {
+  primary: '#0891B2',
+  bg: '#F9FAFB',
+  surface: '#FFFFFF',
+  card: '#F3F4F6',
+  border: '#E5E7EB',
+  text: '#111827',
+  muted: '#6B7280',
+};
 
 function TabIcon({ label, focused }) {
+  const { theme } = useThemeStore();
+  const C = theme === 'dark' ? DARK : LIGHT;
   const icons = { Feed: '🏠', Fixtures: '📅', Reels: '🎬', Tournaments: '🏆', Profile: '👤' };
   return (
     <View style={{ alignItems: 'center' }}>
       <Text style={{ fontSize: 20 }}>{icons[label]}</Text>
-      <Text style={{ color: focused ? COLORS.primary : COLORS.muted, fontSize: 10 }}>{label}</Text>
+      <Text style={{ color: focused ? C.primary : C.muted, fontSize: 10 }}>{label}</Text>
     </View>
   );
 }
 
 function MainStack() {
+  const { theme } = useThemeStore();
+  const C = theme === 'dark' ? DARK : LIGHT;
+
+  const screenOptions = {
+    headerStyle: { backgroundColor: C.surface },
+    headerTintColor: C.text,
+    headerTitleStyle: { fontWeight: 'bold' },
+  };
+
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: COLORS.surface },
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontWeight: 'bold' },
-      }}
-    >
-      <Stack.Screen name="Feed" component={FeedScreen} options={{ title: 'EAFC Platform' }} />
+    <Stack.Navigator screenOptions={screenOptions}>
+      <Stack.Screen name="Feed" component={FeedScreen} options={{ title: 'Stage' }} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Edit Profile' }} />
       <Stack.Screen name="Availability" component={AvailabilityScreen} />
@@ -78,11 +102,18 @@ function MainStack() {
 }
 
 export default function MainTabNavigator() {
+  const { theme } = useThemeStore();
+  const C = theme === 'dark' ? DARK : LIGHT;
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { backgroundColor: COLORS.surface, borderTopColor: '#2D2D4E', height: 60 },
+        tabBarStyle: {
+          backgroundColor: C.surface,
+          borderTopColor: C.border,
+          height: 60,
+        },
         tabBarShowLabel: false,
       }}
     >
@@ -94,3 +125,4 @@ export default function MainTabNavigator() {
     </Tab.Navigator>
   );
 }
+

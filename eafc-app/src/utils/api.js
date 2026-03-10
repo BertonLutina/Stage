@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { getAccessToken, getRefreshToken, setTokens, clearTokens } from './tokenService';
+import { getAccessToken, getRefreshToken, setTokens, clearTokens } from '../services/tokenService';
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'http://192.168.0.195:3000';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -29,6 +29,8 @@ api.interceptors.response.use(
         return api(original);
       } catch {
         await clearTokens();
+        const { default: useAuthStore } = await import('../store/authStore');
+        useAuthStore.getState().logout();
         return Promise.reject(error);
       }
     }

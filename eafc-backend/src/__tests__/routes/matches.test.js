@@ -49,6 +49,7 @@ describe('GET /matches/:id', () => {
 describe('PUT /matches/:id/score', () => {
   it('updates match score', async () => {
     mockPool.query
+      .mockResolvedValueOnce([[{ 1: 1 }]])
       .mockResolvedValueOnce([{ affectedRows: 1 }])
       .mockResolvedValueOnce([[{ ...MOCK_MATCH, home_score: 2, away_score: 1, status: 'completed' }]])
       .mockResolvedValueOnce([[]]);

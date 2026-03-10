@@ -1,5 +1,6 @@
 const tournamentModel = require('../models/tournamentModel');
 const tournamentService = require('../services/tournamentService');
+const teamModel = require('../models/teamModel');
 const { successResponse, errorResponse } = require('../utils/helpers');
 
 async function createTournament(req, res, next) {
@@ -25,6 +26,8 @@ async function joinTournament(req, res, next) {
     const t = await tournamentModel.findById(req.params.id);
     if (!t) return errorResponse(res, 'Tournament not found', 404);
     if (t.status !== 'draft') return errorResponse(res, 'Tournament already started', 400);
+    const team = await teamModel.findById(req.body.team_id);
+    if (!team || team.owner_id !== req.userId) return errorResponse(res, 'Forbidden: you do not own this team', 403);
     const teams = await tournamentModel.getTeams(t.id);
     if (teams.length >= t.max_teams) return errorResponse(res, 'Tournament is full', 400);
     await tournamentModel.addTeam(t.id, req.body.team_id);

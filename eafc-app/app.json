@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "EAFC Platform",
-    "slug": "eafc-platform",
+    "name": "Stage",
+    "slug": "stage",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -25,6 +25,11 @@
     "plugins": [
       "expo-image-picker",
       "expo-av"
-    ]
+    ],
+    "extra": {
+      "router": {
+        "appRoot": "src/app"
+      }
+    }
   }
 }

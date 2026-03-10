@@ -74,7 +74,14 @@ async function generateDoubleElimination(tournament, teamIds) {
     );
   }
   for (let i = 0; i < teams.length; i += 2) {
-    if (teams[i + 1]) await createMatch(tournament.id, teams[i], teams[i + 1], roundId);
+    if (teams[i + 1]) {
+      await createMatch(tournament.id, teams[i], teams[i + 1], roundId);
+    } else {
+      await pool.query(
+        "UPDATE de_brackets SET bracket = 'winners_bye' WHERE tournament_id = ? AND team_id = ?",
+        [tournament.id, teams[i]]
+      );
+    }
   }
 }
 

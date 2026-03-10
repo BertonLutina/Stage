@@ -33,6 +33,6 @@ const PORT = process.env.PORT || 3000;
 
 testConnection().then(() => {
   server.listen(PORT, () => {
-    console.log(`[Server] EAFC Backend running on port ${PORT}`);
+    console.log(`[Server] Stage Backend running on port ${PORT}`);
   });
 });

@@ -8,6 +8,7 @@ const { pool } = require('../config/db');
 async function register(req, res, next) {
   try {
     const { first_name, last_name, email, password, country, country_code, phone_number, gamer_tag, birthday } = req.body;
+    if (!password || password.length < 8) return errorResponse(res, 'Password must be at least 8 characters', 400);
     const existing = await userModel.findByEmail(email);
     if (existing) return errorResponse(res, 'Email already registered', 409);
     const password_hash = await bcrypt.hash(password, 12);
