@@ -6,14 +6,45 @@ async function findById(id) {
   return rows[0] || null;
 }
 
-async function create(data) {
-  const id = uuidv4();
-  const { name, owner_id, format, max_teams, description } = data;
-  await pool.query(
-    'INSERT INTO tournaments (id, name, owner_id, format, max_teams, description) VALUES (?, ?, ?, ?, ?, ?)',
-    [id, name, owner_id, format, max_teams, description || null]
+/**
+ * List tournaments with basic pagination and optional search.
+ *
+ * @param {Object} options
+ * @param {number} [options.page=1]       - 1-based page index
+ * @param {number} [options.pageSize=20]  - items per page (max 100)
+ * @param {string} [options.search]       - search string for name/description
+ * @returns {{items: any[], total: number, page: number, pageSize: number}}
+ */
+async function allTournaments({ page = 1, pageSize = 20, search } = {}) {
+  const limit = Math.max(1, Math.min(pageSize, 100));
+  const currentPage = Math.max(page, 1);
+  const offset = (currentPage - 1) * limit;
+
+  let where = 'WHERE 1=1';
+  const params = [];
+
+  if (search && search.trim()) {
+    const like = `%${search.trim()}%`;
+    where += ' AND (name LIKE ? OR description LIKE ?)';
+    params.push(like, like);
+  }
+
+  const [[{ total }]] = await pool.query(
+    `SELECT COUNT(*) as total FROM tournaments ${where}`,
+    params
   );
-  return findById(id);
+
+  const [rows] = await pool.query(
+    `SELECT * FROM tournaments ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+    [...params, limit, offset]
+  );
+
+  return {
+    items: rows,
+    total,
+    page: currentPage,
+    pageSize: limit,
+  };
 }
 
 async function getUserActiveTournament(userId) {
@@ -32,9 +63,28 @@ async function getTeams(tournamentId) {
   return rows;
 }
 
+async function create(data) {
+  const id = uuidv4();
+  const {
+    name,
+    owner_id,
+    format,
+    max_teams,
+    description = null,
+    visibility = 'open',
+  } = data;
+
+  await pool.query(
+    'INSERT INTO tournaments (id, name, owner_id, format, max_teams, description, visibility) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [id, name, owner_id, format, max_teams, description, visibility]
+  );
+
+  return findById(id);
+}
+
 async function addTeam(tournamentId, teamId) {
   const id = uuidv4();
-  await pool.query('INSERT INTO tournament_teams (id, tournament_id, team_id) VALUES (?, ?, ?)', [id, tournamentId, teamId]);
+  await pool.query('INSERT IGNORE INTO tournament_teams (id, tournament_id, team_id) VALUES (?, ?, ?)', [id, tournamentId, teamId]);
 }
 
 async function updateStatus(tournamentId, status) {
@@ -78,4 +128,15 @@ async function getLeagueStandings(tournamentId) {
   return rows;
 }
 
-module.exports = { findById, create, getUserActiveTournament, getTeams, addTeam, updateStatus, getGroups, getBracketRounds, getLeagueStandings };
+module.exports = {
+  findById,
+  create,
+  allTournaments,
+  getUserActiveTournament,
+  getTeams,
+  addTeam,
+  updateStatus,
+  getGroups,
+  getBracketRounds,
+  getLeagueStandings,
+};

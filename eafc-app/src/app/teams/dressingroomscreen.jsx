@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Image } from 'react-native';
+import { View, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
-import api from '../../../utils/api';
-import Avatar from '../../../components/common/Avatar';
+import api from '../../utils/api';
+import Avatar from '../../components/common/Avatar';
+import STText from '../../components/common/STText';
 
 function JerseyCard({ player, isStarter }) {
   return (
@@ -12,22 +13,22 @@ function JerseyCard({ player, isStarter }) {
         <Avatar uri={player.avatar} name={`${player.first_name} ${player.last_name}`} size={50} />
         {player.role === 'owner' && (
           <View className="absolute -top-1 -right-1 bg-primary rounded-full w-5 h-5 items-center justify-center">
-            <Text style={{ fontSize: 10 }}>👑</Text>
+            <STText style={{ fontSize: 10 }}>👑</STText>
           </View>
         )}
         {player.role === 'captain' && (
           <View className="absolute -top-1 -right-1 bg-accent rounded-full w-5 h-5 items-center justify-center">
-            <Text className="text-white text-xs font-bold">C</Text>
+            <STText className="text-white text-xs font-bold">C</STText>
           </View>
         )}
       </View>
-      <Text className="text-white text-xs font-semibold mt-1.5 text-center" numberOfLines={1}>
+      <STText className="text-white text-xs font-semibold mt-1.5 text-center" numberOfLines={1}>
         {player.gamer_tag || player.first_name}
-      </Text>
+      </STText>
       <View className={`mt-1 px-2 py-0.5 rounded-full ${isStarter ? 'bg-primary' : 'bg-muted/30'}`}>
-        <Text className={`text-xs font-bold ${isStarter ? 'text-dark' : 'text-muted'}`}>
+        <STText className={`text-xs font-bold ${isStarter ? 'text-dark' : 'text-muted'}`}>
           {player.position_code || player.position || 'N/A'}
-        </Text>
+        </STText>
       </View>
     </View>
   );
@@ -41,22 +42,22 @@ export default function DressingRoomScreen() {
     api.get(`/teams/${teamId}/dressing-room`).then(r => setRoom(r.data.data));
   }, [teamId]);
 
-  if (!room) return <View className="flex-1 bg-dark items-center justify-center"><Text className="text-muted">Loading dressing room...</Text></View>;
+  if (!room) return <View className="flex-1 bg-dark items-center justify-center"><STText className="text-muted">Loading dressing room...</STText></View>;
 
   return (
-    <SafeAreaView className="flex-1 bg-dark">
+    <SafeAreaView className="flex-1">
       <ScrollView showsVerticalScrollIndicator={false}>
         <View className="bg-surface/50 py-4 px-4 border-b border-border">
-          <Text className="text-primary font-black text-2xl text-center">DRESSING ROOM</Text>
+          <STText className="text-primary font-black text-2xl text-center">DRESSING ROOM</STText>
           {room.formation && (
-            <Text className="text-white text-sm text-center mt-1 font-semibold">Formation: {room.formation.name}</Text>
+            <STText className="text-white text-sm text-center mt-1 font-semibold">Formation: {room.formation.name}</STText>
           )}
         </View>
 
         <View className="px-4 mt-6">
           <View className="flex-row items-center mb-3">
             <View className="flex-1 h-px bg-primary/40" />
-            <Text className="text-primary font-bold mx-3 text-sm">STARTING XI</Text>
+            <STText className="text-primary font-bold mx-3 text-sm">STARTING XI</STText>
             <View className="flex-1 h-px bg-primary/40" />
           </View>
           <View className="flex-row flex-wrap justify-between">
@@ -67,7 +68,7 @@ export default function DressingRoomScreen() {
             <>
               <View className="flex-row items-center mb-3 mt-4">
                 <View className="flex-1 h-px bg-border" />
-                <Text className="text-muted font-bold mx-3 text-sm">BENCH</Text>
+                <STText className="text-muted font-bold mx-3 text-sm">BENCH</STText>
                 <View className="flex-1 h-px bg-border" />
               </View>
               <View className="flex-row flex-wrap justify-between">

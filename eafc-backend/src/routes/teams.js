@@ -4,6 +4,7 @@ const teamOwner = require('../middleware/teamOwnerMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 const c = require('../controllers/teamController');
 
+router.get('/with-members', c.listTeamsWithPlayers);
 router.post('/', auth, upload.single('avatar'), c.createTeam);
 router.get('/:id', c.getTeam);
 router.put('/:id', auth, teamOwner, upload.single('avatar'), c.updateTeam);

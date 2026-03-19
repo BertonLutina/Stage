@@ -1,7 +1,10 @@
 import React from 'react';
 import TournamentListScreen from './tournamentlistscreen';
+import GradientBackground from '../../../components/common/GradientBackground';
 
 export default function TournamentsIndex() {
-  return <TournamentListScreen />;
+  return (<GradientBackground>
+    <TournamentListScreen />
+  </GradientBackground>);
 }
 

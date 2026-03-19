@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Alert } from 'react-native';
+import { View, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
-import api from '../../../utils/api';
-import PlayerCard from '../../../components/team/PlayerCard';
-import Button from '../../../components/common/Button';
-import Input from '../../../components/common/Input';
+import api from '../../utils/api';
+import PlayerCard from '../../components/team/PlayerCard';
+import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
+import STText from '../../components/common/STText';
 
 export default function ManageTeamScreen() {
   const { teamId } = useLocalSearchParams();
@@ -24,13 +25,13 @@ export default function ManageTeamScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-dark">
+    <SafeAreaView className="flex-1">
       <ScrollView className="px-4">
-        <Text className="text-white text-xl font-bold mt-4 mb-4">Manage Team</Text>
+        <STText className="text-white text-xl font-bold mt-4 mb-4">Manage Team</STText>
         <View className="flex-row gap-2 mb-6">
           <View className="flex-1"><Input value={gamerTag} onChangeText={setGamerTag} placeholder="Search by gamer tag" /></View>
         </View>
-        <Text className="text-muted text-sm font-semibold mb-2">SQUAD ({players.length} / no limit shown)</Text>
+        <STText className="text-muted text-sm font-semibold mb-2">SQUAD ({players.length} / no limit shown)</STText>
         {players.map(p => (
           <View key={p.user_id} className="flex-row items-center">
             <View className="flex-1">

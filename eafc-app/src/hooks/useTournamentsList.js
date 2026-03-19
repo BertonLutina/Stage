@@ -12,7 +12,9 @@ export default function useTournamentsList() {
       setLoading(true);
       try {
         const res = await api.get('/tournaments/list');
-        if (!cancelled) setTournaments(res.data?.data || []);
+        const payload = res.data?.data;
+        const items = Array.isArray(payload) ? payload : payload?.items;
+        if (!cancelled) setTournaments(items || []);
       } catch {
         if (!cancelled) setTournaments([]);
       } finally {

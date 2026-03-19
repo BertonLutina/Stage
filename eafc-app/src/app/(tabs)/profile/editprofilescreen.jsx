@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import STText from '../../../components/common/STText';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import Input from '../../../components/common/Input';
 import Button from '../../../components/common/Button';
 import api from '../../../utils/api';
 import useAuthStore from '../../../store/authStore';
+import GradientBackground from '../../../components/common/GradientBackground';
 
-export default function EditProfileScreen({ navigation }) {
+export default function EditProfileScreen() {
+  const router = useRouter();
   const { user, updateUser } = useAuthStore();
   const [form, setForm] = useState({
     first_name: user?.first_name || '',
@@ -23,17 +27,18 @@ export default function EditProfileScreen({ navigation }) {
   const save = async () => {
     setLoading(true);
     try {
-      const { data } = await api.put(`/users/${user.id}`, form);
+      const { data } = await api.put('/users/me', form);
       updateUser(data.data);
-      navigation.goBack();
+      router.back();
     } finally { setLoading(false); }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-dark">
+    <View className="flex-1">
+    <SafeAreaView className="flex-1">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
         <ScrollView className="px-6">
-          <Text className="text-white text-2xl font-bold mt-6 mb-6">Edit Profile</Text>
+          <STText className="text-2xl font-bold mt-6 mb-6">Edit Profile</STText>
           <View className="flex-row gap-3">
             <View className="flex-1"><Input label="First name" value={form.first_name} onChangeText={set('first_name')} /></View>
             <View className="flex-1"><Input label="Last name" value={form.last_name} onChangeText={set('last_name')} /></View>
@@ -47,5 +52,6 @@ export default function EditProfileScreen({ navigation }) {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </View>
   );
 }

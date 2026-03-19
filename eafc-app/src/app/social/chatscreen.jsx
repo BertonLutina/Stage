@@ -3,8 +3,8 @@ import { View, Text, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { io } from 'socket.io-client';
-import api from '../../../utils/api';
-import useAuthStore from '../../../store/authStore';
+import api from '../../utils/api';
+import useAuthStore from '../../store/authStore';
 
 const SOCKET_URL = 'http://localhost:3000';
 
@@ -36,7 +36,7 @@ export default function ChatScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-dark">
+    <SafeAreaView className="flex-1">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
         <FlatList
           ref={flatListRef}

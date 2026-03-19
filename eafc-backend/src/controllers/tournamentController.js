@@ -3,6 +3,19 @@ const tournamentService = require('../services/tournamentService');
 const teamModel = require('../models/teamModel');
 const { successResponse, errorResponse } = require('../utils/helpers');
 
+async function listTournaments(req, res, next) {
+  try {
+    const { page, pageSize, search } = req.query;
+    const result = await tournamentModel.allTournaments({
+      page: Number(page) || 1,
+      pageSize: Number(pageSize) || 20,
+      search,
+    });
+    return successResponse(res, result);
+  } catch (err) {
+    next(err);
+  }
+}
 async function createTournament(req, res, next) {
   try {
     const active = await tournamentModel.getUserActiveTournament(req.userId);
@@ -26,12 +39,31 @@ async function joinTournament(req, res, next) {
     const t = await tournamentModel.findById(req.params.id);
     if (!t) return errorResponse(res, 'Tournament not found', 404);
     if (t.status !== 'draft') return errorResponse(res, 'Tournament already started', 400);
+    if (t.visibility === 'closed') return errorResponse(res, 'This is a closed tournament — only the owner can add teams', 403);
     const team = await teamModel.findById(req.body.team_id);
     if (!team || team.owner_id !== req.userId) return errorResponse(res, 'Forbidden: you do not own this team', 403);
     const teams = await tournamentModel.getTeams(t.id);
     if (teams.length >= t.max_teams) return errorResponse(res, 'Tournament is full', 400);
     await tournamentModel.addTeam(t.id, req.body.team_id);
     return successResponse(res, null, 'Team joined tournament');
+  } catch (err) { next(err); }
+}
+
+async function inviteTeams(req, res, next) {
+  try {
+    const t = await tournamentModel.findById(req.params.id);
+    if (!t) return errorResponse(res, 'Tournament not found', 404);
+    if (t.owner_id !== req.userId) return errorResponse(res, 'Only the tournament owner can invite teams', 403);
+    if (t.status !== 'draft') return errorResponse(res, 'Tournament already started', 400);
+    const { team_ids } = req.body;
+    if (!Array.isArray(team_ids) || team_ids.length === 0) return errorResponse(res, 'team_ids must be a non-empty array', 400);
+    const existing = await tournamentModel.getTeams(t.id);
+    const slots = t.max_teams - existing.length;
+    if (team_ids.length > slots) return errorResponse(res, `Only ${slots} slot(s) remaining`, 400);
+    for (const teamId of team_ids) {
+      await tournamentModel.addTeam(t.id, teamId);
+    }
+    return successResponse(res, null, `${team_ids.length} team(s) added`);
   } catch (err) { next(err); }
 }
 
@@ -68,4 +100,14 @@ async function getStandings(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { createTournament, getTournament, joinTournament, startTournament, getBrackets, getGroups, getStandings };
+module.exports = {
+  listTournaments,
+  createTournament,
+  getTournament,
+  joinTournament,
+  inviteTeams,
+  startTournament,
+  getBrackets,
+  getGroups,
+  getStandings,
+};

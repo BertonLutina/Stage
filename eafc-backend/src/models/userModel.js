@@ -2,7 +2,7 @@ const { pool } = require('../config/db');
 
 async function findById(id) {
   const [rows] = await pool.query(
-    'SELECT id, avatar, first_name, last_name, birthday, email, country, country_code, phone_number, gamer_tag, auth_provider, bio, created_at FROM users WHERE id = ?',
+    'SELECT id, avatar, first_name, last_name, birthday, email, country, country_code, phone_number, gamer_tag, auth_provider, bio, signin_preference, created_at FROM users WHERE id = ?',
     [id]
   );
   return rows[0] || null;
@@ -24,7 +24,7 @@ async function create(data) {
 }
 
 async function update(id, data) {
-  const fields = ['first_name', 'last_name', 'birthday', 'country', 'country_code', 'phone_number', 'gamer_tag', 'avatar', 'bio'];
+  const fields = ['first_name', 'last_name', 'birthday', 'country', 'country_code', 'phone_number', 'gamer_tag', 'avatar', 'bio', 'signin_preference'];
   const updates = [];
   const values = [];
   fields.forEach(f => {

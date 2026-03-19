@@ -1,5 +1,6 @@
 import React from 'react';
-import { TouchableOpacity, Text, ActivityIndicator } from 'react-native';
+import { TouchableOpacity, ActivityIndicator } from 'react-native';
+import STText from './STText';
 
 export default function Button({ title, onPress, variant = 'primary', loading = false, disabled = false, className = '' }) {
   const base = 'rounded-xl py-3 px-6 items-center justify-center';
@@ -28,7 +29,7 @@ export default function Button({ title, onPress, variant = 'primary', loading = 
       {loading ? (
         <ActivityIndicator color={variant === 'primary' || variant === 'secondary' ? '#0F0F0F' : '#fff'} />
       ) : (
-        <Text className={textVariants[variant]}>{title}</Text>
+        <STText className={textVariants[variant]}>{title}</STText>
       )}
     </TouchableOpacity>
   );

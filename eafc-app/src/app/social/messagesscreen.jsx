@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import api from '../../../utils/api';
-import Avatar from '../../../components/common/Avatar';
-import useAuthStore from '../../../store/authStore';
+import api from '../../utils/api';
+import Avatar from '../../components/common/Avatar';
+import useAuthStore from '../../store/authStore';
 
 export default function MessagesScreen({ navigation }) {
   const [conversations, setConversations] = useState([]);
@@ -14,7 +14,7 @@ export default function MessagesScreen({ navigation }) {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-dark">
+    <SafeAreaView className="flex-1">
       <View className="px-4 py-4 border-b border-border">
         <Text className="text-white text-2xl font-black">Messages</Text>
       </View>

@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS tournaments (
   format ENUM('group_knockout','single_elim','double_elim','league_playoffs','classic_league') NOT NULL,
   max_teams INT NOT NULL,
   status ENUM('draft','active','completed') DEFAULT 'draft',
+  visibility ENUM('open','closed') DEFAULT 'open',
   current_round INT DEFAULT 0,
   description TEXT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

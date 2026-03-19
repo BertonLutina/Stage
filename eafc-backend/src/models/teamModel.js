@@ -6,6 +6,11 @@ async function findById(id) {
   return rows[0] || null;
 }
 
+async function findAll() {
+  const [rows] = await pool.query('SELECT * FROM teams ORDER BY club_name ASC');
+  return rows;
+}
+
 async function create(data) {
   const id = uuidv4();
   const { club_name, country, country_code, owner_id, avatar, bio } = data;
@@ -35,7 +40,7 @@ async function update(id, data) {
 
 async function getPlayers(teamId) {
   const [rows] = await pool.query(
-    `SELECT tp.id, tp.role, tp.position, tp.jersey_number, tp.joined_at,
+    `SELECT tp.id, tp.team_id, tp.role, tp.position, tp.jersey_number, tp.joined_at,
      u.id as user_id, u.first_name, u.last_name, u.gamer_tag, u.avatar
      FROM team_players tp JOIN users u ON tp.user_id = u.id WHERE tp.team_id = ?`,
     [teamId]
@@ -95,4 +100,52 @@ async function getDressingRoom(teamId) {
   };
 }
 
-module.exports = { findById, create, update, getPlayers, addPlayer, removePlayer, getUserTeamCount, getActiveFormation, saveFormation, getDressingRoom };
+async function findAllWithPlayers() {
+  const teams = await findAll();
+  if (!teams.length) return [];
+
+  const ids = teams.map(t => t.id);
+  const [players] = await pool.query(
+    `SELECT tp.team_id,
+      tp.id,
+      tp.role,
+      tp.position,
+      tp.jersey_number,
+      tp.joined_at,
+      u.id as user_id,
+      u.first_name,
+      u.last_name,
+      u.gamer_tag,
+      u.avatar
+     FROM team_players tp
+     JOIN users u ON tp.user_id = u.id
+     WHERE tp.team_id IN (?)`,
+    [ids]
+  );
+
+  const byTeam = {};
+  players.forEach(p => {
+    if (!byTeam[p.team_id]) byTeam[p.team_id] = [];
+    byTeam[p.team_id].push(p);
+  });
+
+  return teams.map(t => ({
+    ...t,
+    players: byTeam[t.id] || [],
+  }));
+}
+
+module.exports = {
+  findById,
+  create,
+  update,
+  getPlayers,
+  addPlayer,
+  removePlayer,
+  getUserTeamCount,
+  getActiveFormation,
+  saveFormation,
+  getDressingRoom,
+  findAll,
+  findAllWithPlayers,
+};

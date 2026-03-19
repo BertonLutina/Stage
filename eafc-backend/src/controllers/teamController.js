@@ -1,6 +1,13 @@
 const teamModel = require('../models/teamModel');
 const { successResponse, errorResponse } = require('../utils/helpers');
 
+async function listTeamsWithPlayers(req, res, next) {
+  try {
+    const teams = await teamModel.findAllWithPlayers();
+    return successResponse(res, teams);
+  } catch (err) { next(err); }
+}
+
 async function createTeam(req, res, next) {
   try {
     const count = await teamModel.getUserTeamCount(req.userId);
@@ -79,4 +86,15 @@ async function getDressingRoom(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { createTeam, getTeam, updateTeam, getPlayers, addPlayer, removePlayer, getFormation, saveFormation, getDressingRoom };
+module.exports = {
+  listTeamsWithPlayers,
+  createTeam,
+  getTeam,
+  updateTeam,
+  getPlayers,
+  addPlayer,
+  removePlayer,
+  getFormation,
+  saveFormation,
+  getDressingRoom,
+};

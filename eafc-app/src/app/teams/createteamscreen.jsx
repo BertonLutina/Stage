@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Input from '../../../components/common/Input';
-import Button from '../../../components/common/Button';
-import useTeamStore from '../../../store/teamStore';
+import STText from '../../components/common/STText';
+import Input from '../../components/common/Input';
+import Button from '../../components/common/Button';
+import useTeamStore from '../../store/teamStore';
 
 export default function CreateTeamScreen({ navigation }) {
   const [form, setForm] = useState({ club_name: '', country: '', country_code: '', bio: '' });
@@ -24,11 +25,11 @@ export default function CreateTeamScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-dark">
+    <SafeAreaView className="flex-1">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
         <ScrollView className="px-6">
-          <Text className="text-white text-2xl font-bold mt-6 mb-6">Create Team</Text>
-          {error && <View className="bg-danger/20 border border-danger rounded-xl p-3 mb-4"><Text className="text-danger">{error}</Text></View>}
+          <STText className="text-white text-2xl font-bold mt-6 mb-6">Create Team</STText>
+          {error && <View className="bg-danger/20 border border-danger rounded-xl p-3 mb-4"><STText className="text-danger">{error}</STText></View>}
           <Input label="Club Name *" value={form.club_name} onChangeText={set('club_name')} placeholder="FC Longue Vie" />
           <Input label="Country" value={form.country} onChangeText={set('country')} placeholder="Belgium" />
           <Input label="Country Code" value={form.country_code} onChangeText={set('country_code')} placeholder="BE" autoCapitalize="characters" />

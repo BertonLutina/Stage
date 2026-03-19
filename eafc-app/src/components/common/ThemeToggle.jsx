@@ -1,10 +1,11 @@
 import React from 'react';
-import { TouchableOpacity, Text, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
+import STText from './STText';
 import useThemeStore from '../../store/themeStore';
 
 export default function ThemeToggle({ style }) {
-  const { theme, toggleTheme } = useThemeStore();
-  const isDark = theme === 'dark';
+  const { resolvedTheme, toggleTheme } = useThemeStore();
+  const isDark = resolvedTheme === 'dark';
 
   return (
     <TouchableOpacity
@@ -23,7 +24,7 @@ export default function ThemeToggle({ style }) {
       ]}
       activeOpacity={0.8}
     >
-      <Text style={{ fontSize: 16 }}>{isDark ? '🌙' : '☀️'}</Text>
+      <STText style={{ fontSize: 16 }}>{isDark ? '🌙' : '☀️'}</STText>
       <View
         style={{
           width: 36,
@@ -44,7 +45,7 @@ export default function ThemeToggle({ style }) {
           }}
         />
       </View>
-      <Text style={{ fontSize: 16 }}>{isDark ? '' : '🌤️'}</Text>
+      <STText style={{ fontSize: 16 }}>{isDark ? '' : '🌤️'}</STText>
     </TouchableOpacity>
   );
 }

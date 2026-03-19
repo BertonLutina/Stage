@@ -34,7 +34,7 @@ export default function UploadVideoScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-dark">
+    <SafeAreaView className="flex-1">
       <ScrollView className="px-6">
         <Text className="text-white text-xl font-bold mt-6 mb-6">Add Match Video</Text>
         <Text className="text-white font-semibold mb-3">Platform</Text>

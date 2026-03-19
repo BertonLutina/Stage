@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { ScrollView, TouchableOpacity } from 'react-native';
+import STText from '../../../components/common/STText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import api from '../../../utils/api';
 import useAuthStore from '../../../store/authStore';
@@ -30,17 +31,17 @@ export default function AvailabilityScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-dark">
+    <SafeAreaView className="flex-1">
       <ScrollView className="px-4">
-        <Text className="text-white text-xl font-bold mt-4 mb-2">Availability</Text>
-        <Text className="text-muted text-sm mb-6">Set the days you are available to play</Text>
+        <STText className="text-xl font-bold mt-4 mb-2">Availability</STText>
+        <STText className="text-muted text-sm mb-6">Set the days you are available to play</STText>
         {DAYS.map((day, idx) => {
           const slot = slots.find(s => s.day_of_week === idx);
           return (
             <TouchableOpacity key={day} onPress={() => toggleDay(idx)}
               className={`flex-row items-center justify-between px-4 py-4 rounded-xl border mb-2 ${slot ? 'bg-primary/10 border-primary' : 'bg-card border-border'}`}>
-              <Text className={`font-semibold ${slot ? 'text-primary' : 'text-white'}`}>{day}</Text>
-              {slot ? <Text className="text-muted text-sm">{slot.start_time} – {slot.end_time}</Text> : <Text className="text-muted text-sm">Unavailable</Text>}
+              <STText className={`font-semibold ${slot ? 'text-primary' : 'text-white'}`}>{day}</STText>
+              {slot ? <STText className="text-muted text-sm">{slot.start_time} – {slot.end_time}</STText> : <STText className="text-muted text-sm">Unavailable</STText>}
             </TouchableOpacity>
           );
         })}

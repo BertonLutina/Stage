@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Avatar from '../../../components/common/Avatar';
-import useFeed from '../../../hooks/useFeed';
+import Avatar from '../../components/common/Avatar';
+import useFeed from '../../hooks/useFeed';
 
 function PostCard({ post, onPress }) {
   return (
@@ -30,7 +30,7 @@ export default function FeedScreen({ navigation }) {
   const { feed, loadMore } = useFeed();
 
   return (
-    <SafeAreaView className="flex-1 bg-dark">
+    <SafeAreaView className="flex-1">
       <View className="flex-row justify-between items-center px-4 py-3 border-b border-border">
         <Text className="text-primary font-black text-xl">Stage</Text>
         <TouchableOpacity onPress={() => navigation.navigate('Messages')}>

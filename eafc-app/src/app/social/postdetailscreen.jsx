@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
-import api from '../../../utils/api';
-import Avatar from '../../../components/common/Avatar';
+import api from '../../utils/api';
+import Avatar from '../../components/common/Avatar';
 
 export default function PostDetailScreen() {
   const { postId } = useLocalSearchParams();
@@ -24,7 +24,7 @@ export default function PostDetailScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-dark">
+    <SafeAreaView className="flex-1">
       <ScrollView className="flex-1 px-4">
         {post && (
           <View className="pt-4 pb-6 border-b border-border">

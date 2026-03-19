@@ -53,8 +53,8 @@ const LIGHT = {
 };
 
 function TabIcon({ label, focused }) {
-  const { theme } = useThemeStore();
-  const C = theme === 'dark' ? DARK : LIGHT;
+  const { resolvedTheme } = useThemeStore();
+  const C = resolvedTheme === 'dark' ? DARK : LIGHT;
   const icons = { Feed: '🏠', Fixtures: '📅', Reels: '🎬', Tournaments: '🏆', Profile: '👤' };
   return (
     <View style={{ alignItems: 'center' }}>
@@ -65,8 +65,8 @@ function TabIcon({ label, focused }) {
 }
 
 function MainStack() {
-  const { theme } = useThemeStore();
-  const C = theme === 'dark' ? DARK : LIGHT;
+  const { resolvedTheme } = useThemeStore();
+  const C = resolvedTheme === 'dark' ? DARK : LIGHT;
 
   const screenOptions = {
     headerStyle: { backgroundColor: C.surface },
@@ -102,8 +102,8 @@ function MainStack() {
 }
 
 export default function MainTabNavigator() {
-  const { theme } = useThemeStore();
-  const C = theme === 'dark' ? DARK : LIGHT;
+  const { resolvedTheme } = useThemeStore();
+  const C = resolvedTheme === 'dark' ? DARK : LIGHT;
 
   return (
     <Tab.Navigator

@@ -20,7 +20,7 @@ export default function MatchDetailScreen() {
   if (!match) return <View className="flex-1 bg-dark items-center justify-center"><Text className="text-muted">Loading...</Text></View>;
 
   return (
-    <SafeAreaView className="flex-1 bg-dark">
+    <SafeAreaView className="flex-1">
       <ScrollView className="px-4">
         <Text className="text-muted text-sm mt-4 text-center">{match.tournament_name}</Text>
         <View className="bg-card border border-border rounded-2xl p-6 mt-3 mb-4">

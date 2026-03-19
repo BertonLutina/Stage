@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, FlatList, Dimensions, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import api from '../../../utils/api';
-import VideoPlayer from '../../../components/common/VideoPlayer';
-import Avatar from '../../../components/common/Avatar';
+import api from '../../utils/api';
+import VideoPlayer from '../../components/common/VideoPlayer';
+import Avatar from '../../components/common/Avatar';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -45,7 +45,7 @@ export default function ReelsScreen() {
   }, []);
 
   return (
-    <View className="flex-1 bg-dark">
+    <View className="flex-1">
       <FlatList
         data={reels}
         keyExtractor={i => i.id}

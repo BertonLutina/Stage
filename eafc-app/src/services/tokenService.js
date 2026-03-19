@@ -1,5 +1,3 @@
-import { Platform } from 'react-native';
-
 const TOKEN_KEY = 'eafc_access_token';
 const REFRESH_KEY = 'eafc_refresh_token';
 
@@ -14,11 +12,22 @@ async function getStorage() {
       del: SecureStore.deleteItemAsync,
     };
   } catch {
-    return {
-      get: async (k) => memCache[k] || null,
-      set: async (k, v) => { memCache[k] = v; },
-      del: async (k) => { delete memCache[k]; },
-    };
+    // Fallback to AsyncStorage so tokens persist across reloads
+    try {
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      return {
+        get: async (k) => AsyncStorage.getItem(k),
+        set: async (k, v) => AsyncStorage.setItem(k, v),
+        del: async (k) => AsyncStorage.removeItem(k),
+      };
+    } catch {
+      // Last resort: in-memory only (non-persistent)
+      return {
+        get: async (k) => memCache[k] || null,
+        set: async (k, v) => { memCache[k] = v; },
+        del: async (k) => { delete memCache[k]; },
+      };
+    }
   }
 }
 

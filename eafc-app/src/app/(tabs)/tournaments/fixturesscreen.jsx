@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../../../utils/api';
+import GradientBackground from '../../../components/common/GradientBackground';
 
-export default function FixturesScreen({ route, navigation }) {
-  const tournamentId = route?.params?.tournamentId;
+export default function FixturesScreen() {
+  const { tournamentId } = useLocalSearchParams();
+  const router = useRouter();
   const [fixtures, setFixtures] = useState([]);
   const [filter, setFilter] = useState('all');
 
@@ -16,7 +19,13 @@ export default function FixturesScreen({ route, navigation }) {
   }, [tournamentId, filter]);
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity onPress={() => navigation.navigate('MatchDetail', { matchId: item.id })}
+    <TouchableOpacity
+      onPress={() =>
+        router.push({
+          pathname: '/(tabs)/matches/matchdetailscreen',
+          params: { matchId: item.id },
+        })
+      }
       className="bg-card border border-border rounded-2xl px-4 py-4 mb-3 mx-4">
       <Text className="text-muted text-xs mb-2">{item.tournament_name}</Text>
       <View className="flex-row items-center">
@@ -37,19 +46,23 @@ export default function FixturesScreen({ route, navigation }) {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-dark">
-      <View className="px-4 py-4 flex-row justify-between items-center">
-        <Text className="text-white text-2xl font-black">Fixtures</Text>
-      </View>
-      <View className="flex-row px-4 gap-2 mb-4">
-        {['all', 'scheduled', 'completed'].map(f => (
-          <TouchableOpacity key={f} onPress={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full border ${filter === f ? 'bg-primary border-primary' : 'bg-card border-border'}`}>
-            <Text className={`text-xs font-bold capitalize ${filter === f ? 'text-dark' : 'text-white'}`}>{f}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      <FlatList data={fixtures} keyExtractor={i => i.id} renderItem={renderItem} ListEmptyComponent={<Text className="text-muted text-center mt-8">No fixtures found</Text>} />
-    </SafeAreaView>
+    <View className="flex-1">
+      <GradientBackground>
+        <SafeAreaView className="flex-1">
+          <View className="px-4 py-4 flex-row justify-between items-center">
+            <Text className="text-white text-2xl font-black">Fixtures</Text>
+          </View>
+          <View className="flex-row px-4 gap-2 mb-4">
+            {['all', 'scheduled', 'completed'].map(f => (
+              <TouchableOpacity key={f} onPress={() => setFilter(f)}
+                className={`px-4 py-1.5 rounded-full border ${filter === f ? 'bg-primary border-primary' : 'bg-card border-border'}`}>
+                <Text className={`text-xs font-bold capitalize ${filter === f ? 'text-dark' : 'text-white'}`}>{f}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <FlatList data={fixtures} keyExtractor={i => i.id} renderItem={renderItem} ListEmptyComponent={<Text className="text-muted text-center mt-8">No fixtures found</Text>} />
+        </SafeAreaView>
+      </GradientBackground>
+    </View>
   );
 }

@@ -13,8 +13,13 @@ const useAuthStore = create((set) => ({
       if (!token) return;
       const { data } = await api.get('/users/me');
       set({ user: data.data });
-    } catch {
-      await clearTokens();
+    } catch (err) {
+      // Only clear tokens on explicit auth errors; keep them on network/backend issues
+      const status = err?.response?.status;
+      if (status === 401 || status === 403) {
+        await clearTokens();
+        set({ user: null });
+      }
     }
   },
 
@@ -32,9 +37,7 @@ const useAuthStore = create((set) => ({
   register: async (payload) => {
     set({ loading: true, error: null });
     try {
-      console.log("registering user", payload)
       const { data } = await api.post('/auth/register', payload);
-      console.log(data)
       await setTokens(data.data.accessToken, data.data.refreshToken);
       set({ user: data.data.user, loading: false });
     } catch (err) {

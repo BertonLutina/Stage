@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
-import api from '../../../utils/api';
-import FormationView from '../../../components/team/FormationView';
-import Button from '../../../components/common/Button';
+import api from '../../utils/api';
+import FormationView from '../../components/team/FormationView';
+import Button from '../../components/common/Button';
+import STText from '../../components/common/STText';
 
 const FORMATIONS = ['4-3-3', '4-4-2', '3-5-2', '4-2-3-1'];
 const POSITIONS = ['GK', 'RB', 'CB', 'LB', 'CM', 'CAM', 'CDM', 'RW', 'LW', 'ST'];
@@ -30,14 +31,14 @@ export default function FormationScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-dark">
+    <SafeAreaView className="flex-1">
       <ScrollView className="px-4">
-        <Text className="text-white text-xl font-bold mt-4 mb-4">Formation</Text>
+        <STText className="text-white text-xl font-bold mt-4 mb-4">Formation</STText>
         <View className="flex-row flex-wrap gap-2 mb-6">
           {FORMATIONS.map(f => (
             <TouchableOpacity key={f} onPress={() => setSelectedFormation(f)}
               className={`px-4 py-2 rounded-full border ${selectedFormation === f ? 'bg-primary border-primary' : 'border-border bg-card'}`}>
-              <Text className={selectedFormation === f ? 'text-dark font-bold' : 'text-white'}>{f}</Text>
+              <STText className={selectedFormation === f ? 'text-dark font-bold' : 'text-white'}>{f}</STText>
             </TouchableOpacity>
           ))}
         </View>
