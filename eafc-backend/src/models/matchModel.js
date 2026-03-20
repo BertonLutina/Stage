@@ -76,4 +76,25 @@ async function getFixtures(tournamentId, status) {
   return rows;
 }
 
-module.exports = { findById, updateScore, addVideo, getFixtures };
+async function getMatchChat(matchId, limit = 100) {
+  const [rows] = await pool.query(
+    'SELECT id, match_id, user_id, gamer_tag, content, created_at FROM match_live_chat WHERE match_id = ? ORDER BY created_at ASC LIMIT ?',
+    [matchId, limit]
+  );
+  return rows;
+}
+
+async function insertMatchChat(matchId, userId, gamerTag, content) {
+  const id = uuidv4();
+  await pool.query(
+    'INSERT INTO match_live_chat (id, match_id, user_id, gamer_tag, content) VALUES (?, ?, ?, ?, ?)',
+    [id, matchId, userId, gamerTag, content]
+  );
+  const [rows] = await pool.query(
+    'SELECT id, match_id, user_id, gamer_tag, content, created_at FROM match_live_chat WHERE id = ?',
+    [id]
+  );
+  return rows[0];
+}
+
+module.exports = { findById, updateScore, addVideo, getFixtures, getMatchChat, insertMatchChat };

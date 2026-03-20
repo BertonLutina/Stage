@@ -179,6 +179,38 @@ export default function ProfileScreen() {
               <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.12)' }} />
               <StatColumn value={profile?.stats?.wins ?? 0} label="Trophies" />
             </View>
+
+            {/* ── Update Profile (own profile only) ── */}
+            {isOwn && (
+              <View style={{ marginTop: 16, width: '100%', gap: 8 }}>
+                <TouchableOpacity
+                  onPress={() => router.push('/(tabs)/profile/editprofilescreen')}
+                  style={{ flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}
+                >
+                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#1A3566', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                    <Ionicons name="create-outline" size={20} color="#5FE3E8" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <STText style={{ fontWeight: '700', fontSize: 15 }}>Edit Profile</STText>
+                    <STText style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 2 }}>Update name, gamer tag, bio...</STText>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.4)" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => router.push('/(tabs)/profile/availabilityscreen')}
+                  style={{ flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}
+                >
+                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#1A3566', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                    <Ionicons name="calendar-outline" size={20} color="#5FE3E8" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <STText style={{ fontWeight: '700', fontSize: 15 }}>Availability</STText>
+                    <STText style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 2 }}>Set when you can play</STText>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.4)" />
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           {/* ── Tab Bar ── */}

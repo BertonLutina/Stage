@@ -42,26 +42,21 @@ const SAMPLE = {
 };
 
 function GlassCard({ title, right, children }) {
+  const { isDark } = useColorSchemeColors();
   return (
-    <View className="mx-4 mt-4 rounded-3xl border dark:border-[#C7D8F3]/20 border-[#C7D8F3] bg-darkCard dark:bg-[#F7FAFF]/10 bg-[#F7FAFF] px-4 py-4">
+    <View
+      className="mx-4 mt-4 rounded-3xl border px-4 py-4"
+      style={{
+        borderColor: isDark ? 'rgba(199,216,243,0.2)' : '#C7D8F3',
+        backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF',
+      }}
+    >
       <View className="mb-3 flex-row items-center justify-between">
         <STText className="text-[14px] font-black tracking-tight">{title}</STText>
         {right}
       </View>
       {children}
     </View>
-  );
-}
-
-function GlassCardImage({ title, right, children }) {
-  return (
-    <ImageBackground source={require('../../../../assets/sumprem.png')} className="mx-4 mt-4 rounded-3xl px-4 py-4">
-      <View className="mb-3 flex-row items-center justify-between">
-        <STText className="text-[14px] font-black tracking-tight" style={{ color: '#1B2D4A' }}>{title}</STText>
-        {right}
-      </View>
-      {children}
-    </ImageBackground>
   );
 }
 
@@ -74,7 +69,7 @@ function AvatarDot({ icon = 'person' }) {
 }
 
 export default function PlayerDashboardScreen() {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const router = useRouter();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -121,12 +116,19 @@ export default function PlayerDashboardScreen() {
                     params: { teamId: ownedTeam.id },
                   })
                 }
-                className="h-10 w-10 rounded-full border border-[#C9D8F2] bg-white dark:bg-white/20 items-center justify-center"
+                className="h-10 w-10 rounded-full border border-[#C9D8F2] items-center justify-center"
+                style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : '#FFFFFF' }}
               >
                 <Ionicons name="shield-outline" size={20} color={isDark ? "#FFFFFF" : "#1B2D4A"} />
               </TouchableOpacity>
             ) : (
-              <View className="h-10 w-10 rounded-full border border-[#C9D8F2] dark:border-[#C7D8F3]/20 bg-white dark:bg-white/20 items-center justify-center overflow-hidden">
+              <View
+                className="h-10 w-10 rounded-full border border-[#C9D8F2] items-center justify-center overflow-hidden"
+                style={{
+                  borderColor: isDark ? 'rgba(199,216,243,0.2)' : '#C9D8F2',
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
+                }}
+              >
                 {user?.avatar ? (
                   <Image source={{ uri: user.avatar }} className="h-10 w-10" />
                 ) : (
@@ -139,9 +141,17 @@ export default function PlayerDashboardScreen() {
               <STText className="text-[16px] font-semibold tracking-[3px] ml-1">STAGE</STText>
             </View>
 
-            <TouchableOpacity className="h-10 w-10 rounded-full border border-[#C9D8F2] bg-white dark:bg-white/20 items-center justify-center">
-              <Ionicons name="notifications-outline" size={20} color={isDark ? "#FFFFFF" : "#1B2D4A"} />
-            </TouchableOpacity>
+            <View className="flex-row gap-2">
+              <TouchableOpacity style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="notifications-outline" size={20} color="#fff" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={async () => {
+                await logout();
+                router.replace('/auth/loginscreen');
+              }} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="log-out-outline" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Live matches */}
@@ -154,7 +164,13 @@ export default function PlayerDashboardScreen() {
               </View>
             }
           >
-            <View className="rounded-2xl border border-[#D8E4F7] dark:border-[#C7D8F3]/20 bg-white dark:bg-white/20 px-3 py-3">
+            <View
+              className="rounded-2xl border border-[#D8E4F7] px-3 py-3"
+              style={{
+                borderColor: isDark ? 'rgba(199,216,243,0.2)' : '#D8E4F7',
+                backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
+              }}
+            >
               <View className="flex-row items-start justify-between">
                 <STText className="text-[20px] font-extrabold">
                   {SAMPLE.liveMatch.home} {SAMPLE.liveMatch.score} {SAMPLE.liveMatch.away}
@@ -173,9 +189,22 @@ export default function PlayerDashboardScreen() {
           {/* Upcoming */}
           <GlassCard
             title="UPCOMING MATCHES"
-            right={<STText className="text-[11px] rounded-full bg-[#E8F0FD] dark:bg-white/20 px-2 py-1">{SAMPLE.upcoming.date}</STText>}
+            right={
+              <STText
+                className="text-[11px] rounded-full px-2 py-1"
+                style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : '#E8F0FD' }}
+              >
+                {SAMPLE.upcoming.date}
+              </STText>
+            }
           >
-            <View className="rounded-2xl border border-[#D8E4F7] dark:border-[#C7D8F3]/20 dark:bg-white/20 bg-white px-3 py-3">
+            <View
+              className="rounded-2xl border border-[#D8E4F7] px-3 py-3"
+              style={{
+                borderColor: isDark ? 'rgba(199,216,243,0.2)' : '#D8E4F7',
+                backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
+              }}
+            >
               <STText className="text-[20px] font-bold">{SAMPLE.upcoming.fixture}</STText>
               <STText className="mt-1" >{SAMPLE.upcoming.countdown}</STText>
               <View className="mt-3 flex-row items-center gap-2">
@@ -235,7 +264,13 @@ export default function PlayerDashboardScreen() {
 
           {/* Club activity */}
           <GlassCard title="CLUB ACTIVITY">
-            <View className="rounded-2xl border border-[#D8E4F7] dark:border-white/20 bg-white dark:bg-white/20 overflow-hidden">
+            <View
+            className="rounded-2xl border border-[#D8E4F7] overflow-hidden"
+            style={{
+              borderColor: isDark ? 'rgba(255,255,255,0.2)' : '#D8E4F7',
+              backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
+            }}
+          >
               {SAMPLE.activity.map((a, idx) => (
                 <View key={a.id} className={`px-3 py-3 flex-row items-center ${idx === 0 ? 'border-b border-[#E6EEF9]' : ''}`}>
                   <View className="h-10 w-10 rounded-full bg-[#E9F0FD] items-center justify-center">
@@ -257,7 +292,13 @@ export default function PlayerDashboardScreen() {
               <TouchableOpacity className="flex-1 rounded-2xl bg-[#1E57CB] py-3 items-center">
                 <STText className="font-semibold" style={{ color: '#FFFFFF' }}>Find Match</STText>
               </TouchableOpacity>
-              <TouchableOpacity className="flex-1 rounded-2xl border border-[#BFD1F0] dark:border-white/20 bg-white dark:bg-white/20 py-3 items-center">
+              <TouchableOpacity
+                className="flex-1 rounded-2xl border border-[#BFD1F0] py-3 items-center"
+                style={{
+                  borderColor: isDark ? 'rgba(255,255,255,0.2)' : '#BFD1F0',
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
+                }}
+              >
                 <STText className="font-semibold" >Join Tournament</STText>
               </TouchableOpacity>
             </View>

@@ -25,6 +25,7 @@ export default function useAuthBootstrap() {
         return;
       }
       const complete = await isOnboardingComplete(user.id);
+      console.log('complete', complete);
       if (!cancelled) setOnboardingComplete(complete);
     })();
     return () => {

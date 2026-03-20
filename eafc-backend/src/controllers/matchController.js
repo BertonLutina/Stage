@@ -33,4 +33,11 @@ async function getFixtures(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { getMatch, updateScore, addVideo, getFixtures };
+async function getMatchChat(req, res, next) {
+  try {
+    const comments = await matchModel.getMatchChat(req.params.id);
+    return successResponse(res, comments);
+  } catch (err) { next(err); }
+}
+
+module.exports = { getMatch, updateScore, addVideo, getFixtures, getMatchChat };

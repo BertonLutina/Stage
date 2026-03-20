@@ -22,8 +22,8 @@ export default function PositionSelectionScreen() {
   return (
     <SafeAreaView className="flex-1 px-6 justify-center">
       <View className="border border-lineInner/30 rounded-3xl px-6 py-7">
-        <Text className="text-white text-2xl font-bold mb-2">Position Selection</Text>
-        <Text className="text-muted mb-4">Pick your preferred in-game position.</Text>
+        <STText className="text-white text-2xl font-bold mb-2">Position Selection</STText>
+        <STText className="text-muted mb-4">Pick your preferred in-game position.</STText>
         <View className="gap-2">
           {OPTIONS.map((opt) => (
             <TouchableOpacity

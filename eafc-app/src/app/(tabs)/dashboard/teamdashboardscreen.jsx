@@ -1,19 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   TouchableOpacity,
   Image,
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
+import STText from '../../../components/common/STText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '../../../utils/api';
 import useAuthStore from '../../../store/authStore';
-import GradientBackground from '../../../components/common/GradientBackground';
+import useColorSchemeColors from '../../../hooks/useColorSchemeColors';
 
 const SAMPLE = {
   formation: '4-3-3',
@@ -31,11 +31,18 @@ const SAMPLE = {
   ],
 };
 
-function SectionCard({ title, children, right }) {
+function GlassCard({ title, right, children }) {
+  const { isDark } = useColorSchemeColors();
   return (
-    <View className="mx-4 mt-4 rounded-3xl border border-[#C7D8F3] bg-[#F7FAFF] px-4 py-4">
+    <View
+      className="mx-4 mt-4 rounded-3xl border px-4 py-4"
+      style={{
+        borderColor: isDark ? 'rgba(199,216,243,0.2)' : '#C7D8F3',
+        backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF',
+      }}
+    >
       <View className="mb-3 flex-row items-center justify-between">
-        <Text className="text-[#1B2D4A] text-[20px] font-black tracking-tight">{title}</Text>
+        <STText className="text-[14px] font-black tracking-tight">{title}</STText>
         {right}
       </View>
       {children}
@@ -44,24 +51,37 @@ function SectionCard({ title, children, right }) {
 }
 
 function Crest({ uri, name }) {
+  const { isDark } = useColorSchemeColors();
   return (
-    <View className="h-16 w-16 rounded-full border-2 border-[#9BB7E7] bg-white overflow-hidden items-center justify-center">
+    <View
+      className="h-16 w-16 rounded-full border-2 overflow-hidden items-center justify-center"
+      style={{
+        borderColor: isDark ? 'rgba(155,183,231,0.5)' : '#9BB7E7',
+        backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#FFFFFF',
+      }}
+    >
       {uri ? (
         <Image source={{ uri }} className="h-16 w-16" />
       ) : (
-        <Ionicons name="shield" size={28} color="#1B2D4A" />
+        <Ionicons name="shield" size={28} color={isDark ? '#E9F0FD' : '#1B2D4A'} />
       )}
-      {!uri && <Text className="text-[10px] text-[#1B2D4A] font-bold absolute bottom-1">{(name || 'FC').slice(0, 2).toUpperCase()}</Text>}
+      {!uri && (
+        <STText className="text-[10px] font-bold absolute bottom-1" style={{ color: isDark ? '#E9F0FD' : '#1B2D4A' }}>
+          {(name || 'FC').slice(0, 2).toUpperCase()}
+        </STText>
+      )}
     </View>
   );
 }
 
 export default function TeamDashboardScreen() {
+  const { user, logout } = useAuthStore();
   const { teamId } = useLocalSearchParams();
-  const { user } = useAuthStore();
   const router = useRouter();
+  const { isDark } = useColorSchemeColors();
   const [team, setTeam] = useState(null);
-  const [joined, setJoined] = useState(false);
+  const [joinLoading, setJoinLoading] = useState(false);
+  const [requestStatus, setRequestStatus] = useState(null);
 
   useEffect(() => {
     if (!teamId) return;
@@ -71,176 +91,258 @@ export default function TeamDashboardScreen() {
       .catch(() => {});
   }, [teamId]);
 
+  useEffect(() => {
+    if (!teamId || !user?.id) return;
+    api.get(`/teams/${teamId}/join-request-status`).then((r) => setRequestStatus(r.data?.data?.status ?? null)).catch(() => setRequestStatus(null));
+  }, [teamId, user?.id]);
+
   const isOwner = team?.owner_id === user?.id;
+  const joined = !!(team?.players ?? []).some((p) => p.user_id === user?.id);
+  const pending = requestStatus === 'pending';
+
+  const handleJoinLeave = async () => {
+    if (!user || !teamId || joinLoading) return;
+    setJoinLoading(true);
+    try {
+      if (joined) {
+        const { data } = await api.post(`/teams/${teamId}/leave`);
+        if (data?.data) setTeam(data.data);
+      } else {
+        await api.post(`/teams/${teamId}/join-request`);
+        setRequestStatus('pending');
+        alert('Request sent! The club owner will review your request.');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || (joined ? 'Failed to leave' : 'Failed to send request');
+      if (err.response?.status === 409) setRequestStatus('pending');
+      alert(msg);
+    } finally {
+      setJoinLoading(false);
+    }
+  };
+
   const total = (team?.wins ?? 0) + (team?.draws ?? 0) + (team?.losses ?? 0);
   const memberCount = team?.players?.length ?? 0;
   const winRate = useMemo(() => (total > 0 ? Math.round((team?.wins ?? 0) / total * 100) : 0), [team?.wins, total]);
 
+  const innerCardStyle = {
+    borderColor: isDark ? 'rgba(199,216,243,0.2)' : '#D8E4F7',
+    backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
+  };
+
   return (
-    <View className="flex-1 bg-[#EEF4FF]">
-      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-      <GradientBackground>
-        <SafeAreaView className="flex-1 pb-24" edges={['top']}>
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Header */}
-            <View className="px-4 pt-1 pb-2 flex-row items-center justify-between">
-              <TouchableOpacity
-                onPress={() => router.back()}
-                className="h-10 w-10 rounded-full border border-[#C9D8F2] bg-white items-center justify-center"
-              >
-                <Ionicons name="chevron-back" size={20} color="#1B2D4A" />
-              </TouchableOpacity>
+    <View className="flex-1">
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      <SafeAreaView className="flex-1 pb-24" edges={['top']}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <View className="px-4 pt-1 pb-2 flex-row items-center justify-between">
+            <TouchableOpacity
+              onPress={() => router.back()}
+              className="h-10 w-10 rounded-full border items-center justify-center"
+              style={{
+                borderColor: isDark ? 'rgba(199,216,243,0.2)' : '#C9D8F2',
+                backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
+              }}
+            >
+              <Ionicons name="chevron-back" size={20} color={isDark ? '#FFFFFF' : '#1B2D4A'} />
+            </TouchableOpacity>
 
-              <View className="flex-row items-center">
-                <Image source={require('../../../../assets/logo1.png')} className="h-12 w-12" style={{ resizeMode: 'contain' }} />
-                <Text className="text-[#1A2D4C] text-[16px] font-semibold tracking-[3px] ml-1">STAGE</Text>
-              </View>
-
-              <TouchableOpacity className="h-10 w-10 rounded-full border border-[#C9D8F2] bg-white items-center justify-center">
-                <Ionicons name="notifications-outline" size={20} color="#1B2D4A" />
-              </TouchableOpacity>
+            <View className="flex-row items-center">
+              <STText className="text-[16px] font-semibold tracking-[3px] ml-1">STAGE</STText>
             </View>
 
-            {/* Club Hero */}
-            <SectionCard
-              title="CLUB OVERVIEW"
-              right={
-                <View className="flex-row items-center gap-1">
-                  <Ionicons name="checkmark-circle" size={14} color="#2F7EF7" />
-                  <Text className="text-[#2F7EF7] text-xs font-semibold">Verified</Text>
+            <View className="flex-row gap-2">
+              <TouchableOpacity style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="notifications-outline" size={20} color="#fff" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={async () => {
+                  await logout();
+                  router.replace('/auth/loginscreen');
+                }}
+                style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Ionicons name="log-out-outline" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Club Hero */}
+          <GlassCard
+            title="CLUB OVERVIEW"
+            right={
+              <View className="flex-row items-center gap-1">
+                <Ionicons name="checkmark-circle" size={14} color="#2F7EF7" />
+                <STText className="text-xs font-semibold" style={{ color: '#2F7EF7' }}>Verified</STText>
+              </View>
+            }
+          >
+            {!team ? (
+              <ActivityIndicator color="#1B2D4A" />
+            ) : (
+              <>
+                <View className="flex-row items-center">
+                  <Crest uri={team.avatar} name={team.club_name} />
+                  <View className="ml-3 flex-1">
+                    <STText className="text-[25px] font-black" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>{team.club_name}</STText>
+                    <STText className="text-xs mt-1" style={{ color: isDark ? '#E9F0FD' : '#5E718F' }}>
+                      Record: {team.wins ?? 0}W / {team.losses ?? 0}L / {team.draws ?? 0}D
+                    </STText>
+                  </View>
                 </View>
-              }
-            >
-              {!team ? (
-                <ActivityIndicator color="#1B2D4A" />
-              ) : (
-                <>
-                  <View className="flex-row items-center">
-                    <Crest uri={team.avatar} name={team.club_name} />
+                <View className="mt-3 flex-row flex-wrap">
+                  <View className="w-1/2 py-1">
+                    <STText className="text-xs" style={{ color: isDark ? '#E9F0FD' : '#5E718F' }}>Formation</STText>
+                    <STText className="font-semibold" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>{SAMPLE.formation}</STText>
+                  </View>
+                  <View className="w-1/2 py-1">
+                    <STText className="text-xs" style={{ color: isDark ? '#E9F0FD' : '#5E718F' }}>Captain</STText>
+                    <STText className="font-semibold" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>{team.players?.find((p) => p.role === 'captain')?.gamer_tag || 'TBD'}</STText>
+                  </View>
+                  <View className="w-1/2 py-1">
+                    <STText className="text-xs" style={{ color: isDark ? '#E9F0FD' : '#5E718F' }}>Total Players</STText>
+                    <STText className="font-semibold" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>{memberCount}</STText>
+                  </View>
+                  <View className="w-1/2 py-1">
+                    <STText className="text-xs" style={{ color: isDark ? '#E9F0FD' : '#5E718F' }}>Club Ranking</STText>
+                    <STText className="font-semibold" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>{SAMPLE.ranking}</STText>
+                  </View>
+                </View>
+              </>
+            )}
+          </GlassCard>
+
+          {/* Roster */}
+          <GlassCard title="ROSTER">
+            {(team?.players ?? []).length === 0 ? (
+              <STText style={{ color: isDark ? '#E9F0FD' : '#5E718F' }}>No players yet</STText>
+            ) : (
+              <View className="gap-2">
+                {(team?.players ?? []).map((p, idx) => (
+                  <View key={p.id || idx} className="rounded-2xl border px-3 py-2.5 flex-row items-center" style={innerCardStyle}>
+                    <View className="h-10 w-10 rounded-full items-center justify-center" style={{ backgroundColor: isDark ? 'rgba(234,241,253,0.3)' : '#EAF1FD' }}>
+                      <Ionicons name="person" size={18} color={isDark ? '#E9F0FD' : '#1B2D4A'} />
+                    </View>
                     <View className="ml-3 flex-1">
-                      <Text className="text-[#1B2D4A] text-[25px] font-black">{team.club_name}</Text>
-                      <Text className="text-[#5E718F] text-xs mt-1">
-                        Record: {team.wins ?? 0}W / {team.losses ?? 0}L / {team.draws ?? 0}D
-                      </Text>
+                      <STText className="font-semibold" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>{p.gamer_tag || `${p.first_name || ''} ${p.last_name || ''}`.trim()}</STText>
+                      <STText className="text-xs" style={{ color: isDark ? '#E9F0FD' : '#5E718F' }}>{(p.position || 'Flex').toUpperCase()}</STText>
                     </View>
+                    <STText className="font-bold" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>{88 - (idx % 6)}</STText>
                   </View>
-                  <View className="mt-3 flex-row flex-wrap">
-                    <View className="w-1/2 py-1"><Text className="text-[#5E718F] text-xs">Formation</Text><Text className="text-[#1B2D4A] font-semibold">{SAMPLE.formation}</Text></View>
-                    <View className="w-1/2 py-1"><Text className="text-[#5E718F] text-xs">Captain</Text><Text className="text-[#1B2D4A] font-semibold">{team.players?.find((p) => p.role === 'captain')?.gamer_tag || 'TBD'}</Text></View>
-                    <View className="w-1/2 py-1"><Text className="text-[#5E718F] text-xs">Total Players</Text><Text className="text-[#1B2D4A] font-semibold">{memberCount}</Text></View>
-                    <View className="w-1/2 py-1"><Text className="text-[#5E718F] text-xs">Club Ranking</Text><Text className="text-[#1B2D4A] font-semibold">{SAMPLE.ranking}</Text></View>
-                  </View>
-                </>
-              )}
-            </SectionCard>
+                ))}
+              </View>
+            )}
+          </GlassCard>
 
-            {/* Roster */}
-            <SectionCard title="ROSTER">
-              {(team?.players ?? []).length === 0 ? (
-                <Text className="text-[#5E718F]">No players yet</Text>
-              ) : (
-                <View className="gap-2">
-                  {(team?.players ?? []).map((p, idx) => (
-                    <View key={p.id || idx} className="rounded-2xl border border-[#D8E4F7] bg-white px-3 py-2.5 flex-row items-center">
-                      <View className="h-10 w-10 rounded-full bg-[#EAF1FD] items-center justify-center">
-                        <Ionicons name="person" size={18} color="#1B2D4A" />
-                      </View>
-                      <View className="ml-3 flex-1">
-                        <Text className="text-[#1B2D4A] font-semibold">{p.gamer_tag || `${p.first_name || ''} ${p.last_name || ''}`.trim()}</Text>
-                        <Text className="text-[#5E718F] text-xs">{(p.position || 'Flex').toUpperCase()}</Text>
-                      </View>
-                      <Text className="text-[#1B2D4A] font-bold">{88 - (idx % 6)}</Text>
-                    </View>
-                  ))}
+          {/* Club matches */}
+          <GlassCard title="CLUB MATCHES">
+            <View className="rounded-2xl border px-3 py-3" style={innerCardStyle}>
+              <STText className="font-semibold mb-2" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>Last Results</STText>
+              {SAMPLE.lastResults.map((r, i) => (
+                <STText key={i} className="text-xs mb-1" style={{ color: isDark ? '#E9F0FD' : '#5E718F' }}>{r}</STText>
+              ))}
+              <STText className="font-semibold mt-2 mb-2" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>Upcoming Fixtures</STText>
+              {SAMPLE.upcoming.map((f, i) => (
+                <STText key={i} className="text-xs mb-1" style={{ color: isDark ? '#E9F0FD' : '#5E718F' }}>{f}</STText>
+              ))}
+            </View>
+          </GlassCard>
+
+          {/* Club stats */}
+          <GlassCard title="CLUB STATS">
+            <View className="rounded-2xl border px-3 py-3" style={innerCardStyle}>
+              <View className="flex-row justify-between mb-2">
+                <STText style={{ color: isDark ? '#E9F0FD' : '#5E718F' }}>Total Wins</STText>
+                <STText className="font-semibold" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>{team?.wins ?? 0}</STText>
+              </View>
+              <View className="flex-row justify-between mb-2">
+                <STText style={{ color: isDark ? '#E9F0FD' : '#5E718F' }}>Win Rate</STText>
+                <STText className="font-semibold" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>{winRate}%</STText>
+              </View>
+              <View className="flex-row justify-between mb-2">
+                <STText style={{ color: isDark ? '#E9F0FD' : '#5E718F' }}>Goals Scored</STText>
+                <STText className="font-semibold" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>{(team?.wins ?? 0) * 2 + (team?.draws ?? 0)}</STText>
+              </View>
+              <View className="flex-row justify-between">
+                <STText style={{ color: isDark ? '#E9F0FD' : '#5E718F' }}>Tournament Wins</STText>
+                <STText className="font-semibold" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>{Math.floor((team?.wins ?? 0) / 5)}</STText>
+              </View>
+            </View>
+          </GlassCard>
+
+          {/* Activity feed */}
+          <GlassCard title="CLUB ACTIVITY FEED">
+            <View className="rounded-2xl border overflow-hidden" style={{ ...innerCardStyle, borderColor: isDark ? 'rgba(199,216,243,0.2)' : '#D8E4F7' }}>
+              {SAMPLE.activity.map((a, i) => (
+                <View key={a.id} className={`px-3 py-3 ${i !== SAMPLE.activity.length - 1 ? 'border-b' : ''}`} style={{ borderBottomColor: isDark ? 'rgba(230,238,249,0.2)' : '#E6EEF9' }}>
+                  <STText className="font-semibold" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>{a.label}</STText>
+                  <STText className="text-xs mt-1" style={{ color: isDark ? '#E9F0FD' : '#5E718F' }}>{a.text}</STText>
                 </View>
+              ))}
+            </View>
+          </GlassCard>
+
+          {/* Team chat */}
+          <GlassCard title="TEAM CHAT PREVIEW">
+            <View className="rounded-2xl border px-3 py-3" style={innerCardStyle}>
+              {SAMPLE.chatPreview.map((m) => (
+                <View key={m.id} className="mb-2">
+                  <STText className="font-semibold text-xs" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>{m.user}</STText>
+                  <STText className="text-xs" style={{ color: isDark ? '#E9F0FD' : '#5E718F' }}>{m.msg}</STText>
+                </View>
+              ))}
+              <TouchableOpacity
+                onPress={() => router.push({ pathname: '/teams/teamchatscreen', params: { teamId, teamName: team?.club_name } })}
+                className="mt-1 rounded-xl border py-2.5 items-center"
+                style={{ borderColor: isDark ? 'rgba(199,216,243,0.3)' : '#C6D7F3', backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#F7FAFF' }}
+              >
+                <STText className="font-semibold" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>Open Chat</STText>
+              </TouchableOpacity>
+            </View>
+          </GlassCard>
+
+          {/* CTA */}
+          <GlassCard title="INVITE PLAYER">
+            <View className="flex-row gap-3">
+              {isOwner ? (
+                <TouchableOpacity
+                  onPress={() => router.push({ pathname: '/teams/manageteamscreen', params: { teamId } })}
+                  className="flex-1 rounded-2xl bg-[#1E57CB] py-3 items-center"
+                >
+                  <STText className="font-semibold" style={{ color: '#FFFFFF' }}>Invite Player</STText>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  onPress={handleJoinLeave}
+                  disabled={joinLoading || pending}
+                  className="flex-1 rounded-2xl bg-[#1E57CB] py-3 items-center"
+                >
+                  {joinLoading ? (
+                    <ActivityIndicator color="white" size="small" />
+                  ) : (
+                    <STText className="font-semibold" style={{ color: '#FFFFFF' }}>
+                      {joined ? 'Leave Club' : pending ? 'Request Pending' : 'Join Club'}
+                    </STText>
+                  )}
+                </TouchableOpacity>
               )}
-            </SectionCard>
+              <TouchableOpacity
+                onPress={() => router.push({ pathname: '/teams/dressingroomscreen', params: { teamId } })}
+                className="flex-1 rounded-2xl border py-3 items-center"
+                style={{
+                  borderColor: isDark ? 'rgba(255,255,255,0.2)' : '#BFD1F0',
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
+                }}
+              >
+                <STText className="font-semibold" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>Dressing Room</STText>
+              </TouchableOpacity>
+            </View>
+          </GlassCard>
 
-            {/* Club matches */}
-            <SectionCard title="CLUB MATCHES">
-              <View className="rounded-2xl border border-[#D8E4F7] bg-white p-3">
-                <Text className="text-[#1B2D4A] font-semibold mb-2">Last Results</Text>
-                {SAMPLE.lastResults.map((r, i) => (
-                  <Text key={i} className="text-[#5E718F] text-xs mb-1">{r}</Text>
-                ))}
-                <Text className="text-[#1B2D4A] font-semibold mt-2 mb-2">Upcoming Fixtures</Text>
-                {SAMPLE.upcoming.map((f, i) => (
-                  <Text key={i} className="text-[#5E718F] text-xs mb-1">{f}</Text>
-                ))}
-              </View>
-            </SectionCard>
-
-            {/* Club stats */}
-            <SectionCard title="CLUB STATS">
-              <View className="rounded-2xl border border-[#D8E4F7] bg-white p-3">
-                <View className="flex-row justify-between mb-2"><Text className="text-[#5E718F]">Total Wins</Text><Text className="text-[#1B2D4A] font-semibold">{team?.wins ?? 0}</Text></View>
-                <View className="flex-row justify-between mb-2"><Text className="text-[#5E718F]">Win Rate</Text><Text className="text-[#1B2D4A] font-semibold">{winRate}%</Text></View>
-                <View className="flex-row justify-between mb-2"><Text className="text-[#5E718F]">Goals Scored</Text><Text className="text-[#1B2D4A] font-semibold">{(team?.wins ?? 0) * 2 + (team?.draws ?? 0)}</Text></View>
-                <View className="flex-row justify-between"><Text className="text-[#5E718F]">Tournament Wins</Text><Text className="text-[#1B2D4A] font-semibold">{Math.floor((team?.wins ?? 0) / 5)}</Text></View>
-              </View>
-            </SectionCard>
-
-            {/* Activity feed */}
-            <SectionCard title="CLUB ACTIVITY FEED">
-              <View className="rounded-2xl border border-[#D8E4F7] bg-white overflow-hidden">
-                {SAMPLE.activity.map((a, i) => (
-                  <View key={a.id} className={`px-3 py-3 ${i !== SAMPLE.activity.length - 1 ? 'border-b border-[#E6EEF9]' : ''}`}>
-                    <Text className="text-[#1B2D4A] font-semibold">{a.label}</Text>
-                    <Text className="text-[#5E718F] text-xs mt-1">{a.text}</Text>
-                  </View>
-                ))}
-              </View>
-            </SectionCard>
-
-            {/* Team chat */}
-            <SectionCard title="TEAM CHAT PREVIEW">
-              <View className="rounded-2xl border border-[#D8E4F7] bg-white p-3">
-                {SAMPLE.chatPreview.map((m) => (
-                  <View key={m.id} className="mb-2">
-                    <Text className="text-[#1B2D4A] font-semibold text-xs">{m.user}</Text>
-                    <Text className="text-[#5E718F] text-xs">{m.msg}</Text>
-                  </View>
-                ))}
-                <TouchableOpacity
-                  onPress={() => router.push('/social/messagesscreen')}
-                  className="mt-1 rounded-xl border border-[#C6D7F3] bg-[#F7FAFF] py-2.5 items-center"
-                >
-                  <Text className="text-[#1B2D4A] font-semibold">Open Chat</Text>
-                </TouchableOpacity>
-              </View>
-            </SectionCard>
-
-            {/* CTA */}
-            <SectionCard title="INVITE PLAYER">
-              <View className="flex-row gap-3">
-                {isOwner ? (
-                  <TouchableOpacity
-                    onPress={() => router.push({ pathname: '/teams/manageteamscreen', params: { teamId } })}
-                    className="flex-1 rounded-2xl bg-[#1E57CB] py-3 items-center"
-                  >
-                    <Text className="text-white font-semibold">Invite Player</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    onPress={() => setJoined((j) => !j)}
-                    className="flex-1 rounded-2xl bg-[#1E57CB] py-3 items-center"
-                  >
-                    <Text className="text-white font-semibold">{joined ? 'Leave Club' : 'Join Club'}</Text>
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  onPress={() => router.push({ pathname: '/teams/dressingroomscreen', params: { teamId } })}
-                  className="flex-1 rounded-2xl border border-[#BFD1F0] bg-white py-3 items-center"
-                >
-                  <Text className="text-[#1B2D4A] font-semibold">Dressing Room</Text>
-                </TouchableOpacity>
-              </View>
-            </SectionCard>
-
-            <View className="h-10" />
-          </ScrollView>
-        </SafeAreaView>
-      </GradientBackground>
+          <View className="h-10" />
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 }

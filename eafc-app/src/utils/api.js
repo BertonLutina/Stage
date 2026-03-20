@@ -39,3 +39,4 @@ api.interceptors.response.use(
 );
 
 export default api;
+export const SOCKET_URL = BASE_URL;

@@ -15,8 +15,15 @@ export default function PlatformSelectionScreen() {
   const [selected, setSelected] = useState('PS');
 
   const onNext = async () => {
-    await updateIdentity(user?.id, { platform: selected });
-    router.push('/auth/positionselection');
+    try {
+      if (user?.id) {
+        await updateIdentity(user.id, { platform: selected });
+      }
+      router.push('/auth/positionselection');
+    } catch (err) {
+      console.warn('updateIdentity failed:', err);
+      router.push('/auth/positionselection');
+    }
   };
 
   return (

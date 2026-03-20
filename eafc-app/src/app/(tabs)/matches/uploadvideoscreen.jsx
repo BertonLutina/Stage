@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Input from '../../../components/common/Input';
 import Button from '../../../components/common/Button';
 import VideoPlayer from '../../../components/common/VideoPlayer';
+import STText from '../../../components/common/STText';
+import GradientBackground from '../../../components/common/GradientBackground';
 import api from '../../../utils/api';
 
 const SOURCES = [
@@ -34,23 +36,28 @@ export default function UploadVideoScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1">
-      <ScrollView className="px-6">
-        <Text className="text-white text-xl font-bold mt-6 mb-6">Add Match Video</Text>
-        <Text className="text-white font-semibold mb-3">Platform</Text>
-        <View className="flex-row flex-wrap gap-2 mb-6">
-          {SOURCES.map(s => (
-            <TouchableOpacity key={s.key} onPress={() => setSource(s.key)}
-              className={`px-4 py-2 rounded-xl border ${source === s.key ? s.color : 'bg-card border-border'}`}>
-              <Text className="text-white font-semibold">{s.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+    <GradientBackground>
+      <SafeAreaView className="flex-1">
+        <ScrollView className="px-6">
+          <STText className="text-white text-xl font-bold mt-6 mb-6">Add Match Video</STText>
+          <STText className="text-white font-semibold mb-3">Platform</STText>
+          <View className="flex-row flex-wrap gap-2 mb-6">
+            {SOURCES.map((s) => (
+              <TouchableOpacity
+                key={s.key}
+                onPress={() => setSource(s.key)}
+                className={`px-4 py-2 rounded-xl border ${source === s.key ? s.color : 'bg-white/10 border-white/20'}`}
+              >
+                <STText className="text-white font-semibold">{s.label}</STText>
+              </TouchableOpacity>
+            ))}
+          </View>
         <Input label="Video URL" value={url} onChangeText={setUrl} placeholder="https://..." autoCapitalize="none" />
         {url && preview && <VideoPlayer url={url} source={source} height={200} />}
         {url && !preview && <Button title="Preview Video" variant="ghost" onPress={() => setPreview(true)} className="mb-4" />}
         <Button title="Save Video" onPress={submit} loading={saving} className="mt-2 mb-8" />
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </GradientBackground>
   );
 }

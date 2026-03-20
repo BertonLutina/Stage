@@ -117,9 +117,16 @@ export default function SearchClubs() {
     });
   };
 
-  const handleJoin = (club) => {
-    // TODO: Implement join-club flow when backend ready (e.g. POST /teams/:id/join)
-    console.log('Join club:', club.id);
+  const handleJoin = async (club) => {
+    if (!user?.id) return;
+    try {
+      await api.post(`/teams/${club.id}/join-request`);
+      alert('Request sent! The club owner will review your request.');
+    } catch (e) {
+      const msg = e.response?.data?.message || 'Failed to send request';
+      if (e.response?.status === 409) alert('You already have a pending request for this club.');
+      else alert(msg);
+    }
   };
 
   const handleChallenge = (club) => {

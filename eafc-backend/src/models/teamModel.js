@@ -135,6 +135,99 @@ async function findAllWithPlayers() {
   }));
 }
 
+async function isTeamMember(teamId, userId) {
+  const [rows] = await pool.query('SELECT 1 FROM team_players WHERE team_id = ? AND user_id = ?', [teamId, userId]);
+  return rows.length > 0;
+}
+
+async function getTeamChat(teamId, limit = 100) {
+  const [rows] = await pool.query(
+    'SELECT id, team_id, user_id, gamer_tag, content, created_at FROM team_chat_messages WHERE team_id = ? ORDER BY created_at ASC LIMIT ?',
+    [teamId, limit]
+  );
+  return rows;
+}
+
+async function createJoinRequest(teamId, userId) {
+  const [existing] = await pool.query(
+    'SELECT id FROM request_joining_team WHERE team_id = ? AND user_id = ? AND status = ?',
+    [teamId, userId, 'pending']
+  );
+  if (existing.length) return { existing: true };
+  const [declined] = await pool.query(
+    'SELECT id FROM request_joining_team WHERE team_id = ? AND user_id = ? AND status = ?',
+    [teamId, userId, 'declined']
+  );
+  if (declined.length) {
+    await pool.query('UPDATE request_joining_team SET status = ?, responded_at = NULL WHERE id = ?', ['pending', declined[0].id]);
+  } else {
+    const id = uuidv4();
+    await pool.query('INSERT INTO request_joining_team (id, team_id, user_id, status) VALUES (?, ?, ?, ?)', [id, teamId, userId, 'pending']);
+  }
+  return { existing: false };
+}
+
+async function getPendingJoinRequests(teamId) {
+  const [rows] = await pool.query(
+    `SELECT r.id, r.team_id, r.user_id, r.status, r.created_at,
+      u.gamer_tag, u.first_name, u.last_name, u.avatar
+     FROM request_joining_team r
+     JOIN users u ON r.user_id = u.id
+     WHERE r.team_id = ? AND r.status = ? ORDER BY r.created_at ASC`,
+    [teamId, 'pending']
+  );
+  return rows;
+}
+
+async function acceptJoinRequest(requestId, teamId, ownerId) {
+  const [rows] = await pool.query(
+    `SELECT r.*, t.owner_id, t.club_name, u.gamer_tag
+     FROM request_joining_team r
+     JOIN teams t ON r.team_id = t.id
+     JOIN users u ON r.user_id = u.id
+     WHERE r.id = ? AND r.team_id = ?`,
+    [requestId, teamId]
+  );
+  if (!rows.length || rows[0].owner_id !== ownerId) return null;
+  const req = rows[0];
+  if (req.status !== 'pending') return null;
+  await pool.query('UPDATE request_joining_team SET status = ?, responded_at = NOW() WHERE id = ?', ['accepted', requestId]);
+  await addPlayer(teamId, req.user_id, 'player');
+  return { userId: req.user_id, gamerTag: req.gamer_tag, teamName: req.club_name };
+}
+
+async function declineJoinRequest(requestId, teamId, ownerId) {
+  const [rows] = await pool.query(
+    'SELECT r.*, t.owner_id FROM request_joining_team r JOIN teams t ON r.team_id = t.id WHERE r.id = ? AND r.team_id = ?',
+    [requestId, teamId]
+  );
+  if (!rows.length || rows[0].owner_id !== ownerId) return null;
+  if (rows[0].status !== 'pending') return null;
+  await pool.query('UPDATE request_joining_team SET status = ?, responded_at = NOW() WHERE id = ?', ['declined', requestId]);
+  return true;
+}
+
+async function getUserPendingRequest(teamId, userId) {
+  const [rows] = await pool.query(
+    'SELECT id, status FROM request_joining_team WHERE team_id = ? AND user_id = ? ORDER BY created_at DESC LIMIT 1',
+    [teamId, userId]
+  );
+  return rows[0] || null;
+}
+
+async function insertTeamChat(teamId, userId, gamerTag, content) {
+  const id = uuidv4();
+  await pool.query(
+    'INSERT INTO team_chat_messages (id, team_id, user_id, gamer_tag, content) VALUES (?, ?, ?, ?, ?)',
+    [id, teamId, userId, gamerTag, content]
+  );
+  const [rows] = await pool.query(
+    'SELECT id, team_id, user_id, gamer_tag, content, created_at FROM team_chat_messages WHERE id = ?',
+    [id]
+  );
+  return rows[0];
+}
+
 module.exports = {
   findById,
   create,
@@ -148,4 +241,12 @@ module.exports = {
   getDressingRoom,
   findAll,
   findAllWithPlayers,
+  isTeamMember,
+  getTeamChat,
+  insertTeamChat,
+  createJoinRequest,
+  getPendingJoinRequests,
+  acceptJoinRequest,
+  declineJoinRequest,
+  getUserPendingRequest,
 };

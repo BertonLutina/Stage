@@ -5,12 +5,17 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import '../../global.css';
 import useAuthBootstrap from '../hooks/useAuthBootstrap';
+import useNotificationsSocket from '../hooks/useNotificationsSocket';
 import useThemeStore from '../store/themeStore';
+import useToastStore from '../store/toastStore';
 import GradientBackground from '../components/common/GradientBackground';
+import Toast from '../components/common/Toast';
 
 export default function RootLayout() {
-  const { ready } = useAuthBootstrap();
+  const { ready, user } = useAuthBootstrap();
+  useNotificationsSocket(user?.id);
   const { resolvedTheme, initialize: initTheme } = useThemeStore();
+  const { visible, message, hide } = useToastStore();
   const isDark = resolvedTheme === 'dark';
 
   useEffect(() => {
@@ -26,6 +31,7 @@ export default function RootLayout() {
           style={{ flex: 1 }}
         >
           <Slot />
+          <Toast visible={visible} message={message} onHide={hide} />
           {!ready && (
             <View style={[StyleSheet.absoluteFill, styles.loader]}>
               <ActivityIndicator size="large" color="#5FE3E8" />

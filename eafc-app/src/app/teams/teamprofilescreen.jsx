@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, TouchableOpacity } from 'react-native';
+import { View, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import api from '../../utils/api';
+import useAuthStore from '../../store/authStore';
 import Avatar from '../../components/common/Avatar';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -15,13 +17,15 @@ const TABS = ['Feed', 'Squad', 'Trophies', 'Stats'];
 
 export default function TeamProfileScreen() {
   const params = useLocalSearchParams();
+  const { user } = useAuthStore();
   const teamId = params?.teamId;
   const router = useRouter();
-  console.log(teamId);
   const [team, setTeam] = useState(null);
   const [formation, setFormation] = useState(null);
   const [activeTab, setActiveTab] = useState('Feed');
   const [allTeams, setAllTeams] = useState([]);
+  const [requestStatus, setRequestStatus] = useState(null);
+  const [joinLoading, setJoinLoading] = useState(false);
 
   useEffect(() => {
     api.get(`/teams/${teamId}`).then(r => setTeam(r.data.data));
@@ -33,6 +37,28 @@ export default function TeamProfileScreen() {
       .then(r => setAllTeams(r.data.data || []))
       .catch(() => setAllTeams([]));
   }, []);
+
+  useEffect(() => {
+    if (!teamId) return;
+    api.get(`/teams/${teamId}/join-request-status`).then(r => setRequestStatus(r.data?.data?.status ?? null)).catch(() => setRequestStatus(null));
+  }, [teamId]);
+
+  const isMember = !!(team?.players ?? []).some((p) => p.user_id === user?.id);
+  const handleJoinRequest = async () => {
+    if (!teamId || joinLoading) return;
+    setJoinLoading(true);
+    try {
+      await api.post(`/teams/${teamId}/join-request`);
+      setRequestStatus('pending');
+      alert('Request sent! The club owner will review your request.');
+    } catch (e) {
+      const msg = e.response?.data?.message || 'Failed to send request';
+      if (e.response?.status === 409) setRequestStatus('pending');
+      alert(msg);
+    } finally {
+      setJoinLoading(false);
+    }
+  };
 
   if (!team) {
     return (
@@ -155,15 +181,27 @@ export default function TeamProfileScreen() {
 
             {/* Primary actions */}
             <View className="flex-row gap-3 mt-5 w-full">
+              {!isMember ? (
+                requestStatus === 'pending' ? (
+                  <Button title="Request Pending" disabled className="flex-1 bg-muted/30 rounded-2xl" />
+                ) : (
+                  <Button
+                    title="Join Club"
+                    onPress={handleJoinRequest}
+                    loading={joinLoading}
+                    className="flex-1 bg-light text-dark rounded-2xl"
+                  />
+                )
+              ) : null}
               <Button
-                title="Join Club"
-                onPress={() => {}}
-                className="flex-1 bg-light text-dark rounded-2xl"
-              />
-              <Button
-                title="Message"
+                title="Team Chat"
                 variant="ghost"
-                onPress={() => {}}
+                onPress={() =>
+                  router.push({
+                    pathname: '/teams/teamchatscreen',
+                    params: { teamId, teamName: team.club_name },
+                  })
+                }
                 className="flex-1 rounded-2xl border border-lineInner/40 bg-darkCard/80"
               />
             </View>
@@ -252,18 +290,31 @@ export default function TeamProfileScreen() {
                           {t.country} • {t.players?.length || 0} members
                         </STText>
                       </View>
-                      <TouchableOpacity
-                        onPress={() =>
-                          router.push({
-                            pathname: '/teams/teamprofilescreen',
-                            params: { teamId: t.id },
-                          })
-                        }
-                      >
-                        <STText className="text-primary text-sm font-semibold">
-                          View
-                        </STText>
-                      </TouchableOpacity>
+                      <View className="flex-row items-center gap-3">
+                        <TouchableOpacity
+                          onPress={() =>
+                            router.push({
+                              pathname: '/teams/teamchatscreen',
+                              params: { teamId: t.id, teamName: t.club_name },
+                            })
+                          }
+                          className="p-2"
+                        >
+                          <Ionicons name="chatbubbles" size={20} color="#5FE3E8" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() =>
+                            router.push({
+                              pathname: '/teams/teamprofilescreen',
+                              params: { teamId: t.id },
+                            })
+                          }
+                        >
+                          <STText className="text-primary text-sm font-semibold">
+                            View
+                          </STText>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                     {t.players?.length > 0 && (
                       <View className="mt-1">
