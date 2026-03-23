@@ -5,6 +5,7 @@ import { useLocalSearchParams } from 'expo-router';
 import api from '../../utils/api';
 import Avatar from '../../components/common/Avatar';
 import STText from '../../components/common/STText';
+import BackButton from '../../components/common/BackButton';
 
 function JerseyCard({ player, isStarter }) {
   return (
@@ -46,6 +47,8 @@ export default function DressingRoomScreen() {
 
   return (
     <SafeAreaView className="flex-1">
+              <BackButton />
+
       <ScrollView showsVerticalScrollIndicator={false}>
         <View className="bg-surface/50 py-4 px-4 border-b border-border">
           <STText className="text-primary font-black text-2xl text-center">DRESSING ROOM</STText>
