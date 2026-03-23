@@ -8,10 +8,11 @@ const teamRoutes = require('./routes/teams');
 const tournamentRoutes = require('./routes/tournaments');
 const matchRoutes = require('./routes/matches');
 const socialRoutes = require('./routes/social');
+const uploadRoutes = require('./routes/uploads');
 
 function createApp(passportInstance) {
   const app = express();
-  app.use(cors());
+  app.use(cors({ origin: '*', credentials: false })); // Allow all origins (ngrok, physical device, etc.)
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(passportInstance.initialize());
@@ -22,6 +23,7 @@ function createApp(passportInstance) {
   app.use('/tournaments', tournamentRoutes);
   app.use('/matches', matchRoutes);
   app.use('/social', socialRoutes);
+  app.use('/uploads', uploadRoutes);
   app.get('/health', (req, res) => res.json({ status: 'ok' }));
   app.use(errorMiddleware);
   return app;

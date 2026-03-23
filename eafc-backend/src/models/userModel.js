@@ -13,6 +13,16 @@ async function findByEmail(email) {
   return rows[0] || null;
 }
 
+async function findByEmailOrGamerTag(identifier) {
+  if (!identifier || typeof identifier !== 'string') return null;
+  const trimmed = identifier.trim();
+  if (!trimmed) return null;
+  const [byEmail] = await pool.query('SELECT * FROM users WHERE email = ?', [trimmed]);
+  if (byEmail[0]) return byEmail[0];
+  const [byGamerTag] = await pool.query('SELECT * FROM users WHERE LOWER(gamer_tag) = LOWER(?)', [trimmed]);
+  return byGamerTag[0] || null;
+}
+
 async function create(data) {
   const { id, first_name, last_name, email, password_hash, auth_provider, google_id, apple_id, avatar } = data;
   await pool.query(
@@ -71,4 +81,18 @@ async function getTeams(userId) {
   return rows;
 }
 
-module.exports = { findById, findByEmail, create, update, getStats, getAvailability, setAvailability, getFollowersCount, getTeams };
+async function search(q, limit = 25) {
+  if (!q || typeof q !== 'string' || q.trim().length < 2) return [];
+  const like = `%${q.trim()}%`;
+  const [rows] = await pool.query(
+    `SELECT id, avatar, first_name, last_name, gamer_tag
+     FROM users
+     WHERE gamer_tag LIKE ? OR first_name LIKE ? OR last_name LIKE ?
+     ORDER BY gamer_tag ASC
+     LIMIT ?`,
+    [like, like, like, limit]
+  );
+  return rows;
+}
+
+module.exports = { findById, findByEmail, findByEmailOrGamerTag, create, update, getStats, getAvailability, setAvailability, getFollowersCount, getTeams, search };

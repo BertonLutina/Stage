@@ -5,6 +5,7 @@ import { useLocalSearchParams } from 'expo-router';
 import api from '../../../utils/api';
 import BracketView from '../../../components/tournament/BracketView';
 import GradientBackground from '../../../components/common/GradientBackground';
+import BackButton from '../../../components/common/BackButton';
 
 export default function BracketScreen() {
   const { tournamentId } = useLocalSearchParams();
@@ -18,8 +19,11 @@ export default function BracketScreen() {
     <View className="flex-1">
       <GradientBackground>
     <SafeAreaView className="flex-1">
+      <View className="flex-row items-center gap-4 px-4 py-3 border-b border-white/10">
+        <BackButton variant="light" />
+        <Text className="text-white text-xl font-bold flex-1">Bracket</Text>
+      </View>
       <ScrollView className="px-4">
-        <Text className="text-white text-xl font-bold mt-4 mb-4">Bracket</Text>
         <BracketView rounds={rounds} />
       </ScrollView>
     </SafeAreaView>

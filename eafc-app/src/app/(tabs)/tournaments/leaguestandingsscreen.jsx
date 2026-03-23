@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import api from '../../../utils/api';
 import GradientBackground from '../../../components/common/GradientBackground';
+import BackButton from '../../../components/common/BackButton';
 
 export default function LeagueStandingsScreen() {
   const { tournamentId } = useLocalSearchParams();
@@ -17,8 +18,11 @@ export default function LeagueStandingsScreen() {
     <View className="flex-1">
       <GradientBackground>
         <SafeAreaView className="flex-1">
+          <View className="flex-row items-center gap-4 px-4 py-3 border-b border-white/10">
+            <BackButton variant="light" />
+            <Text className="text-white text-xl font-bold flex-1">League Standings</Text>
+          </View>
           <ScrollView className="px-4">
-            <Text className="text-white text-xl font-bold mt-4 mb-4">League Standings</Text>
             <View className="bg-card border border-border rounded-2xl overflow-hidden">
               <View className="flex-row bg-surface px-4 py-2 border-b border-border">
                 <Text className="text-muted text-xs w-6">#</Text>

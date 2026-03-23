@@ -144,7 +144,6 @@ export default function TabsLayout() {
           tabBarIcon: ({ color }) => <Ionicons name="search" size={24} color={color} />,
         }}
       />
-      <Tabs.Screen name="social" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -91,6 +91,21 @@ async function updateStatus(tournamentId, status) {
   await pool.query('UPDATE tournaments SET status = ? WHERE id = ?', [status, tournamentId]);
 }
 
+async function updateDates(tournamentId, startDate, endDate) {
+  await pool.query(
+    'UPDATE tournaments SET start_date = ?, end_date = ? WHERE id = ?',
+    [startDate, endDate, tournamentId]
+  );
+}
+
+async function getTeamCount(tournamentId) {
+  const [[{ count }]] = await pool.query(
+    'SELECT COUNT(*) as count FROM tournament_teams WHERE tournament_id = ?',
+    [tournamentId]
+  );
+  return count;
+}
+
 async function getGroups(tournamentId) {
   const [groups] = await pool.query('SELECT * FROM groups WHERE tournament_id = ?', [tournamentId]);
   for (const g of groups) {
@@ -136,6 +151,8 @@ module.exports = {
   getTeams,
   addTeam,
   updateStatus,
+  updateDates,
+  getTeamCount,
   getGroups,
   getBracketRounds,
   getLeagueStandings,

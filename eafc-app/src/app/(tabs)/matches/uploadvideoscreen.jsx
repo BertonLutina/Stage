@@ -7,6 +7,7 @@ import Button from '../../../components/common/Button';
 import VideoPlayer from '../../../components/common/VideoPlayer';
 import STText from '../../../components/common/STText';
 import GradientBackground from '../../../components/common/GradientBackground';
+import BackButton from '../../../components/common/BackButton';
 import api from '../../../utils/api';
 
 const SOURCES = [
@@ -38,8 +39,11 @@ export default function UploadVideoScreen() {
   return (
     <GradientBackground>
       <SafeAreaView className="flex-1">
+        <View className="flex-row items-center gap-4 px-6 py-3 border-b border-white/10">
+          <BackButton variant="light" />
+          <STText className="text-white text-xl font-bold flex-1">Add Match Video</STText>
+        </View>
         <ScrollView className="px-6">
-          <STText className="text-white text-xl font-bold mt-6 mb-6">Add Match Video</STText>
           <STText className="text-white font-semibold mb-3">Platform</STText>
           <View className="flex-row flex-wrap gap-2 mb-6">
             {SOURCES.map((s) => (

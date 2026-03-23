@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   ScrollView,
@@ -8,10 +8,12 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { io } from 'socket.io-client';
 import api, { SOCKET_URL } from '../../../utils/api';
 import VideoPlayer from '../../../components/common/VideoPlayer';
@@ -19,11 +21,24 @@ import STText from '../../../components/common/STText';
 import GradientBackground from '../../../components/common/GradientBackground';
 import useAuthStore from '../../../store/authStore';
 import { getMockMatchById } from '../../../utils/mockMatches';
+import ChatMessageBubble from '../../../components/chat/ChatMessageBubble';
+import ChatAttachmentMenu from '../../../components/chat/ChatAttachmentMenu';
+import ChatFilterChips from '../../../components/chat/ChatFilterChips';
+import BackButton from '../../../components/common/BackButton';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const VIDEO_HEIGHT = Math.round(SCREEN_WIDTH * (9 / 16));
-const CHAT_HEIGHT = 200;
+const CHAT_HEIGHT = 220;
+const BASE_URL = api.defaults.baseURL;
 
+function buildChatParams(search, activeFilters) {
+  const params = {};
+  if (search?.trim()) params.search = search.trim();
+  const filters = activeFilters.filter((f) => f !== 'all' && f !== 'unread');
+  if (filters.length) params.filter = filters.join(',');
+  if (activeFilters.includes('unread')) params.unread = 'true';
+  return params;
+}
 
 export default function WatchMatchScreen() {
   const { matchId, videoIndex: videoIndexParam } = useLocalSearchParams();
@@ -34,9 +49,22 @@ export default function WatchMatchScreen() {
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(parseInt(videoIndexParam || '0', 10));
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState('');
+  const [search, setSearch] = useState('');
+  const [activeFilters, setActiveFilters] = useState(['all']);
   const [socketConnected, setSocketConnected] = useState(false);
+  const [attachmentMenuVisible, setAttachmentMenuVisible] = useState(false);
   const socketRef = useRef(null);
   const flatListRef = useRef(null);
+  const searchDebounceRef = useRef(null);
+
+  const fetchChat = useCallback(() => {
+    if (!matchId) return;
+    const params = buildChatParams(search, activeFilters);
+    api
+      .get(`/matches/${matchId}/chat`, { params })
+      .then((r) => setComments(r.data?.data ?? []))
+      .catch(() => setComments([]));
+  }, [matchId, search, activeFilters]);
 
   useEffect(() => {
     api
@@ -46,16 +74,18 @@ export default function WatchMatchScreen() {
       .finally(() => setLoading(false));
   }, [matchId]);
 
-  // Load chat history from API
   useEffect(() => {
     if (!matchId) return;
-    api
-      .get(`/matches/${matchId}/chat`)
-      .then((r) => setComments(r.data?.data ?? []))
-      .catch(() => setComments([]));
-  }, [matchId]);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(fetchChat, 300);
+    return () => clearTimeout(searchDebounceRef.current);
+  }, [matchId, search, activeFilters, fetchChat]);
 
   // Socket: join match room and listen for comments
+  useEffect(() => {
+    if (matchId && user) api.post(`/matches/${matchId}/chat/read`).catch(() => {});
+  }, [matchId, user]);
+
   useEffect(() => {
     if (!matchId) return;
     const socket = io(`${SOCKET_URL}/match-chat`);
@@ -74,13 +104,79 @@ export default function WatchMatchScreen() {
     };
   }, [matchId]);
 
+  const toggleFilter = (key) => {
+    setActiveFilters((prev) => {
+      if (key === 'all') return ['all'];
+      const next = prev.filter((f) => f !== 'all');
+      if (next.includes(key)) {
+        const filtered = next.filter((f) => f !== key);
+        return filtered.length ? filtered : ['all'];
+      }
+      return [...next, key];
+    });
+  };
+
+  const uploadAndSend = async (fileUri, messageType, metadata = {}, mimeType = 'image/jpeg', fileName = 'chat-media.jpg') => {
+    if (!user) return;
+    const formData = new FormData();
+    formData.append('file', { uri: fileUri, type: mimeType, name: fileName });
+    try {
+      const { data } = await api.post('/uploads/chat', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const url = data?.data?.url;
+      if (!url) throw new Error('No URL returned');
+      const fullUrl = url.startsWith('http') ? url : `${BASE_URL}${url}`;
+      socketRef.current?.emit('send_comment', {
+        matchId,
+        user_id: user.id,
+        gamer_tag: user.gamer_tag || user.email?.split('@')[0] || 'Anonymous',
+        content: '',
+        message_type: messageType,
+        media_url: fullUrl,
+        media_metadata: metadata,
+      });
+    } catch (_) {}
+  };
+
+  const handleAttachmentSelect = async (key) => {
+    switch (key) {
+      case 'camera': {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') { Alert.alert('Permission needed', 'Camera access is required.'); return; }
+        const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images });
+        if (!result.canceled && result.assets?.[0]?.uri) uploadAndSend(result.assets[0].uri, 'photo');
+        break;
+      }
+      case 'gallery': {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') { Alert.alert('Permission needed', 'Photo library access is required.'); return; }
+        const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.All, allowsMultipleSelection: false });
+        if (!result.canceled && result.assets?.[0]) {
+          const asset = result.assets[0];
+          const isVideo = asset.type === 'video' || asset.uri?.match(/\.(mp4|mov|webm)$/i);
+          const isGif = asset.uri?.match(/\.gif$/i);
+          const type = isVideo ? 'video' : isGif ? 'gif' : 'photo';
+          const mime = asset.mimeType || (isVideo ? 'video/mp4' : 'image/jpeg');
+          const name = asset.fileName || (type === 'video' ? 'video.mp4' : 'photo.jpg');
+          uploadAndSend(asset.uri, type, {}, mime, name);
+        }
+        break;
+      }
+      default:
+        Alert.alert('Coming soon', 'This feature will be available in a future update.');
+    }
+  };
+
   const sendComment = () => {
     if (!commentText.trim() || !user) return;
+    const trimmed = commentText.trim();
+    const isLink = /^https?:\/\//.test(trimmed);
     const data = {
       matchId,
       user_id: user.id,
       gamer_tag: user.gamer_tag || user.email?.split('@')[0] || 'Anonymous',
-      content: commentText.trim(),
+      content: trimmed,
+      message_type: isLink ? 'link' : 'text',
+      media_url: isLink ? trimmed : null,
     };
     socketRef.current?.emit('send_comment', data);
     setCommentText('');
@@ -102,12 +198,9 @@ export default function WatchMatchScreen() {
         <SafeAreaView className="flex-1">
           <View className="flex-1 items-center justify-center px-6">
             <STText className="text-white/60 text-center">Match not found</STText>
-            <TouchableOpacity
-              onPress={() => router.back()}
-              className="mt-4 px-6 py-3 rounded-xl border border-white/30"
-            >
-              <STText className="text-white font-semibold">Go Back</STText>
-            </TouchableOpacity>
+            <View className="mt-4 items-center">
+              <BackButton variant="light" />
+            </View>
           </View>
         </SafeAreaView>
       </GradientBackground>
@@ -123,12 +216,7 @@ export default function WatchMatchScreen() {
       <SafeAreaView className="flex-1" edges={['top']}>
         {/* Header */}
         <View className="flex-row items-center justify-between px-4 py-3 border-b border-white/10">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="h-10 w-10 rounded-full bg-white/10 items-center justify-center"
-          >
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
+          <BackButton variant="light" />
           <STText className="text-white font-bold">Watch Match</STText>
           <View className="w-10" />
         </View>
@@ -200,7 +288,15 @@ export default function WatchMatchScreen() {
                 </View>
               )}
             </View>
-            <View className="rounded-xl bg-black/30 border border-white/10" style={{ height: CHAT_HEIGHT }}>
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Search messages, media…"
+              placeholderTextColor="#9ca3af"
+              className="bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-white mb-2"
+            />
+            <ChatFilterChips activeFilters={activeFilters} onToggle={toggleFilter} />
+            <View className="rounded-xl bg-black/30 border border-white/10 mt-2" style={{ height: CHAT_HEIGHT }}>
               <FlatList
                 ref={flatListRef}
                 data={comments}
@@ -208,15 +304,12 @@ export default function WatchMatchScreen() {
                 onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
                 contentContainerStyle={{ padding: 12, paddingBottom: 8 }}
                 renderItem={({ item }) => (
-                  <View className="mb-2">
-                    <STText className="text-xs text-gray-400">
-                      {item.gamer_tag} · {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </STText>
-                    <STText className="text-white">{item.content}</STText>
-                  </View>
+                  <ChatMessageBubble item={item} isMe={item.user_id === user?.id} baseUrl={BASE_URL} />
                 )}
                 ListEmptyComponent={
-                  <STText className="text-gray-500 text-sm">No comments yet. Be the first!</STText>
+                  <STText className="text-gray-500 text-sm">
+                    {search || (activeFilters.length && activeFilters[0] !== 'all') ? 'No matching messages' : 'No comments yet. Be the first!'}
+                  </STText>
                 }
               />
             </View>
@@ -224,6 +317,12 @@ export default function WatchMatchScreen() {
               behavior={Platform.OS === 'ios' ? 'padding' : undefined}
               className="flex-row items-center mt-2 gap-2"
             >
+              <TouchableOpacity
+                onPress={() => setAttachmentMenuVisible(true)}
+                className="h-11 w-11 rounded-xl bg-black/30 border border-white/10 items-center justify-center"
+              >
+                <Ionicons name="add" size={24} color="#fff" />
+              </TouchableOpacity>
               <TextInput
                 value={commentText}
                 onChangeText={setCommentText}
@@ -242,6 +341,12 @@ export default function WatchMatchScreen() {
               </TouchableOpacity>
             </KeyboardAvoidingView>
           </View>
+
+          <ChatAttachmentMenu
+            visible={attachmentMenuVisible}
+            onClose={() => setAttachmentMenuVisible(false)}
+            onSelect={handleAttachmentSelect}
+          />
 
           {/* Other videos from same match */}
           {hasVideos && videos.length > 1 && (

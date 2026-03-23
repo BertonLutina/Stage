@@ -23,7 +23,9 @@ async function register(req, res, next) {
 async function login(req, res, next) {
   try {
     const { email, password } = req.body;
-    const userRow = await userModel.findByEmail(email);
+    const identifier = email || req.body.identifier || req.body.emailOrGamerTag;
+    if (!identifier) return errorResponse(res, 'Email or gamer tag required', 400);
+    const userRow = await userModel.findByEmailOrGamerTag(identifier);
     if (!userRow) return errorResponse(res, 'Invalid credentials', 401);
     if (!userRow.password_hash) return errorResponse(res, 'Use social login for this account', 400);
     const valid = await bcrypt.compare(password, userRow.password_hash);
@@ -64,4 +66,22 @@ async function appleCallback(req, res) {
   res.json({ success: true, data: { user, accessToken, refreshToken } });
 }
 
-module.exports = { register, login, refresh, googleCallback, appleCallback };
+function socialCallback(provider) {
+  return (req, res) => {
+    const user = req.user;
+    const accessToken = generateAccessToken(user.id);
+    const refreshToken = generateRefreshToken(user.id);
+    pool.query('INSERT INTO refresh_tokens (id, user_id, token, expires_at) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))', [uuidv4(), user.id, refreshToken]);
+    const redirect = process.env.AUTH_CALLBACK_REDIRECT_URL;
+    if (redirect) {
+      const url = new URL(redirect);
+      url.searchParams.set('accessToken', accessToken);
+      url.searchParams.set('refreshToken', refreshToken);
+      url.searchParams.set('user', JSON.stringify(user));
+      return res.redirect(url.toString());
+    }
+    res.json({ success: true, data: { user, accessToken, refreshToken } });
+  };
+}
+
+module.exports = { register, login, refresh, googleCallback, appleCallback, socialCallback };

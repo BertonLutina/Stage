@@ -19,18 +19,24 @@
     "mysql2": "^3.9.2",
     "passport": "^0.7.0",
     "passport-apple": "^2.0.2",
+    "passport-discord": "^0.1.4",
     "passport-google-oauth20": "^2.0.0",
+    "passport-twitch": "^1.0.3",
     "socket.io": "^4.7.4",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.0",
     "jest": "^29.7.0",
+    "nodemon": "^3.1.0",
     "supertest": "^7.0.0"
   },
   "jest": {
     "testEnvironment": "node",
-    "testMatch": ["**/__tests__/**/*.test.js"],
-    "coveragePathIgnorePatterns": ["/node_modules/"]
+    "testMatch": [
+      "**/__tests__/**/*.test.js"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/"
+    ]
   }
 }

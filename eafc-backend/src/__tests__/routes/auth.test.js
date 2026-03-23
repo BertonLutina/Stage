@@ -92,7 +92,7 @@ describe('POST /auth/login', () => {
   });
 
   it('returns 401 if user not found', async () => {
-    mockPool.query.mockResolvedValueOnce([[]]);
+    mockPool.query.mockResolvedValueOnce([[]]).mockResolvedValueOnce([[]]);
 
     const res = await request(app).post('/auth/login').send({
       email: 'nobody@eafc.com',

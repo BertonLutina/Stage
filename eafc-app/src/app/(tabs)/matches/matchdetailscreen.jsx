@@ -7,6 +7,7 @@ import VideoPlayer from '../../../components/common/VideoPlayer';
 import Button from '../../../components/common/Button';
 import STText from '../../../components/common/STText';
 import GradientBackground from '../../../components/common/GradientBackground';
+import BackButton from '../../../components/common/BackButton';
 import { getMockMatchById } from '../../../utils/mockMatches';
 
 export default function MatchDetailScreen() {
@@ -37,7 +38,9 @@ export default function MatchDetailScreen() {
       <GradientBackground>
         <View className="flex-1 items-center justify-center px-6">
           <STText className="text-white/60 text-center">Match not found</STText>
-          <Button title="Go Back" onPress={() => router.back()} className="mt-4" />
+          <View className="mt-4 items-center">
+            <BackButton variant="light" />
+          </View>
         </View>
       </GradientBackground>
     );
@@ -46,6 +49,11 @@ export default function MatchDetailScreen() {
   return (
     <GradientBackground>
       <SafeAreaView className="flex-1">
+        <View className="flex-row items-center justify-between px-4 py-3 border-b border-white/10">
+          <BackButton variant="light" />
+          <STText className="text-white font-bold">Match Details</STText>
+          <View className="w-10" />
+        </View>
         <ScrollView className="px-4">
           <STText className="text-white/70 text-sm mt-4 text-center">{match.tournament_name}</STText>
           <View className="bg-white/10 border border-white/20 rounded-2xl p-6 mt-3 mb-4">

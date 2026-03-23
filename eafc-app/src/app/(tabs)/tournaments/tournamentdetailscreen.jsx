@@ -6,6 +6,7 @@ import api from '../../../utils/api';
 import useAuthStore from '../../../store/authStore';
 import useTournamentStore from '../../../store/tournamentStore';
 import GradientBackground from '../../../components/common/GradientBackground';
+import BackButton from '../../../components/common/BackButton';
 
 export default function TournamentDetailScreen() {
   const { tournamentId } = useLocalSearchParams();
@@ -36,6 +37,10 @@ export default function TournamentDetailScreen() {
     <View className="flex-1">
       <GradientBackground>
         <SafeAreaView className="flex-1">
+          <View className="flex-row items-center gap-4 px-4 py-3 border-b border-white/10">
+            <BackButton variant="light" />
+            <Text className="text-white text-lg font-bold flex-1" numberOfLines={1}>{tournament.name}</Text>
+          </View>
           <ScrollView className="px-4">
             <View className="mt-4 mb-6">
               <View className="flex-row justify-between items-center">

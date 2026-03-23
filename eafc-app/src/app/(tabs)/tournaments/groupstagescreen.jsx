@@ -5,6 +5,7 @@ import { useLocalSearchParams } from 'expo-router';
 import api from '../../../utils/api';
 import GroupTable from '../../../components/tournament/GroupTable';
 import GradientBackground from '../../../components/common/GradientBackground';
+import BackButton from '../../../components/common/BackButton';
 
 export default function GroupStageScreen() {
   const { tournamentId } = useLocalSearchParams();
@@ -18,8 +19,11 @@ export default function GroupStageScreen() {
     <View className="flex-1">
       <GradientBackground>
         <SafeAreaView className="flex-1">
+          <View className="flex-row items-center gap-4 px-4 py-3 border-b border-white/10">
+            <BackButton variant="light" />
+            <Text className="text-white text-xl font-bold flex-1">Group Stage</Text>
+          </View>
           <ScrollView className="px-4">
-            <Text className="text-white text-xl font-bold mt-4 mb-4">Group Stage</Text>
             {groups.map(g => <GroupTable key={g.id} group={g} />)}
             {!groups.length && <Text className="text-muted text-center mt-8">No group data yet</Text>}
           </ScrollView>

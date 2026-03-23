@@ -9,6 +9,7 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import STText from '../../components/common/STText';
 import Avatar from '../../components/common/Avatar';
+import BackButton from '../../components/common/BackButton';
 
 export default function ManageTeamScreen() {
   const { teamId } = useLocalSearchParams();
@@ -46,6 +47,7 @@ export default function ManageTeamScreen() {
   return (
     <SafeAreaView className="flex-1">
       <ScrollView className="px-4">
+        <BackButton />
         <STText className="text-white text-xl font-bold mt-4 mb-4">Manage Team</STText>
 
         {/* Join requests */}

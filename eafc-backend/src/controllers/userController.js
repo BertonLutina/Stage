@@ -64,4 +64,12 @@ async function getStats(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { getProfile, getMe, updateProfile, updateMe, getAvailability, setAvailability, getStats };
+async function searchUsers(req, res, next) {
+  try {
+    const { q } = req.query;
+    const users = await userModel.search(q);
+    return successResponse(res, users);
+  } catch (err) { next(err); }
+}
+
+module.exports = { getProfile, getMe, updateProfile, updateMe, getAvailability, setAvailability, getStats, searchUsers };

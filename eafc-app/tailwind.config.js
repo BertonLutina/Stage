@@ -2,12 +2,13 @@
 module.exports = {
   content: ['./src/**/*.{js,jsx,ts,tsx}', './index.js'],
   presets: [require('nativewind/preset')],
-  darkMode: 'class',
+  darkMode: 'media', // Uses React Native Appearance API - class strategy fails on native
   theme: {
     extend: {
       colors: {
         // Brand colors
         primary: '#5FE3E8',   // Neon Cyan - main glow
+        primary2: '#2eaeb3',   // Neon Cyan - main glow
         accent: '#8CF5F8',    // Electric Cyan - brightest highlight
         secondary: '#22C55E', // Green - keep as success/confirm
 

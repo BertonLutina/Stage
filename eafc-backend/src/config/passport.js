@@ -1,6 +1,8 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const AppleStrategy = require('passport-apple');
+const TwitchStrategy = require('passport-twitch').Strategy;
+const DiscordStrategy = require('passport-discord').Strategy;
 const { pool } = require('./db');
 const { v4: uuidv4 } = require('uuid');
 
@@ -80,6 +82,75 @@ function configurePassport() {
     }));
   } else {
     console.warn('[Passport] Apple OAuth disabled: APPLE_CLIENT_ID, APPLE_TEAM_ID, or APPLE_KEY_ID not set.');
+  }
+
+  if (process.env.TWITCH_CLIENT_ID && process.env.TWITCH_CLIENT_SECRET) {
+    passport.use(new TwitchStrategy({
+      clientID: process.env.TWITCH_CLIENT_ID,
+      clientSecret: process.env.TWITCH_CLIENT_SECRET,
+      callbackURL: process.env.TWITCH_CALLBACK_URL,
+      scope: ['user:read:email', 'user:read'],
+    }, async (accessToken, refreshToken, profile, done) => {
+      try {
+        const email = profile.email || profile.id + '@twitch.user';
+        const [rows] = await pool.query('SELECT * FROM users WHERE twitch_id = ? OR email = ?', [profile.id, email]);
+        if (rows.length > 0) {
+          const user = rows[0];
+          if (!user.twitch_id) {
+            await pool.query('UPDATE users SET twitch_id = ?, auth_provider = ? WHERE id = ?', [profile.id, 'twitch', user.id]);
+          }
+          return done(null, user);
+        }
+        const newId = uuidv4();
+        const displayName = profile.display_name || profile.username || profile.login || '';
+        const avatar = profile.profile_image_url || profile.profileImageUrl || profile.picture || null;
+        await pool.query(
+          'INSERT INTO users (id, first_name, last_name, email, twitch_id, auth_provider, avatar, gamer_tag) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          [newId, displayName, '', email, profile.id, 'twitch', avatar, displayName || null]
+        );
+        await pool.query('INSERT INTO user_stats (user_id) VALUES (?)', [newId]);
+        const [newUser] = await pool.query('SELECT * FROM users WHERE id = ?', [newId]);
+        return done(null, newUser[0]);
+      } catch (err) {
+        return done(err, null);
+      }
+    }));
+  } else {
+    console.warn('[Passport] Twitch OAuth disabled: TWITCH_CLIENT_ID or TWITCH_CLIENT_SECRET not set.');
+  }
+
+  if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
+    passport.use(new DiscordStrategy({
+      clientID: process.env.DISCORD_CLIENT_ID,
+      clientSecret: process.env.DISCORD_CLIENT_SECRET,
+      callbackURL: process.env.DISCORD_CALLBACK_URL,
+      scope: ['identify', 'email'],
+    }, async (accessToken, refreshToken, profile, done) => {
+      try {
+        const email = profile.email || profile.id + '@discord.user';
+        const [rows] = await pool.query('SELECT * FROM users WHERE discord_id = ? OR email = ?', [profile.id, email]);
+        if (rows.length > 0) {
+          const user = rows[0];
+          if (!user.discord_id) {
+            await pool.query('UPDATE users SET discord_id = ?, auth_provider = ? WHERE id = ?', [profile.id, 'discord', user.id]);
+          }
+          return done(null, user);
+        }
+        const newId = uuidv4();
+        const avatar = profile.avatar ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png` : null;
+        await pool.query(
+          'INSERT INTO users (id, first_name, last_name, email, discord_id, auth_provider, avatar, gamer_tag) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          [newId, profile.username || '', '', email, profile.id, 'discord', avatar, profile.username || null]
+        );
+        await pool.query('INSERT INTO user_stats (user_id) VALUES (?)', [newId]);
+        const [newUser] = await pool.query('SELECT * FROM users WHERE id = ?', [newId]);
+        return done(null, newUser[0]);
+      } catch (err) {
+        return done(err, null);
+      }
+    }));
+  } else {
+    console.warn('[Passport] Discord OAuth disabled: DISCORD_CLIENT_ID or DISCORD_CLIENT_SECRET not set.');
   }
 
   return passport;

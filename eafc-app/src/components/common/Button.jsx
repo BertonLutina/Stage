@@ -6,6 +6,7 @@ export default function Button({ title, onPress, variant = 'primary', loading = 
   const base = 'rounded-xl py-3 px-6 items-center justify-center';
   const variants = {
     primary: 'bg-primary',
+    primary2: 'bg-primary2',
     secondary: 'bg-secondary',
     accent: 'bg-accent',
     outline: 'border border-primary bg-transparent',
@@ -14,6 +15,7 @@ export default function Button({ title, onPress, variant = 'primary', loading = 
   };
   const textVariants = {
     primary: 'text-dark font-bold text-base',
+    primary2: 'text-dark font-bold text-base',
     secondary: 'text-dark font-bold text-base',
     accent: 'text-white font-bold text-base',
     outline: 'text-primary font-bold text-base',
@@ -29,7 +31,7 @@ export default function Button({ title, onPress, variant = 'primary', loading = 
       {loading ? (
         <ActivityIndicator color={variant === 'primary' || variant === 'secondary' ? '#0F0F0F' : '#fff'} />
       ) : (
-        <STText className={textVariants[variant]}>{title}</STText>
+        <STText color={variant === 'ghost' ? '#5FE3E8' : '#FFFFFF'} className={textVariants[variant]}>{title}</STText>
       )}
     </TouchableOpacity>
   );

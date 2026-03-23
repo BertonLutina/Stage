@@ -92,9 +92,12 @@ async function getMessages(userId, otherUserId) {
   return rows;
 }
 
-async function sendMessage(senderId, receiverId, content) {
+async function sendMessage(senderId, receiverId, content, messageType = 'text', mediaUrl = null, mediaMetadata = null) {
   const id = uuidv4();
-  await pool.query('INSERT INTO direct_messages (id, sender_id, receiver_id, content) VALUES (?, ?, ?, ?)', [id, senderId, receiverId, content]);
+  await pool.query(
+    'INSERT INTO direct_messages (id, sender_id, receiver_id, content, message_type, media_url, media_metadata) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [id, senderId, receiverId, content || '', messageType, mediaUrl, mediaMetadata ? JSON.stringify(mediaMetadata) : null]
+  );
   const [rows] = await pool.query('SELECT * FROM direct_messages WHERE id = ?', [id]);
   return rows[0];
 }

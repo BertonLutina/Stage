@@ -11,7 +11,7 @@ export default function WelcomeScreen() {
     <SafeAreaView className="flex-1 px-6">
       <View className="flex-1 items-center justify-center">
         <Image source={require('../../../assets/logo.png')} className="h-64 w-64" style={{ resizeMode: 'contain' }} />
-        <STText className="text-center mt-3 px-4 opacity-80">
+        <STText color="#FFFFFF" className="text-center mt-3 px-4 opacity-80">
           Football and esports club platform. Build your identity, join clubs, and compete.
         </STText>
       </View>
@@ -21,7 +21,7 @@ export default function WelcomeScreen() {
           <STText className="font-bold" style={{ color: '#02091B' }}>Create Account</STText>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.push('/auth/loginscreen')} className="border border-lineInner/40 rounded-2xl py-4 items-center">
-          <STText className="font-semibold">I already have an account</STText>
+          <STText color="#5FE3E8" className="font-semibold">I already have an account</STText>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

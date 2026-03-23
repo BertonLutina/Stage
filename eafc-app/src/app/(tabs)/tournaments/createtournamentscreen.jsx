@@ -10,6 +10,7 @@ import Button from '../../../components/common/Button';
 import useTournamentStore from '../../../store/tournamentStore';
 import { useRouter } from 'expo-router';
 import GradientBackground from '../../../components/common/GradientBackground';
+import BackButton from '../../../components/common/BackButton';
 import api from '../../../utils/api';
 
 const FORMATS = [
@@ -92,7 +93,10 @@ export default function CreateTournamentScreen() {
         <GradientBackground>
           <SafeAreaView className="flex-1">
             <ScrollView className="px-6" keyboardShouldPersistTaps="handled">
-              <Text className="text-white text-2xl font-bold mt-6 mb-6">New Tournament</Text>
+              <View className="flex-row items-center gap-4 mt-2 mb-4">
+                <BackButton variant="light" />
+                <Text className="text-white text-2xl font-bold flex-1">New Tournament</Text>
+              </View>
 
               <Input label="Tournament Name *" value={name} onChangeText={setName} placeholder="My Tournament" />
               <Input label="Description" value={description} onChangeText={setDescription} multiline numberOfLines={2} placeholder="Optional description..." />

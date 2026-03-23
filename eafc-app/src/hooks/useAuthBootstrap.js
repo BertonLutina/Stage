@@ -25,24 +25,18 @@ export default function useAuthBootstrap() {
         return;
       }
       const complete = await isOnboardingComplete(user.id);
-      console.log('complete', complete);
       if (!cancelled) setOnboardingComplete(complete);
     })();
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [user?.id, segments]);
 
   useEffect(() => {
     if (!ready) return;
     const inAuthGroup = segments[0] === 'auth';
     const authScreen = segments[1];
     const inSetupFlow = ['gamertagsetup', 'platformselection', 'positionselection', 'clubsetup'].includes(authScreen);
-
-    console.log('user', user);
-    console.log('inAuthGroup', inAuthGroup);
-    console.log('inSetupFlow', inSetupFlow);
-    console.log('onboardingComplete', onboardingComplete);
 
     if (!user && !inAuthGroup) {
       router.replace('/auth/welcome');

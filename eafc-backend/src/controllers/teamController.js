@@ -1,6 +1,14 @@
 const teamModel = require('../models/teamModel');
 const { successResponse, errorResponse } = require('../utils/helpers');
 
+async function searchTeams(req, res, next) {
+  try {
+    const { search: q } = req.query;
+    const teams = await teamModel.search(q);
+    return successResponse(res, teams);
+  } catch (err) { next(err); }
+}
+
 async function listTeamsWithPlayers(req, res, next) {
   try {
     const teams = await teamModel.findAllWithPlayers();
@@ -88,8 +96,20 @@ async function getDressingRoom(req, res, next) {
 
 async function getTeamChat(req, res, next) {
   try {
-    const messages = await teamModel.getTeamChat(req.params.id);
+    const { search, filter, unread } = req.query;
+    const opts = {};
+    if (search && search.trim()) opts.search = search.trim();
+    if (filter && filter !== 'all') opts.messageType = Array.isArray(filter) ? filter.join(',') : filter;
+    if (unread === 'true' || unread === '1') opts.unreadByUserId = req.userId;
+    const messages = await teamModel.getTeamChat(req.params.id, 200, opts);
     return successResponse(res, messages);
+  } catch (err) { next(err); }
+}
+
+async function markTeamChatRead(req, res, next) {
+  try {
+    await teamModel.markTeamChatRead(req.params.id, req.userId);
+    return successResponse(res, null, 'Marked as read');
   } catch (err) { next(err); }
 }
 
@@ -170,6 +190,7 @@ async function declineJoinRequest(req, res, next) {
 }
 
 module.exports = {
+  searchTeams,
   listTeamsWithPlayers,
   createTeam,
   getTeam,
@@ -181,6 +202,7 @@ module.exports = {
   saveFormation,
   getDressingRoom,
   getTeamChat,
+  markTeamChatRead,
   joinTeam,
   leaveTeam,
   requestToJoin,

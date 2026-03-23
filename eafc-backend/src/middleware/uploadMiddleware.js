@@ -9,6 +9,16 @@ const MIME_TO_EXT = {
   'image/webp': '.webp',
   'video/mp4': '.mp4',
   'video/quicktime': '.mov',
+  'video/webm': '.webm',
+  'audio/mpeg': '.mp3',
+  'audio/mp4': '.m4a',
+  'audio/ogg': '.ogg',
+  'audio/webm': '.webm',
+  'audio/wav': '.wav',
+  'audio/x-m4a': '.m4a',
+  'application/pdf': '.pdf',
+  'application/msword': '.doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
 };
 
 const storage = multer.diskStorage({

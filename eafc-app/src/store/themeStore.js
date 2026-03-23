@@ -1,3 +1,4 @@
+import { Appearance } from 'react-native';
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -29,6 +30,10 @@ const useThemeStore = create((set, get) => ({
     const { theme } = get();
     const resolved = theme === 'auto' ? getResolvedFromTime() : theme;
     set({ resolvedTheme: resolved });
+    // Sync with React Native so NativeWind dark: variants work
+    if (typeof Appearance?.setColorScheme === 'function') {
+      Appearance.setColorScheme(resolved);
+    }
   },
 
   setTheme: async (theme) => {

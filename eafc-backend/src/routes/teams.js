@@ -5,6 +5,7 @@ const teamMember = require('../middleware/teamMemberMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 const c = require('../controllers/teamController');
 
+router.get('/', c.searchTeams);
 router.get('/with-members', c.listTeamsWithPlayers);
 router.post('/', auth, upload.single('avatar'), c.createTeam);
 router.get('/:id', c.getTeam);
@@ -16,6 +17,7 @@ router.get('/:id/formation', c.getFormation);
 router.post('/:id/formation', auth, teamOwner, c.saveFormation);
 router.get('/:id/dressing-room', c.getDressingRoom);
 router.get('/:id/chat', auth, teamMember, c.getTeamChat);
+router.post('/:id/chat/read', auth, teamMember, c.markTeamChatRead);
 router.post('/:id/leave', auth, c.leaveTeam);
 router.post('/:id/join-request', auth, c.requestToJoin);
 router.get('/:id/join-request-status', auth, c.getMyRequestStatus);

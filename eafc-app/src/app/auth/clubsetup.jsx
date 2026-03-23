@@ -27,26 +27,26 @@ export default function ClubSetupScreen() {
   return (
     <SafeAreaView className="flex-1 px-6 justify-center">
       <View className="border border-lineInner/30 rounded-3xl px-6 py-7">
-        <STText className="text-2xl font-bold mb-2">Create / Join Club</STText>
-        <STText className="mb-4 opacity-80">Choose how you want to start in STAGE.</STText>
+        <STText color="#FFFFFF" className="text-2xl font-bold mb-2">Create / Join Club</STText>
+        <STText color="#FFFFFF" className="mb-4 opacity-80">Choose how you want to start in STAGE.</STText>
 
         <TouchableOpacity
           onPress={() => setChoice('create')}
           className={`rounded-2xl border px-4 py-3 mb-2 ${choice === 'create' ? 'border-primary bg-primary/20' : 'border-lineInner/30'}`}
         >
-          <STText className={choice === 'create' ? 'font-semibold' : ''} style={choice === 'create' ? { color: '#5FE3E8' } : undefined}>Create Club</STText>
+          <STText className={choice === 'create' ? 'font-semibold' : ''} style={choice === 'create' ? { color: '#5FE3E8' } : { color: '#FFFFFF' }}>Create Club</STText>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setChoice('join')}
           className={`rounded-2xl border px-4 py-3 mb-2 ${choice === 'join' ? 'border-primary bg-primary/20' : 'border-lineInner/30'}`}
         >
-          <STText className={choice === 'join' ? 'font-semibold' : ''} style={choice === 'join' ? { color: '#5FE3E8' } : undefined}>Join Club</STText>
+          <STText className={choice === 'join' ? 'font-semibold' : ''} style={choice === 'join' ? { color: '#5FE3E8' } : { color: '#FFFFFF' }}>Join Club</STText>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setChoice('freeagent')}
           className={`rounded-2xl border px-4 py-3 ${choice === 'freeagent' ? 'border-primary bg-primary/20' : 'border-lineInner/30'}`}
         >
-          <STText className={choice === 'freeagent' ? 'font-semibold' : ''} style={choice === 'freeagent' ? { color: '#5FE3E8' } : undefined}>Free Agent</STText>
+          <STText className={choice === 'freeagent' ? 'font-semibold' : ''} style={choice === 'freeagent' ? { color: '#5FE3E8' } : { color: '#FFFFFF' }}>Free Agent</STText>
         </TouchableOpacity>
 
         <Button title="Finish Setup" onPress={onFinish} className="mt-4 rounded-2xl py-3" />

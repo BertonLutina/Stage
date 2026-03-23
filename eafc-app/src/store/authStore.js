@@ -30,7 +30,13 @@ const useAuthStore = create((set) => ({
       await setTokens(data.data.accessToken, data.data.refreshToken);
       set({ user: data.data.user, loading: false });
     } catch (err) {
-      set({ error: err.response?.data?.message || 'Login failed', loading: false });
+      let message = 'Login failed';
+      if (!err.response) {
+        message = 'Connection failed. Check network and that the backend is running.';
+      } else if (err.response?.data?.message) {
+        message = err.response.data.message;
+      }
+      set({ error: message, loading: false });
     }
   },
 
@@ -48,6 +54,11 @@ const useAuthStore = create((set) => ({
   logout: async () => {
     await clearTokens();
     set({ user: null });
+  },
+
+  setUserFromOAuth: async (accessToken, refreshToken, user) => {
+    await setTokens(accessToken, refreshToken);
+    set({ user: user || null });
   },
 
   updateUser: (user) => set({ user }),

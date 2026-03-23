@@ -8,6 +8,8 @@ import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import useAuthStore from '../../store/authStore';
 import api from '../../utils/api';
+import SocialAuthIconButtons from '../../components/auth/SocialAuthIconButtons';
+import { checkBackendConnection } from '../../utils/healthCheck';
 import {
   authenticateForLogin,
   getBiometricEnabled,
@@ -17,13 +19,20 @@ import {
 } from '../../services/biometricAuthService';
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('fm.chriskalonji@hotmail.com');
-  const [password, setPassword] = useState('12345678');
+  const [email, setEmail] = useState('lengarose');
+  const [password, setPassword] = useState('Stage2025!');
   const [showPassword, setShowPassword] = useState(false);
   const [biometricEnabled, setBiometricEnabledState] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricError, setBiometricError] = useState('');
+  const [connectionStatus, setConnectionStatus] = useState(null);
   const { login, loading, error } = useAuthStore();
+
+  const testConnection = async () => {
+    setConnectionStatus(null);
+    const result = await checkBackendConnection();
+    setConnectionStatus(result);
+  };
   const router = useRouter();
 
   useEffect(() => {
@@ -99,7 +108,7 @@ export default function LoginScreen() {
                 </View>
               <View className="relative top-56 border border-lineInner/30 rounded-3xl px-6 py-7">
 
-                <STText className="text-xl font-semibold mb-4">
+                <STText color="#FFFFFF" className="text-xl font-semibold mb-4">
                   Welcome back
                 </STText>
 
@@ -113,34 +122,34 @@ export default function LoginScreen() {
                     <STText className="text-xs" style={{ color: '#8CF5F8' }}>{biometricError}</STText>
                   </View>
                 ) : null}
+                {connectionStatus && (
+                  <View className={`rounded-2xl p-3 mb-3 border ${connectionStatus.ok ? 'bg-green-500/15 border-green-500/60' : 'bg-amber-500/15 border-amber-500/60'}`}>
+                    <STText className="text-xs" style={{ color: connectionStatus.ok ? '#22C55E' : '#F59E0B' }}>
+                      {connectionStatus.ok ? '✓ ' : ''}{connectionStatus.message}
+                    </STText>
+                  </View>
+                )}
 
                 <View className="space-y-4 mb-2">
                   <Input
-                    label="Email"
+                    color="#FFFFFF"
+                    label="Email or gamer tag"
                     value={email}
                     onChangeText={setEmail}
                     keyboardType="email-address"
                     autoCapitalize="none"
-                    placeholder="you@example.com"
+                    placeholder="you@example.com or gamer_tag"
                   />
 
-                  <View>
-                    <Input
-                      label="Password"
-                      value={password}
-                      onChangeText={setPassword}
-                      secureTextEntry={!showPassword}
-                      placeholder="••••••••"
-                    />
-                    <TouchableOpacity
-                      onPress={() => setShowPassword((prev) => !prev)}
-                      className="self-end -mt-2 mb-2"
-                    >
-                      <STText className="text-xs">
-                        {showPassword ? 'Hide password' : 'Show password'}
-                      </STText>
-                    </TouchableOpacity>
-                  </View>
+                  <Input
+                    color="#FFFFFF"
+                    label="Password"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    onTogglePassword={() => setShowPassword((prev) => !prev)}
+                    placeholder="••••••••"
+                  />
                 </View>
 
                 {biometricAvailable ? (
@@ -148,17 +157,21 @@ export default function LoginScreen() {
                     onPress={toggleBiometric}
                     className="flex-row items-center justify-between bg-darkCard/50 border border-lineInner/30 rounded-2xl px-4 py-3 mt-2"
                   >
-                    <STText className="text-sm">Enable biometric login</STText>
-                    <STText className={biometricEnabled ? 'font-semibold' : 'opacity-70'} style={biometricEnabled ? { color: '#22C55E' } : undefined}>
+                    <STText color="#5FE3E8" className="text-sm">Enable biometric login</STText>
+                    <STText color="#5FE3E8" className={biometricEnabled ? 'font-semibold' : 'opacity-70'} style={biometricEnabled ? { color: '#22C55E' } : undefined}>
                       {biometricEnabled ? 'On' : 'Off'}
                     </STText>
                   </TouchableOpacity>
                 ) : (
-                  <STText className="text-xs mt-2 opacity-70">Biometric authentication not available on this device.</STText>
+                  <STText color="#FFFFFF" className="text-xs mt-2 opacity-70">Biometric authentication not available on this device.</STText>
                 )}
 
+                <TouchableOpacity onPress={testConnection} className="self-end mb-2">
+                  <STText className="text-xs" style={{ color: '#5FE3E8' }}>Test backend connection</STText>
+                </TouchableOpacity>
                 <Button
                   title={biometricEnabled ? 'Sign in with biometrics' : 'Sign in'}
+                  variant={biometricEnabled ? 'secondary' : 'primary2'}
                   onPress={handleSignIn}
                   loading={loading}
                   className="mt-2 rounded-2xl py-3"
@@ -166,27 +179,16 @@ export default function LoginScreen() {
 
                 <View className="flex-row items-center my-5">
                   <View className="flex-1 h-px bg-lineInner/30" />
-                  <STText className="mx-3 text-xs">
+                  <STText color="#FFFFFF" className="mx-3 text-xs">
                     or continue with
                   </STText>
                   <View className="flex-1 h-px bg-lineInner/30" />
                 </View>
 
-                <Button
-                  title="Continue with Google"
-                  variant="ghost"
-                  onPress={() => {}}
-                  className="mb-2 border border-lineInner/40 bg-darkCard/60 rounded-2xl"
-                />
-                <Button
-                  title="Continue with Apple"
-                  variant="ghost"
-                  onPress={() => {}}
-                  className="border border-lineInner/40 bg-darkCard/60 rounded-2xl"
-                />
+                <SocialAuthIconButtons />
 
                 <View className="flex-row justify-center mt-6">
-                  <STText className="text-xs">
+                  <STText color="#FFFFFF" className="text-xs">
                     Don&apos;t have an account?{' '}
                   </STText>
                   <TouchableOpacity onPress={() => router.push('/auth/signupscreen')}>

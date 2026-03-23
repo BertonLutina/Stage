@@ -11,6 +11,16 @@ async function findAll() {
   return rows;
 }
 
+async function search(q, limit = 20) {
+  if (!q || typeof q !== 'string' || q.trim().length < 2) return [];
+  const like = `%${q.trim()}%`;
+  const [rows] = await pool.query(
+    'SELECT id, club_name, avatar, country, country_code FROM teams WHERE club_name LIKE ? ORDER BY club_name ASC LIMIT ?',
+    [like, limit]
+  );
+  return rows;
+}
+
 async function create(data) {
   const id = uuidv4();
   const { club_name, country, country_code, owner_id, avatar, bio } = data;
@@ -140,12 +150,42 @@ async function isTeamMember(teamId, userId) {
   return rows.length > 0;
 }
 
-async function getTeamChat(teamId, limit = 100) {
-  const [rows] = await pool.query(
-    'SELECT id, team_id, user_id, gamer_tag, content, created_at FROM team_chat_messages WHERE team_id = ? ORDER BY created_at ASC LIMIT ?',
-    [teamId, limit]
-  );
+async function getTeamChat(teamId, limit = 100, opts = {}) {
+  const { search, messageType, unreadByUserId } = opts;
+  let sql = 'SELECT id, team_id, user_id, gamer_tag, content, message_type, media_url, media_metadata, created_at FROM team_chat_messages WHERE team_id = ?';
+  const params = [teamId];
+
+  if (search && search.trim()) {
+    sql += ' AND (content LIKE ? OR media_url LIKE ?)';
+    const term = `%${search.trim()}%`;
+    params.push(term, term);
+  }
+  if (messageType && messageType !== 'all') {
+    const types = messageType.split(',').map((t) => t.trim()).filter(Boolean);
+    if (types.length) {
+      sql += ` AND message_type IN (${types.map(() => '?').join(',')})`;
+      params.push(...types);
+    }
+  }
+  if (unreadByUserId) {
+    sql += ` AND created_at > COALESCE((SELECT last_read_at FROM chat_read_receipts WHERE user_id = ? AND chat_type = 'team' AND chat_id = team_chat_messages.team_id LIMIT 1), '1970-01-01')`;
+    params.push(unreadByUserId);
+  }
+
+  sql += ' ORDER BY created_at ASC LIMIT ?';
+  params.push(limit);
+
+  const [rows] = await pool.query(sql, params);
   return rows;
+}
+
+async function markTeamChatRead(teamId, userId) {
+  const id = uuidv4();
+  await pool.query(
+    `INSERT INTO chat_read_receipts (id, user_id, chat_type, chat_id, last_read_at) VALUES (?, ?, 'team', ?, NOW())
+     ON DUPLICATE KEY UPDATE last_read_at = NOW()`,
+    [id, userId, teamId]
+  );
 }
 
 async function createJoinRequest(teamId, userId) {
@@ -215,15 +255,27 @@ async function getUserPendingRequest(teamId, userId) {
   return rows[0] || null;
 }
 
-async function insertTeamChat(teamId, userId, gamerTag, content) {
+async function insertTeamChat(teamId, userId, gamerTag, content, messageType = 'text', mediaUrl = null, mediaMetadata = null) {
   const id = uuidv4();
   await pool.query(
-    'INSERT INTO team_chat_messages (id, team_id, user_id, gamer_tag, content) VALUES (?, ?, ?, ?, ?)',
-    [id, teamId, userId, gamerTag, content]
+    'INSERT INTO team_chat_messages (id, team_id, user_id, gamer_tag, content, message_type, media_url, media_metadata) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    [id, teamId, userId, gamerTag, content || '', messageType, mediaUrl, mediaMetadata ? JSON.stringify(mediaMetadata) : null]
   );
   const [rows] = await pool.query(
-    'SELECT id, team_id, user_id, gamer_tag, content, created_at FROM team_chat_messages WHERE id = ?',
+    'SELECT id, team_id, user_id, gamer_tag, content, message_type, media_url, media_metadata, created_at FROM team_chat_messages WHERE id = ?',
     [id]
+  );
+  return rows[0];
+}
+
+async function updateTeamChatMessageMediaMetadata(messageId, mediaMetadata) {
+  await pool.query(
+    'UPDATE team_chat_messages SET media_metadata = ? WHERE id = ?',
+    [JSON.stringify(mediaMetadata), messageId]
+  );
+  const [rows] = await pool.query(
+    'SELECT id, team_id, user_id, gamer_tag, content, message_type, media_url, media_metadata, created_at FROM team_chat_messages WHERE id = ?',
+    [messageId]
   );
   return rows[0];
 }
@@ -240,10 +292,13 @@ module.exports = {
   saveFormation,
   getDressingRoom,
   findAll,
+  search,
   findAllWithPlayers,
   isTeamMember,
   getTeamChat,
   insertTeamChat,
+  updateTeamChatMessageMediaMetadata,
+  markTeamChatRead,
   createJoinRequest,
   getPendingJoinRequests,
   acceptJoinRequest,

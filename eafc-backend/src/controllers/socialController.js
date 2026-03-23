@@ -98,8 +98,15 @@ async function getMessages(req, res, next) {
 
 async function sendMessage(req, res, next) {
   try {
-    const { receiver_id, content } = req.body;
-    const message = await socialModel.sendMessage(req.userId, receiver_id, content);
+    const { receiver_id, content, message_type, media_url, media_metadata } = req.body;
+    const message = await socialModel.sendMessage(
+      req.userId,
+      receiver_id,
+      content,
+      message_type || 'text',
+      media_url || null,
+      media_metadata || null
+    );
     return successResponse(res, message, 'Message sent', 201);
   } catch (err) { next(err); }
 }

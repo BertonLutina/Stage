@@ -29,8 +29,8 @@ export default function PlatformSelectionScreen() {
   return (
     <SafeAreaView className="flex-1 px-6 justify-center">
       <View className="border border-lineInner/30 rounded-3xl px-6 py-7">
-        <STText className="text-2xl font-bold mb-2">Platform Selection</STText>
-        <STText className="mb-4 opacity-80">Select your main platform.</STText>
+        <STText color="#FFFFFF" className="text-2xl font-bold mb-2">Platform Selection</STText>
+        <STText color="#FFFFFF" className="mb-4 opacity-80">Select your main platform.</STText>
         <View className="gap-2">
           {OPTIONS.map((opt) => (
             <TouchableOpacity
@@ -38,7 +38,7 @@ export default function PlatformSelectionScreen() {
               onPress={() => setSelected(opt)}
               className={`rounded-2xl border px-4 py-3 ${selected === opt ? 'border-primary bg-primary/20' : 'border-lineInner/30'}`}
             >
-              <STText className={selected === opt ? 'font-semibold' : ''} style={selected === opt ? { color: '#5FE3E8' } : undefined}>{opt}</STText>
+              <STText className={selected === opt ? 'font-semibold' : ''} style={selected === opt ? { color: '#5FE3E8' } : { color: '#FFFFFF' }}>{opt}</STText>
             </TouchableOpacity>
           ))}
         </View>

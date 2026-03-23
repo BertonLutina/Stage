@@ -45,9 +45,9 @@ describe('authStore – initialize', () => {
     expect(api.get).not.toHaveBeenCalled();
   });
 
-  it('clears tokens when /users/me fails', async () => {
+  it('clears tokens when /users/me fails with 401', async () => {
     getAccessToken.mockResolvedValueOnce('expired-token');
-    api.get.mockRejectedValueOnce(new Error('401'));
+    api.get.mockRejectedValueOnce({ response: { status: 401 } });
 
     await useAuthStore.getState().initialize();
 
@@ -83,7 +83,7 @@ describe('authStore – login', () => {
   });
 
   it('sets generic error when response message is absent', async () => {
-    api.post.mockRejectedValueOnce(new Error('Network error'));
+    api.post.mockRejectedValueOnce({ response: { status: 500 } });
 
     await useAuthStore.getState().login('test@eafc.com', 'pass');
 

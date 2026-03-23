@@ -8,10 +8,10 @@ export default function GradientBackground({ children, style, colors, start, end
   const { isDark } = useColorSchemeColors();
   const resolvedColors = colors || (isDark
     ? ['#02091B', '#07163A', '#02091B']
-    : ['#FFFFFF', '#EEF5FF', '#DCEBFF']);
+    : ['#FFFFFF', '#EEF6FC', '#E0EFF9']);
   const overlayColors = isDark
     ? ['rgba(30, 52, 115,0.22)', 'transparent']
-    : ['rgba(92, 145, 255,0.16)', 'transparent'];
+    : ['rgba(95, 227, 232,0.18)', 'transparent'];
 
   return (
     <View style={styles.fill}>

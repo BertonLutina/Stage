@@ -16,4 +16,18 @@ function authMiddleware(req, res, next) {
   }
 }
 
+function optionalAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    const payload = verifyAccessToken(token);
+    req.userId = payload.userId;
+  } catch (_) {}
+  next();
+}
+
 module.exports = authMiddleware;
+module.exports.optionalAuth = optionalAuth;

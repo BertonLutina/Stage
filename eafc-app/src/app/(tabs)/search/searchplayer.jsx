@@ -13,14 +13,6 @@ import STText from '../../../components/common/STText';
 import useAuthStore from '../../../store/authStore';
 import api from '../../../utils/api';
 
-// TODO: Replace with GET /users/search or similar when backend supports player search
-const MOCK_PLAYERS = [
-  { id: '1', first_name: 'Alex', last_name: 'Rivera', gamer_tag: 'alex_fc', avatar: null },
-  { id: '2', first_name: 'Jordan', last_name: 'Lee', gamer_tag: 'jlee99', avatar: null },
-  { id: '3', first_name: 'Sam', last_name: 'Chen', gamer_tag: 'sam_kick', avatar: null },
-  { id: '4', first_name: 'Morgan', last_name: 'Taylor', gamer_tag: 'morg_striker', avatar: null },
-  { id: '5', first_name: 'Riley', last_name: 'Davis', gamer_tag: 'riley_d', avatar: null },
-];
 
 function PlayerRow({ player, isClubOwner, onChallenge, onInvite, onPress }) {
   const name = `${player.first_name || ''} ${player.last_name || ''}`.trim() || 'Player';
@@ -100,20 +92,20 @@ export default function SearchPlayers() {
   }, [user?.id]);
 
   useEffect(() => {
-    // TODO: Replace with api.get(`/users/search?q=${query}`) when backend ready
+    const q = query.trim();
+    if (q.length < 2) {
+      setPlayers([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const timer = setTimeout(() => {
-      const q = query.toLowerCase().trim();
-      const filtered = MOCK_PLAYERS.filter(
-        (p) =>
-          !q ||
-          (p.gamer_tag || '').toLowerCase().includes(q) ||
-          (p.first_name || '').toLowerCase().includes(q) ||
-          (p.last_name || '').toLowerCase().includes(q)
-      );
-      setPlayers(filtered);
-      setLoading(false);
-    }, 200);
+      api
+        .get(`/users/search?q=${encodeURIComponent(q)}`)
+        .then((r) => setPlayers(r.data.data ?? []))
+        .catch(() => setPlayers([]))
+        .finally(() => setLoading(false));
+    }, 250);
     return () => clearTimeout(timer);
   }, [query]);
 

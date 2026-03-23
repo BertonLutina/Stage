@@ -14,6 +14,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '../../../utils/api';
 import useAuthStore from '../../../store/authStore';
 import useColorSchemeColors from '../../../hooks/useColorSchemeColors';
+import BackButton from '../../../components/common/BackButton';
 
 const SAMPLE = {
   formation: '4-3-3',
@@ -137,16 +138,7 @@ export default function TeamDashboardScreen() {
         <ScrollView showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View className="px-4 pt-1 pb-2 flex-row items-center justify-between">
-            <TouchableOpacity
-              onPress={() => router.back()}
-              className="h-10 w-10 rounded-full border items-center justify-center"
-              style={{
-                borderColor: isDark ? 'rgba(199,216,243,0.2)' : '#C9D8F2',
-                backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
-              }}
-            >
-              <Ionicons name="chevron-back" size={20} color={isDark ? '#FFFFFF' : '#1B2D4A'} />
-            </TouchableOpacity>
+            <BackButton />
 
             <View className="flex-row items-center">
               <STText className="text-[16px] font-semibold tracking-[3px] ml-1">STAGE</STText>
