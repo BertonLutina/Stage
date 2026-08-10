@@ -1,9 +1,31 @@
 import axios from 'axios';
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from '../services/tokenService';
 
-// Use EXPO_PUBLIC_API_URL from .env - defaults: localhost for simulator, ngrok for physical device
-// Simulator: http://localhost:3000  |  Android emulator: http://10.0.2.2:3000  |  Physical device: run `ngrok http 3000` and set the URL
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+/**
+ * Legacy feature-screen client.
+ * Talks to Stage via the mobile compat layer (`/api/mobile`), which maps
+ * eafc flat paths (/teams, /social/feed, …) onto Stage entities (clubs, posts, …).
+ *
+ * Auth / onboarding use `stageClient` → `/api/stage` directly.
+ */
+const SOCKET_BASE =
+  process.env.EXPO_PUBLIC_SOCKET_URL ||
+  process.env.EXPO_PUBLIC_API_URL?.replace(/\/api\/(mobile|stage)\/?$/, '') ||
+  'https://stage-7osn.onrender.com';
+
+function resolveMobileBase() {
+  const raw =
+    process.env.EXPO_PUBLIC_API_URL ||
+    'https://stageleagues.com/api/mobile';
+  // Guard: if someone pointed API_URL at /api/stage, rewrite to /api/mobile
+  // so screens that still call /teams and /social/* keep working.
+  if (/\/api\/stage\/?$/.test(raw)) {
+    return raw.replace(/\/api\/stage\/?$/, '/api/mobile');
+  }
+  return raw.replace(/\/$/, '');
+}
+
+const BASE_URL = resolveMobileBase();
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -31,9 +53,17 @@ api.interceptors.response.use(
         const refreshToken = await getRefreshToken();
         const headers = { 'Content-Type': 'application/json' };
         if (BASE_URL.includes('ngrok')) headers['ngrok-skip-browser-warning'] = '1';
-        const { data } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken }, { headers });
-        await setTokens(data.data.accessToken, refreshToken);
-        original.headers.Authorization = `Bearer ${data.data.accessToken}`;
+        // Refresh is on Stage auth, not mobile compat.
+        const stageAuthBase = (
+          process.env.EXPO_PUBLIC_STAGE_API_URL ||
+          'https://stageleagues.com/api/stage'
+        ).replace(/\/$/, '');
+        const { data } = await axios.post(`${stageAuthBase}/auth/refresh`, { refreshToken }, { headers });
+        const accessToken = data?.data?.accessToken || data?.accessToken;
+        const nextRefresh = data?.data?.refreshToken || data?.refreshToken || refreshToken;
+        if (!accessToken) throw new Error('No access token in refresh response');
+        await setTokens(accessToken, nextRefresh);
+        original.headers.Authorization = `Bearer ${accessToken}`;
         return api(original);
       } catch {
         await clearTokens();
@@ -47,4 +77,5 @@ api.interceptors.response.use(
 );
 
 export default api;
-export const SOCKET_URL = BASE_URL;
+export const SOCKET_URL = SOCKET_BASE;
+export { BASE_URL as API_BASE_URL };

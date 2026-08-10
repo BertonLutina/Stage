@@ -1,7 +1,397 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  View, ScrollView, TouchableOpacity, ActivityIndicator, StatusBar, Image, Text,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import useAuthStore from '@/store/authStore';
+import useMyStageIdentities from '@/hooks/useMyStageIdentities';
+import { stageClient } from '@/api/stageClient';
 import ProfileScreen from './profilescreen';
+import PresidentProfileScreen from './presidentprofilescreen';
+import {
+  GamerProfileShell,
+  GamerBanner,
+  GamerMetaPill,
+  GamerRecordStrip,
+  GlassIconButton,
+  GlassTextButton,
+  IdentityRail,
+  GAMER_BG,
+} from '@/components/profile/gamer/GamerProfileUI';
+import ClubProfileTabs from './clubProfileTabs';
+import { headingStyleLg } from '@/lib/fonts';
 
-export default function ProfileIndex() {
-  return <ProfileScreen />;
+const SURFACES = [
+  { id: 'player', label: 'Player' },
+  { id: 'president', label: 'President' },
+  { id: 'club', label: 'Club' },
+];
+
+function ClubCrest({ logoUrl, tag, platform, width = 108 }) {
+  const height = Math.round(width * 1.2);
+  return (
+    <View
+      style={{
+        width,
+        shadowColor: '#FFD60A',
+        shadowOpacity: 0.35,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 6 },
+        elevation: 8,
+      }}
+    >
+      <LinearGradient
+        colors={['#F6E27A', '#C9A227', '#8A6A12', '#F6E27A']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ borderRadius: 16, padding: 2 }}
+      >
+        <View
+          style={{
+            borderRadius: 14,
+            overflow: 'hidden',
+            height: height - 4,
+            width: width - 4,
+            backgroundColor: '#120E08',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {logoUrl ? (
+            <Image source={{ uri: logoUrl }} style={{ width: '78%', height: '58%' }} resizeMode="contain" />
+          ) : (
+            <Ionicons name="shield" size={42} color="rgba(255,214,10,0.35)" />
+          )}
+          <View style={{ position: 'absolute', left: 0, right: 0, bottom: 10, alignItems: 'center', paddingHorizontal: 8 }}>
+            <Text style={{ color: '#FFD60A', fontWeight: '900', fontSize: 13, letterSpacing: 1 }} numberOfLines={1}>
+              {tag ? `[${tag}]` : 'CLUB'}
+            </Text>
+            <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10, fontWeight: '700', marginTop: 2 }} numberOfLines={1}>
+              {platform || ' '}
+            </Text>
+          </View>
+        </View>
+      </LinearGradient>
+    </View>
+  );
 }
 
+function ClubProfileSurface({ club, president, isOwner, onOpenFull, onOpenPresident, topLeft }) {
+  const [squadCount, setSquadCount] = useState(null);
+  const wins = club?.wins ?? club?.wins_count ?? 0;
+  const draws = club?.draws ?? club?.draws_count ?? 0;
+  const losses = club?.losses ?? club?.losses_count ?? 0;
+  const total = wins + draws + losses;
+  const hasRecord = total > 0;
+
+  useEffect(() => {
+    if (!club?.id) return;
+    let cancelled = false;
+    stageClient.entities.Player.filter({ club_id: club.id }, null, 60)
+      .then((rows) => {
+        if (!cancelled) setSquadCount(Array.isArray(rows) ? rows.length : 0);
+      })
+      .catch(() => {
+        if (!cancelled) setSquadCount(null);
+      });
+    return () => { cancelled = true; };
+  }, [club?.id]);
+
+  if (!club) {
+    return (
+      <View style={{ padding: 32, alignItems: 'center' }}>
+        <Ionicons name="shield-outline" size={48} color="rgba(255,255,255,0.3)" />
+        <Text style={{ color: 'rgba(255,255,255,0.45)', marginTop: 12 }}>No club linked yet.</Text>
+      </View>
+    );
+  }
+
+  const memberLabel = squadCount != null
+    ? String(squadCount)
+    : (club.member_count ?? club.members_count ?? null);
+
+  return (
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+      {/* Compact stadium header — content starts early */}
+      <View>
+        <GamerBanner
+          bannerUrl={club.banner_url}
+          wash="club"
+          height={132}
+          topLeft={topLeft}
+        />
+        <View style={{ paddingHorizontal: 16, marginTop: -72, zIndex: 10, gap: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
+            <ClubCrest
+              logoUrl={club.logo_url}
+              tag={club.tag}
+              platform={club.platform}
+              width={108}
+            />
+            <View style={{ flex: 1, paddingBottom: 4, gap: 8 }}>
+              <Text
+                numberOfLines={2}
+                style={[
+                  headingStyleLg,
+                  {
+                    color: '#fff',
+                    lineHeight: 28,
+                  },
+                ]}
+              >
+                {club.name || club.club_name || 'Club'}
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                {club.tag ? (
+                  <GamerMetaPill style={{ borderColor: 'rgba(255,214,10,0.35)' }}>[{club.tag}]</GamerMetaPill>
+                ) : null}
+                {club.platform ? (
+                  <GamerMetaPill icon="game-controller" iconColor="#FFD60A">{club.platform}</GamerMetaPill>
+                ) : null}
+                {club.region ? (
+                  <GamerMetaPill icon="globe-outline" iconColor="#FFD60A">{club.region}</GamerMetaPill>
+                ) : null}
+                {memberLabel != null ? (
+                  <GamerMetaPill icon="people" iconColor="#FFD60A">{memberLabel} players</GamerMetaPill>
+                ) : null}
+              </View>
+            </View>
+          </View>
+
+          {/* President = secondary chip; one primary CTA */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            {president ? (
+              <TouchableOpacity
+                onPress={onOpenPresident}
+                activeOpacity={0.85}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                  borderRadius: 999,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.12)',
+                  backgroundColor: 'rgba(0,0,0,0.4)',
+                  paddingHorizontal: 10,
+                  paddingVertical: 8,
+                  maxWidth: '48%',
+                }}
+              >
+                <View
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    backgroundColor: '#101827',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {president.avatar_url ? (
+                    <Image source={{ uri: president.avatar_url }} style={{ width: 24, height: 24 }} />
+                  ) : (
+                    <Ionicons name="person" size={12} color="rgba(255,255,255,0.4)" />
+                  )}
+                </View>
+                <Text numberOfLines={1} style={{ color: 'rgba(255,255,255,0.85)', fontWeight: '700', fontSize: 11, flexShrink: 1 }}>
+                  {president.display_name || 'President'}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+            <TouchableOpacity
+              onPress={() => onOpenFull(club.id)}
+              activeOpacity={0.88}
+              style={{ flex: 1 }}
+            >
+              <LinearGradient
+                colors={['#FFD60A', '#C9A227']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  paddingVertical: 13,
+                  borderRadius: 12,
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ color: '#1A1200', fontSize: 12, fontWeight: '900', letterSpacing: 1.4, textTransform: 'uppercase' }}>
+                  {isOwner ? 'Manage Club' : 'Open Club'}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+
+          {hasRecord ? (
+            <GamerRecordStrip wins={wins} draws={draws} losses={losses} />
+          ) : (
+            <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, fontWeight: '600' }}>
+              No competitive record yet
+            </Text>
+          )}
+
+          {club.description ? (
+            <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, lineHeight: 18 }} numberOfLines={2}>
+              {club.description}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+
+      <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
+        <ClubProfileTabs
+          club={club}
+          isOwner={isOwner}
+          canOpenOperations={isOwner}
+          memberCount={squadCount}
+        />
+      </View>
+    </ScrollView>
+  );
+}
+
+/**
+ * Profile hub — one identity rail, premium EAFC surfaces.
+ */
+export default function ProfileIndex() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { logout } = useAuthStore();
+  const identities = useMyStageIdentities();
+  const [surface, setSurface] = useState(null);
+
+  const availableSurfaces = useMemo(() => {
+    return SURFACES.filter((s) => {
+      if (s.id === 'player') return identities.canPlayer || identities.intent === 'player';
+      if (s.id === 'president') return identities.canPresident;
+      if (s.id === 'club') return identities.canClub;
+      return false;
+    });
+  }, [identities.canPlayer, identities.canPresident, identities.canClub, identities.intent]);
+
+  useEffect(() => {
+    if (identities.loading) return;
+    const preferred = identities.defaultSurface;
+    const allowed = availableSurfaces.some((s) => s.id === preferred)
+      ? preferred
+      : availableSurfaces[0]?.id || 'player';
+    setSurface((prev) => {
+      if (prev && availableSurfaces.some((s) => s.id === prev)) return prev;
+      return allowed;
+    });
+  }, [identities.loading, identities.defaultSurface, availableSurfaces]);
+
+  // Sync dual-role mode when switching identity surfaces
+  const selectSurface = (next) => {
+    setSurface(next);
+    if (identities.isDual) {
+      if (next === 'player') identities.switchMode('player');
+      else identities.switchMode('club');
+    }
+  };
+
+  const openClub = (teamId) => {
+    if (!teamId) return;
+    const ownsClub =
+      identities.presidentClub?.id != null
+      && String(identities.presidentClub.id) === String(teamId);
+    router.push({
+      pathname: ownsClub ? '/teams/manageteamscreen' : '/teams/teamprofilescreen',
+      params: { teamId: String(teamId) },
+    });
+  };
+
+  if (identities.loading || !surface) {
+    return (
+      <GamerProfileShell>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color="#00F0FF" />
+        </View>
+      </GamerProfileShell>
+    );
+  }
+
+  const rail = (
+    <IdentityRail
+      items={availableSurfaces}
+      value={surface}
+      onChange={selectSurface}
+    />
+  );
+
+  const topRight = (
+    <View style={{ flexDirection: 'row', gap: 8 }}>
+      {surface === 'player' ? (
+        <GlassTextButton
+          label="Edit"
+          icon="settings-outline"
+          onPress={() => router.push('/(tabs)/profile/editprofilescreen')}
+        />
+      ) : null}
+      <GlassIconButton
+        icon="log-out-outline"
+        onPress={async () => {
+          await logout();
+          router.replace('/auth/loginscreen');
+        }}
+      />
+    </View>
+  );
+
+  const signedClub = identities.club
+    && identities.player?.club_id
+    && String(identities.club.id) === String(identities.player.club_id)
+    ? identities.club
+    : null;
+
+  return (
+    <GamerProfileShell>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: 88, backgroundColor: GAMER_BG }}>
+        <View style={{ flex: 1 }}>
+          {surface === 'player' && (
+            <ProfileScreen
+              embedded
+              hideChrome
+              player={identities.player}
+              signedClub={signedClub}
+              presidentClub={identities.presidentClub}
+              onOpenClub={openClub}
+              topLeftExtra={rail}
+            />
+          )}
+
+          {surface === 'president' && (
+            <PresidentProfileScreen
+              embedded
+              hideChrome
+              president={identities.president}
+              club={identities.presidentClub}
+              presidentId={identities.presidentId}
+              onOpenClub={openClub}
+              topLeftExtra={rail}
+            />
+          )}
+
+          {surface === 'club' && (
+            <ClubProfileSurface
+              club={identities.presidentClub}
+              president={identities.president}
+              isOwner={Boolean(identities.presidentClub?.id)}
+              onOpenFull={openClub}
+              onOpenPresident={() => selectSurface('president')}
+              topLeft={rail}
+            />
+          )}
+
+          {/* Shared floating actions — single row, no duplicate rails */}
+          <View style={{ position: 'absolute', top: 10, right: 12, zIndex: 40 }}>
+            {topRight}
+          </View>
+        </View>
+      </View>
+    </GamerProfileShell>
+  );
+}

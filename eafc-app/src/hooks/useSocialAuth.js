@@ -1,33 +1,88 @@
 import * as WebBrowser from 'expo-web-browser';
-import api from '../utils/api';
+import { makeRedirectUri } from 'expo-auth-session';
 import useAuthStore from '../store/authStore';
+import { getStageApiBase } from '../utils/stageConfig';
 
-const REDIRECT_URL = 'stage://auth/callback';
+WebBrowser.maybeCompleteAuthSession?.();
 
-export function getSocialAuthUrl(provider) {
-  const base = process.env.EXPO_PUBLIC_API_URL || api.defaults.baseURL;
-  return `${base}/auth/${provider}`;
+/** Matches app.json scheme + Expo Go exp://…/--/auth/callback */
+function getRedirectUrl() {
+  return makeRedirectUri({
+    scheme: 'stage',
+    path: 'auth/callback',
+  });
+}
+
+/** Stage OAuth providers mounted at /api/stage/auth/:provider */
+export const STAGE_OAUTH_PROVIDERS = ['google', 'microsoft', 'twitch', 'kick'];
+
+export function getSocialAuthUrl(provider, redirectUri = getRedirectUrl()) {
+  const base = getStageApiBase();
+  const q = new URLSearchParams({
+    client: 'mobile',
+    redirect_uri: redirectUri,
+  });
+  return `${base}/auth/${provider}?${q}`;
+}
+
+function parseOAuthCallbackUrl(url) {
+  if (!url) return null;
+  try {
+    const query = url.includes('?') ? url.slice(url.indexOf('?') + 1) : '';
+    const params = new URLSearchParams(query);
+    const accessToken = params.get('accessToken');
+    const refreshToken = params.get('refreshToken');
+    if (!accessToken || !refreshToken) return null;
+
+    let user = null;
+    const userParam = params.get('user');
+    try {
+      if (userParam) user = JSON.parse(decodeURIComponent(userParam));
+    } catch (_) {}
+
+    return {
+      accessToken,
+      refreshToken,
+      isNewUser: params.get('isNewUser') === '1',
+      user: {
+        ...user,
+        id: user?.id || params.get('userId'),
+        player_id: user?.player_id || params.get('playerId'),
+      },
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function openSocialAuth(provider) {
-  const authUrl = getSocialAuthUrl(provider);
+  if (!STAGE_OAUTH_PROVIDERS.includes(provider)) {
+    return { success: false, error: `Provider "${provider}" is not supported by Stage` };
+  }
+
+  const redirectUrl = getRedirectUrl();
+  const authUrl = getSocialAuthUrl(provider, redirectUrl);
 
   try {
-    const result = await WebBrowser.openAuthSessionAsync(authUrl, REDIRECT_URL);
+    // ASWebAuthenticationSession / Chrome Custom Tabs — stays in-app when
+    // the server redirects to `redirectUrl` (stage:// or exp://).
+    const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl, {
+      preferEphemeralSession: false,
+      showInRecents: false,
+    });
 
     if (result.type === 'success' && result.url) {
-      const query = result.url.includes('?') ? result.url.split('?')[1] : '';
-      const params = new URLSearchParams(query);
-      const accessToken = params.get('accessToken');
-      const refreshToken = params.get('refreshToken');
-      const userParam = params.get('user');
-
-      if (accessToken && refreshToken) {
-        let user = null;
-        try {
-          if (userParam) user = JSON.parse(decodeURIComponent(userParam));
-        } catch (_) {}
-        await useAuthStore.getState().setUserFromOAuth(accessToken, refreshToken, user);
+      const parsed = parseOAuthCallbackUrl(result.url);
+      if (parsed) {
+        await useAuthStore.getState().setUserFromOAuth(
+          parsed.accessToken,
+          parsed.refreshToken,
+          parsed.user
+        );
+        if (parsed.isNewUser && parsed.user?.id) {
+          const { markNeedsOnboarding } = await import('../api/stageClient');
+          markNeedsOnboarding(parsed.user.id);
+        }
         return { success: true };
       }
     }

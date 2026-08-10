@@ -36,9 +36,13 @@ export default function AuthCallbackScreen() {
       }
     } catch (_) {}
 
-    setUserFromOAuth(accessToken, refreshToken, user).then(() => {
+    setUserFromOAuth(accessToken, refreshToken, user).then(async () => {
+      const { markNeedsOnboarding } = await import('../../api/stageClient');
+      const isNew = String(safeParams.isNewUser || '') === '1';
+      const uid = user?.id || safeParams.userId;
+      if (isNew && uid) markNeedsOnboarding(uid);
       setStatus('success');
-      router.replace('/(tabs)/dashboard');
+      router.replace('/auth/onboarding');
     }).catch(() => {
       setStatus('error');
       setTimeout(() => router.replace('/auth/loginscreen'), 2000);

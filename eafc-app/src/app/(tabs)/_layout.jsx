@@ -88,7 +88,7 @@ export default function TabsLayout() {
         ))}
         <NativeTabs.Trigger key="search" name="search" role="search">
           <NativeIcon src={<NativeVectorIcon family={Ionicons} name="search" />} />
-          <NativeLabel>Search</NativeLabel>
+          <NativeLabel>Apps</NativeLabel>
         </NativeTabs.Trigger>
       </NativeTabs>
     );
@@ -140,7 +140,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Search',
+          title: 'Apps',
           tabBarIcon: ({ color }) => <Ionicons name="search" size={24} color={color} />,
         }}
       />

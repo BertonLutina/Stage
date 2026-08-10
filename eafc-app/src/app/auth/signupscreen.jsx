@@ -26,7 +26,7 @@ export default function SignupScreen() {
   const handleSignup = async () => {
     await register(form);
     const authState = useAuthStore.getState();
-    if (authState.user) router.replace('/auth/gamertagsetup');
+    if (authState.user) router.replace('/auth/onboarding');
   };
 
   return (

@@ -31,7 +31,9 @@
         {
           "faceIDPermission": "Allow Stage to use Face ID to sign in quickly and securely."
         }
-      ]
+      ],
+      "expo-router",
+      "expo-font"
     ],
     "extra": {
       "router": {

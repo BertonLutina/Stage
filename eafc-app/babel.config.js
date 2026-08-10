@@ -12,6 +12,10 @@ module.exports = function (api) {
         {
           root: ['./src'],
           alias: {
+            '@': './src',
+            '@/api': './src/api',
+            '@/lib': './src/lib',
+            '@/translations': './src/translations',
             '@components': './src/components',
             '@screens': './src/screens',
             '@navigation': './src/navigation',
@@ -20,6 +24,7 @@ module.exports = function (api) {
             '@hooks': './src/hooks',
             '@utils': './src/utils',
           },
+          extensions: ['.js', '.jsx', '.json', '.ts', '.tsx'],
         },
       ],
       'react-native-reanimated/plugin',

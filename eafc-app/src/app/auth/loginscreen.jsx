@@ -1,55 +1,62 @@
 import React, { useEffect, useState } from 'react';
-import { View, Image, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
-import STText from '../../components/common/STText';
+import {
+  View,
+  Image,
+  ImageBackground,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
-import Input from '../../components/common/Input';
-import Button from '../../components/common/Button';
+import STText from '../../components/common/STText';
 import useAuthStore from '../../store/authStore';
-import api from '../../utils/api';
 import SocialAuthIconButtons from '../../components/auth/SocialAuthIconButtons';
 import { checkBackendConnection } from '../../utils/healthCheck';
 import {
   authenticateForLogin,
   getBiometricEnabled,
   isBiometricAvailable,
-  resolveSigninPreference,
   setBiometricEnabled,
 } from '../../services/biometricAuthService';
 
+const LOGIN_BANNER = require('../../../assets/Banner.jpg');
+const STADIUM_LOGO = require('../../../assets/stadium-logo.png');
+
 export default function LoginScreen() {
-  const [email, setEmail] = useState('lengarose');
-  const [password, setPassword] = useState('Stage2025!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [biometricEnabled, setBiometricEnabledState] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricError, setBiometricError] = useState('');
   const [connectionStatus, setConnectionStatus] = useState(null);
-  const { login, loading, error } = useAuthStore();
-
-  const testConnection = async () => {
-    setConnectionStatus(null);
-    const result = await checkBackendConnection();
-    setConnectionStatus(result);
-  };
+  const { login, loading, error, clearError } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
     let cancelled = false;
 
-    async function bootstrapBiometric() {
-      const [enabled, available] = await Promise.all([
+    async function bootstrap() {
+      const [enabled, available, connection] = await Promise.all([
         getBiometricEnabled(),
         isBiometricAvailable(),
+        checkBackendConnection(),
       ]);
       if (!cancelled) {
         setBiometricEnabledState(enabled);
         setBiometricAvailable(available);
+        setConnectionStatus(connection);
       }
     }
 
-    bootstrapBiometric();
+    bootstrap();
     return () => {
       cancelled = true;
     };
@@ -63,6 +70,13 @@ export default function LoginScreen() {
 
   const handleSignIn = async () => {
     setBiometricError('');
+    clearError?.();
+
+    const identifier = email.trim();
+    if (!identifier || !password) {
+      useAuthStore.setState({ error: 'Email/gamer tag and password are required' });
+      return;
+    }
 
     if (biometricEnabled) {
       const bio = await authenticateForLogin();
@@ -79,128 +93,292 @@ export default function LoginScreen() {
       }
     }
 
-    await login(email, password);
-    try {
-      const signinPreference = await resolveSigninPreference(biometricEnabled);
-      await api.put('/users/me', { signin_preference: signinPreference });
-    } catch {
-      // Non-blocking: login flow should not fail if preference update fails.
-    }
+    await login(identifier, password);
   };
 
   return (
-      <SafeAreaView className="flex-1">
+    <ImageBackground source={LOGIN_BANNER} style={styles.background} resizeMode="cover">
+      <View style={styles.scrim} pointerEvents="none" />
+      <SafeAreaView style={styles.safe}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          className="flex-1"
+          style={styles.flex}
         >
           <ScrollView
-            contentContainerStyle={{ flexGrow: 1 }}
-            className="px-6"
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <View className="flex-1">
-              <View className="items-center w-full mb-6 absolute top-0">
-                  <Image
-                    source={require('../../../assets/logo.png')}
-                    className="h-64 w-64"
-                    style={{ resizeMode: 'contain' }}
-                  />
-                </View>
-              <View className="relative top-56 border border-lineInner/30 rounded-3xl px-6 py-7">
+            <View style={styles.card}>
+              <View style={styles.brand}>
+                <Image source={STADIUM_LOGO} style={styles.logo} resizeMode="contain" />
+                <STText style={styles.subtitle}>Welcome back</STText>
+              </View>
 
-                <STText color="#FFFFFF" className="text-xl font-semibold mb-4">
-                  Welcome back
-                </STText>
+              <View style={styles.oauth}>
+                <SocialAuthIconButtons />
+              </View>
 
-                {error && (
-                  <View className="bg-danger/15 border border-danger/60 rounded-2xl p-3 mb-3">
-                    <STText className="text-xs" style={{ color: '#EF4444' }}>{error}</STText>
-                  </View>
-                )}
-                {biometricError ? (
-                  <View className="bg-accent/15 border border-accent/60 rounded-2xl p-3 mb-3">
-                    <STText className="text-xs" style={{ color: '#8CF5F8' }}>{biometricError}</STText>
-                  </View>
-                ) : null}
-                {connectionStatus && (
-                  <View className={`rounded-2xl p-3 mb-3 border ${connectionStatus.ok ? 'bg-green-500/15 border-green-500/60' : 'bg-amber-500/15 border-amber-500/60'}`}>
-                    <STText className="text-xs" style={{ color: connectionStatus.ok ? '#22C55E' : '#F59E0B' }}>
-                      {connectionStatus.ok ? '✓ ' : ''}{connectionStatus.message}
-                    </STText>
-                  </View>
-                )}
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <STText style={styles.dividerText}>or</STText>
+                <View style={styles.dividerLine} />
+              </View>
 
-                <View className="space-y-4 mb-2">
-                  <Input
-                    color="#FFFFFF"
-                    label="Email or gamer tag"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    placeholder="you@example.com or gamer_tag"
-                  />
+              <View style={styles.form}>
+                <TextInput
+                  value={email}
+                  onChangeText={(v) => {
+                    clearError?.();
+                    setEmail(v);
+                  }}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  placeholder="Email, gamertag, or club name"
+                  placeholderTextColor="rgba(255,255,255,0.35)"
+                  style={styles.input}
+                />
 
-                  <Input
-                    color="#FFFFFF"
-                    label="Password"
+                <View style={styles.passwordWrap}>
+                  <TextInput
                     value={password}
-                    onChangeText={setPassword}
+                    onChangeText={(v) => {
+                      clearError?.();
+                      setPassword(v);
+                    }}
                     secureTextEntry={!showPassword}
-                    onTogglePassword={() => setShowPassword((prev) => !prev)}
-                    placeholder="••••••••"
+                    placeholder="Password"
+                    placeholderTextColor="rgba(255,255,255,0.35)"
+                    style={[styles.input, styles.passwordInput]}
                   />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword((prev) => !prev)}
+                    style={styles.eyeButton}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  >
+                    <Ionicons
+                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={18}
+                      color="rgba(255,255,255,0.45)"
+                    />
+                  </TouchableOpacity>
                 </View>
+
+                {error ? (
+                  <STText style={styles.errorText}>{error}</STText>
+                ) : null}
+                {biometricError ? (
+                  <STText style={styles.errorText}>{biometricError}</STText>
+                ) : null}
+                {connectionStatus && !connectionStatus.ok ? (
+                  <STText style={styles.warnText}>{connectionStatus.message}</STText>
+                ) : null}
+
+                <TouchableOpacity
+                  onPress={handleSignIn}
+                  disabled={loading}
+                  activeOpacity={0.85}
+                  style={[styles.submit, loading && styles.submitDisabled]}
+                >
+                  {loading ? (
+                    <View style={styles.submitLoading}>
+                      <ActivityIndicator color="#0d2461" size="small" />
+                      <STText style={styles.submitText}>Signing in…</STText>
+                    </View>
+                  ) : (
+                    <STText style={styles.submitText}>Sign in</STText>
+                  )}
+                </TouchableOpacity>
 
                 {biometricAvailable ? (
-                  <TouchableOpacity
-                    onPress={toggleBiometric}
-                    className="flex-row items-center justify-between bg-darkCard/50 border border-lineInner/30 rounded-2xl px-4 py-3 mt-2"
-                  >
-                    <STText color="#5FE3E8" className="text-sm">Enable biometric login</STText>
-                    <STText color="#5FE3E8" className={biometricEnabled ? 'font-semibold' : 'opacity-70'} style={biometricEnabled ? { color: '#22C55E' } : undefined}>
+                  <TouchableOpacity onPress={toggleBiometric} style={styles.bioRow} activeOpacity={0.7}>
+                    <STText style={styles.bioLabel}>Biometric login</STText>
+                    <STText style={[styles.bioValue, biometricEnabled && styles.bioOn]}>
                       {biometricEnabled ? 'On' : 'Off'}
                     </STText>
                   </TouchableOpacity>
-                ) : (
-                  <STText color="#FFFFFF" className="text-xs mt-2 opacity-70">Biometric authentication not available on this device.</STText>
-                )}
+                ) : null}
 
-                <TouchableOpacity onPress={testConnection} className="self-end mb-2">
-                  <STText className="text-xs" style={{ color: '#5FE3E8' }}>Test backend connection</STText>
+                <TouchableOpacity
+                  onPress={() => router.push('/auth/signupscreen')}
+                  style={styles.switchMode}
+                  activeOpacity={0.7}
+                >
+                  <STText style={styles.switchModeText}>Don&apos;t have an account? Sign up</STText>
                 </TouchableOpacity>
-                <Button
-                  title={biometricEnabled ? 'Sign in with biometrics' : 'Sign in'}
-                  variant={biometricEnabled ? 'secondary' : 'primary2'}
-                  onPress={handleSignIn}
-                  loading={loading}
-                  className="mt-2 rounded-2xl py-3"
-                />
-
-                <View className="flex-row items-center my-5">
-                  <View className="flex-1 h-px bg-lineInner/30" />
-                  <STText color="#FFFFFF" className="mx-3 text-xs">
-                    or continue with
-                  </STText>
-                  <View className="flex-1 h-px bg-lineInner/30" />
-                </View>
-
-                <SocialAuthIconButtons />
-
-                <View className="flex-row justify-center mt-6">
-                  <STText color="#FFFFFF" className="text-xs">
-                    Don&apos;t have an account?{' '}
-                  </STText>
-                  <TouchableOpacity onPress={() => router.push('/auth/signupscreen')}>
-                    <STText className="font-semibold text-xs" style={{ color: '#5FE3E8' }}>
-                      Create one
-                    </STText>
-                  </TouchableOpacity>
-                </View>
               </View>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
+    </ImageBackground>
   );
 }
+
+const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  scrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  safe: {
+    flex: 1,
+  },
+  flex: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+  },
+  card: {
+    width: '100%',
+    maxWidth: 384,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.20)',
+    borderRadius: 16,
+    padding: 32,
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 12,
+  },
+  brand: {
+    alignItems: 'center',
+    marginBottom: 28,
+    gap: 8,
+  },
+  logo: {
+    height: 96,
+    width: 220,
+  },
+  subtitle: {
+    color: 'rgba(255,255,255,0.50)',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 4,
+    textTransform: 'uppercase',
+  },
+  oauth: {
+    marginBottom: 20,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255,255,255,0.20)',
+  },
+  dividerText: {
+    color: 'rgba(255,255,255,0.35)',
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  form: {
+    gap: 12,
+  },
+  input: {
+    width: '100%',
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.20)',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    color: '#FFFFFF',
+    fontSize: 14,
+  },
+  passwordWrap: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  passwordInput: {
+    paddingRight: 44,
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: 12,
+    height: '100%',
+    justifyContent: 'center',
+  },
+  errorText: {
+    color: '#F87171',
+    fontSize: 12,
+    textAlign: 'center',
+    paddingTop: 4,
+  },
+  warnText: {
+    color: '#F59E0B',
+    fontSize: 11,
+    textAlign: 'center',
+  },
+  submit: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  submitDisabled: {
+    opacity: 0.55,
+  },
+  submitLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  submitText: {
+    color: '#0d2461',
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  bioRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  bioLabel: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 12,
+  },
+  bioValue: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  bioOn: {
+    color: '#22C55E',
+  },
+  switchMode: {
+    paddingTop: 4,
+    alignItems: 'center',
+  },
+  switchModeText: {
+    color: 'rgba(255,255,255,0.60)',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+  },
+});
