@@ -16,24 +16,6 @@ import { onboardingStyles as s } from './onboardingStyles';
 const REGIONS = ['Europe', 'North America', 'South America', 'Asia', 'Oceania', 'Africa', 'Middle East'];
 const PLATFORMS = ['PlayStation', 'Xbox', 'PC'];
 
-function toPresidentApiPayload(profile) {
-  const social = String(profile.social_link || '').trim();
-  const countryCode =
-    profile.country_code || COUNTRIES.find((c) => c.name === profile.country)?.code || '';
-  return {
-    display_name: profile.display_name?.trim() || null,
-    role_title: profile.role_title?.trim() || 'President',
-    avatar_url: null,
-    bio: profile.bio?.trim() || null,
-    success_level: profile.success_level || 'successful',
-    country_code: countryCode || null,
-    quote: profile.quote?.trim() || null,
-    management_style: profile.management_style?.trim() || null,
-    started_at: null,
-    social_links: social ? { primary: social } : null,
-  };
-}
-
 export default function ClubSetup({
   onComplete,
   onPhaseChange,
@@ -78,69 +60,39 @@ export default function ClubSetup({
       setError('Club name, tag, and country are required');
       return;
     }
+    if (!player?.id) {
+      setError('Player profile is required before creating a founder club');
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
-      const presidentProfile = {
-        display_name: displayName,
-        role_title: roleTitle,
-        country,
-        country_code: COUNTRIES.find((c) => c.name === country)?.code || '',
-        success_level: 'successful',
-        social_link: '',
-        bio: '',
-        quote: '',
-        management_style: '',
-      };
-
-      const club = await stageClient.entities.Club.create({
+      const countryCode = COUNTRIES.find((c) => c.name === country)?.code || '';
+      const founderState = await stageClient.clubs.createFounder({
         user_id: user?.id,
-        name: name.trim(),
-        tag: tag.trim().toUpperCase().slice(0, 5),
-        platform,
-        region,
-        country_code: COUNTRIES.find((c) => c.name === country)?.code || country,
-        owner_email: user?.email,
-        logo_url: null,
-        description: '',
-        wins: 0,
-        losses: 0,
-        draws: 0,
-        goals_scored: 0,
-        goals_conceded: 0,
-        rating: 1500,
-        peak_rating: 1500,
-        matches_ranked: 0,
-        is_provisional: 1,
-        trophies: 0,
-        credits: 0,
-        stc: 2500000,
-        wage_budget_stc: 250000,
-        transfer_budget_stc: 1000000,
-        stadium_level: 0,
-        stadium_capacity: 5000,
-        tier: 'Silver',
-        win_streak: 0,
-        loss_streak: 0,
-        status: 'active',
-        president: toPresidentApiPayload(presidentProfile),
+        player_id: player.id,
+        club: {
+          name: name.trim(),
+          tag: tag.trim().toUpperCase().slice(0, 5),
+          platform,
+          region,
+          country_code: countryCode || country,
+          owner_email: user?.email,
+          logo_url: null,
+          description: '',
+          status: 'active',
+        },
+        president_profile: {
+          display_name: displayName.trim() || player?.gamertag || user?.email || 'President',
+          role_title: roleTitle.trim() || 'President',
+          country,
+          country_code: countryCode,
+        },
       });
 
-      if (!club?.id) throw new Error('Server returned no club ID');
+      if (!founderState?.club?.id) throw new Error('Server returned no club ID');
 
-      const contractId = club.president_contract_id || club.owner_contract_id || null;
-      const presidentId = club.president_id || club.president?.id || null;
-      if (contractId && presidentId) {
-        await stageClient.functions
-          .invoke('contractManagement', {
-            action: 'accept',
-            contract_id: contractId,
-            president_id: presidentId,
-          })
-          .catch(() => {});
-      }
-
-      onComplete?.(club);
+      onComplete?.(founderState);
     } catch (err) {
       setError(err?.message || err?.data?.message || 'Failed to create club');
     } finally {

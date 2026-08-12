@@ -32,34 +32,39 @@ jest.mock('../../components/common/GradientBackground', () => {
 jest.mock('expo-linear-gradient', () => {
   const React = require('react');
   const { View } = require('react-native');
-  return ({ children, style }) => React.createElement(View, { style }, children);
+  const LinearGradient = ({ children, style }) => React.createElement(View, { style }, children);
+  return { LinearGradient };
 });
 
-describe('ProfileScreen Create Team button', () => {
+const player = {
+  id: 'player-1',
+  gamertag: 'testuser',
+  country: 'Belgium',
+  platform: 'PlayStation',
+  position: 'ST',
+};
+
+describe('ProfileScreen tabs', () => {
   beforeEach(() => {
     mockPush.mockClear();
   });
 
-  it('shows Create Team button when viewing own profile on Teams tab', async () => {
-    const { getByText } = render(<ProfileScreen />);
+  it('shows the current primary profile tabs for an own player profile', () => {
+    const { getByText } = render(<ProfileScreen player={player} />);
 
-    // Switch to Teams tab
-    const teamsTab = getByText('Teams');
-    fireEvent.press(teamsTab);
-
-    const createButton = getByText('+ Create Team');
-    expect(createButton).toBeTruthy();
+    expect(getByText('Matches')).toBeTruthy();
+    expect(getByText('Feed')).toBeTruthy();
+    expect(getByText('Stats')).toBeTruthy();
+    expect(getByText('More')).toBeTruthy();
   });
 
-  it('navigates to /teams/createteamscreen when Create Team is pressed', async () => {
-    const { getByText } = render(<ProfileScreen />);
+  it('opens the More tool list from the primary tab rail', () => {
+    const { getByText } = render(<ProfileScreen player={player} />);
 
-    const teamsTab = getByText('Teams');
-    fireEvent.press(teamsTab);
+    fireEvent.press(getByText('More'));
 
-    const createButton = getByText('+ Create Team');
-    fireEvent.press(createButton);
-
-    expect(mockPush).toHaveBeenCalledWith('/teams/createteamscreen');
+    expect(getByText('Career')).toBeTruthy();
+    expect(getByText('Showcase')).toBeTruthy();
+    expect(getByText('Trophies')).toBeTruthy();
   });
 });

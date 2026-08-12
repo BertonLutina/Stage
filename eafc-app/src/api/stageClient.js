@@ -795,6 +795,18 @@ const http = {
   delete: (path)               => apiFetch(path, { method: 'DELETE' }),
 };
 
+const posts = {
+  likeToggle(postId) {
+    return http.post(`/posts/${encodeURIComponent(postId)}/like-toggle`);
+  },
+};
+
+const comments = {
+  createForPost(body = {}) {
+    return http.post('/comments', body);
+  },
+};
+
 const profileMatches = {
   async list(filters = {}, orderBy = null, limit = 50) {
     const rows = await http.get('/matches/profile', { ...filters, limit });
@@ -903,9 +915,10 @@ export async function resolveMyPlayerAndClub() {
     if (!presidentClub && club) presidentClub = club;
   }
 
-  // 7) Resolve first-class President entity (profile), separate from club auth.
-  // A user may own/preside over a club while their player remains a free agent.
-  // Never synthesize player.club_id from presidentClub/ownedClub here.
+  // 7) Resolve legacy first-class President entity when present. New
+  // player-president flows use clubs.president_player_id as the public identity.
+  // Keep President rows as compatibility data only; do not synthesize a
+  // separate public President identity from them in new flows.
   const presidentId = getPresidentId(u) || presidentClub?.president_id || null;
   if (presidentId) {
     president = await entities.President.get(presidentId).catch(() => null);
@@ -972,6 +985,12 @@ const presidents = {
   },
 };
 
-export const stageClient = { entities, auth, integrations, functions, http, identityClaims, competitionEngine, profileMatches, chatReads, presidents };
+const clubs = {
+  createFounder(body = {}) {
+    return http.post('/clubs/founder', body);
+  },
+};
+
+export const stageClient = { entities, auth, integrations, functions, http, identityClaims, competitionEngine, profileMatches, chatReads, presidents, clubs, posts, comments };
 // Backward-compat alias during migration
 export const base44 = stageClient;

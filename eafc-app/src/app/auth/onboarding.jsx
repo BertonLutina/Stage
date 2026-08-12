@@ -58,12 +58,7 @@ function getStepMeta(intent, step, phase) {
   if (step === 'club' && dual) {
     return phase === 'club'
       ? { label: 'Club profile', index: 4, total: 5 }
-      : { label: 'President profile', index: 3, total: 5 };
-  }
-  if (step === 'owner_club') {
-    return phase === 'club'
-      ? { label: 'Club profile', index: 2, total: 3 }
-      : { label: 'President profile', index: 1, total: 3 };
+      : { label: 'President status', index: 3, total: 5 };
   }
   return { label: 'Choose role', index: 0, total: 2 };
 }
@@ -220,20 +215,6 @@ export default function OnboardingScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[s.roleCard, { borderColor: 'rgba(245,158,11,0.35)' }]}
-                    onPress={() => {
-                      setOnboardingIntent('president', 'club');
-                      setClubSetupPhase('president');
-                      setStep('owner_club');
-                    }}
-                  >
-                    <STText style={[s.roleTitle, { color: '#FBBF24' }]}>President</STText>
-                    <STText style={s.roleDesc}>
-                      Found a club, build a squad, and enter competitions as club owner.
-                    </STText>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
                     style={[s.roleCard, { borderColor: 'rgba(52,211,153,0.35)' }]}
                     onPress={() => {
                       setOnboardingIntent('both', 'player');
@@ -298,16 +279,6 @@ export default function OnboardingScreen() {
                 />
               ) : null}
 
-              {step === 'owner_club' ? (
-                <ClubSetup
-                  onComplete={finishOnboarding}
-                  onPhaseChange={setClubSetupPhase}
-                  player={player}
-                  user={user}
-                  required
-                />
-              ) : null}
-
               {step === 'discord' ? (
                 <DiscordJoinStep
                   onSkip={() => setTutorialOpen(true)}
@@ -315,7 +286,7 @@ export default function OnboardingScreen() {
                 />
               ) : null}
 
-              {step !== 'choose' && step !== 'club' && step !== 'owner_club' && step !== 'discord' ? (
+              {step !== 'choose' && step !== 'club' && step !== 'discord' ? (
                 <TouchableOpacity
                   onPress={() => setStep(step === 'identity' ? 'player' : 'choose')}
                   style={s.ghostBtn}
