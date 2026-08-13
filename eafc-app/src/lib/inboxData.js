@@ -1,4 +1,6 @@
 import { resolveMyPlayerAndClub, stageClient } from '@/api/stageClient';
+import { parseInboxMetadata } from '@/lib/inboxHelpers';
+import { acceptProposal, loadFixtureForInbox, proposeTime, roleForClub } from '@/lib/scheduleEngine';
 
 export async function loadInboxMessages() {
   const { user, player, club } = await resolveMyPlayerAndClub();
@@ -42,6 +44,42 @@ export async function respondToInboxMessage(message, action, { newDate = null, n
       new_date: newDate,
       new_time: newTime,
     });
+    return action;
+  }
+
+  if (message.message_type === 'league_schedule') {
+    const meta = parseInboxMetadata(message);
+    const { user, club, player } = await resolveMyPlayerAndClub();
+    const { fixture, fixtureType } = await loadFixtureForInbox(meta);
+    const role = roleForClub(fixture, club?.id) || (meta.proposed_by_role === 'home' ? 'away' : 'home');
+    if (action === 'accepted' || action === 'confirmed') {
+      if (!fixture) throw new Error('Fixture not found for this schedule invite');
+      await acceptProposal({
+        fixture,
+        fixtureType,
+        role,
+        myClub: club,
+        myEmail: user?.email,
+      });
+      await stageClient.entities.InboxMessage.update(message.id, { status: 'accepted', is_read: true }).catch(() => {});
+      return 'accepted';
+    }
+    if (action === 'date_change_requested' || action === 'propose') {
+      if (!fixture) throw new Error('Fixture not found');
+      const proposedDate = newDate && newTime ? `${newDate} ${newTime}` : (newDate || meta.proposed_date);
+      await proposeTime({
+        fixture,
+        fixtureType,
+        role,
+        proposedDate,
+        myClub: club,
+        myEmail: user?.email,
+        myGamertag: player?.gamertag,
+      });
+      await stageClient.entities.InboxMessage.update(message.id, { status: 'date_change_requested', is_read: true }).catch(() => {});
+      return 'date_change_requested';
+    }
+    await stageClient.entities.InboxMessage.update(message.id, { status: action, is_read: true });
     return action;
   }
 

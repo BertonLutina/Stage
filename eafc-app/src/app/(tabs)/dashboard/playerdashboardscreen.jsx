@@ -563,7 +563,7 @@ export default function PlayerDashboardScreen() {
               <SectionCard accent="gold">
                 <SectionTitle
                   eyebrow="TABLE"
-                  right={<LinkText label="View all" onPress={() => open('/apps/register')} />}
+                  right={<LinkText label="View all" onPress={() => open('/apps/competitions')} />}
                 >
                   League standings
                 </SectionTitle>

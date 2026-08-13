@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { resolveMyPlayerAndClub, stageClient } from '../api/stageClient';
+import { materializeConfirmedFixtures } from '../lib/gameDayIntegration';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -94,6 +95,7 @@ export default function useMatchesHub() {
   const [error, setError] = useState(null);
   const [events, setEvents] = useState([]);
   const [myClub, setMyClub] = useState(null);
+  const [myPlayer, setMyPlayer] = useState(null);
   const [leagueFilter, setLeagueFilter] = useState('all');
 
   const load = useCallback(async () => {
@@ -102,6 +104,7 @@ export default function useMatchesHub() {
     try {
       const { user, player, club } = await resolveMyPlayerAndClub();
       setMyClub(club || null);
+      setMyPlayer(player || null);
 
       const clubId = club?.id || player?.club_id;
       const playerId = player?.id;
@@ -129,13 +132,14 @@ export default function useMatchesHub() {
         matchPromises.push(stageClient.entities.Match.list('-scheduled_date', 40).catch(() => []));
       }
 
-      const [tournaments, ...matchChunks] = await Promise.all([
+      const [tournaments, materialized, ...matchChunks] = await Promise.all([
         stageClient.entities.Tournament.list('-created_date', 100).catch(() => []),
+        clubId ? materializeConfirmedFixtures(clubId).catch(() => []) : Promise.resolve([]),
         ...matchPromises,
       ]);
 
       const tournamentMap = new Map((tournaments || []).map((t) => [t.id, t]));
-      const matches = uniqById(matchChunks.flat());
+      const matches = uniqById([...(materialized || []), ...matchChunks.flat()]);
       const mapped = matches
         .map((m) => toEvent(m, { club, player, tournamentMap }))
         .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
@@ -181,6 +185,7 @@ export default function useMatchesHub() {
     error,
     reload: load,
     myClub,
+    myPlayer,
     events,
     leagueFilter,
     setLeagueFilter,

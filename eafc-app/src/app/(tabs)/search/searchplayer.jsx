@@ -117,8 +117,16 @@ export default function SearchPlayers() {
   };
 
   const handleChallenge = (player) => {
-    // TODO: Implement challenge flow when backend ready
-    console.log('Challenge player:', player.id);
+    router.push({
+      pathname: '/(tabs)/matches',
+      params: {
+        arrange: '1',
+        opponentKind: 'player',
+        opponentId: player.player_id || player.id,
+        opponentName: player.gamer_tag || `${player.first_name || ''} ${player.last_name || ''}`.trim(),
+        opponentEmail: player.email || '',
+      },
+    });
   };
 
   const handleInvite = (player) => {

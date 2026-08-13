@@ -130,8 +130,17 @@ export default function SearchClubs() {
   };
 
   const handleChallenge = (club) => {
-    // TODO: Implement challenge-club flow when backend ready
-    console.log('Challenge club:', club.id);
+    router.push({
+      pathname: '/(tabs)/matches',
+      params: {
+        arrange: '1',
+        opponentKind: 'club',
+        opponentId: club.id,
+        opponentName: club.club_name || club.name,
+        opponentTag: club.tag || '',
+        opponentEmail: club.owner_email || club.president_email || '',
+      },
+    });
   };
 
   return (

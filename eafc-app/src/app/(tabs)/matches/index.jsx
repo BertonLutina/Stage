@@ -9,10 +9,11 @@ import {
   Text,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import useMatchesHub from '../../../hooks/useMatchesHub';
 import { GameDayMatchCard, ScheduleMatchRow } from '../../../components/matches/MatchHubCards';
+import ArrangeGameModal from '../../../components/matches/ArrangeGameModal';
 import {
   GamerProfileShell,
   GamerTabNav,
@@ -35,6 +36,7 @@ const TABS = [
 
 export default function MatchesIndex() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const {
     loading,
     error,
@@ -46,9 +48,30 @@ export default function MatchesIndex() {
     leagueGroups,
     leagueFilter,
     setLeagueFilter,
+    myClub,
+    myPlayer,
   } = useMatchesHub();
   const [tab, setTab] = useState('upcoming');
   const [refreshing, setRefreshing] = useState(false);
+  const [arrangeOpen, setArrangeOpen] = useState(false);
+  const [presetOpponent, setPresetOpponent] = useState(null);
+  const [presetKind, setPresetKind] = useState(null);
+
+  React.useEffect(() => {
+    if (!params?.arrange) return;
+    const kind = params.opponentKind === 'club' ? 'club' : 'player';
+    if (params.opponentId) {
+      setPresetKind(kind);
+      setPresetOpponent({
+        id: params.opponentId,
+        name: params.opponentName,
+        gamertag: params.opponentName,
+        email: params.opponentEmail,
+        tag: params.opponentTag,
+      });
+    }
+    setArrangeOpen(true);
+  }, [params?.arrange, params?.opponentId, params?.opponentKind, params?.opponentName, params?.opponentEmail, params?.opponentTag]);
 
   const tabs = useMemo(
     () => TABS.map((t) => ({
@@ -145,6 +168,24 @@ export default function MatchesIndex() {
               <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 8, lineHeight: 18 }}>
                 Game Day ops and your full schedule in one place.
               </Text>
+              <TouchableOpacity
+                onPress={() => setArrangeOpen(true)}
+                style={{
+                  marginTop: 14,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  backgroundColor: CYAN,
+                  borderRadius: 12,
+                  paddingVertical: 12,
+                }}
+              >
+                <Ionicons name="add" size={18} color="#041018" />
+                <Text style={{ color: '#041018', fontSize: 13, fontWeight: '900', letterSpacing: 0.6 }}>
+                  ARRANGE VS FIXTURE
+                </Text>
+              </TouchableOpacity>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
                 <View style={{
                   paddingHorizontal: 10,
@@ -259,8 +300,11 @@ export default function MatchesIndex() {
                       : 'No results yet'}
                 </Text>
                 <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, textAlign: 'center' }}>
-                  Pull to refresh when new fixtures drop.
+                  Arrange a VS fixture, or pull to refresh when new fixtures drop.
                 </Text>
+                <TouchableOpacity onPress={() => setArrangeOpen(true)}>
+                  <Text style={{ color: CYAN, fontSize: 12, fontWeight: '800' }}>Arrange VS fixture</Text>
+                </TouchableOpacity>
               </View>
             ) : tab === 'results' ? (
               <View style={{
@@ -315,6 +359,24 @@ export default function MatchesIndex() {
             )}
           </SectionCard>
         </ScrollView>
+        <ArrangeGameModal
+          visible={arrangeOpen}
+          onClose={() => {
+            setArrangeOpen(false);
+            setPresetOpponent(null);
+            setPresetKind(null);
+          }}
+          myPlayer={myPlayer}
+          myClub={myClub}
+          presetOpponent={presetOpponent}
+          presetKind={presetKind}
+          onSent={() => {
+            setArrangeOpen(false);
+            setPresetOpponent(null);
+            setPresetKind(null);
+            reload();
+          }}
+        />
       </SafeAreaView>
     </GamerProfileShell>
   );

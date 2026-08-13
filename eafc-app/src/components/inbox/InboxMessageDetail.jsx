@@ -186,7 +186,7 @@ export default function InboxMessageDetail({
               />
               <TouchableOpacity
                 style={[styles.btn, styles.btnPrimary]}
-                onPress={() => runAction('date_change_requested')}
+                onPress={() => runAction(showScheduleActions ? 'date_change_requested' : 'date_change_requested')}
                 disabled={!!loading}
               >
                 {loading === 'date_change_requested' ? (
@@ -215,7 +215,8 @@ export default function InboxMessageDetail({
                 />
               </>
             ) : null}
-            {showGenericActions && effectiveActionType === 'accept_decline_date' ? (
+            {(showGenericActions && effectiveActionType === 'accept_decline_date')
+              || (showScheduleActions && effectiveActionType === 'schedule_accept_propose') ? (
               <ActionBtn
                 label="Propose time"
                 tone="warn"

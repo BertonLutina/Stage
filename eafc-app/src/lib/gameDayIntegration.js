@@ -1,0 +1,156 @@
+import { stageClient } from '@/api/stageClient';
+
+const PHASE_LABEL = {
+  league: (md) => `League Phase – Matchday ${md}`,
+  playoff_round: () => 'Playoff Round',
+  knockout_r16: () => 'Round of 16',
+  knockout_qf: () => 'Quarter-Final',
+  knockout_sf: () => 'Semi-Final',
+  knockout_final: () => 'Final',
+};
+
+export function buildMatchContext(fixture, fixtureType) {
+  if (fixtureType === 'regional_league') {
+    return `${fixture.league_name || 'Regional League'} · Division ${fixture.division || 1} · Matchday ${fixture.matchday || ''}`.trim();
+  }
+  const phaseFn = PHASE_LABEL[fixture.phase] || (() => fixture.phase || 'Match');
+  return `${fixture.competition_name || 'Competition'} · ${phaseFn(fixture.matchday)}`;
+}
+
+export async function createMatchFromFixture(fixture, fixtureType) {
+  if (!fixture?.id) return null;
+  const sourceType = fixtureType === 'regional_league' || fixtureType === 'regional_league_fixture'
+    ? 'regional_league'
+    : 'competition';
+  const fixtureEntity = sourceType === 'regional_league'
+    ? stageClient.entities.RegionalLeagueFixture
+    : stageClient.entities.CompetitionFixture;
+
+  const existingByLinkedId = fixture.match_id
+    ? await stageClient.entities.Match.get(fixture.match_id).catch(() => null)
+    : null;
+  if (existingByLinkedId?.id) return existingByLinkedId;
+
+  const existingBySource = await stageClient.entities.Match
+    .filter({ source_fixture_id: fixture.id, source_fixture_type: sourceType }, '-created_date', 1)
+    .catch(() => []);
+  if (existingBySource[0]?.id) {
+    if (!fixture.match_id && fixtureEntity?.update) {
+      await fixtureEntity.update(fixture.id, { match_id: existingBySource[0].id }).catch(() => {});
+    }
+    return existingBySource[0];
+  }
+
+  try {
+    const result = await stageClient.functions.invoke('createMatchFromLeagueFixture', {
+      fixture_id: fixture.id,
+      fixture_type: sourceType,
+    });
+    const match = result?.data?.match || result?.match || null;
+    if (match?.id) return match;
+  } catch {
+    /* fall through to entity create */
+  }
+
+  const scheduledDate = fixture.confirmed_date || fixture.scheduled_date || null;
+  const created = await stageClient.entities.Match.create({
+    home_club_id: fixture.home_club_id || null,
+    home_club_name: fixture.home_club_name || null,
+    home_owner_email: fixture.home_owner_email || null,
+    away_club_id: fixture.away_club_id || null,
+    away_club_name: fixture.away_club_name || null,
+    away_owner_email: fixture.away_owner_email || null,
+    home_player_id: fixture.home_player_id || null,
+    home_player_name: fixture.home_player_name || null,
+    home_player_email: fixture.home_player_email || null,
+    away_player_id: fixture.away_player_id || null,
+    away_player_name: fixture.away_player_name || null,
+    away_player_email: fixture.away_player_email || null,
+    mode: fixture.home_player_id || fixture.away_player_id ? 'solo' : 'club',
+    status: 'scheduled',
+    scheduled_date: scheduledDate,
+    tournament_id: sourceType === 'competition'
+      ? (fixture.season_id || fixture.competition_id || null)
+      : (fixture.league_id || null),
+    round: fixture.matchday || fixture.round || 1,
+    source_fixture_id: fixture.id,
+    source_fixture_type: sourceType,
+    competition_context: buildMatchContext(fixture, sourceType),
+    type: sourceType,
+    stats_processed: 0,
+    wager_stc: 0,
+    wager_status: 'none',
+  });
+  if (created?.id && fixtureEntity?.update) {
+    await fixtureEntity.update(fixture.id, { match_id: created.id, status: fixture.status || 'scheduled' }).catch(() => {});
+  }
+  return created || null;
+}
+
+export async function materializeConfirmedFixtures(clubId) {
+  if (!clubId) return [];
+  const packs = await Promise.all([
+    stageClient.entities.CompetitionFixture.filter({ home_club_id: clubId, scheduling_status: 'confirmed' }, '-confirmed_date', 50).catch(() => []),
+    stageClient.entities.CompetitionFixture.filter({ away_club_id: clubId, scheduling_status: 'confirmed' }, '-confirmed_date', 50).catch(() => []),
+    stageClient.entities.RegionalLeagueFixture.filter({ home_club_id: clubId, scheduling_status: 'confirmed' }, '-confirmed_date', 50).catch(() => []),
+    stageClient.entities.RegionalLeagueFixture.filter({ away_club_id: clubId, scheduling_status: 'confirmed' }, '-confirmed_date', 50).catch(() => []),
+  ]);
+  const seen = new Set();
+  const created = [];
+  const typed = [
+    ...packs[0].map((f) => ({ fixture: f, type: 'competition' })),
+    ...packs[1].map((f) => ({ fixture: f, type: 'competition' })),
+    ...packs[2].map((f) => ({ fixture: f, type: 'regional_league' })),
+    ...packs[3].map((f) => ({ fixture: f, type: 'regional_league' })),
+  ];
+  for (const { fixture, type } of typed) {
+    if (!fixture?.id || seen.has(fixture.id)) continue;
+    if (!(fixture.scheduling_status === 'confirmed' || fixture.status === 'scheduled')) continue;
+    seen.add(fixture.id);
+    const match = await createMatchFromFixture(fixture, type).catch(() => null);
+    if (match?.id) created.push(match);
+  }
+  return created;
+}
+
+export async function syncFixtureAfterMatch(match) {
+  if (!match?.source_fixture_id || !match?.source_fixture_type) return;
+  if (match.status !== 'completed') return;
+  try {
+    await stageClient.functions.invoke('syncCompletedMatchToSource', { match_id: match.id });
+  } catch {
+    /* non-fatal */
+  }
+}
+
+export async function syncPlayerCareerStats(matchId) {
+  if (!matchId) return;
+  try {
+    const stats = await stageClient.entities.MatchPlayerStat.filter({ match_id: matchId }, null, 50).catch(() => []);
+    if (!stats.length) return;
+    await Promise.all(stats.map(async (stat) => {
+      if (!stat.player_email) return;
+      const players = await stageClient.entities.Player.filter({ email: stat.player_email }, null, 1).catch(() => []);
+      const player = players[0];
+      if (!player) return;
+      const allStats = await stageClient.entities.MatchPlayerStat.filter(
+        { player_email: stat.player_email },
+        null,
+        500,
+      ).catch(() => []);
+      const totalGoals = allStats.reduce((s, r) => s + (r.goals || 0), 0);
+      const totalAssists = allStats.reduce((s, r) => s + (r.assists || 0), 0);
+      const rated = allStats.filter((r) => r.rating && r.rating > 0);
+      const avgRating = rated.length
+        ? Math.round((rated.reduce((s, r) => s + r.rating, 0) / rated.length) * 10) / 10
+        : 0;
+      await stageClient.entities.Player.update(player.id, {
+        goals: totalGoals,
+        assists: totalAssists,
+        avg_rating: avgRating,
+      }).catch(() => {});
+    }));
+  } catch {
+    /* non-fatal */
+  }
+}

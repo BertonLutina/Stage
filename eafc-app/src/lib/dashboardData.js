@@ -2,7 +2,7 @@ import { stageClient, resolveMyPlayerAndClub } from '@/api/stageClient';
 import { getContractProgress, CONTRACT_TYPES } from '@/lib/contractTypes';
 import { getContractType, normalizePlayerContracts } from '@/lib/playerContractFields';
 
-const ACTIVE_MATCH_STATUSES = new Set(['scheduled', 'live', 'pending']);
+const ACTIVE_MATCH_STATUSES = new Set(['scheduled', 'live', 'pending', 'in_progress', 'awaiting_confirmation']);
 const COMPLETED_MATCH_STATUSES = new Set(['completed', 'finished', 'final']);
 const MS_DAY = 86400000;
 
