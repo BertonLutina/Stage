@@ -693,11 +693,11 @@ const auth = {
 // ── File upload ────────────────────────────────────────────────────────────────
 const integrations = {
   Core: {
-    async UploadFile({ file }) {
+    async UploadFile({ file, timeoutMs = 20000 }) {
       const form = new FormData();
       form.append('file', file);
       const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), 20000);
+      const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
       try {
         return await apiFetch('/upload', { method: 'POST', body: form, signal: controller.signal });
       } catch (err) {

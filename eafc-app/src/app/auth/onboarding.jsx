@@ -15,6 +15,7 @@ import PlayerSetup from '../../components/onboarding/PlayerSetup';
 import IdentityClaimSetup from '../../components/onboarding/IdentityClaimSetup';
 import ClubSetup from '../../components/onboarding/ClubSetup';
 import DiscordJoinStep from '../../components/onboarding/DiscordJoinStep';
+import PresidentContractSetup from '../../components/onboarding/PresidentContractSetup';
 import TutorialPopup from '../../components/onboarding/TutorialPopup';
 import { onboardingStyles as s } from '../../components/onboarding/onboardingStyles';
 import {
@@ -53,12 +54,15 @@ function detectTimezone() {
 
 function getStepMeta(intent, step, phase) {
   const dual = intent === 'both';
-  if (step === 'player') return { label: 'Player profile', index: 1, total: dual ? 5 : 3 };
-  if (step === 'identity') return { label: 'Verify identity', index: 2, total: dual ? 5 : 3 };
+  if (step === 'player') return { label: 'Player profile', index: 1, total: dual ? 6 : 3 };
+  if (step === 'identity') return { label: 'Verify identity', index: 2, total: dual ? 6 : 3 };
   if (step === 'club' && dual) {
     return phase === 'club'
-      ? { label: 'Club profile', index: 4, total: 5 }
-      : { label: 'President status', index: 3, total: 5 };
+      ? { label: 'Club profile', index: 4, total: 6 }
+      : { label: 'President status', index: 3, total: 6 };
+  }
+  if (step === 'president_contract' && dual) {
+    return { label: 'President contract', index: 5, total: 6 };
   }
   return { label: 'Choose role', index: 0, total: 2 };
 }
@@ -70,6 +74,8 @@ export default function OnboardingScreen() {
   const [step, setStep] = useState('choose');
   const [intent, setIntent] = useState('player');
   const [clubSetupPhase, setClubSetupPhase] = useState('president');
+  const [foundedClub, setFoundedClub] = useState(null);
+  const [founderState, setFounderState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [timezone, setTimezone] = useState(detectTimezone);
@@ -131,6 +137,12 @@ export default function OnboardingScreen() {
     stageClient.auth.updateTimezone(timezone).catch(() => {});
     if (isDiscordConfigured()) setStep('discord');
     else setTutorialOpen(true);
+  };
+
+  const handleClubComplete = (nextFounderState) => {
+    setFounderState(nextFounderState || null);
+    setFoundedClub(nextFounderState?.club || null);
+    setStep('president_contract');
   };
 
   const meta = getStepMeta(intent, step, clubSetupPhase);
@@ -271,11 +283,21 @@ export default function OnboardingScreen() {
 
               {step === 'club' && intent === 'both' ? (
                 <ClubSetup
-                  onComplete={finishOnboarding}
+                  onComplete={handleClubComplete}
                   onPhaseChange={setClubSetupPhase}
                   player={player}
                   user={user}
                   required
+                />
+              ) : null}
+
+              {step === 'president_contract' && intent === 'both' ? (
+                <PresidentContractSetup
+                  club={foundedClub}
+                  player={player}
+                  user={user}
+                  founderState={founderState}
+                  onComplete={finishOnboarding}
                 />
               ) : null}
 
@@ -286,7 +308,7 @@ export default function OnboardingScreen() {
                 />
               ) : null}
 
-              {step !== 'choose' && step !== 'club' && step !== 'discord' ? (
+              {step !== 'choose' && step !== 'club' && step !== 'president_contract' && step !== 'discord' ? (
                 <TouchableOpacity
                   onPress={() => setStep(step === 'identity' ? 'player' : 'choose')}
                   style={s.ghostBtn}

@@ -6,6 +6,8 @@ export const CONTRACT_TYPES = {
   squad: { label: 'Squad Player', max_games: 100, max_days: 90 },
   important: { label: 'Important Player', max_games: 250, max_days: 120 },
   star: { label: 'Star Player', max_games: 400, max_days: 180 },
+  founder_player: { label: 'Founder Player', max_games: 999, max_days: 3650 },
+  founder: { label: 'Founder', max_games: 999, max_days: 3650 },
   ownership: { label: 'Club President', max_games: 999, max_days: 3650 },
 };
 

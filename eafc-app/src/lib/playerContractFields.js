@@ -6,8 +6,19 @@ const TYPE_LABELS = {
   squad: 'Squad',
   important: 'Important',
   star: 'Star',
+  founder_player: 'Founder Player',
+  founder: 'Founder',
   ownership: 'Club President',
 };
+
+export const LIFECYCLE_OWNED_CONTRACT_TYPES = new Set(['ownership', 'founder_player', 'founder']);
+
+export function isLifecycleOwnedContract(contractOrType) {
+  const type = typeof contractOrType === 'string'
+    ? contractOrType.trim().toLowerCase()
+    : String(contractOrType?.contract_type || contractOrType?.type || '').trim().toLowerCase();
+  return LIFECYCLE_OWNED_CONTRACT_TYPES.has(type);
+}
 
 export function getContractTargetPlayerId(contract) {
   return contract?.target_player_id || contract?.user_id || null;

@@ -24,18 +24,19 @@ import {
   CYAN,
 } from '@/components/profile/gamer/GamerProfileUI';
 import { headingStyleLg } from '@/lib/fonts';
+import PlayerShowcase from '@/components/profile/PlayerShowcase';
 
 /** One primary rail — extras live under More. */
 const PRIMARY_TABS = [
   { id: 'matches', label: 'Matches' },
   { id: 'feed', label: 'Feed' },
+  { id: 'showcase', label: 'Showcase' },
   { id: 'stats', label: 'Stats' },
   { id: 'more', label: 'More' },
 ];
 
 const MORE_TOOLS = [
   { id: 'career', label: 'Career', icon: 'trail-sign-outline', hint: 'EA FC link and FUT log' },
-  { id: 'showcase', label: 'Showcase', icon: 'star-outline', hint: 'Clips and scouting card' },
   { id: 'trophies', label: 'Trophies', icon: 'trophy-outline', hint: 'Cabinet and achievements' },
   { id: 'lifestyle', label: 'Lifestyle', icon: 'cafe-outline', hint: 'Off-pitch profile' },
   { id: 'availability', label: 'Availability', icon: 'calendar-outline', hint: 'When you can play', ownOnly: true },
@@ -481,6 +482,10 @@ export default function ProfileScreen({
 
         {tab === 'feed' && (
           <EmptyTabPanel icon="newspaper-outline" title="No posts yet" hint="Share updates from your player feed." />
+        )}
+
+        {tab === 'showcase' && (
+          <PlayerShowcase player={player} canEdit={isOwn} />
         )}
 
         {tab === 'stats' && (

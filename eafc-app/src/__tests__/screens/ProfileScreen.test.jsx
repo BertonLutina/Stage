@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import ProfileScreen from '../../app/(tabs)/profile/profilescreen';
 
 const mockPush = jest.fn();
@@ -29,6 +29,25 @@ jest.mock('../../components/common/GradientBackground', () => {
   return ({ children }) => React.createElement(View, null, children);
 });
 
+jest.mock('expo-image-picker', () => ({
+  requestMediaLibraryPermissionsAsync: jest.fn(async () => ({ status: 'granted' })),
+  launchImageLibraryAsync: jest.fn(async () => ({ canceled: true, assets: [] })),
+  MediaTypeOptions: { Images: 'Images', Videos: 'Videos' },
+}));
+
+jest.mock('../../api/stageClient', () => ({
+  stageClient: {
+    entities: {
+      Match: { filter: jest.fn(() => Promise.resolve([])) },
+      Player: { update: jest.fn() },
+      PlayerShowcaseVideo: { filter: jest.fn(() => Promise.resolve([])) },
+    },
+    integrations: { Core: { UploadFile: jest.fn() } },
+    http: { post: jest.fn() },
+  },
+  resolveMyPlayerAndClub: jest.fn(() => Promise.resolve({ user: null, player: null, club: null })),
+}));
+
 jest.mock('expo-linear-gradient', () => {
   const React = require('react');
   const { View } = require('react-native');
@@ -54,6 +73,7 @@ describe('ProfileScreen tabs', () => {
 
     expect(getByText('Matches')).toBeTruthy();
     expect(getByText('Feed')).toBeTruthy();
+    expect(getByText('Showcase')).toBeTruthy();
     expect(getByText('Stats')).toBeTruthy();
     expect(getByText('More')).toBeTruthy();
   });
@@ -64,7 +84,16 @@ describe('ProfileScreen tabs', () => {
     fireEvent.press(getByText('More'));
 
     expect(getByText('Career')).toBeTruthy();
-    expect(getByText('Showcase')).toBeTruthy();
     expect(getByText('Trophies')).toBeTruthy();
+  });
+
+  it('shows the Showcase panel on the profile page', async () => {
+    const { getByText } = render(<ProfileScreen player={player} />);
+
+    fireEvent.press(getByText('Showcase'));
+
+    await waitFor(() => {
+      expect(getByText('Publish clips of how you play so clubs can find you. You own these — a scout can only watch them.')).toBeTruthy();
+    });
   });
 });
