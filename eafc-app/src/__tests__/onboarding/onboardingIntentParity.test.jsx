@@ -23,4 +23,22 @@ describe('mobile onboarding intent parity', () => {
     expect(source).toMatch(/playerContract=\{founderPlayerTerms\}/);
     expect(source).toMatch(/<PresidentContractSetup[\s\S]*playerContract=\{founderPlayerTerms\}/);
   });
+
+  it('keeps the tutorial as a centered modal, not a bottom sheet', () => {
+    const tutorial = fs.readFileSync(
+      path.join(__dirname, '../../components/onboarding/TutorialPopup.jsx'),
+      'utf8',
+    );
+    expect(tutorial).toMatch(/animationType="fade"/);
+    expect(tutorial).toMatch(/justifyContent: 'center'/);
+    expect(tutorial).toMatch(/Each point/);
+    expect(tutorial).not.toMatch(/justifyContent: 'flex-end'/);
+  });
+
+  it('uses a phone-first shell instead of a centered web card', () => {
+    expect(source).toMatch(/StepDots/);
+    expect(source).toMatch(/KeyboardAvoidingView/);
+    expect(source).not.toMatch(/maxWidth:\s*440/);
+    expect(source).not.toMatch(/How do you play\?/);
+  });
 });

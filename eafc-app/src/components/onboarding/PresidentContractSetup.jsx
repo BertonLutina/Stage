@@ -68,45 +68,45 @@ export default function PresidentContractSetup({
 
   return (
     <View>
-      <STText style={s.title}>Club President Contract</STText>
+      <STText style={s.title}>Sign as president</STText>
       <STText style={s.subtitle}>
-        Sign this to confirm you as club creator and president.
+        This locks you as the club creator. It is not a player wage deal.
       </STText>
 
       <View style={{
-        borderRadius: 12,
+        borderRadius: 22,
         borderWidth: 1,
-        borderColor: 'rgba(59,130,246,0.35)',
-        backgroundColor: 'rgba(59,130,246,0.12)',
-        padding: 16,
-        marginBottom: 12,
+        borderColor: 'rgba(255,214,10,0.28)',
+        backgroundColor: 'rgba(255,214,10,0.08)',
+        padding: 20,
+        marginBottom: 14,
       }}
       >
-        <STText style={{ color: 'rgba(147,197,253,0.9)', fontSize: 10, fontWeight: '800', letterSpacing: 2 }}>
-          PRESIDENT
+        <STText style={{ color: '#FFD60A', fontSize: 13, fontWeight: '800' }}>
+          President
         </STText>
-        <STText style={{ color: '#fff', fontSize: 18, fontWeight: '900', marginTop: 4 }}>{presidentName}</STText>
-        <STText style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, marginTop: 4 }}>
+        <STText style={{ color: '#fff', fontSize: 24, fontWeight: '800', marginTop: 6 }}>{presidentName}</STText>
+        <STText style={{ color: 'rgba(255,255,255,0.58)', fontSize: 15, marginTop: 4 }}>
           {club?.name || 'Your club'}
         </STText>
       </View>
 
       <View style={{
-        borderRadius: 12,
+        borderRadius: 22,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.12)',
-        backgroundColor: 'rgba(255,255,255,0.04)',
-        padding: 16,
-        marginBottom: 12,
-        gap: 6,
+        borderColor: 'rgba(255,255,255,0.10)',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        padding: 20,
+        marginBottom: 16,
+        gap: 8,
       }}
       >
-        <STText style={{ color: '#fff', fontWeight: '800', marginBottom: 4 }}>Contract terms</STText>
-        <STText style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>Role: Club President</STText>
-        <STText style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>Duration: 10 years</STText>
-        <STText style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>Salary: 0 STC/week</STText>
-        <STText style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 6, lineHeight: 18 }}>
-          Captaincy remains a separate staff title that must be assigned later. Founder and president contracts cannot be deleted.
+        <STText style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Terms</STText>
+        <STText style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15 }}>Role · Club President</STText>
+        <STText style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15 }}>Length · 10 years</STText>
+        <STText style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15 }}>Salary · 0 STC / week</STText>
+        <STText style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, marginTop: 6, lineHeight: 20 }}>
+          Captain is a staff title you assign later. This contract cannot be deleted from the office.
         </STText>
       </View>
 
@@ -116,9 +116,9 @@ export default function PresidentContractSetup({
 
       <TouchableOpacity onPress={handleSign} disabled={signing} style={s.primaryBtn}>
         {signing ? (
-          <ActivityIndicator color="#0d2461" />
+          <ActivityIndicator color="#041018" />
         ) : (
-          <STText style={s.primaryBtnText}>Sign President Contract</STText>
+          <STText style={s.primaryBtnText}>Sign</STText>
         )}
       </TouchableOpacity>
     </View>

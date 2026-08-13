@@ -15,9 +15,9 @@ export default function DiscordJoinStep({ onSkip, onContinue }) {
 
   return (
     <View>
-      <STText style={s.title}>Join the community</STText>
+      <STText style={s.title}>Find your people</STText>
       <STText style={s.subtitle}>
-        Discord is where players find clubs and get league news. Join now or later from Community.
+        Discord is where clubs recruit and leagues drop news. You can join later from Community.
       </STText>
 
       <TouchableOpacity

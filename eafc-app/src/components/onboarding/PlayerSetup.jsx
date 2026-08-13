@@ -79,10 +79,10 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
 
   return (
     <View>
-      <STText style={s.title}>Create your profile</STText>
-      <STText style={s.subtitle}>Tell the STAGE world who you are on the pitch.</STText>
+      <STText style={s.title}>Your name on the pitch</STText>
+      <STText style={s.subtitle}>This is how clubs and opponents will find you.</STText>
 
-      <STText style={s.label}>Gamertag *</STText>
+      <STText style={s.label}>Gamertag</STText>
       <TextInput
         value={gamertag}
         onChangeText={setGamertag}
@@ -90,10 +90,11 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
         placeholderTextColor="rgba(255,255,255,0.35)"
         style={s.input}
         autoCapitalize="none"
+        autoCorrect={false}
       />
 
-      <STText style={s.label}>Main position *</STText>
-      <View style={s.chipRow}>
+      <STText style={s.label}>Main position</STText>
+      <View style={s.tileGrid}>
         {POSITIONS.map((p) => (
           <TouchableOpacity
             key={p}
@@ -101,18 +102,18 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
               setPosition(p);
               if (secondaryPosition === p) setSecondaryPosition('none');
             }}
-            style={[s.chip, position === p && s.chipActive]}
+            style={[s.tile, position === p && s.chipActive]}
           >
             <STText style={[s.chipText, position === p && s.chipTextActive]}>{p}</STText>
           </TouchableOpacity>
         ))}
       </View>
 
-      <STText style={s.label}>Secondary position</STText>
-      <View style={s.chipRow}>
+      <STText style={s.label}>Second position</STText>
+      <View style={s.tileGrid}>
         <TouchableOpacity
           onPress={() => setSecondaryPosition('none')}
-          style={[s.chip, secondaryPosition === 'none' && s.chipActive]}
+          style={[s.tile, { width: '31%' }, secondaryPosition === 'none' && s.chipActive]}
         >
           <STText style={[s.chipText, secondaryPosition === 'none' && s.chipTextActive]}>None</STText>
         </TouchableOpacity>
@@ -120,16 +121,16 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
           <TouchableOpacity
             key={p}
             onPress={() => setSecondaryPosition(p)}
-            style={[s.chip, secondaryPosition === p && s.chipActive]}
+            style={[s.tile, secondaryPosition === p && s.chipActive]}
           >
             <STText style={[s.chipText, secondaryPosition === p && s.chipTextActive]}>{p}</STText>
           </TouchableOpacity>
         ))}
       </View>
 
-      <STText style={s.label}>Country *</STText>
+      <STText style={s.label}>Country</STText>
       <TouchableOpacity onPress={() => setCountryPicker(true)} style={[s.input, { justifyContent: 'center' }]}>
-        <STText style={{ color: country ? '#fff' : 'rgba(255,255,255,0.35)', fontSize: 14 }}>
+        <STText style={{ color: country ? '#fff' : 'rgba(255,255,255,0.35)', fontSize: 16 }}>
           {country || 'Select country'}
         </STText>
       </TouchableOpacity>
@@ -138,18 +139,18 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
 
       <TouchableOpacity onPress={handleSave} disabled={saving} style={[s.primaryBtn, saving && { opacity: 0.55 }]}>
         {saving ? (
-          <ActivityIndicator color="#0d2461" />
+          <ActivityIndicator color="#041018" />
         ) : (
           <STText style={s.primaryBtnText}>
-            {intent === 'both' ? 'Continue to club setup' : 'Continue'}
+            {intent === 'both' ? 'Next' : 'Continue'}
           </STText>
         )}
       </TouchableOpacity>
 
       <Modal visible={countryPicker} animationType="slide" transparent>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' }} onPress={() => setCountryPicker(false)} />
-        <View style={{ maxHeight: '70%', backgroundColor: '#09111f', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16 }}>
-          <STText style={[s.title, { fontSize: 16 }]}>Country</STText>
+        <View style={s.sheet}>
+          <STText style={[s.title, { fontSize: 22, marginBottom: 12 }]}>Country</STText>
           <TextInput
             value={countryQuery}
             onChangeText={setCountryQuery}

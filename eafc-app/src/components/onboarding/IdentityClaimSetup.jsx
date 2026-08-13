@@ -16,6 +16,7 @@ export default function IdentityClaimSetup({ player, onComplete }) {
   );
   const [discordHandle, setDiscordHandle] = useState('');
   const [notes, setNotes] = useState('');
+  const [showNotes, setShowNotes] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -107,13 +108,13 @@ export default function IdentityClaimSetup({ player, onComplete }) {
       <View>
         <STText style={s.title}>
           {Number(player?.is_verified) === 1 || claim?.status === 'approved'
-            ? 'Identity verified'
-            : 'Claim submitted'}
+            ? 'You are verified'
+            : 'Claim is in'}
         </STText>
         <STText style={s.subtitle}>
           {Number(player?.is_verified) === 1 || claim?.status === 'approved'
             ? 'Your player identity is linked.'
-            : 'Your claim is pending review. You can continue.'}
+            : 'STAGE will review it. You can keep going now.'}
         </STText>
         <TouchableOpacity onPress={() => onComplete?.(claim)} style={s.primaryBtn}>
           <STText style={s.primaryBtnText}>Continue</STText>
@@ -124,32 +125,33 @@ export default function IdentityClaimSetup({ player, onComplete }) {
 
   return (
     <View>
-      <STText style={s.title}>Claim your identity</STText>
+      <STText style={s.title}>Prove it is you</STText>
       <STText style={s.subtitle}>
-        Link your platform handle so STAGE can verify you. You can skip and do this later.
+        Link the handle you play with. Skip if you want to do this later.
       </STText>
 
-      <STText style={s.label}>Platform *</STText>
+      <STText style={s.label}>Platform</STText>
       <View style={s.chipRow}>
         {PLATFORMS.map((p) => (
           <TouchableOpacity
             key={p}
             onPress={() => setPlatform(p)}
-            style={[s.chip, platform === p && s.chipActive]}
+            style={[s.tileWide, platform === p && s.chipActive]}
           >
             <STText style={[s.chipText, platform === p && s.chipTextActive]}>{p}</STText>
           </TouchableOpacity>
         ))}
       </View>
 
-      <STText style={s.label}>Platform handle *</STText>
+      <STText style={s.label}>Online ID</STText>
       <TextInput
         value={platformHandle}
         onChangeText={setPlatformHandle}
-        placeholder="Online ID / gamertag"
+        placeholder="PSN / Xbox / Steam / EA"
         placeholderTextColor="rgba(255,255,255,0.35)"
         style={s.input}
         autoCapitalize="none"
+        autoCorrect={false}
       />
 
       <STText style={s.label}>EA ID</STText>
@@ -160,9 +162,10 @@ export default function IdentityClaimSetup({ player, onComplete }) {
         placeholderTextColor="rgba(255,255,255,0.35)"
         style={s.input}
         autoCapitalize="none"
+        autoCorrect={false}
       />
 
-      <STText style={s.label}>OVR *</STText>
+      <STText style={s.label}>Your OVR</STText>
       <TextInput
         value={String(overallRating)}
         onChangeText={(v) => setOverallRating(clampOvr(v))}
@@ -178,22 +181,31 @@ export default function IdentityClaimSetup({ player, onComplete }) {
         placeholderTextColor="rgba(255,255,255,0.35)"
         style={s.input}
         autoCapitalize="none"
+        autoCorrect={false}
       />
 
-      <STText style={s.label}>Notes</STText>
-      <TextInput
-        value={notes}
-        onChangeText={setNotes}
-        placeholder="Optional"
-        placeholderTextColor="rgba(255,255,255,0.35)"
-        style={[s.input, { minHeight: 72, textAlignVertical: 'top' }]}
-        multiline
-      />
+      {showNotes ? (
+        <>
+          <STText style={s.label}>Note for reviewers</STText>
+          <TextInput
+            value={notes}
+            onChangeText={setNotes}
+            placeholder="Optional"
+            placeholderTextColor="rgba(255,255,255,0.35)"
+            style={[s.input, { minHeight: 72, textAlignVertical: 'top' }]}
+            multiline
+          />
+        </>
+      ) : (
+        <TouchableOpacity onPress={() => setShowNotes(true)} style={s.ghostBtn}>
+          <STText style={s.ghostBtnText}>Add a note</STText>
+        </TouchableOpacity>
+      )}
 
       {error ? <STText style={s.error}>{error}</STText> : null}
 
       <TouchableOpacity onPress={submitClaim} disabled={saving} style={[s.primaryBtn, saving && { opacity: 0.55 }]}>
-        {saving ? <ActivityIndicator color="#0d2461" /> : <STText style={s.primaryBtnText}>Submit claim</STText>}
+        {saving ? <ActivityIndicator color="#041018" /> : <STText style={s.primaryBtnText}>Submit claim</STText>}
       </TouchableOpacity>
       <TouchableOpacity onPress={skipForNow} disabled={saving} style={s.ghostBtn}>
         <STText style={s.ghostBtnText}>Skip for now</STText>

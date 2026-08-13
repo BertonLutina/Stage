@@ -105,8 +105,8 @@ export default function ClubSetup({
   if (phase === 'president') {
     return (
       <View>
-        <STText style={s.title}>President profile</STText>
-        <STText style={s.subtitle}>This is your public club-leader identity on STAGE.</STText>
+        <STText style={s.title}>How should they call you?</STText>
+        <STText style={s.subtitle}>This is your public name as club president.</STText>
 
         <STText style={s.label}>Display name *</STText>
         <TextInput
@@ -129,7 +129,7 @@ export default function ClubSetup({
         {error ? <STText style={s.error}>{error}</STText> : null}
 
         <TouchableOpacity onPress={continuePresident} style={s.primaryBtn}>
-          <STText style={s.primaryBtnText}>Continue to club</STText>
+          <STText style={s.primaryBtnText}>Next</STText>
         </TouchableOpacity>
         {!required ? (
           <TouchableOpacity onPress={() => onComplete?.(null)} style={s.ghostBtn}>
@@ -142,8 +142,8 @@ export default function ClubSetup({
 
   return (
     <View>
-      <STText style={s.title}>Club profile</STText>
-      <STText style={s.subtitle}>Create the club you will manage as president.</STText>
+      <STText style={s.title}>Name the club</STText>
+      <STText style={s.subtitle}>This is the club you will own and play for.</STText>
 
       <STText style={s.label}>Club name *</STText>
       <TextInput
@@ -168,7 +168,7 @@ export default function ClubSetup({
       <STText style={s.label}>Platform</STText>
       <View style={s.chipRow}>
         {PLATFORMS.map((p) => (
-          <TouchableOpacity key={p} onPress={() => setPlatform(p)} style={[s.chip, platform === p && s.chipActive]}>
+          <TouchableOpacity key={p} onPress={() => setPlatform(p)} style={[s.tileWide, platform === p && s.chipActive]}>
             <STText style={[s.chipText, platform === p && s.chipTextActive]}>{p}</STText>
           </TouchableOpacity>
         ))}
@@ -193,16 +193,16 @@ export default function ClubSetup({
       {error ? <STText style={s.error}>{error}</STText> : null}
 
       <TouchableOpacity onPress={handleCreate} disabled={saving} style={[s.primaryBtn, saving && { opacity: 0.55 }]}>
-        {saving ? <ActivityIndicator color="#0d2461" /> : <STText style={s.primaryBtnText}>Create club</STText>}
+        {saving ? <ActivityIndicator color="#041018" /> : <STText style={s.primaryBtnText}>Create club</STText>}
       </TouchableOpacity>
       <TouchableOpacity onPress={() => setPhase('president')} style={s.ghostBtn}>
-        <STText style={s.ghostBtnText}>← Back</STText>
+        <STText style={s.ghostBtnText}>Back</STText>
       </TouchableOpacity>
 
       <Modal visible={countryPicker} animationType="slide" transparent>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' }} onPress={() => setCountryPicker(false)} />
-        <View style={{ maxHeight: '70%', backgroundColor: '#09111f', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16 }}>
-          <STText style={[s.title, { fontSize: 16 }]}>Country</STText>
+        <View style={s.sheet}>
+          <STText style={[s.title, { fontSize: 22, marginBottom: 12 }]}>Country</STText>
           <TextInput
             value={countryQuery}
             onChangeText={setCountryQuery}

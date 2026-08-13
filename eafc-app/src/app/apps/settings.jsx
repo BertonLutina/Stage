@@ -43,6 +43,8 @@ import {
 } from '@/services/biometricAuthService';
 import SettingsSection from '@/components/settings/SettingsSection';
 import AccountRoleUpgradeSection from '@/components/settings/AccountRoleUpgradeSection';
+import TutorialPopup from '@/components/onboarding/TutorialPopup';
+import { readAccountIntent } from '@/lib/accountIntent';
 import {
   GamerProfileShell,
   GlassIconButton,
@@ -165,6 +167,8 @@ function PasswordField({ label, value, onChange, placeholder, visible, onToggle 
 export default function SettingsScreen() {
   const router = useRouter();
   const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
   const [language, setLanguage] = useState(() => localStorage.getItem(LANGUAGE_KEY) || 'en');
   const translate = useMemo(() => createTranslator(language), [language]);
   const t = useCallback((path, vars) => interpolate(translate(path, path), vars), [translate]);
@@ -418,6 +422,24 @@ export default function SettingsScreen() {
           </Text>
 
           <AccountRoleUpgradeSection t={t} />
+
+          <SettingsSection
+            title="How STAGE works"
+            description="Replay the onboarding tutorial. Same modal as desktop."
+            icon="book-outline"
+          >
+            <TouchableOpacity
+              onPress={() => setTutorialOpen(true)}
+              style={{
+                backgroundColor: CYAN,
+                borderRadius: 12,
+                paddingVertical: 13,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: '#041018', fontWeight: '900' }}>Open tutorial</Text>
+            </TouchableOpacity>
+          </SettingsSection>
 
           <SettingsSection title={t('settingsPage.languageTitle')} description={t('settingsPage.languageDescription')} icon="globe-outline">
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -759,6 +781,11 @@ export default function SettingsScreen() {
           </View>
         </View>
       </Modal>
+      <TutorialPopup
+        open={tutorialOpen}
+        onClose={() => setTutorialOpen(false)}
+        intent={readAccountIntent(user?.id)}
+      />
     </GamerProfileShell>
   );
 }

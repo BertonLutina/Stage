@@ -38,9 +38,9 @@ export default function FounderPlayerTermsSetup({ initialTerms = null, onComplet
 
   return (
     <View>
-      <STText style={s.title}>Give yourself wages</STText>
+      <STText style={s.title}>Pay yourself</STText>
       <STText style={s.subtitle}>
-        Set the founder player salary and optional performance targets before you create the club.
+        This is your founder player wage. You can renegotiate later.
       </STText>
 
       <STText style={s.label}>Weekly salary (STC)</STText>
@@ -127,7 +127,7 @@ export default function FounderPlayerTermsSetup({ initialTerms = null, onComplet
       </TouchableOpacity>
 
       <TouchableOpacity onPress={handleContinue} style={s.primaryBtn}>
-        <STText style={s.primaryBtnText}>Continue to club</STText>
+        <STText style={s.primaryBtnText}>Next</STText>
       </TouchableOpacity>
     </View>
   );
