@@ -21,9 +21,22 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.eafc.platform"
+      "bundleIdentifier": "com.eafc.platform",
+      "infoPlist": {
+        "UIBackgroundModes": ["remote-notification"]
+      },
+      "entitlements": {
+        "aps-environment": "development"
+      }
     },
     "plugins": [
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "development",
+          "disableLocation": true
+        }
+      ],
       "expo-image-picker",
       "expo-av",
       [

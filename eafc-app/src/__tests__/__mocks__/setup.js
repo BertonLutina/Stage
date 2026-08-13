@@ -64,6 +64,21 @@ jest.mock('@react-navigation/native', () => ({
   useFocusEffect: jest.fn(),
 }));
 
+jest.mock('react-native-onesignal', () => ({
+  OneSignal: {
+    initialize: jest.fn(),
+    login: jest.fn(),
+    logout: jest.fn(),
+    Notifications: {
+      requestPermission: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+    },
+    User: { addEmail: jest.fn() },
+  },
+  LogLevel: { Verbose: 6 },
+}));
+
 jest.mock('socket.io-client', () => ({
   io: jest.fn(() => ({
     on: jest.fn(),

@@ -10,6 +10,7 @@ import { hydrateStageStorage } from '../lib/polyfillStorage';
 import { FONT_EA_SPORTS } from '../lib/fonts';
 import useAuthBootstrap from '../hooks/useAuthBootstrap';
 import useNotificationsSocket from '../hooks/useNotificationsSocket';
+import useOneSignal from '../hooks/useOneSignal';
 import useThemeStore from '../store/themeStore';
 import useToastStore from '../store/toastStore';
 import GradientBackground from '../components/common/GradientBackground';
@@ -19,6 +20,7 @@ export default function RootLayout() {
   const router = useRouter();
   const { ready, user } = useAuthBootstrap();
   useNotificationsSocket(user?.id);
+  useOneSignal(user);
   const { initialize: initTheme } = useThemeStore();
   const [fontsLoaded] = useFonts({
     [FONT_EA_SPORTS]: require('../assets/fonts/EASPORTS15.ttf'),
