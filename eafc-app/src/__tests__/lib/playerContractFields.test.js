@@ -3,6 +3,11 @@ import {
   isFounderPlayerContract,
   isLifecycleOwnedContract,
 } from '../../lib/playerContractFields';
+import {
+  FOUNDER_PLAYER_WEEKLY_SALARY_MAX,
+  FOUNDER_PLAYER_WEEKLY_SALARY_MIN,
+  isFounderPlayerWageAllowed,
+} from '../../lib/founderPlayerTerms';
 
 describe('mobile founder contract helpers', () => {
   it('treats founder_player as lifecycle-owned and renegotiable when active', () => {
@@ -27,5 +32,13 @@ describe('mobile founder contract helpers', () => {
       { contract_type: 'squad', status: 'active' },
       { isMyContract: true },
     )).toBe(false);
+  });
+
+  it('keeps founder player wages between 40k and 500k', () => {
+    expect(FOUNDER_PLAYER_WEEKLY_SALARY_MIN).toBe(40000);
+    expect(FOUNDER_PLAYER_WEEKLY_SALARY_MAX).toBe(500000);
+    expect(isFounderPlayerWageAllowed(40000)).toBe(true);
+    expect(isFounderPlayerWageAllowed(25000)).toBe(false);
+    expect(isFounderPlayerWageAllowed(500001)).toBe(false);
   });
 });

@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity } from 'react-native';
 import STText from '../common/STText';
-import { FOUNDER_TARGET_STATS, normalizeFounderPlayerTerms } from '../../lib/founderPlayerTerms';
+import {
+  FOUNDER_PLAYER_WEEKLY_SALARY_MAX,
+  FOUNDER_PLAYER_WEEKLY_SALARY_MIN,
+  FOUNDER_TARGET_STATS,
+  isFounderPlayerWageAllowed,
+  normalizeFounderPlayerTerms,
+} from '../../lib/founderPlayerTerms';
 import { onboardingStyles as s } from './onboardingStyles';
 
 const TARGET_TYPES = [
@@ -28,7 +34,10 @@ export default function FounderPlayerTermsSetup({ initialTerms = null, onComplet
     setTargets((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  const wageOk = isFounderPlayerWageAllowed(weeklySalary);
+
   const handleContinue = () => {
+    if (!wageOk) return;
     onComplete?.(normalizeFounderPlayerTerms({
       weekly_salary_stc: weeklySalary,
       signing_bonus_stc: signingBonus,
@@ -48,10 +57,13 @@ export default function FounderPlayerTermsSetup({ initialTerms = null, onComplet
         value={weeklySalary}
         onChangeText={setWeeklySalary}
         keyboardType="number-pad"
-        placeholder="e.g. 25000"
+        placeholder="e.g. 40000"
         placeholderTextColor="rgba(255,255,255,0.35)"
         style={s.input}
       />
+      <STText style={s.subtitle}>
+        {FOUNDER_PLAYER_WEEKLY_SALARY_MIN.toLocaleString()} – {FOUNDER_PLAYER_WEEKLY_SALARY_MAX.toLocaleString()} STC / week
+      </STText>
 
       <STText style={s.label}>Signing bonus (STC)</STText>
       <TextInput
@@ -126,7 +138,7 @@ export default function FounderPlayerTermsSetup({ initialTerms = null, onComplet
         <STText style={s.ghostBtnText}>+ Add target</STText>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={handleContinue} style={s.primaryBtn}>
+      <TouchableOpacity onPress={handleContinue} style={[s.primaryBtn, !wageOk && { opacity: 0.4 }]} disabled={!wageOk}>
         <STText style={s.primaryBtnText}>Next</STText>
       </TouchableOpacity>
     </View>

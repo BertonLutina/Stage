@@ -1,5 +1,20 @@
 const TARGET_TYPES = new Set(['min', 'exact', 'range']);
 
+export const FOUNDER_PLAYER_WEEKLY_SALARY_MIN = 40_000;
+export const FOUNDER_PLAYER_WEEKLY_SALARY_MAX = 500_000;
+
+export function isFounderPlayerWageAllowed(weeklySalary) {
+  const weekly = Number(weeklySalary);
+  return Number.isFinite(weekly)
+    && weekly >= FOUNDER_PLAYER_WEEKLY_SALARY_MIN
+    && weekly <= FOUNDER_PLAYER_WEEKLY_SALARY_MAX;
+}
+
+export function founderPlayerWageError(weeklySalary) {
+  if (isFounderPlayerWageAllowed(weeklySalary)) return null;
+  return `Founder Player wage must be between ${FOUNDER_PLAYER_WEEKLY_SALARY_MIN.toLocaleString()} and ${FOUNDER_PLAYER_WEEKLY_SALARY_MAX.toLocaleString()} STC per week`;
+}
+
 export const FOUNDER_TARGET_STATS = [
   { value: 'matches_played', label: 'Matches Played' },
   { value: 'wins_count', label: 'Wins' },
