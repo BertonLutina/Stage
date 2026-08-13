@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   FlatList,
@@ -10,13 +10,15 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import STText from '../../../components/common/STText';
-import useAuthStore from '../../../store/authStore';
-import api from '../../../utils/api';
+import { resolveMyPlayerAndClub } from '@/api/stageClient';
+import {
+  filterPlayerDirectory,
+  loadPlayerDirectory,
+  playerDisplayName,
+} from '@/lib/stageDirectories';
 
-
-function PlayerRow({ player, isClubOwner, onChallenge, onInvite, onPress }) {
-  const name = `${player.first_name || ''} ${player.last_name || ''}`.trim() || 'Player';
-  const tag = player.gamer_tag ? `@${player.gamer_tag}` : '';
+function PlayerRow({ player, isClubOwner, onChallenge, onPress }) {
+  const name = playerDisplayName(player);
 
   return (
     <TouchableOpacity
@@ -25,94 +27,64 @@ function PlayerRow({ player, isClubOwner, onChallenge, onInvite, onPress }) {
       className="flex-row items-center px-4 py-3 border-b border-white/5"
     >
       <View className="h-12 w-12 rounded-full bg-white/10 items-center justify-center overflow-hidden">
-        {player.avatar ? (
-          <Image source={{ uri: player.avatar }} className="h-12 w-12" />
+        {player.avatar_url ? (
+          <Image source={{ uri: player.avatar_url }} className="h-12 w-12" />
         ) : (
           <Ionicons name="person" size={24} color="rgba(255,255,255,0.5)" />
         )}
       </View>
       <View className="ml-3 flex-1">
         <STText className="font-semibold">{name}</STText>
-        <STText className="text-xs opacity-70">{tag || 'No gamertag'}</STText>
+        <STText className="text-xs opacity-70">
+          {[player.position, player.platform].filter(Boolean).join(' · ') || 'Player'}
+        </STText>
       </View>
-      {isClubOwner ? (
-        <TouchableOpacity
-          onPress={(e) => {
-            e.stopPropagation();
-            onInvite?.(player);
-          }}
-          className="rounded-lg bg-[#5FE3E8]/20 px-3 py-1.5"
-        >
-          <STText className="text-xs font-semibold" style={{ color: '#5FE3E8' }}>
-            Invite
-          </STText>
-        </TouchableOpacity>
-      ) : (
-        <TouchableOpacity
-          onPress={(e) => {
-            e.stopPropagation();
-            onChallenge?.(player);
-          }}
-          className="rounded-lg border border-[#5FE3E8]/50 px-3 py-1.5"
-        >
-          <STText className="text-xs font-semibold" style={{ color: '#5FE3E8' }}>
-            Challenge
-          </STText>
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity
+        onPress={(e) => {
+          e.stopPropagation();
+          onChallenge?.(player);
+        }}
+        className="rounded-lg border border-[#5FE3E8]/50 px-3 py-1.5"
+      >
+        <STText className="text-xs font-semibold" style={{ color: '#5FE3E8' }}>
+          {isClubOwner ? 'Invite' : 'Challenge'}
+        </STText>
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
 
 export default function SearchPlayers() {
   const router = useRouter();
-  const { user } = useAuthStore();
   const [query, setQuery] = useState('');
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isClubOwner, setIsClubOwner] = useState(false);
 
   useEffect(() => {
-    // Detect role: club owner = user owns at least one team
-    const checkRole = async () => {
-      if (!user?.id) {
-        setIsClubOwner(false);
-        return;
-      }
-      try {
-        const { data } = await api.get(`/users/${user.id}`);
-        const teams = data.data?.teams ?? [];
-        const owned = teams.some((t) => t.role === 'owner');
-        setIsClubOwner(owned);
-      } catch {
-        setIsClubOwner(false);
-      }
-    };
-    checkRole();
-  }, [user?.id]);
-
-  useEffect(() => {
-    const q = query.trim();
-    if (q.length < 2) {
-      setPlayers([]);
+    let cancelled = false;
+    (async () => {
+      const [{ players: rows }, identity] = await Promise.all([
+        loadPlayerDirectory(),
+        resolveMyPlayerAndClub().catch(() => ({})),
+      ]);
+      if (cancelled) return;
+      setPlayers(rows);
+      setIsClubOwner(Boolean(identity.presidentClub?.id));
       setLoading(false);
-      return;
-    }
-    setLoading(true);
-    const timer = setTimeout(() => {
-      api
-        .get(`/users/search?q=${encodeURIComponent(q)}`)
-        .then((r) => setPlayers(r.data.data ?? []))
-        .catch(() => setPlayers([]))
-        .finally(() => setLoading(false));
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [query]);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const filtered = useMemo(
+    () => filterPlayerDirectory(players, { query }),
+    [players, query],
+  );
 
   const handleSelectPlayer = (player) => {
     router.push({
       pathname: '/(tabs)/profile/profilescreen',
-      params: { userId: player.id },
+      params: { playerId: player.id },
     });
   };
 
@@ -122,16 +94,11 @@ export default function SearchPlayers() {
       params: {
         arrange: '1',
         opponentKind: 'player',
-        opponentId: player.player_id || player.id,
-        opponentName: player.gamer_tag || `${player.first_name || ''} ${player.last_name || ''}`.trim(),
+        opponentId: player.id,
+        opponentName: playerDisplayName(player),
         opponentEmail: player.email || '',
       },
     });
-  };
-
-  const handleInvite = (player) => {
-    // TODO: Implement invite-to-club flow when backend ready
-    console.log('Invite player to club:', player.id);
   };
 
   return (
@@ -152,14 +119,13 @@ export default function SearchPlayers() {
         </View>
       ) : (
         <FlatList
-          data={players}
+          data={filtered}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <PlayerRow
               player={item}
               isClubOwner={isClubOwner}
               onChallenge={handleChallenge}
-              onInvite={handleInvite}
               onPress={() => handleSelectPlayer(item)}
             />
           )}

@@ -105,7 +105,10 @@ export default function ProfileScreen({
   const { user: me, logout } = useAuthStore();
   const params = useLocalSearchParams();
   const router = useRouter();
-  const viewingOther = Boolean(params?.userId && params.userId !== me?.id);
+  const viewingOther = Boolean(
+    (params?.playerId && String(params.playerId) !== String(playerProp?.id || ''))
+    || (params?.userId && params.userId !== me?.id),
+  );
 
   const [player, setPlayer] = useState(playerProp);
   const [signedClub, setSignedClub] = useState(signedClubProp);
@@ -139,6 +142,16 @@ export default function ProfileScreen({
           } else {
             setSignedClub(null);
           }
+        } else if (params?.playerId) {
+          const p = await stageClient.entities.Player.get(params.playerId).catch(() => null);
+          if (cancelled) return;
+          setPlayer(p);
+          if (p?.club_id) {
+            const signed = await stageClient.entities.Club.get(p.club_id).catch(() => null);
+            if (!cancelled) setSignedClub(signed);
+          } else if (!cancelled) {
+            setSignedClub(null);
+          }
         } else {
           const { data } = await api.get(`/users/${params.userId}`).catch(() => ({ data: {} }));
           const u = data?.data;
@@ -160,7 +173,7 @@ export default function ProfileScreen({
       }
     })();
     return () => { cancelled = true; };
-  }, [playerProp, signedClubProp, isOwn, params?.userId]);
+  }, [playerProp, signedClubProp, isOwn, params?.userId, params?.playerId]);
 
   useEffect(() => {
     if (!player?.id) return;

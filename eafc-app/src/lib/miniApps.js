@@ -25,7 +25,7 @@ const MARKET_ITEMS = [
     label: 'Find Clubs',
     icon: 'shield-outline',
     keywords: ['search clubs', 'teams', 'directory'],
-    href: '/(tabs)/search/searchclubs',
+    href: '/apps/find-clubs',
     ready: true,
   },
   {
@@ -33,7 +33,7 @@ const MARKET_ITEMS = [
     label: 'Find Players',
     icon: 'people-outline',
     keywords: ['search players', 'directory', 'market'],
-    href: '/(tabs)/search/searchplayer',
+    href: '/apps/find-players',
     ready: true,
   },
   {
@@ -42,6 +42,7 @@ const MARKET_ITEMS = [
     icon: 'star-outline',
     keywords: ['owners', 'presidents', 'directory'],
     href: '/apps/presidents',
+    ready: true,
   },
   {
     id: 'scouting',
@@ -49,6 +50,7 @@ const MARKET_ITEMS = [
     icon: 'eye-outline',
     keywords: ['scout', 'report', 'scouting'],
     href: '/apps/scouting',
+    ready: true,
   },
   {
     id: 'transfers',
@@ -56,6 +58,7 @@ const MARKET_ITEMS = [
     icon: 'swap-horizontal-outline',
     keywords: ['transfer market', 'market', 'buy', 'sell'],
     href: '/apps/transfers',
+    ready: true,
   },
   {
     id: 'lifestyle',
@@ -63,6 +66,7 @@ const MARKET_ITEMS = [
     icon: 'cafe-outline',
     keywords: ['assets', 'off pitch'],
     href: '/apps/lifestyle',
+    ready: true,
   },
   {
     id: 'wallet',
@@ -70,6 +74,7 @@ const MARKET_ITEMS = [
     icon: 'flash-outline',
     keywords: ['stc', 'money', 'coins'],
     href: '/apps/wallet',
+    ready: true,
   },
 ];
 
@@ -80,6 +85,7 @@ const MATCH_ITEMS = [
     icon: 'calendar-outline',
     keywords: ['calendar', 'fixtures', 'agenda'],
     href: '/apps/schedule',
+    ready: true,
   },
   {
     id: 'inbox',
@@ -87,6 +93,7 @@ const MATCH_ITEMS = [
     icon: 'mail-outline',
     keywords: ['messages', 'offers', 'contracts'],
     href: '/apps/inbox',
+    ready: true,
   },
   {
     id: 'notifications',
@@ -94,6 +101,7 @@ const MATCH_ITEMS = [
     icon: 'notifications-outline',
     keywords: ['alerts', 'bell'],
     href: '/apps/notifications',
+    ready: true,
   },
   {
     id: 'disputes',
@@ -112,6 +120,7 @@ const COMPETE_ITEMS = [
     icon: 'globe-outline',
     keywords: ['nations', 'world'],
     href: '/apps/international',
+    ready: true,
   },
   {
     id: 'register',
@@ -154,6 +163,7 @@ const COMMUNITY_ITEMS = [
     icon: 'logo-discord',
     keywords: ['community', 'chat'],
     href: '/apps/discord',
+    ready: true,
   },
   {
     id: 'follow-back',
@@ -161,6 +171,7 @@ const COMMUNITY_ITEMS = [
     icon: 'heart-outline',
     keywords: ['followers'],
     href: '/apps/follow-back',
+    ready: true,
   },
   {
     id: 'news',
@@ -168,6 +179,7 @@ const COMMUNITY_ITEMS = [
     icon: 'document-text-outline',
     keywords: ['updates'],
     href: '/apps/news',
+    ready: true,
   },
 ];
 
@@ -178,6 +190,7 @@ const ACCOUNT_ITEMS = [
     icon: 'bag-outline',
     keywords: ['shop'],
     href: '/apps/store',
+    ready: true,
   },
   {
     id: 'settings',
@@ -185,6 +198,7 @@ const ACCOUNT_ITEMS = [
     icon: 'settings-outline',
     keywords: ['preferences', 'account', 'theme'],
     href: '/apps/settings',
+    ready: true,
   },
 ];
 
@@ -211,6 +225,7 @@ export const MINI_APP_GROUPS_PLAYER = [
         icon: 'person-add-outline',
         keywords: ['unsigned', 'available'],
         href: '/apps/free-agents',
+        ready: true,
       },
     ],
   },
@@ -241,6 +256,7 @@ export const MINI_APP_GROUPS_PRESIDENT = [
         icon: 'document-text-outline',
         keywords: ['offers', 'wage'],
         href: '/apps/contracts',
+        ready: true,
       },
       {
         id: 'free-agents',
@@ -248,6 +264,7 @@ export const MINI_APP_GROUPS_PRESIDENT = [
         icon: 'person-add-outline',
         keywords: ['unsigned', 'available'],
         href: '/apps/free-agents',
+        ready: true,
       },
     ],
   },
@@ -284,5 +301,5 @@ export function filterMiniAppGroups(groups, query) {
 export function findMiniApp(slug) {
   const all = [...MINI_APP_GROUPS_PLAYER, ...MINI_APP_GROUPS_PRESIDENT]
     .flatMap((g) => g.items);
-  return all.find((item) => item.id === slug) || null;
+  return all.find((item) => item.id === slug || item.href === `/apps/${slug}`) || null;
 }

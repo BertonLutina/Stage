@@ -21,7 +21,19 @@ describe('mobile match / tournament / season parity wiring', () => {
   test('search Challenge opens Arrange VS', () => {
     expect(read('../../app/(tabs)/search/searchplayer.jsx')).toMatch(/opponentKind: 'player'/);
     expect(read('../../app/(tabs)/search/searchclubs.jsx')).toMatch(/opponentKind: 'club'/);
+    expect(read('../../app/apps/find-players.jsx')).toMatch(/opponentKind: 'player'/);
+    expect(read('../../app/apps/find-clubs.jsx')).toMatch(/opponentKind: 'club'/);
     expect(read('../../app/(tabs)/search/searchplayer.jsx')).not.toMatch(/TODO: Implement challenge/);
+  });
+
+  test('apps directory screens load Stage web data', () => {
+    expect(read('../../app/apps/find-players.jsx')).toMatch(/loadPlayerDirectory/);
+    expect(read('../../app/apps/find-clubs.jsx')).toMatch(/loadClubDirectory/);
+    expect(read('../../app/apps/presidents.jsx')).toMatch(/loadPresidentDirectory/);
+    expect(read('../../app/apps/transfers.jsx')).toMatch(/loadTransferMarket/);
+    expect(read('../../app/apps/wallet.jsx')).toMatch(/loadWallet/);
+    expect(read('../../app/apps/rankings.jsx')).toMatch(/loadRankings/);
+    expect(read('../../app/apps/rankings.jsx')).not.toMatch(/router\.replace\('\/apps\/competitions'\)/);
   });
 
   test('tournament detail uses Stage registration and Game Day matches', () => {

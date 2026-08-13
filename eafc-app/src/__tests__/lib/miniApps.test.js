@@ -36,6 +36,15 @@ describe('mini apps catalog', () => {
     expect(clubIds).not.toEqual(expect.arrayContaining(['find-players']));
   });
 
+  test('market and leftover apps are wired to Stage screens', () => {
+    const items = getMiniAppGroups('player').flatMap((group) => group.items);
+    const byId = Object.fromEntries(items.map((item) => [item.id, item]));
+    expect(byId['find-players'].href).toBe('/apps/find-players');
+    expect(byId['find-clubs'].href).toBe('/apps/find-clubs');
+    expect(byId.rankings.href).toBe('/apps/rankings');
+    expect(items.filter((item) => !item.ready).map((item) => item.id)).toEqual([]);
+  });
+
   test('president catalog keeps club squad separate from market find players', () => {
     const groups = getMiniAppGroups('club');
     const marketIds = groups.find((g) => g.id === 'market').items.map((item) => item.id);
