@@ -23,6 +23,7 @@ import {
 } from '@/components/profile/gamer/GamerProfileUI';
 import ClubProfileTabs from './clubProfileTabs';
 import { headingStyleLg } from '@/lib/fonts';
+import { loadClubProfile } from '@/lib/clubProfileData';
 
 const SURFACES = [
   { id: 'player', label: 'Player' },
@@ -79,26 +80,43 @@ function ClubCrest({ logoUrl, tag, platform, width = 108 }) {
   );
 }
 
-function ClubProfileSurface({ club, president, isOwner, onOpenFull, onOpenPresident, topLeft }) {
-  const [squadCount, setSquadCount] = useState(null);
-  const wins = club?.wins ?? club?.wins_count ?? 0;
-  const draws = club?.draws ?? club?.draws_count ?? 0;
-  const losses = club?.losses ?? club?.losses_count ?? 0;
-  const total = wins + draws + losses;
-  const hasRecord = total > 0;
+function ClubProfileSurface({ club: seedClub, president: seedPresident, isOwner, onOpenFull, onOpenPresident, topLeft }) {
+  const [bundle, setBundle] = useState(null);
+  const [loading, setLoading] = useState(Boolean(seedClub?.id));
 
   useEffect(() => {
-    if (!club?.id) return;
+    if (!seedClub?.id) {
+      setBundle(null);
+      setLoading(false);
+      return undefined;
+    }
     let cancelled = false;
-    stageClient.entities.Player.filter({ club_id: club.id }, null, 60)
-      .then((rows) => {
-        if (!cancelled) setSquadCount(Array.isArray(rows) ? rows.length : 0);
+    setLoading(true);
+    loadClubProfile(seedClub.id, stageClient)
+      .then((next) => {
+        if (!cancelled) setBundle(next);
       })
       .catch(() => {
-        if (!cancelled) setSquadCount(null);
+        if (!cancelled) setBundle(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [club?.id]);
+  }, [seedClub?.id]);
+
+  const club = bundle?.club || seedClub;
+  const president = bundle?.president || seedPresident;
+  const record = bundle?.record;
+  const wins = record?.wins ?? club?.wins ?? club?.wins_count ?? 0;
+  const draws = record?.draws ?? club?.draws ?? club?.draws_count ?? 0;
+  const losses = record?.losses ?? club?.losses ?? club?.losses_count ?? 0;
+  const total = wins + draws + losses;
+  const hasRecord = total > 0;
+  const memberLabel = bundle?.players?.length
+    ?? club?.member_count
+    ?? club?.members_count
+    ?? null;
 
   if (!club) {
     return (
@@ -108,10 +126,6 @@ function ClubProfileSurface({ club, president, isOwner, onOpenFull, onOpenPresid
       </View>
     );
   }
-
-  const memberLabel = squadCount != null
-    ? String(squadCount)
-    : (club.member_count ?? club.members_count ?? null);
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -198,7 +212,7 @@ function ClubProfileSurface({ club, president, isOwner, onOpenFull, onOpenPresid
                   )}
                 </View>
                 <Text numberOfLines={1} style={{ color: 'rgba(255,255,255,0.85)', fontWeight: '700', fontSize: 11, flexShrink: 1 }}>
-                  {president.display_name || 'President'}
+                  {president.display_name || president.gamertag || 'President'}
                 </Text>
               </TouchableOpacity>
             ) : null}
@@ -241,12 +255,35 @@ function ClubProfileSurface({ club, president, isOwner, onOpenFull, onOpenPresid
       </View>
 
       <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
-        <ClubProfileTabs
-          club={club}
-          isOwner={isOwner}
-          canOpenOperations={isOwner}
-          memberCount={squadCount}
-        />
+        {loading && !bundle ? (
+          <View style={{ paddingVertical: 28, alignItems: 'center' }}>
+            <ActivityIndicator color="#FFD60A" />
+          </View>
+        ) : (
+          <ClubProfileTabs
+            club={club}
+            isOwner={isOwner}
+            canOpenOperations={isOwner}
+            memberCount={memberLabel}
+            players={bundle?.players}
+            matches={bundle?.matches}
+            upcomingMatches={bundle?.upcomingMatches}
+            posts={bundle?.posts}
+            historyRows={bundle?.historyRows}
+            trophies={bundle?.trophies}
+            chatMessages={bundle?.chatMessages}
+            record={record}
+            contracts={bundle?.contracts}
+            staffRoles={bundle?.staffRoles}
+            applicants={bundle?.applicants}
+            lineups={bundle?.lineups}
+            auditLogs={bundle?.auditLogs}
+            availability={bundle?.availability}
+            stadium={bundle?.stadium}
+            finance={bundle?.finance}
+            shirts={bundle?.shirts}
+          />
+        )}
       </View>
     </ScrollView>
   );

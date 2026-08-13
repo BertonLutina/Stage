@@ -24,8 +24,6 @@ import {
   LinkText,
   MiniBarChart,
   ObjectivesWidget,
-  FutMatchLogPanel,
-  EafcClubPanel,
   ClubCrest,
   PitchAtmosphere,
   FutCta,
@@ -102,8 +100,8 @@ export default function PlayerDashboardScreen() {
 
   const {
     user, player, club, playerRank, clubRank, nextMatch, upcomingMatches,
-    activeTournaments, leagueStandings, activity, tenure, futMatches,
-    eafcSummary, glance, form, futActivity,
+    activeTournaments, leagueStandings, activity, tenure,
+    glance, form, futActivity,
   } = data || {};
 
   const rankedPlayer = playerRank?.row;
@@ -597,7 +595,7 @@ export default function PlayerDashboardScreen() {
                 )}
               </SectionCard>
 
-              {/* FUT + EAFC */}
+              {/* FUT activity */}
               <SectionCard accent="gold">
                 <SectionTitle eyebrow="ULTIMATE TEAM">FUT activity</SectionTitle>
                 <MiniBarChart
@@ -613,30 +611,8 @@ export default function PlayerDashboardScreen() {
                 ) : null}
               </SectionCard>
 
-              <SectionCard>
-                <SectionTitle eyebrow="EA FC">EA FC Pro Club</SectionTitle>
-                <EafcClubPanel player={player} eafcSummary={eafcSummary} onRefresh={load} />
-              </SectionCard>
-
-              <SectionCard accent="gold">
-                <SectionTitle eyebrow="MATCH LOG">FUT match log</SectionTitle>
-                <FutMatchLogPanel playerId={player.id} initialMatches={futMatches || []} />
-              </SectionCard>
             </>
           )}
-
-          <LinearGradient
-            colors={['rgba(0,232,255,0.12)', 'rgba(255,210,74,0.08)', 'rgba(255,255,255,0.02)']}
-            style={{
-              borderRadius: 18, borderWidth: 1.5, borderColor: 'rgba(0,232,255,0.25)',
-              padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12,
-            }}
-          >
-            <Ionicons name="game-controller-outline" size={22} color={FUT.cyan} />
-            <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, flex: 1, lineHeight: 19, fontWeight: '600' }}>
-              Built like EA FC 27 — holographic panels, kickoff energy, Ultimate Team glow.
-            </Text>
-          </LinearGradient>
         </ScrollView>
       </SafeAreaView>
     </GamerProfileShell>

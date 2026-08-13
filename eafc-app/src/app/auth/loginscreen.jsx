@@ -26,7 +26,7 @@ import {
   setBiometricEnabled,
 } from '../../services/biometricAuthService';
 
-const LOGIN_BANNER = require('../../../assets/Banner.jpg');
+const LOGIN_BANNER = require('../../../assets/Banner-mobile.jpg');
 const STADIUM_LOGO = require('../../../assets/stadium-logo.png');
 
 export default function LoginScreen() {
@@ -221,10 +221,11 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
+    backgroundColor: '#040e30',
   },
   scrim: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(2,9,27,0.22)',
   },
   safe: {
     flex: 1,
