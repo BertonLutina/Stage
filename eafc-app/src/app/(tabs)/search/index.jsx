@@ -7,14 +7,11 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { readAccountMode } from '@/lib/accountMode';
 import { getMiniAppGroups, filterMiniAppGroups } from '@/lib/miniApps';
+import { readStageTheme } from '@/lib/stageTheme';
 import { headingStyle, headingStyleSm } from '@/lib/fonts';
-import {
-  GamerProfileShell,
-  CYAN,
-  GAMER_BG,
-} from '@/components/profile/gamer/GamerProfileUI';
 
-function AppTile({ item, onPress }) {
+function AppTile({ item, onPress, theme }) {
+  const ready = Boolean(item.ready);
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -26,8 +23,8 @@ function AppTile({ item, onPress }) {
         minHeight: 104,
         borderRadius: 18,
         borderWidth: 1,
-        borderColor: item.ready ? 'rgba(0,240,255,0.22)' : 'rgba(255,255,255,0.08)',
-        backgroundColor: item.ready ? 'rgba(0,240,255,0.08)' : 'rgba(255,255,255,0.03)',
+        borderColor: ready ? theme.tileBorder : 'rgba(127,127,127,0.18)',
+        backgroundColor: ready ? theme.tileFill : theme.card,
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: 8,
@@ -39,9 +36,9 @@ function AppTile({ item, onPress }) {
         width: 44,
         height: 44,
         borderRadius: 14,
-        backgroundColor: 'rgba(0,0,0,0.28)',
+        backgroundColor: theme.inputFill,
         borderWidth: 1,
-        borderColor: item.ready ? 'rgba(0,240,255,0.3)' : 'rgba(255,255,255,0.1)',
+        borderColor: ready ? theme.tileBorder : 'rgba(127,127,127,0.16)',
         alignItems: 'center',
         justifyContent: 'center',
       }}
@@ -49,13 +46,13 @@ function AppTile({ item, onPress }) {
         <Ionicons
           name={item.icon}
           size={22}
-          color={item.ready ? CYAN : 'rgba(255,255,255,0.55)'}
+          color={ready ? theme.primary : theme.muted}
         />
       </View>
       <Text
         numberOfLines={2}
         style={{
-          color: item.ready ? '#fff' : 'rgba(255,255,255,0.62)',
+          color: ready ? theme.text : theme.muted,
           fontSize: 11,
           fontWeight: '800',
           letterSpacing: 0.6,
@@ -71,13 +68,14 @@ function AppTile({ item, onPress }) {
 }
 
 /**
- * Apps launcher — opened from the tab search button.
- * Searchable grid of Stage destinations (Transfers, Inbox, …).
+ * Apps launcher — opened from the tab Apps button.
+ * Searchable grid of Stage destinations that are not already in the native tabs.
  */
 export default function SearchIndex() {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const mode = readAccountMode() || 'player';
+  const theme = useMemo(() => readStageTheme(), [query, mode]);
 
   const groups = useMemo(
     () => filterMiniAppGroups(getMiniAppGroups(mode), query),
@@ -86,22 +84,26 @@ export default function SearchIndex() {
 
   const openApp = (item) => {
     if (!item?.href) return;
+    if (item.params) {
+      router.push({ pathname: item.href, params: item.params });
+      return;
+    }
     router.push(item.href);
   };
 
   return (
-    <GamerProfileShell>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: GAMER_BG }} edges={['top']}>
+    <View style={{ flex: 1, backgroundColor: theme.bg }}>
+      <StatusBar barStyle={theme.barStyle} translucent backgroundColor="transparent" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
         <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 }}>
-          <Text style={[headingStyleSm, { color: 'rgba(0,240,255,0.7)', fontSize: 10, letterSpacing: 2 }]}>
+          <Text style={[headingStyleSm, { color: theme.primary, fontSize: 10, letterSpacing: 2, opacity: 0.8 }]}>
             STAGE
           </Text>
-          <Text style={[headingStyle, { color: '#fff', marginTop: 2 }]}>
+          <Text style={[headingStyle, { color: theme.text, marginTop: 2 }]}>
             Apps
           </Text>
           <Text style={{
-            color: 'rgba(255,255,255,0.45)',
+            color: theme.muted,
             fontSize: 13,
             marginTop: 4,
             lineHeight: 18,
@@ -118,30 +120,30 @@ export default function SearchIndex() {
             minHeight: 50,
             borderRadius: 16,
             borderWidth: 1,
-            borderColor: 'rgba(0,240,255,0.28)',
-            backgroundColor: 'rgba(255,255,255,0.04)',
+            borderColor: theme.inputBorder,
+            backgroundColor: theme.inputFill,
             paddingHorizontal: 14,
           }}
           >
-            <Ionicons name="search" size={20} color={CYAN} />
+            <Ionicons name="search" size={20} color={theme.primary} />
             <TextInput
               value={query}
               onChangeText={setQuery}
               placeholder="Search apps — Transfer, Inbox…"
-              placeholderTextColor="rgba(255,255,255,0.35)"
+              placeholderTextColor={theme.muted}
               autoCorrect={false}
               autoCapitalize="none"
               returnKeyType="search"
               style={{
                 flex: 1,
-                color: '#fff',
+                color: theme.text,
                 fontSize: 16,
                 paddingVertical: 12,
               }}
             />
             {query ? (
               <TouchableOpacity onPress={() => setQuery('')} hitSlop={10} accessibilityLabel="Clear search">
-                <Ionicons name="close-circle" size={20} color="rgba(255,255,255,0.4)" />
+                <Ionicons name="close-circle" size={20} color={theme.muted} />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -158,12 +160,12 @@ export default function SearchIndex() {
               alignItems: 'center',
               borderRadius: 18,
               borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.08)',
-              backgroundColor: 'rgba(255,255,255,0.03)',
+              borderColor: theme.tileBorder,
+              backgroundColor: theme.card,
             }}
             >
-              <Ionicons name="search-outline" size={36} color="rgba(255,255,255,0.25)" />
-              <Text style={{ color: 'rgba(255,255,255,0.5)', marginTop: 12, fontWeight: '700' }}>
+              <Ionicons name="search-outline" size={36} color={theme.muted} />
+              <Text style={{ color: theme.muted, marginTop: 12, fontWeight: '700' }}>
                 No apps match “{query.trim()}”
               </Text>
             </View>
@@ -171,12 +173,13 @@ export default function SearchIndex() {
             groups.map((group) => (
               <View key={group.id} style={{ gap: 10 }}>
                 <Text style={{
-                  color: 'rgba(0,240,255,0.45)',
+                  color: theme.primary,
                   fontSize: 11,
                   fontWeight: '800',
                   letterSpacing: 1.8,
                   textTransform: 'uppercase',
                   paddingHorizontal: 2,
+                  opacity: 0.7,
                 }}
                 >
                   {group.label}
@@ -188,7 +191,7 @@ export default function SearchIndex() {
                 }}
                 >
                   {group.items.map((item) => (
-                    <AppTile key={item.id} item={item} onPress={() => openApp(item)} />
+                    <AppTile key={item.id} item={item} theme={theme} onPress={() => openApp(item)} />
                   ))}
                 </View>
               </View>
@@ -196,6 +199,6 @@ export default function SearchIndex() {
           )}
         </ScrollView>
       </SafeAreaView>
-    </GamerProfileShell>
+    </View>
   );
 }

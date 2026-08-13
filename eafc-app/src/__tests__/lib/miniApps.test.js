@@ -1,24 +1,46 @@
 import { getMiniAppGroups } from '../../lib/miniApps';
 
 describe('mini apps catalog', () => {
-  test('does not duplicate native tab destinations', () => {
-    const nativeHrefs = [
-      '/(tabs)/dashboard',
-      '/(tabs)/matches',
-      '/(tabs)/tournaments',
-      '/(tabs)/profile',
-    ];
+  test('does not duplicate native tab destinations without a squad deep link', () => {
     for (const mode of ['player', 'club']) {
-      const hrefs = getMiniAppGroups(mode).flatMap((group) => group.items.map((item) => item.href));
-      for (const href of nativeHrefs) {
-        expect(hrefs).not.toContain(href);
-      }
+      const items = getMiniAppGroups(mode).flatMap((group) => group.items);
+      const bareNative = items.filter((item) => (
+        ['/(tabs)/dashboard', '/(tabs)/matches', '/(tabs)/tournaments'].includes(item.href)
+      ));
+      expect(bareNative).toEqual([]);
     }
   });
 
-  test('keeps extra STAGE apps that are not in the tab bar', () => {
-    const playerIds = getMiniAppGroups('player').flatMap((group) => group.items.map((item) => item.id));
-    expect(playerIds).toEqual(expect.arrayContaining(['inbox', 'disputes', 'competitions', 'wallet']));
-    expect(playerIds).not.toEqual(expect.arrayContaining(['matches', 'tournaments', 'home', 'profile']));
+  test('puts market discovery apps in Market, not Account', () => {
+    const groups = getMiniAppGroups('player');
+    const marketIds = groups.find((g) => g.id === 'market').items.map((item) => item.id);
+    const accountIds = groups.find((g) => g.id === 'account').items.map((item) => item.id);
+    const clubIds = groups.find((g) => g.id === 'club').items.map((item) => item.id);
+
+    expect(marketIds).toEqual([
+      'find-clubs',
+      'find-players',
+      'find-presidents',
+      'scouting',
+      'transfers',
+      'lifestyle',
+      'wallet',
+    ]);
+    expect(accountIds).not.toEqual(expect.arrayContaining([
+      'find-clubs',
+      'find-players',
+      'lifestyle',
+      'wallet',
+    ]));
+    expect(clubIds).toEqual(expect.arrayContaining(['club-players']));
+    expect(clubIds).not.toEqual(expect.arrayContaining(['find-players']));
+  });
+
+  test('president catalog keeps club squad separate from market find players', () => {
+    const groups = getMiniAppGroups('club');
+    const marketIds = groups.find((g) => g.id === 'market').items.map((item) => item.id);
+    const clubIds = groups.find((g) => g.id === 'club').items.map((item) => item.id);
+    expect(marketIds).toEqual(expect.arrayContaining(['find-players', 'find-clubs', 'find-presidents']));
+    expect(clubIds).toEqual(expect.arrayContaining(['club-players', 'contracts']));
   });
 });

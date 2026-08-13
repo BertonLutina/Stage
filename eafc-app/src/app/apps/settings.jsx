@@ -53,6 +53,7 @@ import {
   GAMER_BG,
 } from '@/components/profile/gamer/GamerProfileUI';
 import { headingStyleLg, headingStyleSm } from '@/lib/fonts';
+import { writeStageThemeCustom } from '@/lib/stageTheme';
 
 const THEME_KEY = 'stage-theme';
 const LANGUAGE_KEY = 'language';
@@ -326,6 +327,13 @@ export default function SettingsScreen() {
       setSelectedNotificationSoundId(notificationSound);
       localStorage.setItem(LANGUAGE_KEY, language);
       localStorage.setItem(THEME_KEY, theme);
+      writeStageThemeCustom({
+        primary: customPrimaryColor,
+        background: customBackgroundColor,
+        text: customTextColor,
+        primaryText: customPrimaryTextColor,
+        secondaryText: customSecondaryTextColor,
+      });
       await stageClient.auth.updateMe({
         language,
         customPrimaryColor,
