@@ -12,12 +12,25 @@ const TYPE_LABELS = {
 };
 
 export const LIFECYCLE_OWNED_CONTRACT_TYPES = new Set(['ownership', 'founder_player', 'founder']);
+export const FOUNDER_PLAYER_CONTRACT_TYPES = new Set(['founder', 'founder_player']);
+
+function getContractTypeValue(contractOrType) {
+  if (typeof contractOrType === 'string') return contractOrType.trim().toLowerCase();
+  return String(contractOrType?.contract_type || contractOrType?.type || '').trim().toLowerCase();
+}
 
 export function isLifecycleOwnedContract(contractOrType) {
-  const type = typeof contractOrType === 'string'
-    ? contractOrType.trim().toLowerCase()
-    : String(contractOrType?.contract_type || contractOrType?.type || '').trim().toLowerCase();
-  return LIFECYCLE_OWNED_CONTRACT_TYPES.has(type);
+  return LIFECYCLE_OWNED_CONTRACT_TYPES.has(getContractTypeValue(contractOrType));
+}
+
+export function isFounderPlayerContract(contractOrType) {
+  return FOUNDER_PLAYER_CONTRACT_TYPES.has(getContractTypeValue(contractOrType));
+}
+
+export function canRenegotiateFounderPlayerContract(contract, { isMyContract = false, canManage = false } = {}) {
+  if (!isFounderPlayerContract(contract)) return false;
+  if (String(contract?.status || '').toLowerCase() !== 'active') return false;
+  return Boolean(isMyContract || canManage);
 }
 
 export function getContractTargetPlayerId(contract) {

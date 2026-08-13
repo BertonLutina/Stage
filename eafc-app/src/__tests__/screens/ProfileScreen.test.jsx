@@ -42,10 +42,15 @@ jest.mock('../../api/stageClient', () => ({
       Player: { update: jest.fn() },
       PlayerShowcaseVideo: { filter: jest.fn(() => Promise.resolve([])) },
     },
+    clubs: { leave: jest.fn() },
     integrations: { Core: { UploadFile: jest.fn() } },
     http: { post: jest.fn() },
   },
   resolveMyPlayerAndClub: jest.fn(() => Promise.resolve({ user: null, player: null, club: null })),
+}));
+
+jest.mock('../../lib/leaveClub', () => ({
+  leaveStageClub: jest.fn(),
 }));
 
 jest.mock('expo-linear-gradient', () => {

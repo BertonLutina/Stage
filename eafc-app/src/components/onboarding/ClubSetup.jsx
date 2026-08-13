@@ -21,6 +21,7 @@ export default function ClubSetup({
   onPhaseChange,
   player,
   user,
+  playerContract = null,
   required = false,
 }) {
   const [phase, setPhase] = useState('president');
@@ -82,6 +83,7 @@ export default function ClubSetup({
           description: '',
           status: 'active',
         },
+        playerContract: playerContract || undefined,
         president_profile: {
           display_name: displayName.trim() || player?.gamertag || user?.email || 'President',
           role_title: roleTitle.trim() || 'President',

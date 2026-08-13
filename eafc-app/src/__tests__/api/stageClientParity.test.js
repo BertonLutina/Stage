@@ -9,6 +9,8 @@ describe('mobile stageClient parity wrappers', () => {
     expect(source).toMatch(/const clubs\s*=\s*{/);
     expect(source).toMatch(/createFounder\(body\s*=\s*{}\)/);
     expect(source).toMatch(/http\.post\('\/clubs\/founder',\s*body\)/);
+    expect(source).toMatch(/leave\(clubId,\s*body\s*=\s*{}\)/);
+    expect(source).toMatch(/\/clubs\/\$\{encodeURIComponent\(clubId\)\}\/leave/);
     expect(source).toMatch(/stageClient\s*=\s*{[^}]*clubs/s);
   });
 

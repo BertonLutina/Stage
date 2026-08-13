@@ -18,6 +18,7 @@ describe('mobile ClubSetup founder parity', () => {
 
   it('passes normalized founder payload fields to the backend', () => {
     expect(source).toMatch(/player_id:\s*player\.id/);
+    expect(source).toMatch(/playerContract:\s*playerContract/);
     expect(source).toMatch(/club:\s*{/);
     expect(source).toMatch(/name:\s*name\.trim\(\)/);
     expect(source).toMatch(/tag:\s*tag\.trim\(\)\.toUpperCase\(\)\.slice\(0,\s*5\)/);

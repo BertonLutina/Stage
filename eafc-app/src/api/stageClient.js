@@ -989,6 +989,10 @@ const clubs = {
   createFounder(body = {}) {
     return http.post('/clubs/founder', body);
   },
+  leave(clubId, body = {}) {
+    if (!clubId) return Promise.reject(new Error('clubId is required'));
+    return http.post(`/clubs/${encodeURIComponent(clubId)}/leave`, body);
+  },
 };
 
 export const stageClient = { entities, auth, integrations, functions, http, identityClaims, competitionEngine, profileMatches, chatReads, presidents, clubs, posts, comments };

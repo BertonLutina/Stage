@@ -19,6 +19,7 @@ export default function PresidentContractSetup({
   player,
   user,
   founderState,
+  playerContract = null,
   onComplete,
 }) {
   const [signing, setSigning] = useState(false);
@@ -41,6 +42,7 @@ export default function PresidentContractSetup({
         owner_email: user?.email || club.owner_email,
         logo_url: club.logo_url || null,
       },
+      playerContract: playerContract || undefined,
     });
     return resolvePresidentContract(refreshed);
   };

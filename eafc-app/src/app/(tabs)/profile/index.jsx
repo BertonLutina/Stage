@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  View, ScrollView, TouchableOpacity, ActivityIndicator, StatusBar, Image, Text,
+  View, ScrollView, TouchableOpacity, ActivityIndicator, StatusBar, Image, Text, Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +24,7 @@ import {
 import ClubProfileTabs from './clubProfileTabs';
 import { headingStyleLg } from '@/lib/fonts';
 import { loadClubProfile } from '@/lib/clubProfileData';
+import { leaveStageClub } from '@/lib/leaveClub';
 
 const SURFACES = [
   { id: 'player', label: 'Player' },
@@ -80,9 +81,10 @@ function ClubCrest({ logoUrl, tag, platform, width = 108 }) {
   );
 }
 
-function ClubProfileSurface({ club: seedClub, president: seedPresident, isOwner, onOpenFull, onOpenPresident, topLeft }) {
+function ClubProfileSurface({ club: seedClub, president: seedPresident, isOwner, onOpenFull, onOpenPresident, topLeft, playerId, userId, onClubLeft }) {
   const [bundle, setBundle] = useState(null);
   const [loading, setLoading] = useState(Boolean(seedClub?.id));
+  const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
     if (!seedClub?.id) {
@@ -213,6 +215,49 @@ function ClubProfileSurface({ club: seedClub, president: seedPresident, isOwner,
                 </View>
                 <Text numberOfLines={1} style={{ color: 'rgba(255,255,255,0.85)', fontWeight: '700', fontSize: 11, flexShrink: 1 }}>
                   {president.display_name || president.gamertag || 'President'}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+            {isOwner && playerId ? (
+              <TouchableOpacity
+                onPress={() => {
+                  if (leaving) return;
+                  Alert.alert(
+                    'Leave Club',
+                    'Leave this club? Your player and president contracts with this club will end, and you will return to the transfer market as a free agent.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Leave Club',
+                        style: 'destructive',
+                        onPress: async () => {
+                          setLeaving(true);
+                          try {
+                            await leaveStageClub({ clubId: club.id, playerId, userId });
+                            await onClubLeft?.();
+                          } catch (err) {
+                            Alert.alert('Could not leave the club', err?.message || 'Try again.');
+                          } finally {
+                            setLeaving(false);
+                          }
+                        },
+                      },
+                    ],
+                  );
+                }}
+                disabled={leaving}
+                activeOpacity={0.85}
+                style={{
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: 'rgba(251,113,133,0.35)',
+                  backgroundColor: 'rgba(251,113,133,0.08)',
+                  paddingHorizontal: 12,
+                  paddingVertical: 13,
+                }}
+              >
+                <Text style={{ color: '#FB7185', fontSize: 11, fontWeight: '900', letterSpacing: 1 }}>
+                  {leaving ? 'LEAVING…' : 'LEAVE'}
                 </Text>
               </TouchableOpacity>
             ) : null}
@@ -396,6 +441,7 @@ export default function ProfileIndex() {
               signedClub={signedClub}
               presidentClub={identities.presidentClub}
               onOpenClub={openClub}
+              onClubLeft={identities.refresh}
               topLeftExtra={rail}
             />
           )}
@@ -420,6 +466,9 @@ export default function ProfileIndex() {
               onOpenFull={openClub}
               onOpenPresident={() => selectSurface('president')}
               topLeft={rail}
+              playerId={identities.player?.id}
+              userId={identities.user?.id}
+              onClubLeft={identities.refresh}
             />
           )}
 

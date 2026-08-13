@@ -9,6 +9,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { stageClient, resolveMyPlayerAndClub } from '@/api/stageClient';
 import api from '@/utils/api';
 import useAuthStore from '@/store/authStore';
+import { leaveStageClub } from '@/lib/leaveClub';
 import {
   GamerProfileShell,
   GamerBanner,
@@ -99,6 +100,7 @@ export default function ProfileScreen({
   presidentClub = null,
   topLeftExtra = null,
   onOpenClub,
+  onClubLeft,
 }) {
   const { user: me, logout } = useAuthStore();
   const params = useLocalSearchParams();
@@ -112,6 +114,7 @@ export default function ProfileScreen({
   const [moreTool, setMoreTool] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [pvpMatches, setPvpMatches] = useState([]);
+  const [leaving, setLeaving] = useState(false);
 
   const isOwn = !viewingOther;
 
@@ -207,6 +210,47 @@ export default function ProfileScreen({
     if (!id) return;
     if (onOpenClub) onOpenClub(id);
     else router.push({ pathname: '/teams/teamprofilescreen', params: { teamId: String(id) } });
+  };
+
+  const leaveClub = () => {
+    const clubToLeave = signedClub?.id || player?.club_id;
+    if (!isOwn || !player?.id || !clubToLeave || leaving) return;
+    Alert.alert(
+      'Leave Club',
+      'Leave this club? Your player and president contracts with this club will end, and you will return to the transfer market as a free agent.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Leave Club',
+          style: 'destructive',
+          onPress: async () => {
+            setLeaving(true);
+            try {
+              const result = await leaveStageClub({
+                clubId: clubToLeave,
+                playerId: player.id,
+                userId: me?.id,
+              });
+              const released = result?.player && typeof result.player === 'object' ? result.player : {};
+              setPlayer((prev) => ({
+                ...(prev || {}),
+                ...released,
+                club_id: null,
+                role: 'member',
+                club_roles: ['member'],
+                status: 'free_agent',
+              }));
+              setSignedClub(null);
+              await onClubLeft?.();
+            } catch (err) {
+              Alert.alert('Could not leave the club', err?.message || 'Try again.');
+            } finally {
+              setLeaving(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const clubId = presidentClub?.id || signedClub?.id;
@@ -422,6 +466,25 @@ export default function ProfileScreen({
                 <Ionicons name="shield" size={14} color={CYAN} />
                 <Text numberOfLines={1} style={{ color: 'rgba(255,255,255,0.85)', fontWeight: '700', fontSize: 11, flexShrink: 1 }}>
                   {clubName || 'Club'}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+            {isOwn && signedClub?.id ? (
+              <TouchableOpacity
+                onPress={leaveClub}
+                disabled={leaving}
+                activeOpacity={0.85}
+                style={{
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: 'rgba(251,113,133,0.35)',
+                  backgroundColor: 'rgba(251,113,133,0.08)',
+                  paddingHorizontal: 12,
+                  paddingVertical: 13,
+                }}
+              >
+                <Text style={{ color: '#FB7185', fontSize: 11, fontWeight: '900', letterSpacing: 1 }}>
+                  {leaving ? 'LEAVING…' : 'LEAVE'}
                 </Text>
               </TouchableOpacity>
             ) : null}

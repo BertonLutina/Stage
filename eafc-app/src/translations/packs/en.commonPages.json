@@ -366,6 +366,8 @@
   "profViewClubPage": "View Club Page",
   "profEditClub": "Edit Club",
   "profLeaveClub": "Leave Club",
+  "profLeaveClubConfirm": "Leave this club? Your player and president contracts with this club will end, and you will return to the transfer market as a free agent.",
+  "profLeaveClubFailed": "Could not leave the club.",
   "profCreateOrJoin": "Create or Join a Club",
   "profClubName": "Club Name",
   "profTag": "Tag (max 5 chars)",

@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import STText from '../../components/common/STText';
 import PlayerSetup from '../../components/onboarding/PlayerSetup';
 import IdentityClaimSetup from '../../components/onboarding/IdentityClaimSetup';
+import FounderPlayerTermsSetup from '../../components/onboarding/FounderPlayerTermsSetup';
 import ClubSetup from '../../components/onboarding/ClubSetup';
 import DiscordJoinStep from '../../components/onboarding/DiscordJoinStep';
 import PresidentContractSetup from '../../components/onboarding/PresidentContractSetup';
@@ -54,15 +55,16 @@ function detectTimezone() {
 
 function getStepMeta(intent, step, phase) {
   const dual = intent === 'both';
-  if (step === 'player') return { label: 'Player profile', index: 1, total: dual ? 6 : 3 };
-  if (step === 'identity') return { label: 'Verify identity', index: 2, total: dual ? 6 : 3 };
+  if (step === 'player') return { label: 'Player profile', index: 1, total: dual ? 7 : 3 };
+  if (step === 'identity') return { label: 'Verify identity', index: 2, total: dual ? 7 : 3 };
+  if (step === 'founder_terms' && dual) return { label: 'Player wages', index: 3, total: 7 };
   if (step === 'club' && dual) {
     return phase === 'club'
-      ? { label: 'Club profile', index: 4, total: 6 }
-      : { label: 'President status', index: 3, total: 6 };
+      ? { label: 'Club profile', index: 5, total: 7 }
+      : { label: 'President status', index: 4, total: 7 };
   }
   if (step === 'president_contract' && dual) {
-    return { label: 'President contract', index: 5, total: 6 };
+    return { label: 'President contract', index: 6, total: 7 };
   }
   return { label: 'Choose role', index: 0, total: 2 };
 }
@@ -76,6 +78,7 @@ export default function OnboardingScreen() {
   const [clubSetupPhase, setClubSetupPhase] = useState('president');
   const [foundedClub, setFoundedClub] = useState(null);
   const [founderState, setFounderState] = useState(null);
+  const [founderPlayerTerms, setFounderPlayerTerms] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [timezone, setTimezone] = useState(detectTimezone);
@@ -275,8 +278,18 @@ export default function OnboardingScreen() {
                 <IdentityClaimSetup
                   player={player}
                   onComplete={() => {
-                    if (intent === 'both') setStep('club');
+                    if (intent === 'both') setStep('founder_terms');
                     else finishOnboarding();
+                  }}
+                />
+              ) : null}
+
+              {step === 'founder_terms' && intent === 'both' ? (
+                <FounderPlayerTermsSetup
+                  initialTerms={founderPlayerTerms}
+                  onComplete={(terms) => {
+                    setFounderPlayerTerms(terms);
+                    setStep('club');
                   }}
                 />
               ) : null}
@@ -287,6 +300,7 @@ export default function OnboardingScreen() {
                   onPhaseChange={setClubSetupPhase}
                   player={player}
                   user={user}
+                  playerContract={founderPlayerTerms}
                   required
                 />
               ) : null}
@@ -297,6 +311,7 @@ export default function OnboardingScreen() {
                   player={player}
                   user={user}
                   founderState={founderState}
+                  playerContract={founderPlayerTerms}
                   onComplete={finishOnboarding}
                 />
               ) : null}
@@ -310,7 +325,7 @@ export default function OnboardingScreen() {
 
               {step !== 'choose' && step !== 'club' && step !== 'president_contract' && step !== 'discord' ? (
                 <TouchableOpacity
-                  onPress={() => setStep(step === 'identity' ? 'player' : 'choose')}
+                  onPress={() => setStep(step === 'founder_terms' ? 'identity' : step === 'identity' ? 'player' : 'choose')}
                   style={s.ghostBtn}
                 >
                   <STText style={s.ghostBtnText}>← Back</STText>

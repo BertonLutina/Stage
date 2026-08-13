@@ -18,6 +18,9 @@ describe('mobile onboarding intent parity', () => {
 
   it('routes Player + President through player setup before club setup', () => {
     expect(source).toMatch(/setOnboardingIntent\('both',\s*'player'\)/);
-    expect(source).toMatch(/intent === 'both'\)\s*setStep\('club'\)/);
+    expect(source).toMatch(/intent === 'both'\)\s*setStep\('founder_terms'\)/);
+    expect(source).toMatch(/FounderPlayerTermsSetup/);
+    expect(source).toMatch(/playerContract=\{founderPlayerTerms\}/);
+    expect(source).toMatch(/<PresidentContractSetup[\s\S]*playerContract=\{founderPlayerTerms\}/);
   });
 });

@@ -6,12 +6,15 @@ import {
   Image,
   StatusBar,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import STText from '../../../components/common/STText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '../../../utils/api';
+import { resolveMyPlayerAndClub } from '../../../api/stageClient';
+import { leaveStageClub } from '../../../lib/leaveClub';
 import useAuthStore from '../../../store/authStore';
 import useColorSchemeColors from '../../../hooks/useColorSchemeColors';
 import BackButton from '../../../components/common/BackButton';
@@ -103,20 +106,41 @@ export default function TeamDashboardScreen() {
 
   const handleJoinLeave = async () => {
     if (!user || !teamId || joinLoading) return;
+    if (joined) {
+      Alert.alert(
+        'Leave Club',
+        'Leave this club? Your player and president contracts with this club will end, and you will return to the transfer market as a free agent.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Leave Club', style: 'destructive', onPress: () => performJoinLeave() },
+        ],
+      );
+      return;
+    }
+    await performJoinLeave();
+  };
+
+  const performJoinLeave = async () => {
+    if (!user || !teamId || joinLoading) return;
     setJoinLoading(true);
     try {
       if (joined) {
-        const { data } = await api.post(`/teams/${teamId}/leave`);
-        if (data?.data) setTeam(data.data);
+        const rosterPlayer = (team?.players ?? []).find((p) => p.user_id === user?.id || p.id === user?.id);
+        const playerId = rosterPlayer?.player_id || (await resolveMyPlayerAndClub())?.player?.id;
+        if (!playerId) throw new Error('No player profile');
+        await leaveStageClub({ clubId: teamId, playerId, userId: user.id });
+        const refreshed = await api.get(`/teams/${teamId}`).catch(() => null);
+        if (refreshed?.data?.data) setTeam(refreshed.data.data);
+        else setTeam((prev) => (prev ? { ...prev, players: (prev.players || []).filter((p) => p.user_id !== user.id && p.id !== user.id) } : prev));
       } else {
         await api.post(`/teams/${teamId}/join-request`);
         setRequestStatus('pending');
-        alert('Request sent! The club owner will review your request.');
+        Alert.alert('Request sent', 'The club owner will review your request.');
       }
     } catch (err) {
-      const msg = err.response?.data?.message || (joined ? 'Failed to leave' : 'Failed to send request');
+      const msg = err.response?.data?.message || err?.message || (joined ? 'Failed to leave' : 'Failed to send request');
       if (err.response?.status === 409) setRequestStatus('pending');
-      alert(msg);
+      Alert.alert(joined ? 'Could not leave the club' : 'Request failed', msg);
     } finally {
       setJoinLoading(false);
     }
@@ -297,7 +321,7 @@ export default function TeamDashboardScreen() {
           {/* CTA */}
           <GlassCard title="INVITE PLAYER">
             <View className="flex-row gap-3">
-              {isOwner ? (
+              {isOwner && !joined ? (
                 <TouchableOpacity
                   onPress={() => router.push({ pathname: '/teams/manageteamscreen', params: { teamId } })}
                   className="flex-1 rounded-2xl bg-[#1E57CB] py-3 items-center"
@@ -306,7 +330,7 @@ export default function TeamDashboardScreen() {
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
-                  onPress={handleJoinLeave}
+                  onPress={joined || !isOwner ? handleJoinLeave : () => router.push({ pathname: '/teams/manageteamscreen', params: { teamId } })}
                   disabled={joinLoading || pending}
                   className="flex-1 rounded-2xl bg-[#1E57CB] py-3 items-center"
                 >
@@ -314,7 +338,7 @@ export default function TeamDashboardScreen() {
                     <ActivityIndicator color="white" size="small" />
                   ) : (
                     <STText className="font-semibold" style={{ color: '#FFFFFF' }}>
-                      {joined ? 'Leave Club' : pending ? 'Request Pending' : 'Join Club'}
+                      {joined ? 'Leave Club' : isOwner ? 'Invite Player' : pending ? 'Request Pending' : 'Join Club'}
                     </STText>
                   )}
                 </TouchableOpacity>
