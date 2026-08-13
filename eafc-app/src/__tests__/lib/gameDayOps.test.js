@@ -7,11 +7,13 @@ import {
   parseIdList,
   resolveMatchSides,
 } from '../../lib/gameDayOps';
-import { getResultSubmissionControls } from '../../lib/gameDayResultFlow';
+import { formatSideClaim, getResultSubmissionControls } from '../../lib/gameDayResultFlow';
 import { applyWagerOptimistic, formatStc } from '../../lib/wagerActions';
 import { roleForClub } from '../../lib/scheduleEngine';
 import { sortStandings } from '../../lib/competitionUtils';
 import { hasStagePlus } from '../../lib/subscriptionUtils';
+import { canResolveDisputeWithScore } from '../../lib/gameDayResultFlow';
+import { absoluteProofUrl, isStageAdmin, parseSubmission } from '../../lib/adminDisputes';
 
 describe('gameDayOps', () => {
   test('parses seated player lists', () => {
@@ -63,7 +65,27 @@ describe('gameDayOps', () => {
       is_home_team: true,
       home_score: 2,
       away_score: 1,
+      own_score: 2,
+      opponent_score: 1,
       proof_url: 'https://proof',
+    }));
+  });
+
+  test('away payload maps own 2 and opponent 5 to home 5-2', () => {
+    const payload = buildResultPayload({
+      game: { id: 'm1', mode: 'solo' },
+      isHomeTeam: false,
+      myPlayer: { id: 'p2', email: 'b@c.d', gamertag: 'Rival' },
+      ownScore: 2,
+      opponentScore: 5,
+      proofUrl: 'https://proof',
+    });
+    expect(payload).toEqual(expect.objectContaining({
+      is_home_team: false,
+      home_score: 5,
+      away_score: 2,
+      own_score: 2,
+      opponent_score: 5,
     }));
   });
 
@@ -102,5 +124,16 @@ describe('result + wager + season helpers', () => {
   test('STAGE Plus gate', () => {
     expect(hasStagePlus('stage_plus')).toBe(true);
     expect(hasStagePlus('free')).toBe(false);
+  });
+
+  test('admin dispute resolve needs a side and a score', () => {
+    expect(canResolveDisputeWithScore('home', { home_score: 5, away_score: 2 })).toBe(true);
+    expect(canResolveDisputeWithScore('', { home_score: 5, away_score: 2 })).toBe(false);
+    expect(isStageAdmin({ role_id: 0 })).toBe(true);
+    expect(parseSubmission('{"home_score":5,"away_score":2}').home_score).toBe(5);
+    expect(formatSideClaim({ own_score: 2, opponent_score: 5 }, 'away')).toBe('Away 2–Home 5');
+    expect(formatSideClaim({ own_score: 2, opponent_score: 5 }, 'home')).toBe('Home 2–Away 5');
+    expect(absoluteProofUrl('/uploads/home.png')).toMatch(/\/uploads\/home\.png$/);
+    expect(absoluteProofUrl('https://cdn.example/proof.png')).toBe('https://cdn.example/proof.png');
   });
 });

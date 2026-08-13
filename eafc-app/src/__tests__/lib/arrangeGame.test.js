@@ -4,6 +4,9 @@ import {
   ARRANGE_MIN_BET,
   ARRANGE_MAX_BET,
   combineDateTimeToMysql,
+  formatDateYmd,
+  formatKickoffLabel,
+  formatTimeHm,
   isReachableEmail,
   pickRecipientEmail,
   validateArrangeWager,
@@ -44,6 +47,14 @@ describe('arrangeGame helpers', () => {
     expect(combineDateTimeToMysql('', '21:00')).toBeNull();
   });
 
+  test('formats picker values and kickoff with timezone', () => {
+    const kickoff = new Date(2026, 7, 20, 21, 0, 0);
+    expect(formatDateYmd(kickoff)).toBe('2026-08-20');
+    expect(formatTimeHm(kickoff)).toBe('21:00');
+    expect(formatKickoffLabel('2026-08-20', '21:00', 'Europe/Brussels')).toMatch(/21:00/);
+    expect(formatKickoffLabel('2026-08-20', '21:00', 'Europe/Brussels')).toMatch(/Brussels/);
+  });
+
   test('rejects placeholder emails and picks the first reachable one', () => {
     expect(isReachableEmail('ghost@stage.invalid')).toBeNull();
     expect(isReachableEmail('not-an-email')).toBeNull();
@@ -79,6 +90,7 @@ describe('sendArrangeGameInvite', () => {
       recipientKind: 'player',
       date: '2026-08-20',
       time: '21:00',
+      timezone: 'Europe/Brussels',
       wagerStc: '20000',
     });
 
@@ -86,6 +98,7 @@ describe('sendArrangeGameInvite', () => {
       invitationType: 'player_vs_player',
       scheduledDate: '2026-08-20 21:00:00',
       opponentName: 'Rival',
+      timezone: 'Europe/Brussels',
     });
 
     expect(stageClient.functions.invoke).toHaveBeenCalledWith('sendInboxMessage', expect.objectContaining({
@@ -97,6 +110,7 @@ describe('sendArrangeGameInvite', () => {
       metadata: expect.objectContaining({
         invitation_type: 'player_vs_player',
         scheduled_date: '2026-08-20 21:00:00',
+        timezone: 'Europe/Brussels',
         challenger_player_id: 'p1',
         opponent_player_id: 'p2',
         wager_stc: 20000,
@@ -171,6 +185,23 @@ describe('Matches hub arrange fixture wiring', () => {
     expect(source).toMatch(/ARRANGE VS FIXTURE/);
     expect(source).toMatch(/myPlayer/);
     expect(source).toMatch(/onSent/);
+  });
+
+  test('Arrange VS details uses date picker, time picker, and timezone', () => {
+    const modal = fs.readFileSync(
+      path.join(__dirname, '../../components/matches/ArrangeGameModal.jsx'),
+      'utf8',
+    );
+    const fields = fs.readFileSync(
+      path.join(__dirname, '../../components/matches/DateTimeZoneFields.jsx'),
+      'utf8',
+    );
+    expect(modal).toMatch(/DateTimeZoneFields/);
+    expect(modal).not.toMatch(/Date YYYY-MM-DD/);
+    expect(fields).toMatch(/DateTimePicker/);
+    expect(fields).toMatch(/mode="date"/);
+    expect(fields).toMatch(/mode="time"/);
+    expect(fields).toMatch(/TIMEZONES/);
   });
 
   test('match detail is Stage Game Day ops, not legacy mock fallback', () => {

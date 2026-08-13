@@ -25,8 +25,10 @@ export default function GameDayResultSheet({
   onSubmitted,
 }) {
   const isClubMatch = game?.mode === 'club';
-  const [homeScore, setHomeScore] = useState('0');
-  const [awayScore, setAwayScore] = useState('0');
+  const homeName = game?.home_club_name || game?.home_player_name || 'Home';
+  const awayName = game?.away_club_name || game?.away_player_name || 'Away';
+  const [ownScore, setOwnScore] = useState('0');
+  const [opponentScore, setOpponentScore] = useState('0');
   const [seatedPlayers, setSeatedPlayers] = useState([]);
   const [proofUrl, setProofUrl] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -84,13 +86,13 @@ export default function GameDayResultSheet({
         isHomeTeam,
         myClub,
         myPlayer,
-        homeScore,
-        awayScore,
+        ownScore,
+        opponentScore,
         seatedPlayers,
         proofUrl,
       });
       const res = await submitMatchResult(payload);
-      onSubmitted?.(res?.data?.status || res?.status || 'waiting', Number(homeScore), Number(awayScore));
+      onSubmitted?.(res?.data?.status || res?.status || 'waiting', Number(payload.home_score), Number(payload.away_score));
       onClose?.();
     } catch (err) {
       setError(mapResultError(err));
@@ -118,11 +120,19 @@ export default function GameDayResultSheet({
           </View>
           <ScrollView contentContainerStyle={{ paddingHorizontal: 16, gap: 12, paddingBottom: 24 }}>
             <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
-              Home submits first. Away confirms. Mismatch becomes a dispute.
+              Enter your goals, then the opponent. Screenshot proof is required. Same team goals complete the match; a mismatch goes to admin.
             </Text>
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              <ScoreBox label="Home" value={homeScore} onChange={setHomeScore} />
-              <ScoreBox label="Away" value={awayScore} onChange={setAwayScore} />
+              <ScoreBox
+                label={isHomeTeam ? `${homeName} (you · home)` : `${awayName} (you · away)`}
+                value={ownScore}
+                onChange={setOwnScore}
+              />
+              <ScoreBox
+                label={isHomeTeam ? `${awayName} (away)` : `${homeName} (home)`}
+                value={opponentScore}
+                onChange={setOpponentScore}
+              />
             </View>
             <TouchableOpacity onPress={pickProof} style={proofBtn}>
               {uploading
@@ -137,7 +147,7 @@ export default function GameDayResultSheet({
                 )}
             </TouchableOpacity>
             {error ? <Text style={{ color: FUT.rose, fontSize: 12 }}>{error}</Text> : null}
-            <TouchableOpacity onPress={submit} disabled={submitting} style={submitBtn}>
+            <TouchableOpacity onPress={submit} disabled={submitting || !proofUrl} style={[submitBtn, !proofUrl && { opacity: 0.4 }]}>
               {submitting
                 ? <ActivityIndicator color="#041018" />
                 : <Text style={{ color: '#041018', fontWeight: '900' }}>Submit full time</Text>}

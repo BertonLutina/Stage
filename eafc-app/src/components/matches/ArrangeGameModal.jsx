@@ -15,14 +15,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { stageClient } from '@/api/stageClient';
 import { CYAN } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT } from '@/components/dashboard/CommandCenterUI';
+import DateTimeZoneFields from '@/components/matches/DateTimeZoneFields';
 import {
   ARRANGE_MAX_BET,
   ARRANGE_MIN_BET,
+  formatKickoffLabel,
   formatOpponentLabel,
   sendArrangeGameInvite,
   validateArrangeWager,
 } from '@/lib/arrangeGame';
 import { readAccountMode } from '@/lib/accountMode';
+import { detectTimezone } from '@/lib/timezones';
 
 export default function ArrangeGameModal({ visible, onClose, myPlayer, myClub, onSent, presetOpponent, presetKind }) {
   const isPresidentMode = readAccountMode() === 'club';
@@ -36,6 +39,7 @@ export default function ArrangeGameModal({ visible, onClose, myPlayer, myClub, o
   const [recipientKind, setRecipientKind] = useState(null);
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
+  const [timezone, setTimezone] = useState(detectTimezone);
   const [wagerStc, setWagerStc] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -55,10 +59,16 @@ export default function ArrangeGameModal({ visible, onClose, myPlayer, myClub, o
     setRecipientKind(presetKind || (presetOpponent ? (forcedType) : null));
     setDate('');
     setTime('');
+    setTimezone(detectTimezone());
     setWagerStc('');
     setSending(false);
     setSent(false);
     setError('');
+    stageClient.auth.me()
+      .then((me) => {
+        if (me?.timezone) setTimezone(me.timezone);
+      })
+      .catch(() => {});
   }, [visible, forcedType, presetOpponent, presetKind]);
 
   const resetAndClose = () => {
@@ -111,6 +121,7 @@ export default function ArrangeGameModal({ visible, onClose, myPlayer, myClub, o
         recipientKind,
         date,
         time,
+        timezone,
         wagerStc,
       });
       setSent(true);
@@ -273,20 +284,13 @@ export default function ArrangeGameModal({ visible, onClose, myPlayer, myClub, o
                   <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12 }}>Back</Text>
                 </TouchableOpacity>
                 <Text style={{ color: '#fff', fontWeight: '800' }}>{formatOpponentLabel(selected, recipientKind)}</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11 }}>Date YYYY-MM-DD · Time HH:mm</Text>
-                <TextInput
-                  value={date}
-                  onChangeText={setDate}
-                  placeholder="2026-08-20"
-                  placeholderTextColor="rgba(255,255,255,0.3)"
-                  style={inputStyle}
-                />
-                <TextInput
-                  value={time}
-                  onChangeText={setTime}
-                  placeholder="21:00"
-                  placeholderTextColor="rgba(255,255,255,0.3)"
-                  style={inputStyle}
+                <DateTimeZoneFields
+                  date={date}
+                  time={time}
+                  timezone={timezone}
+                  onDateChange={setDate}
+                  onTimeChange={setTime}
+                  onTimezoneChange={setTimezone}
                 />
                 <TextInput
                   value={wagerStc}
@@ -314,7 +318,7 @@ export default function ArrangeGameModal({ visible, onClose, myPlayer, myClub, o
                 <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14, padding: 14, gap: 8 }}>
                   <Row label="Type" value={matchType === 'player' ? 'Player vs Player' : 'Club vs Club'} />
                   <Row label="Opponent" value={formatOpponentLabel(selected, recipientKind)} />
-                  <Row label="Kickoff" value={`${date} ${time}`} />
+                  <Row label="Kickoff" value={formatKickoffLabel(date, time, timezone)} />
                   {wagerStc && !wagerError ? <Row label="Wager" value={`${Number(wagerStc).toLocaleString()} STC each`} /> : null}
                 </View>
                 <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, lineHeight: 17 }}>

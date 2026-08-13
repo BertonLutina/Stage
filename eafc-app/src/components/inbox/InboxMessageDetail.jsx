@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, Image, TextInput, Alert, ActivityIndicator,
+  View, Text, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -11,6 +11,7 @@ import {
   parseInboxMetadata,
 } from '@/lib/inboxHelpers';
 import { deleteInboxMessage, respondToInboxMessage } from '@/lib/inboxData';
+import DateTimeZoneFields from '@/components/matches/DateTimeZoneFields';
 import { CYAN, AMBER, GAMER_BG } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT } from '@/components/dashboard/CommandCenterUI';
 
@@ -170,24 +171,17 @@ export default function InboxMessageDetail({
         <View style={styles.actionBar}>
           {showReschedule ? (
             <View style={{ gap: 8, marginBottom: 10 }}>
-              <TextInput
-                value={newDate}
-                onChangeText={setNewDate}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="rgba(255,255,255,0.3)"
-                style={styles.input}
-              />
-              <TextInput
-                value={newTime}
-                onChangeText={setNewTime}
-                placeholder="HH:MM"
-                placeholderTextColor="rgba(255,255,255,0.3)"
-                style={styles.input}
+              <DateTimeZoneFields
+                date={newDate}
+                time={newTime}
+                onDateChange={setNewDate}
+                onTimeChange={setNewTime}
+                showTimezone={false}
               />
               <TouchableOpacity
                 style={[styles.btn, styles.btnPrimary]}
                 onPress={() => runAction(showScheduleActions ? 'date_change_requested' : 'date_change_requested')}
-                disabled={!!loading}
+                disabled={!!loading || !newDate || !newTime}
               >
                 {loading === 'date_change_requested' ? (
                   <ActivityIndicator color="#031018" />
@@ -376,14 +370,4 @@ const styles = {
     borderColor: CYAN,
   },
   btnPrimaryText: { color: '#031018', fontWeight: '900', fontSize: 12, textTransform: 'uppercase' },
-  input: {
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 10,
-    color: '#fff',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-  },
 };

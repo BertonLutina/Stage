@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import useAuthStore from '@/store/authStore';
 import useMyStageIdentities from '@/hooks/useMyStageIdentities';
@@ -340,6 +340,7 @@ function ClubProfileSurface({ club: seedClub, president: seedPresident, isOwner,
 export default function ProfileIndex() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { tab } = useLocalSearchParams();
   const { logout } = useAuthStore();
   const identities = useMyStageIdentities();
   const [surface, setSurface] = useState(null);
@@ -360,10 +361,13 @@ export default function ProfileIndex() {
       ? preferred
       : availableSurfaces[0]?.id || 'player';
     setSurface((prev) => {
+      if (String(tab || '') === 'squad' && availableSurfaces.some((s) => s.id === 'club')) {
+        return 'club';
+      }
       if (prev && availableSurfaces.some((s) => s.id === prev)) return prev;
       return allowed;
     });
-  }, [identities.loading, identities.defaultSurface, availableSurfaces]);
+  }, [identities.loading, identities.defaultSurface, availableSurfaces, tab]);
 
   // Sync dual-role mode when switching identity surfaces
   const selectSurface = (next) => {
@@ -460,7 +464,7 @@ export default function ProfileIndex() {
 
           {surface === 'club' && (
             <ClubProfileSurface
-              club={identities.presidentClub}
+              club={identities.presidentClub || identities.club}
               president={identities.president}
               isOwner={Boolean(identities.presidentClub?.id)}
               onOpenFull={openClub}

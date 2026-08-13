@@ -191,7 +191,7 @@ export default function MatchDetailScreen() {
             <SectionCard accent="rose">
               <Text style={{ color: FUT.rose, fontWeight: '800' }}>Disputed</Text>
               <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 4 }}>
-                Scores or proof did not match. An admin will resolve this.
+                The two sides submitted different scores. An admin will pick a side or enter the official score.
               </Text>
             </SectionCard>
           ) : null}

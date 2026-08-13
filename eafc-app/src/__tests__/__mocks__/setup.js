@@ -50,6 +50,13 @@ jest.mock('react-native-svg', () => {
   };
 });
 
+jest.mock('@react-native-community/datetimepicker', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  const MockPicker = (props) => React.createElement(View, { testID: 'datetimepicker', ...props });
+  return { __esModule: true, default: MockPicker };
+});
+
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ navigate: jest.fn(), goBack: jest.fn(), replace: jest.fn() }),
   useRoute: () => ({ params: {} }),

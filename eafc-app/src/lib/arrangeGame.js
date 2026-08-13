@@ -1,5 +1,48 @@
+import { resolveTimezone, timezoneLabel } from '@/lib/timezones';
+
 export const ARRANGE_MIN_BET = 10_000;
 export const ARRANGE_MAX_BET = 2_000_000;
+
+function pad2(value) {
+  return String(value).padStart(2, '0');
+}
+
+export function formatDateYmd(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+export function formatTimeHm(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+  return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+}
+
+export function parseArrangeDateTime(dateStr, timeStr) {
+  const fallback = new Date();
+  fallback.setDate(fallback.getDate() + 1);
+  fallback.setHours(21, 0, 0, 0);
+  if (!dateStr) return fallback;
+  const [year, month, day] = String(dateStr).split('-').map(Number);
+  const [hours, minutes] = String(timeStr || '21:00').split(':').map(Number);
+  const parsed = new Date(year, (month || 1) - 1, day || 1, hours || 0, minutes || 0, 0, 0);
+  return Number.isNaN(parsed.getTime()) ? fallback : parsed;
+}
+
+export function formatArrangeDateLabel(dateStr) {
+  if (!dateStr) return '';
+  const date = parseArrangeDateTime(dateStr, '12:00');
+  return date.toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+export function formatKickoffLabel(dateStr, timeStr, timezone) {
+  if (!dateStr || !timeStr) return '';
+  return `${formatArrangeDateLabel(dateStr)} · ${timeStr} · ${timezoneLabel(timezone)}`;
+}
 
 export function combineDateTimeToMysql(dateStr, timeStr) {
   if (!dateStr || !timeStr) return null;
@@ -55,12 +98,14 @@ export async function sendArrangeGameInvite({
   recipientKind,
   date,
   time,
+  timezone,
   wagerStc = '',
 }) {
   if (!opponent || !date || !time) throw new Error('Choose an opponent, date, and time');
   if (!recipientKind) throw new Error('Please choose an opponent again.');
 
   const scheduledDate = combineDateTimeToMysql(date, time);
+  const kickoffTimezone = resolveTimezone(timezone);
   const senderIsClub = matchType === 'club' && Boolean(myClub);
   const recipientIsClub = recipientKind === 'club';
   const senderName = senderIsClub
@@ -140,7 +185,7 @@ export async function sendArrangeGameInvite({
     sender_avatar_url: senderIsClub ? (myClub?.logo_url || '') : (myPlayer?.avatar_url || ''),
     sender_club_name: senderIsClub ? myClub?.name : null,
     subject: `Match Invitation: ${senderName} vs ${opponentName}`,
-    body: `You have received a match invitation from ${senderName}.\n\nProposed date: ${date} at ${time}${wagerLine}\n\nPlease accept, decline, or request a different date.`,
+    body: `You have received a match invitation from ${senderName}.\n\nProposed date: ${date} at ${time} (${timezoneLabel(kickoffTimezone)})${wagerLine}\n\nPlease accept, decline, or request a different date.`,
     message_type: 'match_invite',
     action_type: 'accept_decline_date',
     related_entity_id: opponent.id,
@@ -150,6 +195,7 @@ export async function sendArrangeGameInvite({
     metadata: {
       invitation_type: invitationType,
       scheduled_date: scheduledDate,
+      timezone: kickoffTimezone,
       challenger_name: senderName,
       opponent_name: opponentName,
       challenger_club_id: senderClubId,
@@ -163,5 +209,5 @@ export async function sendArrangeGameInvite({
     send_notification: true,
   });
 
-  return { invitationType, scheduledDate, opponentName };
+  return { invitationType, scheduledDate, opponentName, timezone: kickoffTimezone };
 }

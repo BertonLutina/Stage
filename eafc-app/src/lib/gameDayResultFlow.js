@@ -29,3 +29,17 @@ export function canResolveDisputeWithScore(selectedWinner, score) {
     && isValidAdminScore(score?.home_score)
     && isValidAdminScore(score?.away_score);
 }
+
+export function formatSideClaim(submission, side) {
+  if (!submission) return '?';
+  if (submission.own_score != null && submission.opponent_score != null) {
+    return side === 'away'
+      ? `Away ${submission.own_score}–Home ${submission.opponent_score}`
+      : `Home ${submission.own_score}–Away ${submission.opponent_score}`;
+  }
+  return `Home ${submission.home_score}–Away ${submission.away_score}`;
+}
+
+export function submissionProofUrl(submission) {
+  return submission?.proof_url || null;
+}

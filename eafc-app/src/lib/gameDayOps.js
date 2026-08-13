@@ -73,6 +73,14 @@ export async function kickoffMatch(matchId) {
   });
 }
 
+export function toFixtureScores(isHomeTeam, ownScore, opponentScore) {
+  const own = Number(ownScore);
+  const opponent = Number(opponentScore);
+  return isHomeTeam
+    ? { home_score: own, away_score: opponent, own_score: own, opponent_score: opponent }
+    : { home_score: opponent, away_score: own, own_score: own, opponent_score: opponent };
+}
+
 export function buildResultPayload({
   game,
   isHomeTeam,
@@ -80,6 +88,8 @@ export function buildResultPayload({
   myPlayer,
   homeScore,
   awayScore,
+  ownScore,
+  opponentScore,
   seatedPlayers = [],
   ratings = {},
   goalEvents = [],
@@ -116,12 +126,18 @@ export function buildResultPayload({
     }];
   }
 
+  const scores = (ownScore != null && opponentScore != null)
+    ? toFixtureScores(isHomeTeam, ownScore, opponentScore)
+    : toFixtureScores(isHomeTeam, isHomeTeam ? homeScore : awayScore, isHomeTeam ? awayScore : homeScore);
+
   return {
     match_id: game.id,
     action: 'submit_result',
     is_home_team: isHomeTeam,
-    home_score: Number(homeScore),
-    away_score: Number(awayScore),
+    home_score: scores.home_score,
+    away_score: scores.away_score,
+    own_score: scores.own_score,
+    opponent_score: scores.opponent_score,
     player_stats: playerStats,
     goal_events: goalEvents.map((ev) => ({
       minute: Number(ev.minute) || null,
