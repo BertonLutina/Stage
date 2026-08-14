@@ -4,8 +4,8 @@ import STText from './STText';
 import useThemeStore from '../../store/themeStore';
 
 export default function ThemeToggle({ style }) {
-  const { resolvedTheme, toggleTheme } = useThemeStore();
-  const isDark = resolvedTheme === 'dark';
+  const liveDark = useThemeStore((s) => s.liveDark);
+  const toggleTheme = useThemeStore((s) => s.toggleTheme);
 
   return (
     <TouchableOpacity
@@ -14,7 +14,7 @@ export default function ThemeToggle({ style }) {
         {
           flexDirection: 'row',
           alignItems: 'center',
-          backgroundColor: isDark ? '#1A3566' : '#E5E7EB',
+          backgroundColor: '#1A3566',
           borderRadius: 20,
           paddingHorizontal: 12,
           paddingVertical: 6,
@@ -24,13 +24,15 @@ export default function ThemeToggle({ style }) {
       ]}
       activeOpacity={0.8}
     >
-      <STText style={{ fontSize: 16 }}>{isDark ? '🌙' : '☀️'}</STText>
+      <STText style={{ fontSize: 12, fontWeight: '800', letterSpacing: 1 }}>
+        {liveDark ? 'LIVE' : 'DARK'}
+      </STText>
       <View
         style={{
           width: 36,
           height: 20,
           borderRadius: 10,
-          backgroundColor: isDark ? '#5FE3E8' : '#6B7280',
+          backgroundColor: liveDark ? '#5FE3E8' : '#6B7280',
           justifyContent: 'center',
           paddingHorizontal: 2,
         }}
@@ -41,11 +43,10 @@ export default function ThemeToggle({ style }) {
             height: 16,
             borderRadius: 8,
             backgroundColor: '#fff',
-            alignSelf: isDark ? 'flex-end' : 'flex-start',
+            alignSelf: liveDark ? 'flex-end' : 'flex-start',
           }}
         />
       </View>
-      <STText style={{ fontSize: 16 }}>{isDark ? '' : '🌤️'}</STText>
     </TouchableOpacity>
   );
 }

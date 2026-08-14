@@ -12,7 +12,7 @@ import {
 } from '@/lib/inboxHelpers';
 import { deleteInboxMessage, respondToInboxMessage } from '@/lib/inboxData';
 import DateTimeZoneFields from '@/components/matches/DateTimeZoneFields';
-import { CYAN, AMBER, GAMER_BG } from '@/components/profile/gamer/GamerProfileUI';
+import { CYAN, AMBER } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT } from '@/components/dashboard/CommandCenterUI';
 
 function formatFullDate(value) {
@@ -99,7 +99,7 @@ export default function InboxMessageDetail({
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: GAMER_BG }}>
+    <View style={{ flex: 1, backgroundColor: 'transparent' }}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={onBack} hitSlop={10} style={styles.iconBtn}>
           <Ionicons name="arrow-back" size={20} color="#fff" />

@@ -20,7 +20,7 @@ import {
   GlassTextButton,
   CYAN,
   AMBER,
-  GAMER_BG,
+  useGamerTokens,
 } from '@/components/profile/gamer/GamerProfileUI';
 import {
   PitchAtmosphere,
@@ -38,6 +38,7 @@ const COMMUNITY_TABS = [
 
 export default function TournamentListScreen() {
   const router = useRouter();
+  const tokens = useGamerTokens();
   const {
     loading,
     error,
@@ -93,8 +94,8 @@ export default function TournamentListScreen() {
 
   return (
     <GamerProfileShell>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: GAMER_BG }} edges={['top']}>
+      <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, gap: 14 }}
@@ -124,7 +125,7 @@ export default function TournamentListScreen() {
                     style={[
                       headingStyle,
                       {
-                        color: '#fff',
+                        color: tokens.text,
                         marginTop: 6,
                         fontSize: 26,
                         textShadowColor: 'rgba(255,210,74,0.35)',
@@ -136,7 +137,7 @@ export default function TournamentListScreen() {
                     Tournaments
                   </Text>
                   <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 8, lineHeight: 18 }}>
-                    Official Stage cups and community competition.
+                    Official open tournaments and community competition.
                   </Text>
                 </View>
                 {canCreate ? (
@@ -277,7 +278,7 @@ export default function TournamentListScreen() {
                   </View>
                 )}
               >
-                Stage cups
+                Open tournaments
               </SectionTitle>
               <View style={{ gap: 10 }}>
                 {stageTournaments.map((t) => (

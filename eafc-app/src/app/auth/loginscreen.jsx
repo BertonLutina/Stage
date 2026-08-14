@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
@@ -109,7 +110,12 @@ export default function LoginScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.card}>
+            <BlurView
+              intensity={92}
+              tint="systemUltraThinMaterialDark"
+              experimentalBlurMethod="dimezisBlurView"
+              style={styles.card}
+            >
               <View style={styles.brand}>
                 <Image source={STADIUM_LOGO} style={styles.logo} resizeMode="contain" />
                 <STText style={styles.subtitle}>Welcome back</STText>
@@ -208,8 +214,9 @@ export default function LoginScreen() {
                   <STText style={styles.switchModeText}>Don&apos;t have an account? Sign up</STText>
                 </TouchableOpacity>
               </View>
-            </View>
+            </BlurView>
           </ScrollView>
+
         </KeyboardAvoidingView>
       </SafeAreaView>
     </ImageBackground>
@@ -243,9 +250,10 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 384,
     alignSelf: 'center',
-    backgroundColor: 'rgba(255,255,255,0.10)',
+    overflow: 'hidden',
+    backgroundColor: 'rgba(4, 14, 48, 0.22)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.20)',
+    borderColor: 'rgba(255,255,255,0.22)',
     borderRadius: 16,
     padding: 32,
     shadowColor: '#000',

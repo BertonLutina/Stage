@@ -1,13 +1,3 @@
-import React from 'react';
-import { Stack } from 'expo-router';
+import ThemedStackLayout from '@/components/theme/ThemedStackLayout';
 
-export default function SocialLayout() {
-  return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-      }}
-    />
-  );
-}
-
+export default ThemedStackLayout;

@@ -14,8 +14,8 @@ export const useColorSchemeColors = () => {
   return {
     isDark,
     isLight,
-    iconColor: isDark ? '#FFFFFF' : '#421702',
-    iconColorSecondary: isDark ? '#E5E7EB' : '#000000',
+    iconColor: isDark ? '#E2EAF4' : '#0B1A3A',
+    iconColorSecondary: isDark ? '#C5D0DC' : '#0B1A3A',
     darklightImage: isDark,
   };
 };

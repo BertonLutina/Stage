@@ -99,6 +99,26 @@ export function installStoragePolyfill() {
   if (!g.window) {
     g.window = g;
   }
+  if (typeof document === 'undefined' && !g.window.__stageEventBus) {
+    const bus = new Map();
+    g.window.__stageEventBus = bus;
+    g.window.addEventListener = (type, cb) => {
+      if (typeof cb !== 'function') return;
+      if (!bus.has(type)) bus.set(type, new Set());
+      bus.get(type).add(cb);
+    };
+    g.window.removeEventListener = (type, cb) => {
+      bus.get(type)?.delete(cb);
+    };
+    g.window.dispatchEvent = (event) => {
+      const set = bus.get(event?.type);
+      if (!set) return true;
+      for (const cb of set) {
+        try { cb.call(g.window, event); } catch { /* ignore */ }
+      }
+      return true;
+    };
+  }
   if (typeof g.window.dispatchEvent !== 'function') {
     g.window.dispatchEvent = () => true;
   }

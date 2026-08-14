@@ -16,7 +16,6 @@ import {
   GamerBanner,
   GlassIconButton,
   CYAN,
-  GAMER_BG,
 } from '@/components/profile/gamer/GamerProfileUI';
 import { headingStyleLg } from '@/lib/fonts';
 
@@ -44,7 +43,7 @@ export default function PublicClubScreen() {
   return (
     <GamerProfileShell>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: GAMER_BG }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 }}>
           <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
           <Text style={{ color: '#fff', fontWeight: '900', marginLeft: 12, fontSize: 16 }}>CLUB</Text>

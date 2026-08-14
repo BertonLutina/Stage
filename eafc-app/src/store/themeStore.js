@@ -1,57 +1,62 @@
 import { Appearance } from 'react-native';
 import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { readStageTheme, writeStageThemeId } from '../lib/stageTheme';
+import { getLiveDarkFx, getLiveDarkImageSource } from '../lib/liveDarkBackground';
 
-const THEME_KEY = '@eafc_theme';
+function snapshot() {
+  const tokens = readStageTheme();
+  const live = tokens.live === true;
+  return {
+    stageId: tokens.id,
+    tokens,
+    resolvedTheme: 'dark',
+    liveDark: live,
+    liveDarkSource: live ? getLiveDarkImageSource() : null,
+    liveDarkFx: live ? getLiveDarkFx() : { blur: 0, overlay: 0 },
+  };
+}
 
-function getResolvedFromTime() {
-  const hour = new Date().getHours();
-  return hour >= 8 && hour < 19 ? 'light' : 'dark';
+function applyAppearance() {
+  if (typeof Appearance?.setColorScheme === 'function') {
+    Appearance.setColorScheme('dark');
+  }
 }
 
 const useThemeStore = create((set, get) => ({
-  theme: 'auto',
-  resolvedTheme: getResolvedFromTime(),
+  theme: 'dark',
+  ...snapshot(),
   _intervalId: null,
 
+  refresh: () => {
+    const next = snapshot();
+    set({
+      ...next,
+      theme: 'dark',
+    });
+    applyAppearance();
+    return next.tokens;
+  },
+
   initialize: async () => {
-    try {
-      const saved = await AsyncStorage.getItem(THEME_KEY);
-      if (saved === 'light' || saved === 'dark' || saved === 'auto') {
-        set({ theme: saved });
-      }
-    } catch {}
-    get().updateResolvedTheme();
-    const id = setInterval(() => get().updateResolvedTheme(), 60_000);
-    set({ _intervalId: id });
+    get().refresh();
+  },
+
+  setStageTheme: (id) => {
+    writeStageThemeId(id);
+    return get().refresh();
   },
 
   updateResolvedTheme: () => {
-    const { theme } = get();
-    const resolved = theme === 'auto' ? getResolvedFromTime() : theme;
-    set({ resolvedTheme: resolved });
-    // Sync with React Native so NativeWind dark: variants work
-    if (typeof Appearance?.setColorScheme === 'function') {
-      Appearance.setColorScheme(resolved);
-    }
+    get().refresh();
   },
 
-  setTheme: async (theme) => {
-    set({ theme });
-    get().updateResolvedTheme();
-    try {
-      await AsyncStorage.setItem(THEME_KEY, theme);
-    } catch {}
+  setTheme: async () => {
+    get().setStageTheme('theme-dark');
   },
 
   toggleTheme: async () => {
-    const { theme } = get();
-    const next = theme === 'auto' ? (getResolvedFromTime() === 'dark' ? 'light' : 'dark') : (theme === 'dark' ? 'light' : 'dark');
-    set({ theme: next });
-    get().updateResolvedTheme();
-    try {
-      await AsyncStorage.setItem(THEME_KEY, next);
-    } catch {}
+    const next = get().liveDark ? 'theme-dark' : 'theme-video';
+    get().setStageTheme(next);
   },
 }));
 

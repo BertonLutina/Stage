@@ -62,9 +62,3 @@ target 'Stage' do
     )
   end
 end
-
-target 'OneSignalNotificationServiceExtension' do
-  pod 'OneSignalXCFramework/OneSignal', '>= 5.0', '< 6.0'
-  pod 'OneSignalXCFramework/OneSignalInAppMessages', '>= 5.0', '< 6.0'
-  use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']
-end

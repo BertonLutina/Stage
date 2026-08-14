@@ -8,7 +8,6 @@ import InboxMessageDetail from '@/components/inbox/InboxMessageDetail';
 import {
   GamerProfileShell,
   CYAN,
-  GAMER_BG,
 } from '@/components/profile/gamer/GamerProfileUI';
 
 /**
@@ -74,7 +73,7 @@ export default function InboxDetailScreen() {
   return (
     <GamerProfileShell>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: GAMER_BG }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         {error && !message ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
             <Text style={{ color: 'rgba(255,255,255,0.55)', textAlign: 'center' }}>{error}</Text>

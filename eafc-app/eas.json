@@ -1,0 +1,32 @@
+{
+  "cli": {
+    "version": ">= 21.8.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_APPLE_TEAM_ID": "SN94V6837Q",
+        "EXPO_APPLE_TEAM_TYPE": "INDIVIDUAL",
+        "EXPO_PUBLIC_ONESIGNAL_APP_ID": "577f63db-851f-491b-8ade-9defb3f569a0"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_ONESIGNAL_APP_ID": "577f63db-851f-491b-8ade-9defb3f569a0"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_ONESIGNAL_APP_ID": "577f63db-851f-491b-8ade-9defb3f569a0"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

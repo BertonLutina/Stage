@@ -1,7 +1,18 @@
 /**
- * React Native–safe socket channel helpers for stageClient entity.subscribe().
- * Full SocketProvider UI wiring can be added later; this keeps CRUD + realtime hooks non-fatal.
+ * Socket.io client for stageClient entity.subscribe().
+ * Joins STAGE_* rooms and delivers server `update` packets to local listeners.
  */
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { io } from 'socket.io-client';
+import { hydrateStageStorage, localStorage } from '@/lib/polyfillStorage';
+import { SOCKET_URL } from '../utils/api';
+import {
+  addChannelListener,
+  applyAuthToken,
+  dispatchSocketUpdate,
+  rejoinChannels,
+  removeChannelListener,
+} from './socketRealtime';
 
 export const CHANNELS = {
   PLAYER: 'STAGE_PLAYER',
@@ -20,29 +31,125 @@ export const CHANNELS = {
 export const makeChannel = (id, channel) =>
   id ? `${channel}_${String(id)}` : channel;
 
+const ACCESS_KEY = 'stage_access_token';
+const AUTH_CHANGED_EVENT = 'stage-auth-changed';
+
+export const SOCKET_CLIENT = io(SOCKET_URL, {
+  transports: ['websocket', 'polling'],
+  rememberUpgrade: true,
+  upgrade: true,
+  auth: { token: null },
+  reconnection: true,
+  reconnectionAttempts: 8,
+  reconnectionDelay: 2000,
+  autoConnect: false,
+});
+
 const _listeners = new Map();
+const _joinedChannels = new Set();
 
-export const setSocketListeners = (channel, callback) => {
-  if (!channel || typeof callback !== 'function') return;
-  if (!_listeners.has(channel)) _listeners.set(channel, new Set());
-  _listeners.get(channel).add(callback);
-};
-
-export const offSocketListeners = (channel, callback = null) => {
-  if (!channel || !_listeners.has(channel)) return;
-  if (!callback) {
-    _listeners.delete(channel);
-    return;
+let socketConnectErrorLogged = false;
+SOCKET_CLIENT.on('connect_error', () => {
+  if (!socketConnectErrorLogged) {
+    socketConnectErrorLogged = true;
+    console.info('[socket] Realtime unavailable — app continues without live updates.');
   }
-  _listeners.get(channel).delete(callback);
-  if (_listeners.get(channel).size === 0) _listeners.delete(channel);
-};
+});
 
-/** Optional: emit to local subscribers (useful once a real socket is wired). */
-export function emitLocalChannel(channel, payload) {
-  const set = _listeners.get(channel);
-  if (!set) return;
-  for (const cb of set) {
-    try { cb(payload); } catch { /* ignore */ }
+SOCKET_CLIENT.on('update', (data) => {
+  dispatchSocketUpdate(_listeners, data);
+});
+
+SOCKET_CLIENT.on('connect', () => {
+  rejoinChannels(SOCKET_CLIENT, _joinedChannels);
+});
+
+async function readSocketToken() {
+  try {
+    const fromStorage = localStorage.getItem(ACCESS_KEY);
+    if (fromStorage) return fromStorage;
+  } catch {
+    /* ignore */
+  }
+  try {
+    const { getAccessToken } = await import('../services/tokenService');
+    return await getAccessToken();
+  } catch {
+    return null;
   }
 }
+
+export async function connectWithStoredToken() {
+  const token = await readSocketToken();
+  return applyAuthToken(SOCKET_CLIENT, token);
+}
+
+export const setSocketListeners = (channel, callback) =>
+  addChannelListener({
+    listeners: _listeners,
+    joinedChannels: _joinedChannels,
+    socket: SOCKET_CLIENT,
+    channel,
+    callback,
+  });
+
+export const offSocketListeners = (channel, callback = null) => {
+  removeChannelListener({
+    listeners: _listeners,
+    joinedChannels: _joinedChannels,
+    socket: SOCKET_CLIENT,
+    channel,
+    callback,
+  });
+};
+
+export function emitLocalChannel(channel, payload) {
+  dispatchSocketUpdate(_listeners, { _channel: channel, ...(payload || {}) });
+}
+
+const SocketStatusContext = createContext({ isConnected: false });
+
+export const SocketProvider = ({ children, userId }) => {
+  const [isConnected, setIsConnected] = useState(Boolean(SOCKET_CLIENT.connected));
+
+  useEffect(() => {
+    const onConnect = () => setIsConnected(true);
+    const onDisconnect = () => setIsConnected(false);
+    SOCKET_CLIENT.on('connect', onConnect);
+    SOCKET_CLIENT.on('disconnect', onDisconnect);
+
+    let cancelled = false;
+    (async () => {
+      try {
+        await hydrateStageStorage();
+      } catch {
+        /* ignore */
+      }
+      if (!cancelled) await connectWithStoredToken();
+    })();
+
+    const onAuthChanged = () => {
+      connectWithStoredToken();
+    };
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
+    }
+
+    return () => {
+      cancelled = true;
+      SOCKET_CLIENT.off('connect', onConnect);
+      SOCKET_CLIENT.off('disconnect', onDisconnect);
+      if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
+        window.removeEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
+      }
+    };
+  }, [userId]);
+
+  return (
+    <SocketStatusContext.Provider value={{ isConnected }}>
+      {children}
+    </SocketStatusContext.Provider>
+  );
+};
+
+export const useSocket = () => useContext(SocketStatusContext);

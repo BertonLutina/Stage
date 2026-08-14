@@ -29,6 +29,10 @@ function isMissingFunctionError(error, functionName) {
   return message.includes(`Function '${functionName}' not found`) || message.includes("not found");
 }
 
+export function isPlayerTournament(tournament) {
+  return String(tournament?.participant_type || '').toLowerCase() === 'player';
+}
+
 function parseJsonList(value) {
   if (Array.isArray(value)) return value;
   if (!value) return [];

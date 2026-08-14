@@ -15,7 +15,6 @@ import {
   EmptyTabPanel,
   GlassIconButton,
   AMBER,
-  GAMER_BG,
 } from '@/components/profile/gamer/GamerProfileUI';
 import ClubFormationCard from '@/components/team/ClubFormationCard';
 import {
@@ -289,7 +288,7 @@ export default function ManageTeamScreen() {
   return (
     <GamerProfileShell>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: GAMER_BG }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}

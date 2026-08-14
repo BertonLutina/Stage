@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { stageClient } from '@/api/stageClient';
 import { CYAN } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT } from '@/components/dashboard/CommandCenterUI';
-import { parseIdList } from '@/lib/gameDayOps';
+import { parseIdList, sameId } from '@/lib/gameDayOps';
 
 export default function GameDayDressingRoom({ game, myClub, myPlayer }) {
   const [players, setPlayers] = useState([]);
@@ -17,8 +17,8 @@ export default function GameDayDressingRoom({ game, myClub, myPlayer }) {
 
   const locked = game.status === 'in_progress' || game.status === 'completed' || game.status === 'forfeit';
   const myId = myPlayer?.id;
-  const iAmSeated = seated.includes(myId);
-  const iAmAvailable = !!myId && availableIds.has(myId);
+  const iAmSeated = seated.some((id) => sameId(id, myId));
+  const iAmAvailable = !!myId && [...availableIds].some((id) => sameId(id, myId));
 
   useEffect(() => {
     let cancelled = false;
@@ -37,13 +37,14 @@ export default function GameDayDressingRoom({ game, myClub, myPlayer }) {
       if (cancelled) return;
       const available = new Set((availability || []).filter((r) => r.status === 'available').map((r) => r.player_id));
       setAvailableIds(available);
+      const isAvailable = (playerId) => [...available].some((id) => sameId(id, playerId));
       const usable = available.size
-        ? (clubPlayers || []).filter((p) => available.has(p.id))
+        ? (clubPlayers || []).filter((p) => isAvailable(p.id))
         : (clubPlayers || []);
       setPlayers(usable);
       if (dressing?.[0]) {
         const ids = parseIdList(dressing[0].seated_players);
-        setSeated(available.size ? ids.filter((id) => available.has(id)) : ids);
+        setSeated(available.size ? ids.filter((id) => isAvailable(id)) : ids);
         setRoomId(dressing[0].id);
       }
       setLoading(false);
@@ -51,6 +52,21 @@ export default function GameDayDressingRoom({ game, myClub, myPlayer }) {
     load();
     return () => { cancelled = true; };
   }, [game?.id, myClub?.id]);
+
+  useEffect(() => {
+    if (!game?.id || !myClub?.id) return undefined;
+    const unsub = stageClient.entities.DressingRoom.subscribe((event) => {
+      if (event.data?.match_id !== game.id || event.data?.club_id !== myClub.id) return;
+      const ids = parseIdList(event.data.seated_players);
+      setSeated(availableIds.size
+        ? ids.filter((id) => [...availableIds].some((availableId) => sameId(availableId, id)))
+        : ids);
+      if (event.data.id) setRoomId(event.data.id);
+    }, { match_id: game.id });
+    return () => {
+      if (typeof unsub === 'function') unsub();
+    };
+  }, [game?.id, myClub?.id, availableIds]);
 
   const takeSeat = async () => {
     if (!myId || saving || locked) return;
@@ -60,7 +76,7 @@ export default function GameDayDressingRoom({ game, myClub, myPlayer }) {
     }
     setSaving(true);
     setError('');
-    const next = iAmSeated ? seated.filter((id) => id !== myId) : [...seated, myId];
+    const next = iAmSeated ? seated.filter((id) => !sameId(id, myId)) : [...seated, myId];
     const prev = seated;
     setSeated(next);
     try {
@@ -111,7 +127,7 @@ export default function GameDayDressingRoom({ game, myClub, myPlayer }) {
       ) : null}
       <View style={{ gap: 6, marginTop: 8 }}>
         {players.slice(0, 12).map((p) => {
-          const on = seated.includes(p.id);
+          const on = seated.some((id) => sameId(id, p.id));
           return (
             <View key={p.id} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <Text style={{ color: on ? '#fff' : 'rgba(255,255,255,0.45)', fontSize: 12 }}>{p.gamertag}</Text>

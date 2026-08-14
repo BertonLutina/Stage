@@ -13,7 +13,6 @@ import {
   GamerProfileShell,
   GlassIconButton,
   CYAN,
-  GAMER_BG,
 } from '@/components/profile/gamer/GamerProfileUI';
 import {
   PitchAtmosphere,
@@ -80,7 +79,7 @@ export default function ScheduleScreen() {
   return (
     <GamerProfileShell>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: GAMER_BG }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         <View style={{ paddingHorizontal: 16, paddingTop: 8, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
           <View style={{ flex: 1 }}>

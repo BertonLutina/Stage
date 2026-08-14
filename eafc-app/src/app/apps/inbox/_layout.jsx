@@ -1,15 +1,17 @@
 import React from 'react';
 import { Stack } from 'expo-router';
-import { GAMER_BG } from '@/components/profile/gamer/GamerProfileUI';
+import { ThemedFill } from '@/components/theme/ThemeBackdrop';
 
 export default function InboxLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: GAMER_BG },
-        animation: 'slide_from_right',
-      }}
-    />
+    <ThemedFill>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: 'transparent' },
+          animation: 'slide_from_right',
+        }}
+      />
+    </ThemedFill>
   );
 }

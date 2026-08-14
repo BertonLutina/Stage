@@ -74,13 +74,13 @@ describe('ProfileScreen tabs', () => {
   });
 
   it('shows the current primary profile tabs for an own player profile', () => {
-    const { getByText } = render(<ProfileScreen player={player} />);
+    const { getByText, queryByText } = render(<ProfileScreen player={player} />);
 
-    expect(getByText('Matches')).toBeTruthy();
     expect(getByText('Feed')).toBeTruthy();
     expect(getByText('Showcase')).toBeTruthy();
-    expect(getByText('Stats')).toBeTruthy();
     expect(getByText('More')).toBeTruthy();
+    expect(queryByText('Matches')).toBeNull();
+    expect(queryByText('Stats')).toBeNull();
   });
 
   it('opens the More tool list from the primary tab rail', () => {
@@ -100,5 +100,29 @@ describe('ProfileScreen tabs', () => {
     await waitFor(() => {
       expect(getByText('Publish clips of how you play so clubs can find you. You own these — a scout can only watch them.')).toBeTruthy();
     });
+  });
+
+  it('keeps Dashboard and logout out of the player hero', () => {
+    const { queryByText, getByLabelText } = render(<ProfileScreen player={player} />);
+
+    expect(queryByText('Dashboard')).toBeNull();
+    expect(queryByText('LEAVE')).toBeNull();
+    expect(queryByText('Leave')).toBeNull();
+    expect(getByLabelText('Edit')).toBeTruthy();
+  });
+
+  it('puts Leave club and Sign out under More', () => {
+    const signedClub = { id: 'club-1', name: 'FC Congo' };
+    const { getByText, queryByText } = render(
+      <ProfileScreen player={{ ...player, club_id: 'club-1' }} signedClub={signedClub} />,
+    );
+
+    expect(queryByText('Leave club')).toBeNull();
+    expect(queryByText('Sign out')).toBeNull();
+
+    fireEvent.press(getByText('More'));
+
+    expect(getByText('Leave club')).toBeTruthy();
+    expect(getByText('Sign out')).toBeTruthy();
   });
 });

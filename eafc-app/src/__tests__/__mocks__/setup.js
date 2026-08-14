@@ -47,6 +47,9 @@ jest.mock('react-native-svg', () => {
     G: RN.View,
     Path: RN.View,
     Line: RN.View,
+    Polygon: RN.View,
+    ClipPath: RN.View,
+    Defs: RN.View,
   };
 });
 
@@ -70,11 +73,22 @@ jest.mock('react-native-onesignal', () => ({
     login: jest.fn(),
     logout: jest.fn(),
     Notifications: {
-      requestPermission: jest.fn(),
+      requestPermission: jest.fn(async () => true),
+      getPermissionAsync: jest.fn(async () => true),
+      hasPermission: jest.fn(() => true),
       addEventListener: jest.fn(),
       removeEventListener: jest.fn(),
     },
-    User: { addEmail: jest.fn() },
+    User: {
+      addEmail: jest.fn(),
+      addTags: jest.fn(),
+      pushSubscription: {
+        optIn: jest.fn(),
+        optOut: jest.fn(),
+        getOptedInAsync: jest.fn(async () => true),
+        optedIn: true,
+      },
+    },
   },
   LogLevel: { Verbose: 6 },
 }));
@@ -82,8 +96,11 @@ jest.mock('react-native-onesignal', () => ({
 jest.mock('socket.io-client', () => ({
   io: jest.fn(() => ({
     on: jest.fn(),
+    off: jest.fn(),
     emit: jest.fn(),
+    connect: jest.fn(),
     disconnect: jest.fn(),
-    join: jest.fn(),
+    connected: false,
+    auth: {},
   })),
 }));

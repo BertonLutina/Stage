@@ -4,47 +4,60 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import useThemeStore from '@/store/themeStore';
+import { hexToRgba } from '@/lib/stageTheme';
+import LiveGlass from '@/components/theme/LiveGlass';
+import LiveDarkWallpaper from '@/components/theme/LiveDarkWallpaper';
 
 export const GAMER_BG = '#05070F';
 export const CYAN = '#00F0FF';
 export const AMBER = '#FFD60A';
 export const PITCH = '#07121F';
 
-function GlassFill({ children, style, intensity = 28 }) {
-  // Solid glass (no BlurView) — avoids RN style/layout crashes with nested transforms.
+export function useGamerTokens() {
+  return useThemeStore((s) => s.tokens);
+}
+
+function GlassFill({ children, style, intensity = 22 }) {
+  const tokens = useGamerTokens();
   return (
-    <View
+    <LiveGlass
+      intensity={intensity}
       style={[
         {
-          backgroundColor: `rgba(8,12,24,${Math.min(0.88, 0.55 + intensity / 120)})`,
-          borderColor: 'rgba(255,255,255,0.12)',
+          backgroundColor: tokens.live ? 'transparent' : tokens.glass,
+          borderColor: tokens.hairline,
           borderWidth: 1,
-          overflow: 'hidden',
         },
         style,
       ]}
     >
       {children}
-    </View>
+    </LiveGlass>
   );
 }
 
 export function GamerProfileShell({ children, style }) {
+  const tokens = useGamerTokens();
+  const liveDark = useThemeStore((s) => s.liveDark);
   return (
-    <View style={[{ flex: 1, backgroundColor: GAMER_BG }, style]}>
-      <LinearGradient
-        colors={['rgba(0,240,255,0.09)', 'transparent', 'rgba(255,214,10,0.05)']}
-        locations={[0, 0.45, 1]}
-        start={{ x: 0.1, y: 0 }}
-        end={{ x: 0.95, y: 0.55 }}
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
-      />
+    <View style={[{ flex: 1, backgroundColor: liveDark ? 'transparent' : tokens.bg }, style]}>
+      {liveDark ? (
+        <LiveDarkWallpaper />
+      ) : (
+        <LinearGradient
+          colors={tokens.wash}
+          locations={[0, 0.45, 1]}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.95, y: 0.55 }}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+      )}
       <View
         pointerEvents="none"
-        style={[StyleSheet.absoluteFill, { opacity: 0.035 }]}
+        style={[StyleSheet.absoluteFill, { opacity: tokens.isDark ? 0.035 : 0.06 }]}
       >
-        {/* pitch-line grid */}
         {Array.from({ length: 24 }).map((_, i) => (
           <View
             key={`h-${i}`}
@@ -54,7 +67,7 @@ export function GamerProfileShell({ children, style }) {
               right: 0,
               top: i * 48,
               height: StyleSheet.hairlineWidth,
-              backgroundColor: '#fff',
+              backgroundColor: tokens.text,
             }}
           />
         ))}
@@ -72,9 +85,10 @@ export function GamerBanner({
   topRight,
   onPress,
 }) {
+  const tokens = useGamerTokens();
   const washColors = wash === 'player'
-    ? ['rgba(0,240,255,0.22)', 'transparent', 'rgba(255,214,10,0.16)']
-    : ['rgba(255,214,10,0.22)', 'transparent', 'rgba(0,240,255,0.14)'];
+    ? [tokens.wash[0], 'transparent', tokens.wash[2]]
+    : [tokens.wash[2], 'transparent', tokens.wash[0]];
 
   const Wrapper = onPress ? TouchableOpacity : View;
 
@@ -84,7 +98,7 @@ export function GamerBanner({
         <Image source={{ uri: bannerUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
       ) : (
         <LinearGradient
-          colors={['#0B1B33', '#08101C', '#05070F']}
+          colors={['#0B1B33', '#08101C', tokens.bg]}
           start={{ x: 0.2, y: 0 }}
           end={{ x: 0.8, y: 1 }}
           style={StyleSheet.absoluteFill}
@@ -92,7 +106,7 @@ export function GamerBanner({
       )}
       {/* stadium floodlights */}
       <LinearGradient
-        colors={['rgba(255,255,255,0.14)', 'transparent']}
+        colors={tokens.isDark ? ['rgba(226,234,244,0.14)', 'transparent'] : ['rgba(226,234,244,0.28)', 'transparent']}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 0.55 }}
         style={StyleSheet.absoluteFill}
@@ -106,14 +120,16 @@ export function GamerBanner({
         pointerEvents="none"
       />
       <LinearGradient
-        colors={['rgba(5,7,15,0.15)', 'rgba(5,7,15,0.55)', GAMER_BG]}
+        colors={tokens.live
+          ? [hexToRgba(tokens.bg, 0.05), hexToRgba(tokens.bg, 0.28), 'transparent']
+          : [hexToRgba(tokens.bg, 0.15), hexToRgba(tokens.bg, 0.55), tokens.bg]}
         locations={[0.2, 0.7, 1]}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
       {/* bottom accent line */}
       <LinearGradient
-        colors={wash === 'player' ? [CYAN, 'transparent', AMBER] : [AMBER, 'transparent', CYAN]}
+        colors={wash === 'player' ? [tokens.cyan, 'transparent', tokens.amber] : [tokens.amber, 'transparent', tokens.cyan]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 2, opacity: 0.55 }}
@@ -131,11 +147,59 @@ export function GamerBanner({
   );
 }
 
-export function GlassIconButton({ icon, onPress, badge, badgeColor = CYAN }) {
+export const BANNER_AVATAR_SIZE = 72;
+
+export function ProfileBannerAvatar({
+  imageUrl,
+  size = BANNER_AVATAR_SIZE,
+  accent = 'amber',
+  emptyIcon = 'shield',
+}) {
+  const uri = typeof imageUrl === 'string' && imageUrl.trim() ? imageUrl.trim() : null;
+  const ring = accent === 'cyan' ? CYAN : AMBER;
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        overflow: 'hidden',
+        borderWidth: 2,
+        borderColor: ring,
+        backgroundColor: '#0A1222',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: ring,
+        shadowOpacity: 0.45,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 10,
+      }}
+    >
+      {uri ? (
+        <Image source={{ uri }} style={{ width: size, height: size }} resizeMode="cover" />
+      ) : (
+        <Ionicons name={emptyIcon} size={Math.round(size * 0.42)} color={ring} />
+      )}
+    </View>
+  );
+}
+
+export function ClubBannerAvatar({ logoUrl, size = BANNER_AVATAR_SIZE }) {
+  return <ProfileBannerAvatar imageUrl={logoUrl} size={size} accent="amber" emptyIcon="shield" />;
+}
+
+export function GlassIconButton({ icon, onPress, badge, badgeColor, accessibilityLabel }) {
+  const tokens = useGamerTokens();
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+    >
       <GlassFill style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}>
-        <Ionicons name={icon} size={18} color="rgba(255,255,255,0.9)" />
+        <Ionicons name={icon} size={18} color={tokens.text} />
         {badge ? (
           <View
             style={{
@@ -145,7 +209,7 @@ export function GlassIconButton({ icon, onPress, badge, badgeColor = CYAN }) {
               minWidth: 16,
               height: 16,
               borderRadius: 8,
-              backgroundColor: badgeColor,
+              backgroundColor: badgeColor || tokens.cyan,
               alignItems: 'center',
               justifyContent: 'center',
               paddingHorizontal: 3,
@@ -160,8 +224,14 @@ export function GlassIconButton({ icon, onPress, badge, badgeColor = CYAN }) {
 }
 
 export function GlassTextButton({ label, icon, onPress }) {
+  const tokens = useGamerTokens();
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
       <GlassFill
         style={{
           flexDirection: 'row',
@@ -172,8 +242,8 @@ export function GlassTextButton({ label, icon, onPress }) {
           borderRadius: 999,
         }}
       >
-        {icon ? <Ionicons name={icon} size={14} color="rgba(255,255,255,0.85)" /> : null}
-        <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, fontWeight: '900', letterSpacing: 1.4, textTransform: 'uppercase' }}>
+        {icon ? <Ionicons name={icon} size={14} color={tokens.text} /> : null}
+        <Text style={{ color: tokens.text, fontSize: 10, fontWeight: '900', letterSpacing: 1.4, textTransform: 'uppercase' }}>
           {label}
         </Text>
       </GlassFill>
@@ -347,7 +417,9 @@ export function OvrBadge() { return null; }
 export function PrezBadge() { return null; }
 export function WrBadge() { return null; }
 
-export function GamerMetaPill({ children, icon, iconColor = 'rgba(255,255,255,0.75)', onPress, style }) {
+export function GamerMetaPill({ children, icon, iconColor, onPress, style }) {
+  const tokens = useGamerTokens();
+  const tint = iconColor || tokens.muted;
   const Wrapper = onPress ? TouchableOpacity : View;
   return (
     <Wrapper onPress={onPress} activeOpacity={0.8}>
@@ -362,8 +434,8 @@ export function GamerMetaPill({ children, icon, iconColor = 'rgba(255,255,255,0.
         }, style]}
         intensity={18}
       >
-        {icon ? <Ionicons name={icon} size={12} color={iconColor} /> : null}
-        <Text style={{ color: 'rgba(255,255,255,0.78)', fontSize: 10, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' }}>
+        {icon ? <Ionicons name={icon} size={12} color={tint} /> : null}
+        <Text style={{ color: tokens.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' }}>
           {children}
         </Text>
       </GlassFill>
@@ -372,9 +444,10 @@ export function GamerMetaPill({ children, icon, iconColor = 'rgba(255,255,255,0.
 }
 
 export function GamerRecordStrip({ wins = 0, draws = 0, losses = 0 }) {
+  const tokens = useGamerTokens();
   const items = [
     { label: 'W', value: Number(wins) || 0, color: '#34D399', bg: 'rgba(16,185,129,0.18)', border: 'rgba(52,211,153,0.35)' },
-    { label: 'D', value: Number(draws) || 0, color: 'rgba(255,255,255,0.75)', bg: 'rgba(255,255,255,0.08)', border: 'rgba(255,255,255,0.18)' },
+    { label: 'D', value: Number(draws) || 0, color: tokens.muted, bg: tokens.inputFill, border: tokens.hairline },
     { label: 'L', value: Number(losses) || 0, color: '#FB7185', bg: 'rgba(244,63,94,0.18)', border: 'rgba(251,113,133,0.35)' },
   ];
   return (
@@ -406,9 +479,10 @@ export function GamerRecordStrip({ wins = 0, draws = 0, losses = 0 }) {
 }
 
 export function GamerTabNav({ tabs, active, onChange, accent = 'cyan' }) {
-  const activeBorder = accent === 'amber' ? 'rgba(255,214,10,0.5)' : 'rgba(0,240,255,0.5)';
-  const activeBg = accent === 'amber' ? 'rgba(255,214,10,0.14)' : 'rgba(0,240,255,0.16)';
-  const activeText = accent === 'amber' ? AMBER : CYAN;
+  const tokens = useGamerTokens();
+  const activeBorder = accent === 'amber' ? tokens.amberBorder : tokens.cyanBorder;
+  const activeBg = accent === 'amber' ? 'rgba(255,214,10,0.14)' : (tokens.isDark ? 'rgba(0,240,255,0.16)' : 'rgba(14,116,144,0.12)');
+  const activeText = accent === 'amber' ? tokens.amber : tokens.cyan;
   const list = Array.isArray(tabs) ? tabs : [];
 
   return (
@@ -424,8 +498,8 @@ export function GamerTabNav({ tabs, active, onChange, accent = 'cyan' }) {
               paddingHorizontal: 16,
               paddingVertical: 11,
               borderWidth: 1,
-              borderColor: isActive ? activeBorder : 'rgba(255,255,255,0.1)',
-              backgroundColor: isActive ? activeBg : 'rgba(255,255,255,0.03)',
+              borderColor: isActive ? activeBorder : tokens.hairline,
+              backgroundColor: isActive ? activeBg : tokens.inputFill,
               flexDirection: 'row',
               alignItems: 'center',
               gap: 6,
@@ -433,7 +507,7 @@ export function GamerTabNav({ tabs, active, onChange, accent = 'cyan' }) {
           >
             <Text
               style={{
-                color: isActive ? activeText : 'rgba(255,255,255,0.38)',
+                color: isActive ? activeText : tokens.muted,
                 fontSize: 11,
                 fontWeight: '900',
                 letterSpacing: 1.8,
@@ -505,7 +579,7 @@ export function GamerClubTabNav({ groups = [], activeTab, tabLabels = {}, onChan
         })}
       </ScrollView>
 
-      {activeGroup ? (
+      {activeGroup && activeGroup.tabs.length > 1 ? (
         <GamerTabNav
           accent="cyan"
           active={activeTab}
@@ -521,30 +595,68 @@ export function GamerClubTabNav({ groups = [], activeTab, tabLabels = {}, onChan
   );
 }
 
-export function EmptyTabPanel({ icon = 'albums-outline', title, hint }) {
+export function EmptyTabPanel({
+  icon = 'albums-outline',
+  title,
+  hint,
+  actionLabel,
+  onAction,
+  accent = 'cyan',
+}) {
+  const actionColor = accent === 'amber' ? AMBER : CYAN;
   return (
     <GamerSectionCard>
       <View style={{ alignItems: 'center', paddingVertical: 22 }}>
         <Ionicons name={icon} size={36} color="rgba(255,255,255,0.2)" />
         {title ? (
-          <Text style={{ color: 'rgba(255,255,255,0.7)', marginTop: 10, fontSize: 14, fontWeight: '800' }}>
+          <Text style={{ color: 'rgba(255,255,255,0.85)', marginTop: 10, fontSize: 14, fontWeight: '800' }}>
             {title}
           </Text>
         ) : null}
-        <Text style={{ color: 'rgba(255,255,255,0.4)', marginTop: 6, fontSize: 12, textAlign: 'center', paddingHorizontal: 12 }}>
+        <Text style={{ color: 'rgba(255,255,255,0.58)', marginTop: 6, fontSize: 13, lineHeight: 19, textAlign: 'center', paddingHorizontal: 12 }}>
           {hint || 'Nothing here yet.'}
         </Text>
+        {actionLabel && onAction ? (
+          <TouchableOpacity
+            onPress={onAction}
+            accessibilityRole="button"
+            accessibilityLabel={actionLabel}
+            activeOpacity={0.85}
+            style={{
+              marginTop: 16,
+              minHeight: 44,
+              paddingHorizontal: 18,
+              borderRadius: 12,
+              backgroundColor: actionColor,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={{ color: '#041018', fontWeight: '900', fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase' }}>
+              {actionLabel}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
     </GamerSectionCard>
   );
 }
 
 export function GamerSectionCard({ title, children, style }) {
+  const tokens = useGamerTokens();
   return (
     <GlassFill style={[{ borderRadius: 18, overflow: 'hidden' }, style]} intensity={22}>
       {title ? (
-        <View style={{ paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(255,255,255,0.1)' }}>
-          <Text style={{ fontSize: 11, fontWeight: '900', letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.9)' }}>
+        <View style={{
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: tokens.hairline,
+          overflow: 'hidden',
+          borderTopLeftRadius: 18,
+          borderTopRightRadius: 18,
+        }}>
+          <Text style={{ fontSize: 11, fontWeight: '900', letterSpacing: 2, textTransform: 'uppercase', color: tokens.text }}>
             {title}
           </Text>
         </View>
@@ -555,7 +667,8 @@ export function GamerSectionCard({ title, children, style }) {
 }
 
 export function GamerStatTile({ label, value, accent = 'cyan' }) {
-  const color = accent === 'amber' ? AMBER : accent === 'green' ? '#34D399' : accent === 'rose' ? '#FB7185' : CYAN;
+  const tokens = useGamerTokens();
+  const color = accent === 'amber' ? tokens.amber : accent === 'green' ? '#34D399' : accent === 'rose' ? '#FB7185' : tokens.cyan;
   return (
     <GlassFill
       intensity={16}
@@ -564,9 +677,10 @@ export function GamerStatTile({ label, value, accent = 'cyan' }) {
         minWidth: '45%',
         borderRadius: 14,
         padding: 14,
+        overflow: 'hidden',
       }}
     >
-      <Text style={{ fontSize: 9, fontWeight: '800', letterSpacing: 2, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginBottom: 6 }}>
+      <Text style={{ fontSize: 9, fontWeight: '800', letterSpacing: 2, color: tokens.muted, textTransform: 'uppercase', marginBottom: 6 }}>
         {label}
       </Text>
       <Text style={{ fontSize: 28, fontWeight: '900', color, letterSpacing: -1 }}>{value}</Text>
@@ -575,10 +689,11 @@ export function GamerStatTile({ label, value, accent = 'cyan' }) {
 }
 
 export function CyanCta({ label, onPress, style }) {
+  const tokens = useGamerTokens();
   return (
     <TouchableOpacity onPress={onPress} style={[{ flex: 1 }, style]} activeOpacity={0.88}>
       <LinearGradient
-        colors={['#00F0FF', '#00C2B3']}
+        colors={tokens.isDark ? [tokens.cyan, '#00C2B3'] : [tokens.cyan, '#14532D']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
@@ -586,15 +701,15 @@ export function CyanCta({ label, onPress, style }) {
           paddingVertical: 13,
           borderRadius: 12,
           alignItems: 'center',
-          shadowColor: CYAN,
-          shadowOpacity: 0.45,
+          shadowColor: tokens.cyan,
+          shadowOpacity: tokens.isDark ? 0.45 : 0.18,
           shadowRadius: 12,
           shadowOffset: { width: 0, height: 4 },
         }}
       >
         <Text
           style={{
-            color: '#041018',
+            color: tokens.primaryText,
             fontSize: 12,
             fontWeight: '900',
             letterSpacing: 1.6,
@@ -609,6 +724,7 @@ export function CyanCta({ label, onPress, style }) {
 }
 
 export function OutlineCta({ label, icon, onPress, style }) {
+  const tokens = useGamerTokens();
   return (
     <TouchableOpacity onPress={onPress} style={[{ flex: 1 }, style]} activeOpacity={0.85}>
       <GlassFill
@@ -623,10 +739,10 @@ export function OutlineCta({ label, icon, onPress, style }) {
           borderRadius: 12,
         }}
       >
-        {icon ? <Ionicons name={icon} size={14} color="#fff" /> : null}
+        {icon ? <Ionicons name={icon} size={14} color={tokens.text} /> : null}
         <Text
           style={{
-            color: '#fff',
+            color: tokens.text,
             fontSize: 12,
             fontWeight: '900',
             letterSpacing: 1.4,
@@ -642,6 +758,7 @@ export function OutlineCta({ label, icon, onPress, style }) {
 
 /** Identity rail — single control for Player / President / Club */
 export function IdentityRail({ items, value, onChange }) {
+  const tokens = useGamerTokens();
   if (!items?.length || items.length <= 1) return null;
   return (
     <GlassFill
@@ -665,13 +782,15 @@ export function IdentityRail({ items, value, onChange }) {
               paddingVertical: 8,
               borderRadius: 11,
               backgroundColor: active
-                ? (amber ? 'rgba(255,214,10,0.2)' : 'rgba(0,240,255,0.22)')
+                ? (amber ? tokens.tileFill : tokens.tileFill)
                 : 'transparent',
+              borderWidth: active ? 1 : 0,
+              borderColor: active ? (amber ? tokens.amberBorder : tokens.cyanBorder) : 'transparent',
             }}
           >
             <Text
               style={{
-                color: active ? (amber ? AMBER : CYAN) : 'rgba(255,255,255,0.45)',
+                color: active ? (amber ? tokens.amber : tokens.cyan) : tokens.muted,
                 fontSize: 10,
                 fontWeight: '900',
                 letterSpacing: 1.2,
@@ -703,6 +822,7 @@ export function GamerHeroLayout({
   children,
   overlap = -110,
 }) {
+  const tokens = useGamerTokens();
   return (
     <View>
       {banner}
@@ -714,7 +834,7 @@ export function GamerHeroLayout({
               <Text
                 numberOfLines={2}
                 style={{
-                  color: '#fff',
+                  color: tokens.text,
                   fontSize: 30,
                   fontWeight: '900',
                   letterSpacing: -0.8,
@@ -740,7 +860,7 @@ export function GamerHeroLayout({
         {record ? <View style={{ marginTop: 14 }}>{record}</View> : null}
 
         {bio ? (
-          <Text style={{ color: 'rgba(255,255,255,0.62)', fontSize: 13, lineHeight: 19, marginTop: 12 }}>
+          <Text style={{ color: tokens.muted, fontSize: 13, lineHeight: 19, marginTop: 12 }}>
             {bio}
           </Text>
         ) : null}

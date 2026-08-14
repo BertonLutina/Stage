@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, Image, TextInput, ActivityIndicator, Animated, Easing,
+  View, Text, TouchableOpacity, Image, TextInput, ActivityIndicator, Animated, Easing, StyleSheet,
 } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient as SvgGrad, Stop } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,6 +8,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { stageClient } from '@/api/stageClient';
 import { CYAN, AMBER } from '@/components/profile/gamer/GamerProfileUI';
 import { headingStyle } from '@/lib/fonts';
+import useThemeStore from '@/store/themeStore';
+import { hexToRgba } from '@/lib/stageTheme';
+import LiveGlass from '@/components/theme/LiveGlass';
 
 /** EA FC 27 / FUT night palette */
 export const FUT = {
@@ -53,6 +56,26 @@ const ACCENTS = {
   },
 };
 
+function useAccent(name = 'cyan') {
+  const tokens = useThemeStore((s) => s.tokens);
+  const dark = ACCENTS[name] || ACCENTS.cyan;
+  if (tokens.live) {
+    return {
+      ...dark,
+      colors: [dark.colors[0], dark.colors[1], 'rgba(10,18,32,0.28)'],
+    };
+  }
+  if (tokens.isDark) return dark;
+  const tint = name === 'gold' ? tokens.amber : name === 'rose' ? FUT.rose : name === 'green' ? '#15803D' : tokens.cyan;
+  const border = name === 'gold' ? tokens.amberBorder : name === 'rose' ? 'rgba(255,77,109,0.4)' : tokens.cyanBorder;
+  return {
+    border,
+    colors: [hexToRgba(tint, 0.14), tokens.cardSolid],
+    tint,
+    glow: tint,
+  };
+}
+
 export function formatNumber(value, digits = 0) {
   return Intl.NumberFormat('en', { maximumFractionDigits: digits }).format(Number(value) || 0);
 }
@@ -78,22 +101,23 @@ export function formatWhen(dateStr) {
 }
 
 export function PitchAtmosphere({ children, style }) {
+  const tokens = useThemeStore((s) => s.tokens);
   return (
-    <View style={[{ overflow: 'hidden', borderRadius: 22 }, style]}>
+    <LiveGlass style={[{ borderRadius: 22 }, style]} intensity={36}>
       <LinearGradient
-        colors={['#06101F', '#0A1A30', '#050B14']}
+        colors={tokens.live
+          ? ['rgba(12,20,36,0.55)', 'rgba(10,18,32,0.42)', 'rgba(6,10,20,0.28)']
+          : [tokens.cardSolid, '#0A1A30', tokens.bg]}
         start={{ x: 0.15, y: 0 }}
         end={{ x: 0.9, y: 1 }}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
-      {/* Holo wash */}
       <LinearGradient
-        colors={['rgba(0,232,255,0.18)', 'transparent', 'rgba(255,210,74,0.12)']}
+        colors={tokens.wash}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
-      {/* Pitch line grid */}
       {Array.from({ length: 7 }).map((_, i) => (
         <View
           key={`h-${i}`}
@@ -103,53 +127,54 @@ export function PitchAtmosphere({ children, style }) {
             right: 0,
             top: `${12 + i * 12}%`,
             height: 1,
-            backgroundColor: 'rgba(0,232,255,0.06)',
+            backgroundColor: tokens.isDark ? 'rgba(0,232,255,0.06)' : hexToRgba(tokens.amber, 0.14),
           }}
         />
       ))}
       {children}
-    </View>
+    </LiveGlass>
   );
 }
 
 export function SectionCard({ children, style, accent = 'cyan' }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const a = ACCENTS[accent] || ACCENTS.cyan;
+  const border = accent === 'gold' ? tokens.amberBorder : accent === 'rose' ? a.border : tokens.cyanBorder;
   return (
-    <View
+    <LiveGlass
+      intensity={36}
       style={[{
         borderRadius: 20,
         borderWidth: 1.5,
-        borderColor: a.border,
-        overflow: 'hidden',
-        shadowColor: a.glow,
-        shadowOpacity: 0.35,
+        borderColor: border,
+        shadowColor: tokens.isDark ? a.glow : '#0B1A3A',
+        shadowOpacity: tokens.isDark ? 0.35 : 0.18,
         shadowRadius: 18,
         shadowOffset: { width: 0, height: 8 },
         elevation: 10,
       }, style]}
     >
       <LinearGradient
-        colors={['rgba(12,20,36,0.98)', 'rgba(6,10,20,0.96)']}
-        style={{ padding: 16 }}
-      >
-        <LinearGradient
-          colors={['rgba(255,255,255,0.1)', 'transparent']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0.6, y: 0.5 }}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 56 }}
-        />
+        colors={tokens.live
+          ? ['rgba(12,20,36,0.55)', 'rgba(6,10,20,0.48)']
+          : tokens.isDark ? ['rgba(12,20,36,0.98)', 'rgba(6,10,20,0.96)'] : [tokens.cardSolid, tokens.cardSolid]}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={{ padding: 16 }}>
         {children}
-      </LinearGradient>
-    </View>
+      </View>
+    </LiveGlass>
   );
 }
 
 export function SectionTitle({ children, right, eyebrow }) {
+  const tokens = useThemeStore((s) => s.tokens);
+  const accent = tokens.isDark ? tokens.cyan : tokens.amber;
   return (
-    <View style={{ marginBottom: 14 }}>
+    <View style={{ marginBottom: 16 }}>
       {eyebrow ? (
         <Text style={{
-          color: FUT.cyan,
+          color: accent,
           fontSize: 9,
           fontWeight: '900',
           letterSpacing: 3,
@@ -160,13 +185,13 @@ export function SectionTitle({ children, right, eyebrow }) {
         </Text>
       ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <Text style={[headingStyle, { color: '#fff', flex: 1 }]}>
+        <Text style={[headingStyle, { color: tokens.text, flex: 1 }]}>
           {children}
         </Text>
         {right}
       </View>
       <LinearGradient
-        colors={[FUT.cyan, 'rgba(255,210,74,0.5)', 'transparent']}
+        colors={tokens.isDark ? [tokens.cyan, tokens.amber, 'transparent'] : [tokens.amber, hexToRgba(tokens.amber, 0.25), 'transparent']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={{ height: 2, width: 72, borderRadius: 2, marginTop: 8 }}
@@ -176,9 +201,10 @@ export function SectionTitle({ children, right, eyebrow }) {
 }
 
 export function LinkText({ label, onPress }) {
+  const tokens = useThemeStore((s) => s.tokens);
   return (
     <TouchableOpacity onPress={onPress} hitSlop={8}>
-      <Text style={{ color: FUT.cyan, fontSize: 10, fontWeight: '900', letterSpacing: 1.4, textTransform: 'uppercase' }}>
+      <Text style={{ color: tokens.cyan, fontSize: 10, fontWeight: '900', letterSpacing: 1.4, textTransform: 'uppercase' }}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -186,6 +212,7 @@ export function LinkText({ label, onPress }) {
 }
 
 export function DashboardRankRing({ rank, winRate, size = 92 }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const pct = Math.min(100, Math.max(0, Number(winRate) || 0));
   const r = (size - 12) / 2;
   const circ = 2 * Math.PI * r;
@@ -226,7 +253,7 @@ export function DashboardRankRing({ rank, winRate, size = 92 }) {
             <Stop offset="100%" stopColor="#FFD24A" />
           </SvgGrad>
         </Defs>
-        <Circle cx={cx} cy={cx} r={r} fill="rgba(3,6,13,0.85)" stroke="rgba(255,255,255,0.08)" strokeWidth="8" />
+        <Circle cx={cx} cy={cx} r={r} fill={tokens.live ? 'rgba(10,18,32,0.55)' : 'rgba(3,6,13,0.85)'} stroke="rgba(255,255,255,0.08)" strokeWidth="8" />
         <Circle
           cx={cx}
           cy={cx}
@@ -252,23 +279,31 @@ export function DashboardRankRing({ rank, winRate, size = 92 }) {
 }
 
 export function DashboardGamerStatCard({ label, value, sub, accent = 'cyan', icon }) {
-  const a = ACCENTS[accent] || ACCENTS.cyan;
+  const tokens = useThemeStore((s) => s.tokens);
+  const a = useAccent(accent);
   return (
-    <View style={{
-      width: '48%',
-      flexGrow: 1,
-      borderRadius: 16,
-      overflow: 'hidden',
-      borderWidth: 1.5,
-      borderColor: a.border,
-      shadowColor: a.glow,
-      shadowOpacity: 0.4,
-      shadowRadius: 12,
-      shadowOffset: { width: 0, height: 6 },
-      elevation: 8,
-    }}
+    <LiveGlass
+      intensity={36}
+      style={{
+        flex: 1,
+        minHeight: 118,
+        borderRadius: 16,
+        borderWidth: 1.5,
+        borderColor: a.border,
+        shadowColor: a.glow,
+        shadowOpacity: tokens.isDark ? 0.4 : 0.12,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 6 },
+        elevation: 8,
+      }}
     >
-      <LinearGradient colors={a.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 13, minHeight: 98 }}>
+      <LinearGradient
+        colors={a.colors}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={{ flex: 1, padding: 13, minHeight: 118, justifyContent: 'flex-start' }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           {icon ? <Ionicons name={icon} size={15} color={a.tint} /> : <View />}
           <View style={{
@@ -277,30 +312,38 @@ export function DashboardGamerStatCard({ label, value, sub, accent = 'cyan', ico
           />
         </View>
         <Text style={{
-          color: 'rgba(255,255,255,0.45)', fontSize: 9, fontWeight: '900', letterSpacing: 1.6,
+          color: tokens.muted, fontSize: 9, fontWeight: '900', letterSpacing: 1.6,
           textTransform: 'uppercase', marginTop: 8,
         }}
         >
           {label}
         </Text>
-        <Text style={{
-          color: '#fff', fontWeight: '900', fontSize: 22, marginTop: 4, letterSpacing: -0.5,
-        }}
-          numberOfLines={1}
+        <Text
+          style={{
+            color: tokens.text, fontWeight: '900', fontSize: 20, marginTop: 6, letterSpacing: -0.5,
+          }}
+          numberOfLines={2}
+          adjustsFontSizeToFit
+          minimumFontScale={0.72}
         >
           {value}
         </Text>
         {sub ? (
-          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, marginTop: 4, fontWeight: '600' }} numberOfLines={1}>
+          <Text style={{ color: tokens.muted, fontSize: 10, marginTop: 4, fontWeight: '600' }} numberOfLines={2}>
             {sub}
           </Text>
         ) : null}
-      </LinearGradient>
-    </View>
+      </View>
+    </LiveGlass>
   );
 }
 
 export function DashboardQuickGlance({ glance, onOpen }) {
+  const tokens = useThemeStore((s) => s.tokens);
+  const gold = useAccent('gold');
+  const cyan = useAccent('cyan');
+  const rose = useAccent('rose');
+  const packs = { gold, cyan, rose };
   if (!glance) return null;
   const unreadTotal = (glance.unreadInbox || 0) + (glance.unreadNotifications || 0);
   const tiles = [
@@ -310,84 +353,113 @@ export function DashboardQuickGlance({ glance, onOpen }) {
     { id: 'alerts', label: 'Alerts', value: unreadTotal, icon: 'notifications', href: '/apps/notifications', accent: 'rose', hot: unreadTotal > 0 },
   ];
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-      {tiles.map((t) => {
-        const a = ACCENTS[t.accent] || ACCENTS.cyan;
-        return (
-          <TouchableOpacity
-            key={t.id}
-            onPress={() => onOpen?.(t.href)}
-            activeOpacity={0.88}
-            style={{
-              width: '48%',
-              flexGrow: 1,
-              borderRadius: 16,
-              overflow: 'hidden',
-              borderWidth: 1.5,
-              borderColor: t.hot ? a.border : 'rgba(255,255,255,0.12)',
-              shadowColor: t.hot ? a.glow : '#000',
-              shadowOpacity: t.hot ? 0.45 : 0.2,
-              shadowRadius: 12,
-              shadowOffset: { width: 0, height: 6 },
-              elevation: 7,
-            }}
-          >
-            <LinearGradient
-              colors={t.hot ? a.colors : ['rgba(16,24,40,0.95)', 'rgba(8,12,22,0.98)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 11, padding: 13, minHeight: 72 }}
-            >
-              <View style={{
-                width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center',
-                backgroundColor: 'rgba(0,0,0,0.35)', borderWidth: 1, borderColor: a.border,
-              }}
+    <View style={{ gap: 10 }}>
+      {[0, 2].map((start) => (
+        <View key={tiles[start].id} style={{ flexDirection: 'row', alignItems: 'stretch', gap: 10 }}>
+          {tiles.slice(start, start + 2).map((t) => {
+            const a = packs[t.accent] || cyan;
+            return (
+              <TouchableOpacity
+                key={t.id}
+                onPress={() => onOpen?.(t.href)}
+                activeOpacity={0.88}
+                style={{ flex: 1 }}
               >
-                <Ionicons name={t.icon} size={18} color={a.tint} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: 'rgba(255,255,255,0.42)', fontSize: 9, fontWeight: '900', letterSpacing: 1.5 }}>
-                  {t.label}
-                </Text>
-                <Text style={{ color: '#fff', fontWeight: '900', fontSize: 20, marginTop: 2 }}>{t.value}</Text>
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
-        );
-      })}
+                <LiveGlass
+                  intensity={36}
+                  style={{
+                    flex: 1,
+                    minHeight: 72,
+                    borderRadius: 16,
+                    borderWidth: 1.5,
+                    borderColor: t.hot ? a.border : tokens.hairline,
+                    shadowColor: t.hot ? a.glow : tokens.cyan,
+                    shadowOpacity: t.hot ? 0.45 : (tokens.live ? 0.28 : 0.12),
+                    shadowRadius: 12,
+                    shadowOffset: { width: 0, height: 6 },
+                    elevation: 7,
+                  }}
+                >
+                  <LinearGradient
+                    colors={t.hot ? a.colors : (tokens.live
+                      ? ['rgba(16,24,40,0.55)', 'rgba(8,12,22,0.48)']
+                      : tokens.isDark ? ['rgba(16,24,40,0.95)', 'rgba(8,12,22,0.98)'] : [tokens.cardSolid, tokens.cardSolid])}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 11, padding: 13, minHeight: 72 }}>
+                    <View style={{
+                      width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center',
+                      backgroundColor: tokens.inputFill, borderWidth: 1, borderColor: a.border,
+                    }}
+                    >
+                      <Ionicons name={t.icon} size={18} color={a.tint} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={{ color: tokens.muted, fontSize: 9, fontWeight: '900', letterSpacing: 1.5 }}>
+                        {t.label}
+                      </Text>
+                      <Text style={{ color: tokens.text, fontWeight: '900', fontSize: 20, marginTop: 2 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                        {t.value}
+                      </Text>
+                    </View>
+                  </View>
+                </LiveGlass>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      ))}
     </View>
   );
 }
 
-function ratingStyle(value) {
-  if (value >= 8) return { bg: FUT.gold, color: '#111', border: FUT.gold };
-  if (value >= 7) return { bg: FUT.lime, color: '#06100a', border: FUT.lime };
-  if (value >= 6) return { bg: FUT.cyan, color: '#031018', border: FUT.cyan };
-  return { bg: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', border: 'rgba(255,255,255,0.15)' };
+function ratingStyle(value, tokens) {
+  if (value >= 8) return { bg: tokens.isDark ? FUT.gold : tokens.amber, color: tokens.isDark ? '#111' : '#F8FAFC', border: tokens.amber };
+  if (value >= 7) return { bg: tokens.isDark ? FUT.lime : '#15803D', color: '#F8FAFC', border: tokens.isDark ? FUT.lime : '#15803D' };
+  if (value >= 6) return { bg: tokens.cyan, color: tokens.isDark ? '#031018' : '#F8FAFC', border: tokens.cyan };
+  return {
+    bg: tokens.inputFill,
+    color: tokens.muted,
+    border: tokens.hairline,
+  };
 }
 
-const OUTCOME = {
-  win: { bg: 'rgba(124,255,107,0.18)', color: FUT.lime, border: 'rgba(124,255,107,0.45)', letter: 'W' },
-  draw: { bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.55)', border: 'rgba(255,255,255,0.18)', letter: 'D' },
-  loss: { bg: 'rgba(255,77,109,0.16)', color: FUT.rose, border: 'rgba(255,77,109,0.4)', letter: 'L' },
-};
+function outcomeStyle(item, tokens) {
+  const key = String(item || 'draw').toLowerCase();
+  if (key === 'win') {
+    return tokens.isDark
+      ? { bg: 'rgba(124,255,107,0.18)', color: FUT.lime, border: 'rgba(124,255,107,0.45)', letter: 'W' }
+      : { bg: 'rgba(21,128,61,0.16)', color: '#15803D', border: 'rgba(21,128,61,0.4)', letter: 'W' };
+  }
+  if (key === 'loss') {
+    return tokens.isDark
+      ? { bg: 'rgba(255,77,109,0.16)', color: FUT.rose, border: 'rgba(255,77,109,0.4)', letter: 'L' }
+      : { bg: 'rgba(185,28,28,0.12)', color: '#B91C1C', border: 'rgba(185,28,28,0.35)', letter: 'L' };
+  }
+  return tokens.isDark
+    ? { bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.55)', border: 'rgba(255,255,255,0.18)', letter: 'D' }
+    : { bg: tokens.inputFill, color: tokens.muted, border: tokens.hairline, letter: 'D' };
+}
 
 export function DashboardFormStrip({ label, mode = 'outcome', items = [], emptyLabel }) {
+  const tokens = useThemeStore((s) => s.tokens);
   if (!items?.length) {
     return (
-      <View style={{ marginBottom: 14 }}>
-        {label ? <Text style={styles.stripLabel}>{label}</Text> : null}
-        {emptyLabel ? <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{emptyLabel}</Text> : null}
+      <View style={{ marginBottom: 10 }}>
+        {label ? <Text style={[styles.stripLabel, { color: tokens.muted, marginBottom: 8 }]}>{label}</Text> : null}
+        {emptyLabel ? <Text style={{ color: tokens.muted, fontSize: 12 }}>{emptyLabel}</Text> : null}
       </View>
     );
   }
   return (
-    <View style={{ marginBottom: 14 }}>
-      {label ? <Text style={styles.stripLabel}>{label}</Text> : null}
+    <View style={{ marginBottom: 10 }}>
+      {label ? <Text style={[styles.stripLabel, { color: tokens.muted }]}>{label}</Text> : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
         {items.map((item, i) => {
           if (mode === 'rating') {
-            const s = ratingStyle(item);
+            const s = ratingStyle(item, tokens);
             return (
               <View key={`${item}-${i}`} style={{
                 width: 38, height: 38, borderRadius: 11, borderWidth: 1.5, borderColor: s.border,
@@ -399,7 +471,7 @@ export function DashboardFormStrip({ label, mode = 'outcome', items = [], emptyL
               </View>
             );
           }
-          const o = OUTCOME[String(item || 'draw').toLowerCase()] || OUTCOME.draw;
+          const o = outcomeStyle(item, tokens);
           return (
             <View key={`${item}-${i}`} style={{
               width: 38, height: 38, borderRadius: 11, borderWidth: 1.5, borderColor: o.border,
@@ -416,8 +488,9 @@ export function DashboardFormStrip({ label, mode = 'outcome', items = [], emptyL
 }
 
 export function MiniBarChart({ data = [], valueKey = 'matches', color = FUT.cyan, emptyLabel }) {
+  const tokens = useThemeStore((s) => s.tokens);
   if (!data?.length) {
-    return <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{emptyLabel || 'No data yet'}</Text>;
+    return <Text style={{ color: tokens.muted, fontSize: 12 }}>{emptyLabel || 'No data yet'}</Text>;
   }
   const max = Math.max(1, ...data.map((d) => Number(d[valueKey] || 0)));
   return (
@@ -439,7 +512,7 @@ export function MiniBarChart({ data = [], valueKey = 'matches', color = FUT.cyan
                 shadowColor: color, shadowOpacity: 0.5, shadowRadius: 8, shadowOffset: { width: 0, height: 0 },
               }}
             />
-            <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 8, marginTop: 5, fontWeight: '700' }} numberOfLines={1}>
+            <Text style={{ color: tokens.faint, fontSize: 8, marginTop: 5, fontWeight: '700' }} numberOfLines={1}>
               {d.label}
             </Text>
           </View>
@@ -450,6 +523,7 @@ export function MiniBarChart({ data = [], valueKey = 'matches', color = FUT.cyan
 }
 
 export function ObjectivesWidget({ playerId }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [claimingId, setClaimingId] = useState(null);
@@ -490,7 +564,7 @@ export function ObjectivesWidget({ playerId }) {
   if (!playerId) return null;
   if (loading) return <ActivityIndicator color={FUT.cyan} />;
   if (error) return <Text style={{ color: FUT.rose, fontSize: 12 }}>{error}</Text>;
-  if (!items.length) return <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>No open objectives.</Text>;
+  if (!items.length) return <Text style={{ color: tokens.muted, fontSize: 12 }}>No open objectives.</Text>;
 
   return (
     <View style={{ gap: 9 }}>
@@ -509,8 +583,8 @@ export function ObjectivesWidget({ playerId }) {
               borderRadius: 14, borderWidth: 1, borderColor: 'rgba(0,232,255,0.22)', padding: 12,
             }}
           >
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>{title}</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.42)', fontSize: 11, marginTop: 3 }}>
+            <Text style={{ color: tokens.text, fontWeight: '800', fontSize: 13 }}>{title}</Text>
+            <Text style={{ color: tokens.muted, fontSize: 11, marginTop: 3 }}>
               {progress}/{target} · {String(item.scope || 'daily').toUpperCase()}
             </Text>
             <View style={{
@@ -546,6 +620,7 @@ export function ObjectivesWidget({ playerId }) {
 }
 
 export function FutMatchLogPanel({ playerId, initialMatches = [] }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const [matches, setMatches] = useState(initialMatches);
   const [result, setResult] = useState('win');
   const [score, setScore] = useState('');
@@ -617,8 +692,8 @@ export function FutMatchLogPanel({ playerId, initialMatches = [] }) {
           value={score}
           onChangeText={setScore}
           placeholder="Score e.g. 3-1"
-          placeholderTextColor="rgba(255,255,255,0.35)"
-          style={{ flex: 1, color: '#fff', fontSize: 14, paddingVertical: 10, fontWeight: '700' }}
+          placeholderTextColor={tokens.faint}
+          style={{ flex: 1, color: tokens.text, fontSize: 14, paddingVertical: 10, fontWeight: '700' }}
         />
         <TouchableOpacity onPress={add} disabled={busy} style={{
           paddingHorizontal: 14, minHeight: 36, borderRadius: 11, backgroundColor: 'rgba(0,232,255,0.16)',
@@ -638,8 +713,8 @@ export function FutMatchLogPanel({ playerId, initialMatches = [] }) {
             {String(m.result || 'D').slice(0, 1)}
           </Text>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: '700' }}>{m.score || '—'}</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, marginTop: 2 }}>
+            <Text style={{ color: tokens.text, fontSize: 13, fontWeight: '700' }}>{m.score || '—'}</Text>
+            <Text style={{ color: tokens.faint, fontSize: 11, marginTop: 2 }}>
               {m.played_at ? String(m.played_at).slice(0, 10) : ''}
             </Text>
           </View>
@@ -649,13 +724,14 @@ export function FutMatchLogPanel({ playerId, initialMatches = [] }) {
         </View>
       ))}
       {!matches?.length ? (
-        <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Log FUT matches to track form.</Text>
+        <Text style={{ color: tokens.muted, fontSize: 12 }}>Log FUT matches to track form.</Text>
       ) : null}
     </View>
   );
 }
 
 export function EafcClubPanel({ player, eafcSummary, onRefresh }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const [clubId, setClubId] = useState(player?.eafc_club_id || '');
   const [clubName, setClubName] = useState(player?.eafc_club_name || '');
   const [busy, setBusy] = useState(false);
@@ -694,19 +770,32 @@ export function EafcClubPanel({ player, eafcSummary, onRefresh }) {
           colors={['rgba(255,210,74,0.2)', 'rgba(0,0,0,0.35)']}
           style={{
             borderRadius: 14, borderWidth: 1.5, borderColor: 'rgba(255,210,74,0.4)', padding: 14,
+            overflow: 'hidden',
           }}
         >
           <Text style={{ color: FUT.gold, fontSize: 10, fontWeight: '900', letterSpacing: 2 }}>LINKED PRO CLUB</Text>
-          <Text style={{ color: '#fff', fontWeight: '900', fontSize: 18, marginTop: 6, textTransform: 'uppercase' }}>
+          <Text style={{ color: tokens.text, fontWeight: '900', fontSize: 18, marginTop: 6, textTransform: 'uppercase' }}>
             {eafcSummary.clubName}
           </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 4 }}>ID {eafcSummary.clubId}</Text>
+          <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 4 }}>ID {eafcSummary.clubId}</Text>
         </LinearGradient>
       ) : (
-        <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12 }}>Link your EA FC Pro Club to show club form here.</Text>
+        <Text style={{ color: tokens.muted, fontSize: 12 }}>Link your EA FC Pro Club to show club form here.</Text>
       )}
-      <TextInput value={clubName} onChangeText={setClubName} placeholder="Pro Club name" placeholderTextColor="rgba(255,255,255,0.35)" style={styles.input} />
-      <TextInput value={String(clubId || '')} onChangeText={setClubId} placeholder="Club ID" placeholderTextColor="rgba(255,255,255,0.35)" style={styles.input} />
+      <TextInput
+        value={clubName}
+        onChangeText={setClubName}
+        placeholder="Pro Club name"
+        placeholderTextColor={tokens.faint}
+        style={[styles.input, { color: tokens.text, borderColor: tokens.cyanBorder, backgroundColor: tokens.inputFill }]}
+      />
+      <TextInput
+        value={String(clubId || '')}
+        onChangeText={setClubId}
+        placeholder="Club ID"
+        placeholderTextColor={tokens.faint}
+        style={[styles.input, { color: tokens.text, borderColor: tokens.cyanBorder, backgroundColor: tokens.inputFill }]}
+      />
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <TouchableOpacity onPress={save} disabled={busy} style={[styles.btn, { flex: 1, backgroundColor: 'rgba(0,232,255,0.14)', borderColor: 'rgba(0,232,255,0.4)' }]}>
           <Text style={{ color: FUT.cyan, fontWeight: '900' }}>{busy ? '…' : 'SAVE LINK'}</Text>
@@ -722,12 +811,14 @@ export function EafcClubPanel({ player, eafcSummary, onRefresh }) {
 }
 
 export function ClubCrest({ club, size = 52 }) {
+  const tokens = useThemeStore((s) => s.tokens);
   return (
     <View style={{
       width: size, height: size, borderRadius: 16, overflow: 'hidden',
-      borderWidth: 1.5, borderColor: 'rgba(255,210,74,0.4)', backgroundColor: '#0A1222',
+      borderWidth: 1.5, borderColor: tokens.amberBorder,
+      backgroundColor: tokens.live ? 'transparent' : tokens.cardSolid,
       alignItems: 'center', justifyContent: 'center',
-      shadowColor: FUT.gold, shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 4 },
+      shadowColor: tokens.amber, shadowOpacity: tokens.isDark ? 0.35 : 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 4 },
     }}
     >
       {club?.logo_url
@@ -738,28 +829,32 @@ export function ClubCrest({ club, size = 52 }) {
 }
 
 export function FutCta({ label, onPress, primary = false, icon }) {
+  const tokens = useThemeStore((s) => s.tokens);
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.88}
-      style={{
-        flex: 1,
-        minHeight: 48,
-        borderRadius: 14,
-        overflow: 'hidden',
-        borderWidth: 1.5,
-        borderColor: primary ? 'rgba(0,232,255,0.55)' : 'rgba(255,255,255,0.16)',
-      }}
+      style={{ flex: 1, minHeight: 48 }}
     >
-      <LinearGradient
-        colors={primary
-          ? ['rgba(0,232,255,0.35)', 'rgba(0,120,180,0.2)']
-          : ['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.02)']}
-        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+      <LiveGlass
+        intensity={36}
+        style={{
+          flex: 1,
+          minHeight: 48,
+          borderRadius: 14,
+          borderWidth: 1.5,
+          borderColor: primary ? tokens.cyanBorder : tokens.hairline,
+        }}
       >
-        {icon ? <Ionicons name={icon} size={15} color={primary ? FUT.cyan : '#fff'} /> : null}
+        <LinearGradient
+          colors={primary
+            ? [tokens.tileFill, 'rgba(10,18,32,0.45)']
+            : [tokens.inputFill, tokens.card]}
+          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+        >
+        {icon ? <Ionicons name={icon} size={15} color={primary ? tokens.cyan : tokens.text} /> : null}
         <Text style={{
-          color: primary ? FUT.cyan : '#fff',
+          color: primary ? tokens.cyan : tokens.text,
           fontWeight: '900',
           fontSize: 12,
           letterSpacing: 1.1,
@@ -767,7 +862,8 @@ export function FutCta({ label, onPress, primary = false, icon }) {
         >
           {label}
         </Text>
-      </LinearGradient>
+        </LinearGradient>
+      </LiveGlass>
     </TouchableOpacity>
   );
 }

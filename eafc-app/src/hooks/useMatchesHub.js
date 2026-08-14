@@ -98,8 +98,8 @@ export default function useMatchesHub() {
   const [myPlayer, setMyPlayer] = useState(null);
   const [leagueFilter, setLeagueFilter] = useState('all');
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const { user, player, club } = await resolveMyPlayerAndClub();
@@ -155,6 +155,15 @@ export default function useMatchesHub() {
 
   useEffect(() => {
     load();
+  }, [load]);
+
+  useEffect(() => {
+    const unsub = stageClient.entities.Match.subscribe(() => {
+      load({ silent: true });
+    });
+    return () => {
+      if (typeof unsub === 'function') unsub();
+    };
   }, [load]);
 
   const buckets = useMemo(() => {

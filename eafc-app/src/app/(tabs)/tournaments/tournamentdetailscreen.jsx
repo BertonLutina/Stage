@@ -17,6 +17,7 @@ import {
   fetchTournamentPublic,
   initializeTournamentDraw,
   officializeTournament,
+  isPlayerTournament,
   registerTournamentClub,
   registerTournamentPlayer,
   withdrawTournamentClub,
@@ -25,7 +26,6 @@ import {
   GamerProfileShell,
   GlassIconButton,
   CYAN,
-  GAMER_BG,
 } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT, PitchAtmosphere, SectionCard } from '@/components/dashboard/CommandCenterUI';
 import { headingStyle, headingStyleSm } from '@/lib/fonts';
@@ -88,6 +88,7 @@ export default function TournamentDetailScreen() {
   );
   const canRegister = tournament?.status === 'registration';
   const canStart = isOwner && (tournament?.status === 'registration' || tournament?.status === 'draft');
+  const playerTournament = isPlayerTournament(tournament);
 
   const run = async (key, fn) => {
     setBusy(key);
@@ -115,7 +116,7 @@ export default function TournamentDetailScreen() {
   if (!tournament) {
     return (
       <GamerProfileShell>
-        <SafeAreaView style={{ flex: 1, backgroundColor: GAMER_BG }} edges={['top']}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
           <View style={{ padding: 16 }}>
             <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
             <Text style={{ color: 'rgba(255,255,255,0.5)', marginTop: 24, textAlign: 'center' }}>Tournament not found</Text>
@@ -128,7 +129,7 @@ export default function TournamentDetailScreen() {
   return (
     <GamerProfileShell>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: GAMER_BG }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 }}>
           <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
           <Text style={{ color: '#fff', fontWeight: '900', marginLeft: 12, flex: 1 }} numberOfLines={1}>
@@ -146,7 +147,7 @@ export default function TournamentDetailScreen() {
               </Text>
               <Text style={[headingStyle, { color: '#fff', fontSize: 24, marginTop: 6 }]}>{tournament.name}</Text>
               <Text style={{ color: 'rgba(255,255,255,0.5)', marginTop: 8, fontSize: 12 }}>
-                {tournament.status} · {clubs.length} clubs · {players.length} players
+                {tournament.status} · {playerTournament ? `${players.length} players` : `${clubs.length} clubs`}
               </Text>
             </View>
           </PitchAtmosphere>
@@ -157,21 +158,21 @@ export default function TournamentDetailScreen() {
             </SectionCard>
           ) : null}
 
-          {canRegister && myClub && !clubEntered ? (
+          {canRegister && !playerTournament && myClub && !clubEntered ? (
             <Primary
               label="Register my club"
               busy={busy === 'regClub'}
               onPress={() => run('regClub', () => registerTournamentClub(tournament.id, myClub.id))}
             />
           ) : null}
-          {canRegister && myPlayer && !playerEntered && tournament.mode !== 'club' ? (
+          {canRegister && playerTournament && myPlayer && !playerEntered ? (
             <Primary
               label="Register as player"
               busy={busy === 'regPlayer'}
               onPress={() => run('regPlayer', () => registerTournamentPlayer(tournament.id, myPlayer.id))}
             />
           ) : null}
-          {canRegister && clubEntered ? (
+          {canRegister && !playerTournament && clubEntered ? (
             <Ghost
               label="Withdraw club"
               busy={busy === 'withdraw'}

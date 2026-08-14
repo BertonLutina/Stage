@@ -1,7 +1,8 @@
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import useThemeStore from '../../store/themeStore';
 
 let NativeTabs = null;
@@ -20,20 +21,6 @@ if (Platform.OS === 'ios') {
 }
 
 
-const DARK = {
-  surface: '#0A1F4A',
-  border: '#1A3566',
-  primary: '#5FE3E8',
-  muted: '#6B7280',
-};
-
-const LIGHT = {
-  surface: '#FFFFFF',
-  border: '#E5E7EB',
-  primary: '#0891B2',
-  muted: '#6B7280',
-};
-
 const SCREENS = [
   {
     name: 'dashboard',
@@ -43,7 +30,7 @@ const SCREENS = [
   },
   {
     name: 'matches',
-    title: 'Matches',
+    title: 'Game Day',
     icon: 'football-outline',
     iconFocused: 'football',
   },
@@ -62,33 +49,37 @@ const SCREENS = [
 ];
 
 export default function TabsLayout() {
-  const { resolvedTheme } = useThemeStore();
-  const C = resolvedTheme === 'dark' ? DARK : LIGHT;
+  const tokens = useThemeStore((s) => s.tokens);
+  const C = {
+    surface: tokens.isDark ? '#0A1F4A' : tokens.cardSolid,
+    primary: tokens.cyan,
+    muted: tokens.muted,
+  };
 
   const sharedScreenOptions = {
     headerShown: false,
-    tabBarActiveTintColor: C.primary,
-    tabBarInactiveTintColor: '#FFFFFF',
+    tabBarActiveTintColor: tokens.primary,
+    tabBarInactiveTintColor: tokens.muted,
   };
 
-  if (Platform.OS === 'ios') {
+  if (Platform.OS === 'ios' && NativeTabs && !tokens.live) {
     return (
       <NativeTabs
+        backBehavior="history"
         screenOptions={{
           ...sharedScreenOptions,
           tabBarStyle: { backgroundColor: C.surface },
         }}
       >
-        {SCREENS.map(({ name, title, icon }) => (
+        {SCREENS.map(({ name, icon }) => (
           <NativeTabs.Trigger key={name} name={name}>
             <NativeIcon src={<NativeVectorIcon family={Ionicons} name={icon} />} />
-            <NativeLabel>{title}</NativeLabel>
+            <NativeLabel hidden />
           </NativeTabs.Trigger>
-
         ))}
         <NativeTabs.Trigger key="search" name="search" role="search">
           <NativeIcon src={<NativeVectorIcon family={Ionicons} name="search" />} />
-          <NativeLabel>Apps</NativeLabel>
+          <NativeLabel hidden />
         </NativeTabs.Trigger>
       </NativeTabs>
     );
@@ -96,14 +87,18 @@ export default function TabsLayout() {
 
   return (
     <Tabs
+      backBehavior="history"
       screenOptions={{
         ...sharedScreenOptions,
+        sceneContainerStyle: { backgroundColor: 'transparent' },
+        sceneStyle: { backgroundColor: 'transparent' },
+        contentStyle: { backgroundColor: 'transparent' },
         tabBarItemStyle: { borderRadius: 999, margin: 6 },
         tabBarStyle: {
           position: 'absolute',
           bottom: 34,
           height: 64,
-          backgroundColor: 'rgba(15,23,42,0.35)', // glassy background
+          backgroundColor: tokens.live ? 'transparent' : 'rgba(15,23,42,0.72)',
           paddingBottom: 8,
           paddingHorizontal: 8,
           alignSelf: 'center',
@@ -111,14 +106,25 @@ export default function TabsLayout() {
           borderRadius: 999,
           borderTopWidth: 1,
           borderWidth: 1,
-          borderColor: 'rgba(148,163,184,0.4)',
+          borderColor: tokens.hairline,
           elevation: 8,
           shadowColor: '#000',
           shadowOpacity: 0.2,
           shadowRadius: 16,
           shadowOffset: { width: 0, height: 4 },
+          overflow: 'hidden',
         },
-        tabBarLabelStyle: { fontSize: 9 },
+        tabBarBackground: () => (
+          tokens.live
+            ? (
+              <>
+                <BlurView intensity={36} tint="dark" style={StyleSheet.absoluteFill} />
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(10,18,32,0.62)' }]} />
+              </>
+            )
+            : <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(15,23,42,0.72)' }]} />
+        ),
+        tabBarShowLabel: false,
       }}
     >
       {SCREENS.map(({ name, title, icon, iconFocused }) => (
@@ -127,6 +133,7 @@ export default function TabsLayout() {
           name={name}
           options={{
             title,
+            tabBarShowLabel: false,
             tabBarIcon: ({ color, focused }) => (
               <Ionicons
                 name={focused ? iconFocused : icon}
@@ -141,6 +148,7 @@ export default function TabsLayout() {
         name="search"
         options={{
           title: 'Apps',
+          tabBarShowLabel: false,
           tabBarIcon: ({ color }) => <Ionicons name="search" size={24} color={color} />,
         }}
       />

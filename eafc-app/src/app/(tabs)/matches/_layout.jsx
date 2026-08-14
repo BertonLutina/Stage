@@ -1,17 +1,3 @@
-import React from 'react';
-import { Stack } from 'expo-router';
-import { View } from 'react-native';
-import { GAMER_BG } from '@/components/profile/gamer/GamerProfileUI';
+import ThemedStackLayout from '@/components/theme/ThemedStackLayout';
 
-export default function MatchesLayout() {
-  return (
-    <View style={{ flex: 1, backgroundColor: GAMER_BG }}>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: GAMER_BG },
-        }}
-      />
-    </View>
-  );
-}
+export default ThemedStackLayout;

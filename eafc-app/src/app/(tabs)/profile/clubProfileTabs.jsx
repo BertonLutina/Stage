@@ -15,19 +15,17 @@ import {
 const PRIMARY_TABS = [
   { id: 'squad', label: 'Squad' },
   { id: 'feed', label: 'Feed' },
-  { id: 'matches', label: 'Matches' },
+  { id: 'operations', label: 'Operations' },
   { id: 'office', label: 'Office' },
 ];
 
 const OFFICE_TOOLS = [
-  { id: 'operations', label: 'Operations', icon: 'construct-outline', hint: 'Lineup, tactics, staff' },
   { id: 'contracts', label: 'Contracts', icon: 'document-text-outline', hint: 'Offers and wage deals' },
   { id: 'stadium', label: 'Stadium', icon: 'business-outline', hint: 'Upgrades and capacity' },
   { id: 'finance', label: 'Finance', icon: 'cash-outline', hint: 'Budget and transfers' },
   { id: 'shirts', label: 'Shirts', icon: 'shirt-outline', hint: 'Kit shop and sales' },
   { id: 'trophies', label: 'Trophies', icon: 'trophy-outline', hint: 'Cabinet and achievements' },
   { id: 'history', label: 'History', icon: 'time-outline', hint: 'Season results' },
-  { id: 'stats', label: 'Stats', icon: 'stats-chart-outline', hint: 'Win rate and form' },
   { id: 'chat', label: 'Chat', icon: 'chatbubbles-outline', hint: 'Club channel' },
 ];
 
@@ -85,55 +83,6 @@ function MemberRow({ player }) {
           <Text style={{ color: 'rgba(255,214,10,0.55)', fontSize: 9, fontWeight: '800', letterSpacing: 1 }}>OVR</Text>
         </View>
       ) : null}
-    </View>
-  );
-}
-
-function MatchRow({ match, clubId }) {
-  const isHome = String(match.home_club_id) === String(clubId);
-  const opp = isHome ? (match.away_club_name || 'Away') : (match.home_club_name || 'Home');
-  const my = isHome ? match.home_score : match.away_score;
-  const their = isHome ? match.away_score : match.home_score;
-  const done = match.status === 'completed';
-  let outcome = '—';
-  if (done && my != null && their != null) {
-    outcome = my > their ? 'W' : my < their ? 'L' : 'D';
-  }
-  const chip = outcome === 'W'
-    ? { bg: 'rgba(16,185,129,0.15)', color: '#34D399' }
-    : outcome === 'L'
-      ? { bg: 'rgba(244,63,94,0.15)', color: '#FB7185' }
-      : { bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.55)' };
-
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        minHeight: 52,
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
-        backgroundColor: 'rgba(255,255,255,0.03)',
-        paddingHorizontal: 12,
-        paddingVertical: 12,
-      }}
-    >
-      <View style={{ backgroundColor: chip.bg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, minWidth: 32, alignItems: 'center' }}>
-        <Text style={{ color: chip.color, fontWeight: '900', fontSize: 11 }}>{outcome}</Text>
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }} numberOfLines={1}>vs {opp}</Text>
-        <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 2 }}>
-          {match.scheduled_date ? String(match.scheduled_date).slice(0, 10) : (match.status || '—')}
-        </Text>
-      </View>
-      {done ? (
-        <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>{my ?? 0}–{their ?? 0}</Text>
-      ) : (
-        <Text style={{ color: AMBER, fontWeight: '800', fontSize: 10, letterSpacing: 1 }}>NEXT</Text>
-      )}
     </View>
   );
 }
@@ -232,22 +181,22 @@ function OfficeToolRow({ tool, onPress }) {
 
 /**
  * Club tabs — real-app IA:
- * one primary rail (Squad / Feed / Matches / Office).
+ * one primary rail (Squad / Feed / Operations / Office).
  * Office tools are a list, not a second tab row.
  */
 export default function ClubProfileTabs({
   club,
   isOwner = false,
   canOpenOperations = false,
-  memberCount,
+  memberCount: _memberCount,
   players: playersProp,
-  matches: matchesProp,
-  upcomingMatches = [],
+  matches: _matchesProp,
+  upcomingMatches: _upcomingMatches = [],
   posts = [],
   historyRows = [],
   trophies = [],
   chatMessages = [],
-  record,
+  record: _record,
   contracts = [],
   staffRoles = [],
   applicants = [],
@@ -261,23 +210,19 @@ export default function ClubProfileTabs({
   const [tab, setTab] = useState('squad');
   const [officeTool, setOfficeTool] = useState(null);
   const [squad, setSquad] = useState(Array.isArray(playersProp) ? playersProp : []);
-  const [matches, setMatches] = useState(Array.isArray(matchesProp) ? matchesProp : []);
   const [loadingTab, setLoadingTab] = useState(false);
 
-  const wins = record?.wins ?? club?.wins ?? club?.wins_count ?? 0;
-  const draws = record?.draws ?? club?.draws ?? club?.draws_count ?? 0;
-  const losses = record?.losses ?? club?.losses ?? club?.losses_count ?? 0;
-  const total = wins + draws + losses;
-  const winRate = record?.winRate ?? (total > 0 ? Math.round((wins / total) * 100) : null);
-
   const primaryTabs = useMemo(() => {
-    if (isOwner || canOpenOperations) return PRIMARY_TABS;
-    return PRIMARY_TABS.filter((t) => t.id !== 'office');
+    return PRIMARY_TABS.filter((item) => {
+      if (item.id === 'operations') return canOpenOperations;
+      if (item.id === 'office') return isOwner || canOpenOperations;
+      return true;
+    });
   }, [isOwner, canOpenOperations]);
 
   const officeTools = useMemo(() => {
     if (isOwner) return OFFICE_TOOLS;
-    return OFFICE_TOOLS.filter((t) => ['operations', 'trophies', 'history', 'stats', 'chat'].includes(t.id));
+    return OFFICE_TOOLS.filter((item) => ['trophies', 'history', 'chat'].includes(item.id));
   }, [isOwner]);
 
   useEffect(() => {
@@ -289,21 +234,11 @@ export default function ClubProfileTabs({
   }, [playersProp]);
 
   useEffect(() => {
-    if (Array.isArray(matchesProp) || Array.isArray(upcomingMatches)) {
-      const past = Array.isArray(matchesProp) ? matchesProp : [];
-      const next = Array.isArray(upcomingMatches) ? upcomingMatches : [];
-      const map = new Map();
-      [...next, ...past].forEach((m) => { if (m?.id) map.set(m.id, m); });
-      setMatches([...map.values()]);
-    }
-  }, [matchesProp, upcomingMatches]);
-
-  useEffect(() => {
     if (!club?.id) return;
-    if (Array.isArray(playersProp) && (Array.isArray(matchesProp) || Array.isArray(upcomingMatches))) return;
+    if (Array.isArray(playersProp)) return;
     let cancelled = false;
     (async () => {
-      if (tab === 'squad' || officeTool === 'stats') {
+      if (tab === 'squad') {
         setLoadingTab(true);
         try {
           const rows = await stageClient.entities.Player.filter({ club_id: club.id }, null, 60).catch(() => []);
@@ -312,50 +247,16 @@ export default function ClubProfileTabs({
           if (!cancelled) setLoadingTab(false);
         }
       }
-      if (tab === 'matches') {
-        setLoadingTab(true);
-        try {
-          const [home, away] = await Promise.all([
-            stageClient.entities.Match.filter({ home_club_id: club.id }, '-scheduled_date', 20).catch(() => []),
-            stageClient.entities.Match.filter({ away_club_id: club.id }, '-scheduled_date', 20).catch(() => []),
-          ]);
-          if (cancelled) return;
-          const map = new Map();
-          [...(home || []), ...(away || [])].forEach((m) => { if (m?.id) map.set(m.id, m); });
-          setMatches([...map.values()].sort((a, b) => String(b.scheduled_date || '').localeCompare(String(a.scheduled_date || ''))));
-        } finally {
-          if (!cancelled) setLoadingTab(false);
-        }
-      }
     })();
     return () => { cancelled = true; };
-  }, [club?.id, tab, officeTool, playersProp, matchesProp, upcomingMatches]);
+  }, [club?.id, tab, playersProp]);
 
   const selectPrimary = (id) => {
     setTab(id);
     setOfficeTool(null);
   };
 
-  const resolvedMembers = memberCount ?? squad.length;
-
   const renderOfficeDetail = () => {
-    if (officeTool === 'stats') {
-      return (
-        <View style={{ gap: 12 }}>
-          <OfficeBack onPress={() => setOfficeTool(null)} />
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-            <GamerStatTile label="Wins" value={wins} accent="green" />
-            <GamerStatTile label="Draws" value={draws} />
-            <GamerStatTile label="Losses" value={losses} accent="rose" />
-            <GamerStatTile label="WR %" value={winRate ?? '—'} accent="amber" />
-          </View>
-          <GamerSectionCard title="Squad size">
-            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 22 }}>{resolvedMembers || 0}</Text>
-          </GamerSectionCard>
-        </View>
-      );
-    }
-
     if (officeTool === 'history') {
       return (
         <View style={{ gap: 12 }}>
@@ -413,94 +314,6 @@ export default function ClubProfileTabs({
             </GamerSectionCard>
           ) : (
             <EmptyTabPanel icon="chatbubbles-outline" title="No messages yet" hint="Club channel messages will show here." />
-          )}
-        </View>
-      );
-    }
-
-    if (officeTool === 'operations') {
-      const pendingApplicants = applicants.filter((row) => ['new', 'reviewed', 'invited'].includes(String(row.status || '').toLowerCase()));
-      const hasOps = pendingApplicants.length || staffRoles.length || lineups.length || auditLogs.length || availability.length;
-      return (
-        <View style={{ gap: 12 }}>
-          <OfficeBack onPress={() => setOfficeTool(null)} />
-          {!hasOps ? (
-            <EmptyTabPanel icon="construct-outline" title="No operations yet" hint="Applicants, staff, and lineups will show here." />
-          ) : (
-            <>
-              {pendingApplicants.length ? (
-                <View style={{ gap: 8 }}>
-                  <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '800', letterSpacing: 1.4 }}>
-                    APPLICANTS · {pendingApplicants.length}
-                  </Text>
-                  {pendingApplicants.map((row) => (
-                    <LineItem
-                      key={row.id}
-                      title={row.player_gamertag || 'Player'}
-                      subtitle={[row.preferred_position || row.player_position, row.platform || row.player_platform].filter(Boolean).join(' · ') || row.status}
-                      trailing={row.status}
-                    />
-                  ))}
-                </View>
-              ) : null}
-              {staffRoles.length ? (
-                <View style={{ gap: 8 }}>
-                  <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '800', letterSpacing: 1.4 }}>
-                    STAFF · {staffRoles.length}
-                  </Text>
-                  {staffRoles.map((row) => (
-                    <LineItem
-                      key={row.id}
-                      title={row.player_gamertag || row.player_email || 'Staff'}
-                      subtitle={String(row.role || 'staff').replace(/_/g, ' ')}
-                    />
-                  ))}
-                </View>
-              ) : null}
-              {lineups.length ? (
-                <View style={{ gap: 8 }}>
-                  <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '800', letterSpacing: 1.4 }}>
-                    LINEUPS · {lineups.length}
-                  </Text>
-                  {lineups.map((row) => (
-                    <LineItem
-                      key={row.id}
-                      title={row.formation || 'Lineup'}
-                      subtitle={row.fixture_id ? `Fixture ${String(row.fixture_id).slice(0, 8)}` : 'Saved lineup'}
-                    />
-                  ))}
-                </View>
-              ) : null}
-              {availability.length ? (
-                <View style={{ gap: 8 }}>
-                  <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '800', letterSpacing: 1.4 }}>
-                    AVAILABILITY · {availability.length}
-                  </Text>
-                  {availability.slice(0, 12).map((row) => (
-                    <LineItem
-                      key={row.id}
-                      title={row.player_gamertag || row.player_id || 'Player'}
-                      subtitle={row.fixture_id ? `Fixture ${String(row.fixture_id).slice(0, 8)}` : 'Availability'}
-                      trailing={row.status || row.available ? 'In' : 'Out'}
-                    />
-                  ))}
-                </View>
-              ) : null}
-              {auditLogs.length ? (
-                <View style={{ gap: 8 }}>
-                  <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '800', letterSpacing: 1.4 }}>
-                    RECENT ACTIVITY
-                  </Text>
-                  {auditLogs.slice(0, 8).map((row) => (
-                    <LineItem
-                      key={row.id}
-                      title={String(row.action || 'update').replace(/_/g, ' ')}
-                      subtitle={row.created_date ? String(row.created_date).slice(0, 10) : ''}
-                    />
-                  ))}
-                </View>
-              ) : null}
-            </>
           )}
         </View>
       );
@@ -632,7 +445,7 @@ export default function ClubProfileTabs({
   const renderContent = () => {
     if (tab === 'office' && officeTool) return renderOfficeDetail();
 
-    if (loadingTab && (tab === 'squad' || tab === 'matches')) {
+    if (loadingTab && tab === 'squad') {
       return (
         <View style={{ paddingVertical: 28, alignItems: 'center' }}>
           <ActivityIndicator color={AMBER} />
@@ -699,19 +512,88 @@ export default function ClubProfileTabs({
       );
     }
 
-    if (tab === 'matches') {
-      if (matches.length === 0) {
+    if (tab === 'operations') {
+      const pendingApplicants = applicants.filter((row) => ['new', 'reviewed', 'invited'].includes(String(row.status || '').toLowerCase()));
+      const hasOps = pendingApplicants.length || staffRoles.length || lineups.length || auditLogs.length || availability.length;
+      if (!hasOps) {
         return (
-          <EmptyTabPanel
-            icon="flash-outline"
-            title="No fixtures yet"
-            hint="Upcoming and played matches will land here."
-          />
+          <EmptyTabPanel icon="construct-outline" title="No operations yet" hint="Applicants, staff, and lineups will show here." />
         );
       }
       return (
-        <View style={{ gap: 8 }}>
-          {matches.slice(0, 30).map((m) => <MatchRow key={m.id} match={m} clubId={club.id} />)}
+        <View style={{ gap: 12 }}>
+          {pendingApplicants.length ? (
+            <View style={{ gap: 8 }}>
+              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '800', letterSpacing: 1.4 }}>
+                APPLICANTS · {pendingApplicants.length}
+              </Text>
+              {pendingApplicants.map((row) => (
+                <LineItem
+                  key={row.id}
+                  title={row.player_gamertag || 'Player'}
+                  subtitle={[row.preferred_position || row.player_position, row.platform || row.player_platform].filter(Boolean).join(' · ') || row.status}
+                  trailing={row.status}
+                />
+              ))}
+            </View>
+          ) : null}
+          {staffRoles.length ? (
+            <View style={{ gap: 8 }}>
+              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '800', letterSpacing: 1.4 }}>
+                STAFF · {staffRoles.length}
+              </Text>
+              {staffRoles.map((row) => (
+                <LineItem
+                  key={row.id}
+                  title={row.player_gamertag || row.player_email || 'Staff'}
+                  subtitle={String(row.role || 'staff').replace(/_/g, ' ')}
+                />
+              ))}
+            </View>
+          ) : null}
+          {lineups.length ? (
+            <View style={{ gap: 8 }}>
+              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '800', letterSpacing: 1.4 }}>
+                LINEUPS · {lineups.length}
+              </Text>
+              {lineups.map((row) => (
+                <LineItem
+                  key={row.id}
+                  title={row.formation || 'Lineup'}
+                  subtitle={row.fixture_id ? `Fixture ${String(row.fixture_id).slice(0, 8)}` : 'Saved lineup'}
+                />
+              ))}
+            </View>
+          ) : null}
+          {availability.length ? (
+            <View style={{ gap: 8 }}>
+              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '800', letterSpacing: 1.4 }}>
+                AVAILABILITY · {availability.length}
+              </Text>
+              {availability.slice(0, 12).map((row) => (
+                <LineItem
+                  key={row.id}
+                  title={row.player_gamertag || row.player_id || 'Player'}
+                  subtitle={row.fixture_id ? `Fixture ${String(row.fixture_id).slice(0, 8)}` : 'Availability'}
+                  trailing={row.status || row.available ? 'In' : 'Out'}
+                />
+              ))}
+            </View>
+          ) : null}
+          {auditLogs.length ? (
+            <View style={{ gap: 8 }}>
+              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '800', letterSpacing: 1.4 }}>
+                RECENT ACTIVITY
+              </Text>
+              {auditLogs.slice(0, 8).map((row) => (
+                <LineItem
+                  key={row.id}
+                  title={String(row.action || 'update').replace(/_/g, ' ')}
+                  subtitle={row.created_date ? String(row.created_date).slice(0, 10) : ''}
+                />
+              ))}
+            </View>
+          ) : null}
         </View>
       );
     }

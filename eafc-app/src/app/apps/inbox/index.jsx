@@ -13,7 +13,6 @@ import {
   GamerProfileShell,
   GlassIconButton,
   CYAN,
-  GAMER_BG,
 } from '@/components/profile/gamer/GamerProfileUI';
 import { headingStyle, headingStyleSm } from '@/lib/fonts';
 
@@ -127,7 +126,7 @@ export default function InboxScreen() {
   return (
     <GamerProfileShell>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: GAMER_BG }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         <View style={{
           paddingHorizontal: 16,
           paddingTop: 8,

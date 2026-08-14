@@ -3,20 +3,21 @@ import { TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import useColorSchemeColors from '../../hooks/useColorSchemeColors';
+import { goBackInPlace } from '../../lib/navigationBack';
 
 /**
  * Standard back button: h-10 w-10 rounded-full, left-aligned.
  * Used in screen headers for consistent layout.
  *
  * @param {Object} props
- * @param {Function} [props.onPress] - Custom onPress (default: router.back())
+ * @param {Function} [props.onPress] - Custom onPress (default: pop one screen, stay on this tab)
  * @param {'default'|'light'} [props.variant='default'] - 'light' for dark backgrounds (GradientBackground, etc.)
  */
 export default function BackButton({ onPress, variant = 'default' }) {
   const router = useRouter();
   const { isDark } = useColorSchemeColors();
 
-  const handlePress = onPress || (() => router.back());
+  const handlePress = onPress || (() => goBackInPlace(router));
 
   if (variant === 'light') {
     return (

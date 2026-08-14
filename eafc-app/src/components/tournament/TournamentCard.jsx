@@ -4,6 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import TournamentCountdown from './TournamentCountdown';
 import { CYAN, AMBER } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT } from '@/components/dashboard/CommandCenterUI';
+import LiveGlass from '@/components/theme/LiveGlass';
+import useThemeStore from '@/store/themeStore';
 
 const TYPE_LABEL = {
   knockout: 'Knockout',
@@ -42,6 +44,7 @@ function statusMeta(status) {
 }
 
 export default function TournamentCard({ tournament: t, trophyItems = [], onPress }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const registered = t.registered_clubs?.length || t.teams?.length || t.registered_count || 0;
   const maxTeams = Math.max(Number(t.max_teams) || 8, 1);
   const fillPct = Math.min(100, Math.round((registered / maxTeams) * 100));
@@ -63,7 +66,8 @@ export default function TournamentCard({ tournament: t, trophyItems = [], onPres
     : null;
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.88} style={styles.card}>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.88} style={styles.cardShadow}>
+      <View style={styles.cardClip}>
       <View style={[styles.banner, !t.banner_url && { backgroundColor: t.banner_color || '#0A1222' }]}>
         {t.banner_url ? (
           <Image source={{ uri: t.banner_url }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
@@ -98,8 +102,11 @@ export default function TournamentCard({ tournament: t, trophyItems = [], onPres
         ) : null}
       </View>
 
+      <LiveGlass intensity={36}>
       <LinearGradient
-        colors={['rgba(12,20,36,0.98)', 'rgba(6,10,20,0.96)']}
+        colors={tokens.live
+          ? ['rgba(12,20,36,0.55)', 'rgba(6,10,20,0.48)']
+          : ['rgba(12,20,36,0.98)', 'rgba(6,10,20,0.96)']}
         style={styles.body}
       >
         <Text style={styles.name} numberOfLines={1}>
@@ -139,21 +146,26 @@ export default function TournamentCard({ tournament: t, trophyItems = [], onPres
 
         {showCountdown ? <TournamentCountdown startDate={startDate} compact /> : null}
       </LinearGradient>
+      </LiveGlass>
+      </View>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1.5,
-    borderColor: 'rgba(0,232,255,0.28)',
+  cardShadow: {
     borderRadius: 16,
-    overflow: 'hidden',
     shadowColor: FUT.cyan,
     shadowOpacity: 0.22,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 6 },
     elevation: 7,
+  },
+  cardClip: {
+    borderWidth: 1.5,
+    borderColor: 'rgba(0,232,255,0.28)',
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   banner: {
     height: 100,

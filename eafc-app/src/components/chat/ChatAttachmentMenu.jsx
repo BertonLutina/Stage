@@ -17,9 +17,22 @@ const OPTIONS = [
 export default function ChatAttachmentMenu({ visible, onClose, onSelect }) {
   return (
     <Modal visible={visible} transparent animationType="slide">
-      <TouchableOpacity activeOpacity={1} onPress={onClose} className="flex-1 bg-black/60 justify-end">
-        <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()} className="bg-surface rounded-t-3xl px-4 pb-8 pt-4">
-          <View className="w-10 h-1 rounded-full bg-white/30 self-center mb-4" />
+      <TouchableOpacity activeOpacity={1} onPress={onClose} className="flex-1 bg-black/70 justify-end">
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={(e) => e.stopPropagation()}
+          style={{
+            backgroundColor: '#0B101C',
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingHorizontal: 16,
+            paddingTop: 16,
+            paddingBottom: 32,
+            borderTopWidth: 1,
+            borderColor: 'rgba(255,214,10,0.2)',
+          }}
+        >
+          <View className="w-10 h-1 rounded-full self-center mb-4" style={{ backgroundColor: 'rgba(255,214,10,0.35)' }} />
           <STText className="text-white font-bold text-lg mb-4">Attach</STText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
             {OPTIONS.map((opt) => (
@@ -31,8 +44,11 @@ export default function ChatAttachmentMenu({ visible, onClose, onSelect }) {
                 }}
                 className="items-center w-16"
               >
-                <View className="w-14 h-14 rounded-2xl bg-white/15 items-center justify-center mb-2">
-                  <Ionicons name={opt.icon} size={28} color="#fff" />
+                <View
+                  className="w-14 h-14 rounded-2xl items-center justify-center mb-2"
+                  style={{ backgroundColor: 'rgba(255,214,10,0.12)', borderWidth: 1, borderColor: 'rgba(255,214,10,0.25)' }}
+                >
+                  <Ionicons name={opt.icon} size={26} color="#FFD60A" />
                 </View>
                 <STText className="text-white text-xs">{opt.label}</STText>
               </TouchableOpacity>

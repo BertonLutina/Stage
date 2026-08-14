@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet, Linking } from 'react-native';
-import { Slot, useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -10,11 +10,22 @@ import { hydrateStageStorage } from '../lib/polyfillStorage';
 import { FONT_EA_SPORTS } from '../lib/fonts';
 import useAuthBootstrap from '../hooks/useAuthBootstrap';
 import useNotificationsSocket from '../hooks/useNotificationsSocket';
+import { SocketProvider } from '@/lib/SocketContext';
 import useOneSignal from '../hooks/useOneSignal';
 import useThemeStore from '../store/themeStore';
 import useToastStore from '../store/toastStore';
+import { ThemeProvider, DarkTheme } from '@react-navigation/native';
 import GradientBackground from '../components/common/GradientBackground';
 import Toast from '../components/common/Toast';
+
+const NAV_THEME = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    background: 'transparent',
+    card: 'transparent',
+  },
+};
 
 export default function RootLayout() {
   const router = useRouter();
@@ -22,6 +33,7 @@ export default function RootLayout() {
   useNotificationsSocket(user?.id);
   useOneSignal(user);
   const { initialize: initTheme } = useThemeStore();
+  const statusStyle = useThemeStore((s) => (s.tokens.isDark ? 'light' : 'dark'));
   const [fontsLoaded] = useFonts({
     [FONT_EA_SPORTS]: require('../assets/fonts/EASPORTS15.ttf'),
   });
@@ -49,11 +61,26 @@ export default function RootLayout() {
   const bootReady = ready && fontsLoaded;
 
   return (
+    <SocketProvider userId={user?.id}>
     <SafeAreaProvider>
-      <StatusBar style="light" backgroundColor="transparent" translucent />
+      <StatusBar style={statusStyle} backgroundColor="transparent" translucent />
       <GradientBackground>
-        <View className="flex-1" style={{ flex: 1 }}>
-          <Slot />
+        <ThemeProvider value={NAV_THEME}>
+        <View className="flex-1" style={{ flex: 1, backgroundColor: 'transparent' }}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: 'transparent' },
+              animation: 'slide_from_right',
+            }}
+          >
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(tabs)" options={{ animation: 'none', gestureEnabled: false }} />
+            <Stack.Screen name="auth" options={{ animation: 'none' }} />
+            <Stack.Screen name="apps" />
+            <Stack.Screen name="teams" />
+            <Stack.Screen name="social" />
+          </Stack>
           <Toast visible={visible} message={message} onHide={hide} />
           {!bootReady && (
             <View style={[StyleSheet.absoluteFill, styles.loader]}>
@@ -61,8 +88,10 @@ export default function RootLayout() {
             </View>
           )}
         </View>
+        </ThemeProvider>
       </GradientBackground>
     </SafeAreaProvider>
+    </SocketProvider>
   );
 }
 

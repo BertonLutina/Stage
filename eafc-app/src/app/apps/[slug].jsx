@@ -8,7 +8,6 @@ import {
   GamerProfileShell,
   GlassIconButton,
   CYAN,
-  GAMER_BG,
 } from '@/components/profile/gamer/GamerProfileUI';
 
 export default function MiniAppFallback() {
@@ -20,7 +19,7 @@ export default function MiniAppFallback() {
   return (
     <GamerProfileShell>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: GAMER_BG }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         <View style={{ paddingHorizontal: 16, paddingTop: 8, flexDirection: 'row', alignItems: 'center' }}>
           <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
           <Text style={{ flex: 1, marginLeft: 12, color: '#fff', fontWeight: '900', fontSize: 18 }}>

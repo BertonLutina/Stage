@@ -1,42 +1,12 @@
-import { useEffect, useRef } from 'react';
-import { io } from 'socket.io-client';
-import { SOCKET_URL } from '../utils/api';
-import { getAccessToken } from '../services/tokenService';
+import { useEffect } from 'react';
 import { showToast } from '../utils/toast';
 import { stageClient } from '../api/stageClient';
 
 /**
- * Keep notification socket alive and surface new Notification / Inbox toasts.
+ * Surface new Notification / Inbox toasts from the shared STAGE socket.
+ * Entity.subscribe() joins STAGE_NOTIFICATION_* / STAGE_INBOX_* rooms.
  */
 export default function useNotificationsSocket(userId) {
-  const socketRef = useRef(null);
-
-  useEffect(() => {
-    if (!userId) return undefined;
-    let cancelled = false;
-    let socket;
-
-    (async () => {
-      const token = await getAccessToken();
-      if (cancelled) return;
-      socket = io(`${SOCKET_URL}/notifications`, {
-        auth: { token },
-        transports: ['websocket', 'polling'],
-      });
-      socketRef.current = socket;
-      socket.emit('subscribe', userId);
-      socket.on('join_accepted', (data) => {
-        const gamerTag = data.gamerTag || data.gamer_tag || 'Player';
-        showToast(`Hi ${gamerTag}, you have successfully joined the team!`);
-      });
-    })();
-
-    return () => {
-      cancelled = true;
-      socket?.disconnect();
-    };
-  }, [userId]);
-
   useEffect(() => {
     if (!userId) return undefined;
 

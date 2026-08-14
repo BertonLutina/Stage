@@ -17,7 +17,6 @@ import {
   GamerProfileShell,
   GlassIconButton,
   CYAN,
-  GAMER_BG,
 } from '@/components/profile/gamer/GamerProfileUI';
 
 export function DirectoryRow({
@@ -164,7 +163,7 @@ export default function AppDirectoryScreen({
   return (
     <GamerProfileShell>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: GAMER_BG }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 10, gap: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <GlassIconButton icon="arrow-back" onPress={() => router.back()} />

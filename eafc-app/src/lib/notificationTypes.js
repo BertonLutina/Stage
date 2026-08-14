@@ -18,8 +18,56 @@ export const NOTIFICATION_SETTING_GROUPS = [
   { label: 'General', keys: ['announcements'] },
 ];
 
+export const NOTIFICATION_TYPES = {
+  contract_offer: { settingKey: 'contract_offers' },
+  contract_accepted: { settingKey: 'contract_updates' },
+  contract_rejected: { settingKey: 'contract_updates' },
+  contract_terminated: { settingKey: 'contract_updates' },
+  contract_expired: { settingKey: 'contract_updates' },
+  contract_completed: { settingKey: 'contract_updates' },
+  match_scheduled: { settingKey: 'match_reminders' },
+  match_result: { settingKey: 'match_results' },
+  match_reminder: { settingKey: 'match_reminders' },
+  result_submitted: { settingKey: 'match_results' },
+  result_confirmed: { settingKey: 'match_results' },
+  join_request: { settingKey: 'club_updates' },
+  join_approved: { settingKey: 'club_updates' },
+  join_rejected: { settingKey: 'club_updates' },
+  club_update: { settingKey: 'club_updates' },
+  invite: { settingKey: 'club_updates' },
+  message: { settingKey: 'messages' },
+  tournament_start: { settingKey: 'tournament_updates' },
+  tournament_complete: { settingKey: 'tournament_updates' },
+  announcement: { settingKey: 'announcements' },
+};
+
+export function parseNotificationSettings(raw) {
+  if (!raw) return {};
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  return typeof raw === 'object' ? raw : {};
+}
+
+export function isSettingOn(settings, key) {
+  const val = settings?.[key];
+  if (val === undefined || val === null) return true;
+  return val === true || val === 1 || val === 'true' || val === '1';
+}
+
 export function getDefaultNotificationSettings() {
   const defaults = {};
   NOTIFICATION_SETTINGS.forEach((row) => { defaults[row.key] = true; });
   return defaults;
+}
+
+export function isNotificationEnabled(notificationType, userSettings) {
+  const meta = NOTIFICATION_TYPES[notificationType];
+  if (!meta) return true;
+  return isSettingOn(parseNotificationSettings(userSettings), meta.settingKey);
 }

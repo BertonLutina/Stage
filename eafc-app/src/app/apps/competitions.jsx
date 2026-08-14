@@ -14,7 +14,6 @@ import {
   GamerProfileShell,
   GlassIconButton,
   CYAN,
-  GAMER_BG,
 } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT, PitchAtmosphere, SectionCard } from '@/components/dashboard/CommandCenterUI';
 import { headingStyle, headingStyleSm } from '@/lib/fonts';
@@ -43,7 +42,7 @@ export default function CompetitionsScreen() {
   return (
     <GamerProfileShell>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: GAMER_BG }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 }}>
           <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
           <Text style={{ color: '#fff', fontWeight: '900', marginLeft: 12, fontSize: 16 }}>COMPETITIONS</Text>

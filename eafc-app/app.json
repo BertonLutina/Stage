@@ -17,26 +17,21 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0F0F0F"
       },
-      "package": "com.eafc.platform"
+      "package": "com.eafc.platform",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.eafc.platform",
-      "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"]
-      },
-      "entitlements": {
-        "aps-environment": "development"
-      }
+      "appleTeamId": "SN94V6837Q"
     },
     "plugins": [
-      [
-        "onesignal-expo-plugin",
-        {
-          "mode": "development",
-          "disableLocation": true
-        }
-      ],
       "expo-image-picker",
       "expo-av",
       [
@@ -47,11 +42,21 @@
       ],
       "expo-router",
       "expo-font",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "development",
+          "devTeam": "SN94V6837Q"
+        }
+      ]
     ],
     "extra": {
       "router": {
         "appRoot": "src/app"
+      },
+      "eas": {
+        "projectId": "3af5dbe7-a3dd-4462-b872-7603a6b6572f"
       }
     }
   }

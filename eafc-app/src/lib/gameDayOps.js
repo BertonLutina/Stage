@@ -23,17 +23,28 @@ export function minutesUntil(dateValue) {
   return Math.round((date.getTime() - Date.now()) / 60000);
 }
 
+export function sameId(a, b) {
+  if (a == null || b == null || a === '' || b === '') return false;
+  return String(a) === String(b);
+}
+
+export function isClubGameDayMatch(game) {
+  if (game?.mode === 'club') return true;
+  if (game?.mode === 'solo') return false;
+  return Boolean(game?.home_club_id || game?.away_club_id);
+}
+
 export function resolveMatchSides(game, myClub, myPlayer) {
-  const isClubMatch = game?.mode === 'club';
-  const isSoloMatch = game?.mode === 'solo' || (!game?.mode && game?.home_player_id);
+  const isClubMatch = isClubGameDayMatch(game);
+  const isSoloMatch = game?.mode === 'solo' || (!isClubMatch && Boolean(game?.home_player_id));
   const homeName = isClubMatch ? (game?.home_club_name || 'Home') : (game?.home_player_name || 'Home');
   const awayName = isClubMatch ? (game?.away_club_name || 'Away') : (game?.away_player_name || 'Away');
   const isMyMatch = isClubMatch
-    ? Boolean(myClub && (game?.home_club_id === myClub.id || game?.away_club_id === myClub.id))
-    : Boolean(myPlayer && (game?.home_player_id === myPlayer.id || game?.away_player_id === myPlayer.id));
+    ? Boolean(myClub && (sameId(game?.home_club_id, myClub.id) || sameId(game?.away_club_id, myClub.id)))
+    : Boolean(myPlayer && (sameId(game?.home_player_id, myPlayer.id) || sameId(game?.away_player_id, myPlayer.id)));
   const amIHomeTeam = isClubMatch
-    ? Boolean(myClub && game?.home_club_id === myClub.id)
-    : Boolean(myPlayer && game?.home_player_id === myPlayer.id);
+    ? Boolean(myClub && sameId(game?.home_club_id, myClub.id))
+    : Boolean(myPlayer && sameId(game?.home_player_id, myPlayer.id));
   return { isClubMatch, isSoloMatch, homeName, awayName, isMyMatch, amIHomeTeam };
 }
 
@@ -55,7 +66,7 @@ export function bothDressingRoomsReady(isClubMatch, counts) {
 }
 
 export async function loadDressingCounts(game) {
-  if (!game?.id || game.mode !== 'club') return { home: 0, away: 0 };
+  if (!game?.id || !isClubGameDayMatch(game)) return { home: 0, away: 0 };
   const rows = await stageClient.entities.DressingRoom.filter({ match_id: game.id }, null, 10).catch(() => []);
   const next = { home: 0, away: 0 };
   for (const row of rows || []) {
@@ -95,7 +106,7 @@ export function buildResultPayload({
   goalEvents = [],
   proofUrl,
 }) {
-  const isClubMatch = game?.mode === 'club';
+  const isClubMatch = isClubGameDayMatch(game);
   const derived = {};
   seatedPlayers.forEach((p) => { derived[p.id] = { goals: 0, assists: 0 }; });
   goalEvents.forEach((ev) => {

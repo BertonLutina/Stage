@@ -33,6 +33,7 @@ import { headingStyleLg } from '@/lib/fonts';
 const PRIMARY_TABS_OWNER = [
   { id: 'history', label: 'History' },
   { id: 'contracts', label: 'Contracts' },
+  { id: 'more', label: 'More' },
 ];
 
 const PRIMARY_TABS_PUBLIC = [
@@ -90,7 +91,7 @@ export default function PresidentProfileScreen({
   topLeftExtra = null,
   onOpenClub,
 }) {
-  const { user: me } = useAuthStore();
+  const { user: me, logout } = useAuthStore();
   const params = useLocalSearchParams();
   const router = useRouter();
   const presidentId = presidentIdProp || params?.presidentId || null;
@@ -176,7 +177,7 @@ export default function PresidentProfileScreen({
     if (onOpenClub) onOpenClub(id);
     else {
       router.push({
-        pathname: isOwn ? '/teams/manageteamscreen' : '/teams/teamprofilescreen',
+        pathname: '/teams/teamprofilescreen',
         params: { teamId: String(id) },
       });
     }
@@ -204,11 +205,11 @@ export default function PresidentProfileScreen({
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: embedded ? 40 : 120 }}>
       <View>
         <GamerBanner
-          bannerUrl={president.banner_url}
+          bannerUrl={president.banner_url || club?.banner_url}
           wash="president"
           height={132}
-          topLeft={topLeftExtra || (!embedded ? <GlassIconButton icon="arrow-back" onPress={() => router.back()} /> : null)}
-          topRight={hideChrome ? null : (isOwn ? <GlassTextButton label="Edit" icon="create-outline" onPress={() => {}} /> : null)}
+          topLeft={topLeftExtra || (!embedded ? <GlassIconButton icon="arrow-back" onPress={() => router.back()} accessibilityLabel="Back" /> : null)}
+          topRight={hideChrome ? null : (isOwn ? <GlassTextButton label="Edit" icon="settings-outline" onPress={() => router.push('/(tabs)/profile/editprofilescreen')} /> : null)}
         />
         <View style={{ paddingHorizontal: 16, marginTop: -72, zIndex: 10, gap: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
@@ -244,51 +245,23 @@ export default function PresidentProfileScreen({
                 {successLabel ? <GamerMetaPill>{successLabel}</GamerMetaPill> : null}
                 {president.management_style ? <GamerMetaPill>{president.management_style}</GamerMetaPill> : null}
                 {sinceDate ? <GamerMetaPill icon="time-outline" iconColor={AMBER}>Since {sinceDate}</GamerMetaPill> : null}
+                {(club?.name || president.club_id) ? (
+                  <GamerMetaPill icon="shield" iconColor={AMBER} onPress={openClub}>
+                    {club?.name || 'Club'}
+                  </GamerMetaPill>
+                ) : null}
               </View>
             </View>
           </View>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            {(club?.id || president.club_id) ? (
-              <TouchableOpacity
-                onPress={openClub}
-                activeOpacity={0.85}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 8,
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.12)',
-                  backgroundColor: 'rgba(0,0,0,0.4)',
-                  paddingHorizontal: 10,
-                  paddingVertical: 8,
-                  maxWidth: '48%',
-                }}
-              >
-                <View
-                  style={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: 12,
-                    overflow: 'hidden',
-                    backgroundColor: '#101827',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {club?.logo_url ? (
-                    <Image source={{ uri: club.logo_url }} style={{ width: 24, height: 24 }} />
-                  ) : (
-                    <Ionicons name="shield" size={12} color={AMBER} />
-                  )}
-                </View>
-                <Text numberOfLines={1} style={{ color: 'rgba(255,255,255,0.85)', fontWeight: '700', fontSize: 11, flexShrink: 1 }}>
-                  {club?.name || 'Club'}
-                </Text>
-              </TouchableOpacity>
-            ) : null}
-            <TouchableOpacity onPress={openClub} activeOpacity={0.88} style={{ flex: 1 }}>
+          {!embedded && (club?.id || president.club_id) ? (
+            <TouchableOpacity
+              onPress={openClub}
+              activeOpacity={0.88}
+              accessibilityRole="button"
+              accessibilityLabel={isOwn ? 'Manage club' : 'View club'}
+              style={{ minHeight: 44 }}
+            >
               <LinearGradient
                 colors={['#FFD60A', '#C9A227']}
                 start={{ x: 0, y: 0 }}
@@ -300,7 +273,7 @@ export default function PresidentProfileScreen({
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
-          </View>
+          ) : null}
 
           {president.quote ? (
             <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: '600' }} numberOfLines={2}>
@@ -466,6 +439,38 @@ export default function PresidentProfileScreen({
             )}
           </View>
         )}
+
+        {tab === 'more' && isOwn ? (
+          <TouchableOpacity
+            onPress={async () => {
+              await logout();
+              router.replace('/auth/loginscreen');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Sign out"
+            activeOpacity={0.85}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              minHeight: 56,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.12)',
+              backgroundColor: 'rgba(255,255,255,0.03)',
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+            }}
+          >
+            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="log-out-outline" size={18} color="rgba(255,255,255,0.7)" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Sign out</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 2 }}>End this session</Text>
+            </View>
+          </TouchableOpacity>
+        ) : null}
       </View>
     </ScrollView>
   );

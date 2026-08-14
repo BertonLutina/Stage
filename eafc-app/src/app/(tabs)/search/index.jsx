@@ -7,8 +7,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { readAccountMode } from '@/lib/accountMode';
 import { getMiniAppGroups, filterMiniAppGroups } from '@/lib/miniApps';
-import { readStageTheme } from '@/lib/stageTheme';
 import { headingStyle, headingStyleSm } from '@/lib/fonts';
+import { GamerProfileShell, useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
 
 function AppTile({ item, onPress, theme }) {
   const ready = Boolean(item.ready);
@@ -75,7 +75,7 @@ export default function SearchIndex() {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const mode = readAccountMode() || 'player';
-  const theme = useMemo(() => readStageTheme(), [query, mode]);
+  const theme = useGamerTokens();
 
   const groups = useMemo(
     () => filterMiniAppGroups(getMiniAppGroups(mode), query),
@@ -92,9 +92,9 @@ export default function SearchIndex() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.bg }}>
+    <GamerProfileShell>
       <StatusBar barStyle={theme.barStyle} translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 }}>
           <Text style={[headingStyleSm, { color: theme.primary, fontSize: 10, letterSpacing: 2, opacity: 0.8 }]}>
             STAGE
@@ -199,6 +199,6 @@ export default function SearchIndex() {
           )}
         </ScrollView>
       </SafeAreaView>
-    </View>
+    </GamerProfileShell>
   );
 }

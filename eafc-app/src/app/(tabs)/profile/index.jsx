@@ -19,7 +19,6 @@ import {
   GlassIconButton,
   GlassTextButton,
   IdentityRail,
-  GAMER_BG,
 } from '@/components/profile/gamer/GamerProfileUI';
 import ClubProfileTabs from './clubProfileTabs';
 import { headingStyleLg } from '@/lib/fonts';
@@ -380,11 +379,8 @@ export default function ProfileIndex() {
 
   const openClub = (teamId) => {
     if (!teamId) return;
-    const ownsClub =
-      identities.presidentClub?.id != null
-      && String(identities.presidentClub.id) === String(teamId);
     router.push({
-      pathname: ownsClub ? '/teams/manageteamscreen' : '/teams/teamprofilescreen',
+      pathname: '/teams/teamprofilescreen',
       params: { teamId: String(teamId) },
     });
   };
@@ -435,7 +431,7 @@ export default function ProfileIndex() {
   return (
     <GamerProfileShell>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: 88, backgroundColor: GAMER_BG }}>
+      <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: 88, backgroundColor: 'transparent' }}>
         <View style={{ flex: 1 }}>
           {surface === 'player' && (
             <ProfileScreen

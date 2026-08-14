@@ -1,18 +1,20 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { CYAN } from '@/components/profile/gamer/GamerProfileUI';
+import LiveGlass from '@/components/theme/LiveGlass';
+import { useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
 import { headingStyleSm } from '@/lib/fonts';
 
 export default function SettingsSection({ title, description, icon, children, action }) {
+  const tokens = useGamerTokens();
   return (
-    <View
+    <LiveGlass
+      intensity={36}
       style={{
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.10)',
-        backgroundColor: 'rgba(255,255,255,0.03)',
-        overflow: 'hidden',
+        borderColor: tokens.hairline,
+        backgroundColor: tokens.live ? 'transparent' : tokens.card,
       }}
     >
       <View
@@ -24,8 +26,11 @@ export default function SettingsSection({ title, description, icon, children, ac
           paddingHorizontal: 14,
           paddingVertical: 12,
           borderBottomWidth: 1,
-          borderBottomColor: 'rgba(255,255,255,0.08)',
-          backgroundColor: 'rgba(0,240,255,0.05)',
+          borderBottomColor: tokens.hairline,
+          backgroundColor: 'transparent',
+          overflow: 'hidden',
+          borderTopLeftRadius: 16,
+          borderTopRightRadius: 16,
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, flex: 1 }}>
@@ -35,20 +40,20 @@ export default function SettingsSection({ title, description, icon, children, ac
                 width: 36,
                 height: 36,
                 borderRadius: 10,
-                backgroundColor: 'rgba(0,240,255,0.10)',
+                backgroundColor: tokens.tileFill,
                 borderWidth: 1,
-                borderColor: 'rgba(0,240,255,0.20)',
+                borderColor: tokens.cyanBorder,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Ionicons name={icon} size={16} color={CYAN} />
+              <Ionicons name={icon} size={16} color={tokens.cyan} />
             </View>
           ) : null}
           <View style={{ flex: 1 }}>
-            <Text style={[headingStyleSm, { color: 'rgba(255,255,255,0.92)', fontSize: 12 }]}>{title}</Text>
+            <Text style={[headingStyleSm, { color: tokens.text, fontSize: 12 }]}>{title}</Text>
             {description ? (
-              <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 3, lineHeight: 16 }}>
+              <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 3, lineHeight: 16 }}>
                 {description}
               </Text>
             ) : null}
@@ -57,6 +62,6 @@ export default function SettingsSection({ title, description, icon, children, ac
         {action}
       </View>
       <View style={{ padding: 14 }}>{children}</View>
-    </View>
+    </LiveGlass>
   );
 }

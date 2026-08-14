@@ -9,14 +9,21 @@ export const LIVE_DARK_BLUR_MAX = 16;
 export const LIVE_DARK_OVERLAY_MIN = 0;
 export const LIVE_DARK_OVERLAY_MAX = 0.85;
 
+const trophiesBg = require('../assets/live-dark/trophies.jpg');
+const wisBg = require('../assets/live-dark/wis.jpg');
+const hiwBg = require('../assets/live-dark/hiw.jpg');
+
+const FIXED_IMAGES = [trophiesBg, wisBg, hiwBg];
+const FIXED_IDS = ['trophies', 'wis', 'hiw'];
+
 export const LIVE_DARK_BG_OPTIONS = [
   { id: 'daily', labelKey: 'stgLiveDarkBgDaily', descKey: 'stgLiveDarkBgDailyDesc' },
-  { id: 'trophies', labelKey: 'stgLiveDarkBgTrophies' },
-  { id: 'wis', labelKey: 'stgLiveDarkBgWis' },
-  { id: 'hiw', labelKey: 'stgLiveDarkBgHiw' },
+  { id: 'trophies', labelKey: 'stgLiveDarkBgTrophies', src: trophiesBg },
+  { id: 'wis', labelKey: 'stgLiveDarkBgWis', src: wisBg },
+  { id: 'hiw', labelKey: 'stgLiveDarkBgHiw', src: hiwBg },
 ];
 
-const DEFAULT_FX = { blur: 0, overlay: 0.45 };
+const DEFAULT_FX = { blur: 0, overlay: 0.18 };
 
 function normalizeSlots(raw) {
   const slots = Array.from({ length: LIVE_DARK_MAX_UPLOADS }, () => '');
@@ -100,4 +107,38 @@ export function setLiveDarkFx(patch) {
   next.overlay = Math.min(LIVE_DARK_OVERLAY_MAX, Math.max(LIVE_DARK_OVERLAY_MIN, Number(next.overlay) || 0));
   localStorage.setItem(LIVE_DARK_FX_KEY, JSON.stringify(next));
   return next;
+}
+
+function isCustomId(id) {
+  return typeof id === 'string' && /^custom-\d+$/.test(id);
+}
+
+function customIndex(id) {
+  const match = String(id).match(/^custom-(\d+)$/);
+  return match ? Number(match[1]) : -1;
+}
+
+function dayIndex() {
+  return Math.floor(Date.now() / 86_400_000);
+}
+
+export function getLiveDarkBackgroundUrl(preference = getLiveDarkBgPreference()) {
+  if (isCustomId(preference)) {
+    const src = getLiveDarkUploadSlots()[customIndex(preference)];
+    if (src) return src;
+  }
+  if (preference && preference !== 'daily') {
+    const fixed = LIVE_DARK_BG_OPTIONS.find((opt) => opt.id === preference && opt.src);
+    if (fixed?.src) return fixed.src;
+  }
+  const pool = [...FIXED_IMAGES, ...getLiveDarkUploadSlots().filter(Boolean)];
+  return pool[dayIndex() % Math.max(pool.length, 1)] || trophiesBg;
+}
+
+export function getLiveDarkImageSource(preference) {
+  const src = getLiveDarkBackgroundUrl(preference);
+  if (src == null) return null;
+  if (typeof src === 'number' || (typeof src === 'object' && src)) return src;
+  if (typeof src === 'string') return { uri: src };
+  return src;
 }

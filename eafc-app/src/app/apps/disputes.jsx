@@ -19,7 +19,6 @@ import {
   GamerProfileShell,
   GlassIconButton,
   CYAN,
-  GAMER_BG,
 } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT, SectionCard } from '@/components/dashboard/CommandCenterUI';
 import { formatSideClaim } from '@/lib/gameDayResultFlow';
@@ -101,7 +100,7 @@ export default function AdminDisputesScreen() {
   return (
     <GamerProfileShell>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: GAMER_BG }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 }}>
           <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
           <Text style={{ color: '#fff', fontWeight: '900', marginLeft: 12 }}>RESULTS & PROOFS</Text>
@@ -111,6 +110,7 @@ export default function AdminDisputesScreen() {
         ) : !isStageAdmin(user) ? (
           <Text style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: 40 }}>Admin only</Text>
         ) : (
+          <>
           <ScrollView
             contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, gap: 10 }}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={CYAN} />}
@@ -179,6 +179,7 @@ export default function AdminDisputesScreen() {
             })}
           </ScrollView>
           <ProofPreview preview={preview} onClose={() => setPreview(null)} />
+          </>
         )}
       </SafeAreaView>
     </GamerProfileShell>

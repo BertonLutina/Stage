@@ -18,7 +18,6 @@ import {
   GamerRecordStrip,
   GamerTabNav,
   GamerSectionCard,
-  GamerStatTile,
   GlassIconButton,
   GlassTextButton,
   EmptyTabPanel,
@@ -29,10 +28,8 @@ import PlayerShowcase from '@/components/profile/PlayerShowcase';
 
 /** One primary rail — extras live under More. */
 const PRIMARY_TABS = [
-  { id: 'matches', label: 'Matches' },
   { id: 'feed', label: 'Feed' },
   { id: 'showcase', label: 'Showcase' },
-  { id: 'stats', label: 'Stats' },
   { id: 'more', label: 'More' },
 ];
 
@@ -45,48 +42,6 @@ const MORE_TOOLS = [
 
 function formatPositions(player) {
   return [player?.position, player?.secondary_position].filter(Boolean).join(' / ');
-}
-
-function MatchRow({ match, playerId }) {
-  const isHome = match.home_player_id === playerId;
-  const opponent = isHome ? match.away_player_name : match.home_player_name;
-  const myScore = isHome ? match.home_score : match.away_score;
-  const theirScore = isHome ? match.away_score : match.home_score;
-  const outcome = myScore > theirScore ? 'W' : myScore < theirScore ? 'L' : 'D';
-  const chip = outcome === 'W'
-    ? { bg: 'rgba(16,185,129,0.15)', color: '#34D399' }
-    : outcome === 'L'
-      ? { bg: 'rgba(244,63,94,0.15)', color: '#FB7185' }
-      : { bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.55)' };
-
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        minHeight: 52,
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
-        backgroundColor: 'rgba(255,255,255,0.03)',
-        paddingHorizontal: 12,
-        paddingVertical: 12,
-      }}
-    >
-      <View style={{ backgroundColor: chip.bg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, minWidth: 32, alignItems: 'center' }}>
-        <Text style={{ color: chip.color, fontWeight: '900', fontSize: 11 }}>{outcome}</Text>
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }} numberOfLines={1}>
-          vs {opponent || 'Unknown'}
-        </Text>
-      </View>
-      <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>
-        {myScore ?? 0}–{theirScore ?? 0}
-      </Text>
-    </View>
-  );
 }
 
 /**
@@ -113,10 +68,9 @@ export default function ProfileScreen({
   const [player, setPlayer] = useState(playerProp);
   const [signedClub, setSignedClub] = useState(signedClubProp);
   const [loading, setLoading] = useState(!playerProp);
-  const [tab, setTab] = useState('matches');
+  const [tab, setTab] = useState('feed');
   const [moreTool, setMoreTool] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [pvpMatches, setPvpMatches] = useState([]);
   const [leaving, setLeaving] = useState(false);
 
   const isOwn = !viewingOther;
@@ -174,21 +128,6 @@ export default function ProfileScreen({
     })();
     return () => { cancelled = true; };
   }, [playerProp, signedClubProp, isOwn, params?.userId, params?.playerId]);
-
-  useEffect(() => {
-    if (!player?.id) return;
-    let cancelled = false;
-    Promise.all([
-      stageClient.entities.Match.filter({ home_player_id: player.id, status: 'completed' }, '-updated_date', 20).catch(() => []),
-      stageClient.entities.Match.filter({ away_player_id: player.id, status: 'completed' }, '-updated_date', 20).catch(() => []),
-    ]).then(([home, away]) => {
-      if (cancelled) return;
-      const map = new Map();
-      [...(home || []), ...(away || [])].forEach((m) => { if (m?.id) map.set(m.id, m); });
-      setPvpMatches([...map.values()]);
-    });
-    return () => { cancelled = true; };
-  }, [player?.id]);
 
   const pickAndUploadAvatar = async () => {
     if (!isOwn || uploading || !player?.id) return;
@@ -266,30 +205,20 @@ export default function ProfileScreen({
     );
   };
 
-  const clubId = presidentClub?.id || signedClub?.id;
-  const clubName = presidentClub?.name || signedClub?.name;
-
   const bannerActions = hideChrome ? null : (
-    <>
-      {isOwn ? (
-        <GlassTextButton
-          label="Edit"
-          icon="settings-outline"
-          onPress={() => router.push('/(tabs)/profile/editprofilescreen')}
-        />
-      ) : null}
-      {isOwn ? (
-        <GlassIconButton
-          icon="log-out-outline"
-          onPress={async () => {
-            await logout();
-            router.replace('/auth/loginscreen');
-          }}
-        />
-      ) : (
-        <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
-      )}
-    </>
+    isOwn ? (
+      <GlassTextButton
+        label="Edit"
+        icon="settings-outline"
+        onPress={() => router.push('/(tabs)/profile/editprofilescreen')}
+      />
+    ) : (
+      <GlassIconButton
+        icon="arrow-back"
+        onPress={() => router.back()}
+        accessibilityLabel="Back"
+      />
+    )
   );
 
   const moreItems = MORE_TOOLS.filter((t) => !t.ownOnly || isOwn);
@@ -369,6 +298,70 @@ export default function ProfileScreen({
             <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.35)" />
           </TouchableOpacity>
         ))}
+        {isOwn && signedClub?.id ? (
+          <TouchableOpacity
+            onPress={leaveClub}
+            disabled={leaving}
+            accessibilityRole="button"
+            accessibilityLabel="Leave club"
+            activeOpacity={0.85}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              minHeight: 56,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: 'rgba(251,113,133,0.35)',
+              backgroundColor: 'rgba(251,113,133,0.08)',
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+            }}
+          >
+            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(251,113,133,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="exit-outline" size={18} color="#FB7185" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#FB7185', fontWeight: '800', fontSize: 14 }}>
+                {leaving ? 'Leaving…' : 'Leave club'}
+              </Text>
+              <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 2 }}>
+                End your contracts and return as a free agent
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ) : null}
+        {isOwn ? (
+          <TouchableOpacity
+            onPress={async () => {
+              await logout();
+              router.replace('/auth/loginscreen');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Sign out"
+            activeOpacity={0.85}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              minHeight: 56,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.12)',
+              backgroundColor: 'rgba(255,255,255,0.03)',
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+            }}
+          >
+            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="log-out-outline" size={18} color="rgba(255,255,255,0.7)" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Sign out</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 2 }}>End this session</Text>
+            </View>
+          </TouchableOpacity>
+        ) : null}
       </View>
     );
   };
@@ -458,74 +451,40 @@ export default function ProfileScreen({
             </View>
           </View>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            {clubId ? (
-              <TouchableOpacity
-                onPress={() => openClub(clubId)}
-                activeOpacity={0.85}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 8,
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.12)',
-                  backgroundColor: 'rgba(0,0,0,0.4)',
-                  paddingHorizontal: 10,
-                  paddingVertical: 8,
-                  maxWidth: '42%',
-                }}
-              >
-                <Ionicons name="shield" size={14} color={CYAN} />
-                <Text numberOfLines={1} style={{ color: 'rgba(255,255,255,0.85)', fontWeight: '700', fontSize: 11, flexShrink: 1 }}>
-                  {clubName || 'Club'}
-                </Text>
-              </TouchableOpacity>
-            ) : null}
-            {isOwn && signedClub?.id ? (
-              <TouchableOpacity
-                onPress={leaveClub}
-                disabled={leaving}
-                activeOpacity={0.85}
-                style={{
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: 'rgba(251,113,133,0.35)',
-                  backgroundColor: 'rgba(251,113,133,0.08)',
-                  paddingHorizontal: 12,
-                  paddingVertical: 13,
-                }}
-              >
-                <Text style={{ color: '#FB7185', fontSize: 11, fontWeight: '900', letterSpacing: 1 }}>
-                  {leaving ? 'LEAVING…' : 'LEAVE'}
-                </Text>
-              </TouchableOpacity>
-            ) : null}
+          {!isOwn ? (
             <TouchableOpacity
-              onPress={() => (isOwn ? router.push('/(tabs)/dashboard') : null)}
+              onPress={() => {}}
               activeOpacity={0.88}
-              style={{ flex: 1 }}
-              disabled={!isOwn}
+              accessibilityRole="button"
+              accessibilityLabel="Follow"
+              style={{ minHeight: 44 }}
             >
               <LinearGradient
                 colors={['#00F0FF', '#00C2B3']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={{ paddingVertical: 13, borderRadius: 12, alignItems: 'center', opacity: isOwn ? 1 : 0.5 }}
+                style={{ paddingVertical: 13, borderRadius: 12, alignItems: 'center' }}
               >
                 <Text style={{ color: '#041018', fontSize: 12, fontWeight: '900', letterSpacing: 1.4, textTransform: 'uppercase' }}>
-                  {isOwn ? 'Dashboard' : 'Follow'}
+                  Follow
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
-          </View>
+          ) : null}
 
           {hasRecord ? (
             <GamerRecordStrip wins={wins} draws={draws} losses={losses} />
           ) : (
-            <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, fontWeight: '600' }}>
-              No match record yet
-            </Text>
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/matches')}
+              accessibilityRole="button"
+              accessibilityLabel="Open Game Day"
+              style={{ minHeight: 44, justifyContent: 'center' }}
+            >
+              <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 13, fontWeight: '700' }}>
+                No match record yet — open Game Day
+              </Text>
+            </TouchableOpacity>
           )}
 
           {player.bio ? (
@@ -544,33 +503,18 @@ export default function ProfileScreen({
           accent="cyan"
         />
 
-        {tab === 'matches' && (
-          pvpMatches.length === 0 ? (
-            <EmptyTabPanel icon="flash-outline" title="No matches yet" hint="Completed PvP games will show here." />
-          ) : (
-            <View style={{ gap: 8 }}>
-              {pvpMatches.slice(0, 30).map((m) => (
-                <MatchRow key={m.id} match={m} playerId={player.id} />
-              ))}
-            </View>
-          )
-        )}
-
         {tab === 'feed' && (
-          <EmptyTabPanel icon="newspaper-outline" title="No posts yet" hint="Share updates from your player feed." />
+          <EmptyTabPanel
+            icon="newspaper-outline"
+            title="No posts yet"
+            hint="Share updates from your player feed."
+            actionLabel={isOwn ? 'Create post' : undefined}
+            onAction={isOwn ? () => router.push('/social') : undefined}
+          />
         )}
 
         {tab === 'showcase' && (
           <PlayerShowcase player={player} canEdit={isOwn} />
-        )}
-
-        {tab === 'stats' && (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-            <GamerStatTile label="Wins" value={wins} accent="green" />
-            <GamerStatTile label="Draws" value={draws} />
-            <GamerStatTile label="Losses" value={losses} accent="rose" />
-            <GamerStatTile label="OVR" value={player.overall_rating ?? 70} accent="amber" />
-          </View>
         )}
 
         {tab === 'more' && renderMore()}

@@ -63,4 +63,18 @@ describe('mobile match / tournament / season parity wiring', () => {
     expect(read('../../app/apps/competitions/[slug].jsx')).toMatch(/createMatchFromFixture/);
     expect(read('../../app/apps/leagues/[slug].jsx')).toMatch(/regional_league/);
   });
+
+  test('mobile socket joins STAGE rooms and Game Day pages subscribe', () => {
+    const socket = read('../../lib/SocketContext.js');
+    const protocol = read('../../lib/socketRealtime.js');
+    expect(protocol).toMatch(/JOINLEAVEROOM/);
+    expect(socket).toMatch(/io\(/);
+    expect(socket).toMatch(/SocketProvider/);
+    expect(socket).toMatch(/['"]update['"]/);
+    expect(read('../../app/_layout.jsx')).toMatch(/SocketProvider/);
+    expect(read('../../hooks/useMatchesHub.js')).toMatch(/entities\.Match\.subscribe/);
+    expect(read('../../app/(tabs)/matches/matchdetailscreen.jsx')).toMatch(/entities\.Match\.subscribe/);
+    expect(read('../../app/(tabs)/matches/matchdetailscreen.jsx')).toMatch(/entities\.DressingRoom\.subscribe/);
+    expect(read('../../components/matches/GameDayDressingRoom.jsx')).toMatch(/entities\.DressingRoom\.subscribe/);
+  });
 });

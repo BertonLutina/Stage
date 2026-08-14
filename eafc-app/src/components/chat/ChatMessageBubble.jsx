@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, TouchableOpacity, Image, Linking, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Image, Linking, StyleSheet, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import STText from '../common/STText';
+import { AMBER } from '../profile/gamer/GamerProfileUI';
 
 function parseMetadata(meta) {
   if (!meta) return {};
@@ -15,66 +15,71 @@ function parseMetadata(meta) {
   return meta;
 }
 
-export default function ChatMessageBubble({ item, isMe, baseUrl = '', onPollVote, currentUserId }) {
+function formatTime(value) {
+  if (!value) return '';
+  return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+export default function ChatMessageBubble({ item, isMe, baseUrl = '', onPollVote, currentUserId, showSender = true }) {
   const type = item.message_type || 'text';
   const meta = parseMetadata(item.media_metadata);
   const mediaUrl = item.media_url ? (item.media_url.startsWith('http') ? item.media_url : `${baseUrl}${item.media_url}`) : null;
+  const time = formatTime(item.created_at || item.created_date);
 
   const renderContent = () => {
     switch (type) {
       case 'photo':
       case 'gif':
-        if (!mediaUrl) return <STText className="text-muted">[Photo]</STText>;
+        if (!mediaUrl) return <Text style={styles.muted}>[Photo]</Text>;
         return (
-          <Image source={{ uri: mediaUrl }} className="rounded-xl" style={{ width: 240, height: 180 }} resizeMode="cover" />
+          <Image source={{ uri: mediaUrl }} style={styles.photo} resizeMode="cover" />
         );
       case 'video':
-        if (!mediaUrl) return <STText className="text-muted">[Video]</STText>;
+        if (!mediaUrl) return <Text style={styles.muted}>[Video]</Text>;
         return (
-          <TouchableOpacity onPress={() => Linking.openURL(mediaUrl)}>
-            <View className="rounded-xl overflow-hidden bg-black/50 w-48 h-32 items-center justify-center">
-              <STText className="text-white font-semibold">▶ Play video</STText>
-            </View>
+          <TouchableOpacity onPress={() => Linking.openURL(mediaUrl)} style={styles.video}>
+            <Ionicons name="play" size={28} color="#fff" />
+            <Text style={styles.videoLabel}>Play video</Text>
           </TouchableOpacity>
         );
       case 'link':
         return (
-          <TouchableOpacity onPress={() => Linking.openURL(mediaUrl || item.content)} className="rounded-xl border border-white/20 p-3 bg-white/5">
-            <STText className="text-primary text-sm font-semibold">{meta.title || 'Link'}</STText>
-            {meta.description && <STText className="text-muted text-xs mt-1">{meta.description}</STText>}
-            <STText className="text-gray-500 text-xs mt-1">{item.content || mediaUrl}</STText>
+          <TouchableOpacity onPress={() => Linking.openURL(mediaUrl || item.content)} style={styles.linkCard}>
+            <Text style={styles.linkTitle}>{meta.title || 'Link'}</Text>
+            {meta.description ? <Text style={styles.muted}>{meta.description}</Text> : null}
+            <Text style={styles.linkUrl} numberOfLines={1}>{item.content || mediaUrl}</Text>
           </TouchableOpacity>
         );
       case 'audio':
         return (
-          <View className="flex-row items-center gap-2 py-2">
-            <View className="w-10 h-10 rounded-full bg-white/20 items-center justify-center">
-              <STText className="text-white font-bold">♪</STText>
+          <View style={styles.audioRow}>
+            <View style={styles.audioIcon}>
+              <Ionicons name="mic" size={16} color={AMBER} />
             </View>
             <View>
-              <STText className="text-white text-sm">{meta.duration ? `${meta.duration}s` : 'Voice note'}</STText>
-              {mediaUrl && (
+              <Text style={styles.body}>{meta.duration ? `${meta.duration}s` : 'Voice note'}</Text>
+              {mediaUrl ? (
                 <TouchableOpacity onPress={() => Linking.openURL(mediaUrl)}>
-                  <STText className="text-primary text-xs">Tap to play</STText>
+                  <Text style={styles.amberLink}>Tap to play</Text>
                 </TouchableOpacity>
-              )}
+              ) : null}
             </View>
           </View>
         );
       case 'document':
         return (
-          <TouchableOpacity onPress={() => mediaUrl && Linking.openURL(mediaUrl)} className="flex-row items-center gap-2 py-2">
-            <View className="w-10 h-10 rounded-lg bg-white/20 items-center justify-center">
-              <STText className="text-white font-bold">📄</STText>
+          <TouchableOpacity onPress={() => mediaUrl && Linking.openURL(mediaUrl)} style={styles.audioRow}>
+            <View style={styles.docIcon}>
+              <Ionicons name="document-text" size={18} color={AMBER} />
             </View>
             <View>
-              <STText className="text-white text-sm">{meta.filename || 'Document'}</STText>
-              {meta.size && <STText className="text-muted text-xs">{meta.size}</STText>}
+              <Text style={styles.body}>{meta.filename || 'Document'}</Text>
+              {meta.size ? <Text style={styles.muted}>{meta.size}</Text> : null}
             </View>
           </TouchableOpacity>
         );
       case 'sticker':
-        if (!mediaUrl) return <STText className="text-muted">[Sticker]</STText>;
+        if (!mediaUrl) return <Text style={styles.muted}>[Sticker]</Text>;
         return <Image source={{ uri: mediaUrl }} style={{ width: 80, height: 80 }} resizeMode="contain" />;
       case 'poll': {
         const options = meta.options || [];
@@ -84,13 +89,13 @@ export default function ChatMessageBubble({ item, isMe, baseUrl = '', onPollVote
 
         return (
           <View style={pollStyles.container}>
-            <STText style={pollStyles.question}>{item.content || meta.question || 'Poll'}</STText>
-            {multiple && (
+            <Text style={pollStyles.question}>{item.content || meta.question || 'Poll'}</Text>
+            {multiple ? (
               <View style={pollStyles.hintRow}>
                 <Ionicons name="checkmark-done" size={14} color="rgba(255,255,255,0.5)" />
-                <STText style={pollStyles.hint}>Select one or more</STText>
+                <Text style={pollStyles.hint}>Select one or more</Text>
               </View>
-            )}
+            ) : null}
             {options.map((opt, i) => {
               const votes = opt.votes || 0;
               const voters = opt.voters || [];
@@ -106,13 +111,11 @@ export default function ChatMessageBubble({ item, isMe, baseUrl = '', onPollVote
                   <View style={pollStyles.optionTop}>
                     <View style={pollStyles.optionLeft}>
                       <View style={[pollStyles.radio, isSelected && pollStyles.radioSelected]}>
-                        {isSelected && <Ionicons name="checkmark" size={14} color="#fff" />}
+                        {isSelected ? <Ionicons name="checkmark" size={14} color="#1A1200" /> : null}
                       </View>
-                      <STText style={pollStyles.optionText}>{opt.text || opt}</STText>
+                      <Text style={pollStyles.optionText}>{opt.text || opt}</Text>
                     </View>
-                    {votes > 0 && (
-                      <STText style={pollStyles.voteCount}>{votes}</STText>
-                    )}
+                    {votes > 0 ? <Text style={pollStyles.voteCount}>{votes}</Text> : null}
                   </View>
                   <View style={pollStyles.progressBg}>
                     <View style={[pollStyles.progressFill, { width: `${pct}%` }]} />
@@ -120,49 +123,121 @@ export default function ChatMessageBubble({ item, isMe, baseUrl = '', onPollVote
                 </TouchableOpacity>
               );
             })}
-            {totalVotes > 0 && (
-              <STText style={pollStyles.viewVotes}>View votes</STText>
-            )}
+            {totalVotes > 0 ? <Text style={pollStyles.viewVotes}>View votes</Text> : null}
           </View>
         );
       }
       case 'contact':
         return (
-          <View className="rounded-xl border border-white/20 p-3 bg-white/5">
-            <STText className="text-white font-semibold">{meta.name || 'Contact'}</STText>
-            {meta.phone && <STText className="text-muted text-sm">{meta.phone}</STText>}
+          <View style={styles.linkCard}>
+            <Text style={styles.body}>{meta.name || 'Contact'}</Text>
+            {meta.phone ? <Text style={styles.muted}>{meta.phone}</Text> : null}
           </View>
         );
       default:
-        return <STText className={isMe ? 'text-dark' : 'text-white'}>{item.content || ''}</STText>;
+        return <Text style={styles.body}>{item.content || ''}</Text>;
     }
   };
 
   return (
-    <View className={`mb-3 flex-row ${isMe ? 'justify-end' : 'justify-start'}`}>
-      <View className={`max-w-[85%] px-4 py-2 rounded-2xl ${isMe ? 'bg-primary' : 'bg-white/10 border border-white/10'}`}>
-        {!isMe && (
-          <STText className="text-primary text-xs font-semibold mb-0.5">{item.gamer_tag}</STText>
-        )}
+    <View style={[styles.row, isMe ? styles.rowMe : styles.rowThem]}>
+      <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleThem]}>
+        {!isMe && showSender ? (
+          <Text style={styles.sender}>{item.gamer_tag || 'Member'}</Text>
+        ) : null}
         {renderContent()}
-        <STText className={`text-xs mt-1 ${isMe ? 'text-dark/70' : 'text-gray-400'}`}>
-          {item.created_at ? new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-        </STText>
+        <View style={styles.metaRow}>
+          <Text style={styles.time}>{time}</Text>
+          {isMe ? (
+            <Ionicons name="checkmark-done" size={14} color={AMBER} style={{ marginLeft: 4 }} />
+          ) : null}
+        </View>
       </View>
     </View>
   );
 }
 
-const pollStyles = StyleSheet.create({
-  container: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    padding: 12,
-    minWidth: 220,
+const styles = StyleSheet.create({
+  row: { marginBottom: 6, flexDirection: 'row', paddingHorizontal: 8 },
+  rowMe: { justifyContent: 'flex-end' },
+  rowThem: { justifyContent: 'flex-start' },
+  bubble: {
+    maxWidth: '82%',
+    paddingHorizontal: 10,
+    paddingTop: 6,
+    paddingBottom: 4,
+    borderRadius: 16,
   },
-  question: { color: '#fff', fontWeight: '600', fontSize: 15, marginBottom: 4 },
+  bubbleMe: {
+    backgroundColor: 'rgba(255,214,10,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,214,10,0.28)',
+    borderBottomRightRadius: 4,
+  },
+  bubbleThem: {
+    backgroundColor: '#12182A',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderBottomLeftRadius: 4,
+  },
+  sender: {
+    color: AMBER,
+    fontSize: 11,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  body: { color: '#fff', fontSize: 15, lineHeight: 20 },
+  muted: { color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 2 },
+  photo: { width: 220, height: 164, borderRadius: 10, marginTop: 2 },
+  video: {
+    width: 200,
+    height: 120,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoLabel: { color: '#fff', fontWeight: '700', marginTop: 6 },
+  linkCard: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    padding: 10,
+    minWidth: 180,
+  },
+  linkTitle: { color: AMBER, fontWeight: '700', fontSize: 13 },
+  linkUrl: { color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 4 },
+  amberLink: { color: AMBER, fontSize: 12, marginTop: 2, fontWeight: '700' },
+  audioRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
+  audioIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,214,10,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  docIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,214,10,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 2,
+  },
+  time: { color: 'rgba(255,255,255,0.42)', fontSize: 11 },
+});
+
+const pollStyles = StyleSheet.create({
+  container: { minWidth: 220, paddingVertical: 4 },
+  question: { color: '#fff', fontWeight: '700', fontSize: 15, marginBottom: 4 },
   hintRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   hint: { color: 'rgba(255,255,255,0.5)', fontSize: 12, marginLeft: 6 },
   optionRow: { marginBottom: 10 },
@@ -179,8 +254,8 @@ const pollStyles = StyleSheet.create({
     marginRight: 10,
   },
   radioSelected: {
-    backgroundColor: 'rgba(95,227,232,0.8)',
-    borderColor: '#5FE3E8',
+    backgroundColor: AMBER,
+    borderColor: AMBER,
   },
   optionText: { color: '#fff', fontSize: 14, flex: 1 },
   voteCount: { color: 'rgba(255,255,255,0.6)', fontSize: 12 },
@@ -192,13 +267,14 @@ const pollStyles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: 'rgba(95,227,232,0.6)',
+    backgroundColor: AMBER,
     borderRadius: 2,
+    opacity: 0.7,
   },
   viewVotes: {
-    color: '#22C55E',
+    color: AMBER,
     fontSize: 12,
     marginTop: 8,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

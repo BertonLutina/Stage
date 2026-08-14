@@ -1,8 +1,29 @@
-import { isOneSignalConfigured, pathFromNotificationData } from '../../lib/oneSignal';
+import {
+  isOneSignalConfigured,
+  pathFromNotificationData,
+  getNativePushStatus,
+  syncOneSignalTags,
+} from '../../lib/oneSignal';
 
 describe('OneSignal mobile helpers', () => {
   test('is unconfigured without an app id', () => {
     expect(isOneSignalConfigured()).toBe(false);
+  });
+
+  test('reports push as unconfigured when the app id is missing', async () => {
+    await expect(getNativePushStatus()).resolves.toEqual({
+      configured: false,
+      permission: false,
+      optedIn: false,
+    });
+  });
+
+  test('writes category tags onto the OneSignal user', () => {
+    const { OneSignal } = require('react-native-onesignal');
+    expect(syncOneSignalTags({ messages: false })).toBe(true);
+    expect(OneSignal.User.addTags).toHaveBeenCalledWith(
+      expect.objectContaining({ messages: 'false', contract_offers: 'true' }),
+    );
   });
 
   test('maps Stage links to native screens', () => {
