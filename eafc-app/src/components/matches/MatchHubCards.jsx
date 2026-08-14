@@ -4,6 +4,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { CYAN, AMBER } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT } from '@/components/dashboard/CommandCenterUI';
+import LiveGlass from '@/components/theme/LiveGlass';
+import useThemeStore from '@/store/themeStore';
+import GameDayCrest from './GameDayCrest';
 
 function parseDate(d) {
   if (!d) return null;
@@ -21,8 +24,54 @@ function statusMeta(status) {
   return { label: String(status || ''), bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.55)', border: 'rgba(255,255,255,0.14)' };
 }
 
-/** Game Day style card — Live / Upcoming */
+/** Compact fixture chip for the Game Day ticker */
+export function GameDayFixtureChip({ event, selected, onPress, myClub }) {
+  const date = parseDate(event.date);
+  const status = statusMeta(event.status);
+  const live = event.status === 'in_progress';
+  const homeLogo = myClub && event.matchData?.home_club_id === myClub.id ? myClub.logo_url : null;
+  const awayLogo = myClub && event.matchData?.away_club_id === myClub.id ? myClub.logo_url : null;
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.88}
+      style={{
+        minWidth: 220,
+        maxWidth: 280,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        paddingHorizontal: 10,
+        paddingVertical: 10,
+        borderWidth: 1,
+        borderColor: selected ? '#F5C542' : 'rgba(255,255,255,0.12)',
+        backgroundColor: selected ? 'rgba(245,197,66,0.12)' : 'rgba(0,0,0,0.35)',
+      }}
+    >
+      <View style={{ flexDirection: 'row' }}>
+        <GameDayCrest name={event.homeName} imageUrl={homeLogo} size="sm" />
+        <View style={{ marginLeft: -10 }}>
+          <GameDayCrest name={event.awayName} imageUrl={awayLogo} size="sm" />
+        </View>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text numberOfLines={1} style={{ color: '#fff', fontSize: 11, fontWeight: '900', textTransform: 'uppercase' }}>
+          {event.homeName} <Text style={{ color: '#F5C542' }}>vs</Text> {event.awayName}
+        </Text>
+        <Text numberOfLines={1} style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10, marginTop: 2, letterSpacing: 0.8, textTransform: 'uppercase' }}>
+          {date
+            ? `${date.toLocaleDateString(undefined, { weekday: 'short' })} ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })} · `
+            : ''}
+          {status.label}
+        </Text>
+      </View>
+      {live ? <Ionicons name="radio" size={12} color={FUT.cyan} /> : null}
+    </TouchableOpacity>
+  );
+}
 export function GameDayMatchCard({ event, onPress }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const date = parseDate(event.date);
   const status = statusMeta(event.status);
   const m = event.matchData || {};
@@ -30,11 +79,14 @@ export function GameDayMatchCard({ event, onPress }) {
   const isLive = event.status === 'in_progress';
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.88} style={styles.gameCard}>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.88} style={styles.gameCardShadow}>
+      <LiveGlass intensity={36} style={styles.gameCardClip}>
       <LinearGradient
-        colors={isLive
-          ? ['rgba(124,255,107,0.16)', 'rgba(6,12,22,0.95)']
-          : ['rgba(0,232,255,0.12)', 'rgba(6,12,22,0.95)']}
+        colors={tokens.live
+          ? (isLive ? ['rgba(124,255,107,0.16)', 'rgba(10,18,32,0.52)'] : ['rgba(0,232,255,0.12)', 'rgba(10,18,32,0.52)'])
+          : (isLive
+            ? ['rgba(124,255,107,0.16)', 'rgba(6,12,22,0.95)']
+            : ['rgba(0,232,255,0.12)', 'rgba(6,12,22,0.95)'])}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gameInner}
@@ -95,6 +147,7 @@ export function GameDayMatchCard({ event, onPress }) {
           </View>
         )}
       </LinearGradient>
+      </LiveGlass>
     </TouchableOpacity>
   );
 }
@@ -150,16 +203,18 @@ export function ScheduleMatchRow({ event, onPress }) {
 }
 
 const styles = StyleSheet.create({
-  gameCard: {
+  gameCardShadow: {
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(0,232,255,0.28)',
-    overflow: 'hidden',
     shadowColor: FUT.cyan,
     shadowOpacity: 0.2,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
+  },
+  gameCardClip: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,232,255,0.28)',
   },
   gameInner: {
     padding: 14,

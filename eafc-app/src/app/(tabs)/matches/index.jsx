@@ -12,30 +12,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import useMatchesHub from '../../../hooks/useMatchesHub';
-import { GameDayMatchCard, ScheduleMatchRow } from '../../../components/matches/MatchHubCards';
+import { GameDayFixtureChip, ScheduleMatchRow } from '../../../components/matches/MatchHubCards';
 import ArrangeGameModal from '../../../components/matches/ArrangeGameModal';
+import GameDayKickoffArena from '../../../components/matches/GameDayKickoffArena';
 import {
   GamerProfileShell,
-  GamerTabNav,
   CYAN,
-  GAMER_BG,
+  useGamerTokens,
 } from '@/components/profile/gamer/GamerProfileUI';
-import {
-  PitchAtmosphere,
-  SectionCard,
-  SectionTitle,
-  FUT,
-} from '@/components/dashboard/CommandCenterUI';
+import { SectionCard, SectionTitle, FUT } from '@/components/dashboard/CommandCenterUI';
 import { headingStyle, headingStyleSm } from '@/lib/fonts';
-
-const TABS = [
-  { id: 'live', label: 'Live' },
-  { id: 'upcoming', label: 'Upcoming' },
-  { id: 'results', label: 'Results' },
-];
+import { MATCH_STATUS_LABEL } from '@/lib/gameDayOps';
+import { resolveCrestUrl } from '@/lib/gameDayPresentation';
 
 export default function MatchesIndex() {
   const router = useRouter();
+  const tokens = useGamerTokens();
   const params = useLocalSearchParams();
   const {
     loading,
@@ -51,11 +43,11 @@ export default function MatchesIndex() {
     myClub,
     myPlayer,
   } = useMatchesHub();
-  const [tab, setTab] = useState('upcoming');
   const [refreshing, setRefreshing] = useState(false);
   const [arrangeOpen, setArrangeOpen] = useState(false);
   const [presetOpponent, setPresetOpponent] = useState(null);
   const [presetKind, setPresetKind] = useState(null);
+  const [featuredId, setFeaturedId] = useState(null);
 
   React.useEffect(() => {
     if (!params?.arrange) return;
@@ -73,25 +65,14 @@ export default function MatchesIndex() {
     setArrangeOpen(true);
   }, [params?.arrange, params?.opponentId, params?.opponentKind, params?.opponentName, params?.opponentEmail, params?.opponentTag]);
 
-  const tabs = useMemo(
-    () => TABS.map((t) => ({
-      ...t,
-      badge: t.id === 'live' && live.length > 0
-        ? String(live.length)
-        : t.id === 'upcoming'
-          ? String(upcoming.length)
-          : String(results.length),
-    })),
-    [live.length, upcoming.length, results.length],
-  );
-
-  const list = useMemo(() => {
+  const playable = useMemo(() => {
     const applyLeague = (rows) =>
       leagueFilter === 'all' ? rows : rows.filter((e) => e.competition === leagueFilter);
-    if (tab === 'live') return applyLeague(live);
-    if (tab === 'results') return results;
-    return applyLeague(upcoming);
-  }, [tab, live, upcoming, results, leagueFilter]);
+    return [...applyLeague(live), ...applyLeague(upcoming)];
+  }, [live, upcoming, leagueFilter]);
+
+  const featured = playable.find((e) => e.id === featuredId) || playable[0] || null;
+  const featuredMatch = featured?.matchData;
 
   const openMatch = (event) => {
     router.push({
@@ -110,254 +91,178 @@ export default function MatchesIndex() {
     return (
       <GamerProfileShell>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={CYAN} size="large" />
+          <ActivityIndicator color="#F5C542" size="large" />
         </View>
       </GamerProfileShell>
     );
   }
 
-  const sectionEyebrow = tab === 'live' ? 'GAME DAY' : tab === 'upcoming' ? 'SCHEDULE' : 'ARCHIVE';
-  const sectionTitle = tab === 'live'
-    ? 'Live fixtures'
-    : tab === 'upcoming'
-      ? 'Upcoming fixtures'
-      : 'Match results';
-
   return (
     <GamerProfileShell>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: GAMER_BG }} edges={['top']}>
+      <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, gap: 14 }}
+          contentContainerStyle={{ paddingBottom: 120 }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={CYAN} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#F5C542" />
           }
         >
-          <PitchAtmosphere
-            style={{
-              borderWidth: 1.5,
-              borderColor: 'rgba(0,232,255,0.35)',
-              marginTop: 4,
-              shadowColor: FUT.cyan,
-              shadowOpacity: 0.35,
-              shadowRadius: 20,
-              shadowOffset: { width: 0, height: 10 },
-              elevation: 12,
-            }}
+          <View style={{
+            paddingHorizontal: 16,
+            paddingTop: 8,
+            paddingBottom: 14,
+            borderBottomWidth: 1,
+            borderBottomColor: 'rgba(245,197,66,0.22)',
+            backgroundColor: 'rgba(7,16,24,0.85)',
+          }}
           >
-            <View style={{ padding: 18 }}>
-              <Text style={[headingStyleSm, { color: FUT.cyan, fontSize: 10, letterSpacing: 3.2 }]}>
-                MATCH CENTER
-              </Text>
-              <Text
-                style={[
-                  headingStyle,
-                  {
-                    color: '#fff',
-                    marginTop: 6,
-                    fontSize: 26,
-                    textShadowColor: 'rgba(0,232,255,0.35)',
-                    textShadowOffset: { width: 0, height: 0 },
-                    textShadowRadius: 12,
-                  },
-                ]}
-              >
-                Matches
-              </Text>
-              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 8, lineHeight: 18 }}>
-                Game Day ops and your full schedule in one place.
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[headingStyleSm, { color: CYAN, fontSize: 10, letterSpacing: 3.2 }]}>
+                  KICKOFF
+                </Text>
+                <Text style={[headingStyle, { color: '#fff', fontSize: 32, marginTop: 4 }]}>
+                  Game Day
+                </Text>
+                <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 4 }}>
+                  {filteredGameDay.length} active · {results.length} results
+                </Text>
+              </View>
               <TouchableOpacity
                 onPress={() => setArrangeOpen(true)}
                 style={{
-                  marginTop: 14,
                   flexDirection: 'row',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  backgroundColor: CYAN,
-                  borderRadius: 12,
-                  paddingVertical: 12,
+                  gap: 6,
+                  backgroundColor: '#F5C542',
+                  paddingHorizontal: 10,
+                  paddingVertical: 10,
+                  maxWidth: 150,
                 }}
               >
-                <Ionicons name="add" size={18} color="#041018" />
-                <Text style={{ color: '#041018', fontSize: 13, fontWeight: '900', letterSpacing: 0.6 }}>
+                <Ionicons name="add" size={16} color="#041018" />
+                <Text style={{ color: '#041018', fontSize: 10, fontWeight: '900', letterSpacing: 0.4 }}>
                   ARRANGE VS FIXTURE
                 </Text>
               </TouchableOpacity>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
-                <View style={{
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: 999,
-                  backgroundColor: 'rgba(0,232,255,0.12)',
-                  borderWidth: 1,
-                  borderColor: 'rgba(0,232,255,0.35)',
-                }}
-                >
-                  <Text style={{ color: FUT.cyan, fontSize: 11, fontWeight: '900' }}>
-                    {filteredGameDay.length} ACTIVE
-                  </Text>
-                </View>
-                <View style={{
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: 999,
-                  backgroundColor: 'rgba(255,210,74,0.1)',
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,210,74,0.3)',
-                }}
-                >
-                  <Text style={{ color: FUT.gold, fontSize: 11, fontWeight: '900' }}>
-                    {results.length} RESULTS
-                  </Text>
-                </View>
-              </View>
             </View>
-          </PitchAtmosphere>
+          </View>
 
           {error ? (
-            <SectionCard accent="rose">
-              <Text style={{ color: FUT.rose, fontSize: 12 }}>{error}</Text>
-              <TouchableOpacity onPress={reload} style={{ marginTop: 8 }}>
-                <Text style={{ color: CYAN, fontSize: 12, fontWeight: '800' }}>Retry</Text>
-              </TouchableOpacity>
-            </SectionCard>
+            <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+              <SectionCard accent="rose">
+                <Text style={{ color: FUT.rose, fontSize: 12 }}>{error}</Text>
+                <TouchableOpacity onPress={reload} style={{ marginTop: 8 }}>
+                  <Text style={{ color: CYAN, fontSize: 12, fontWeight: '800' }}>Retry</Text>
+                </TouchableOpacity>
+              </SectionCard>
+            </View>
           ) : null}
 
-          <GamerTabNav tabs={tabs} active={tab} onChange={setTab} />
-
-          {tab !== 'results' && leagueGroups.length > 1 ? (
+          {leagueGroups.length > 1 ? (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8 }}
+              contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingTop: 12 }}
             >
-              <TouchableOpacity
+              <LeaguePill
+                label={`All (${filteredGameDay.length})`}
+                active={leagueFilter === 'all'}
                 onPress={() => setLeagueFilter('all')}
-                style={{
-                  borderWidth: 1,
-                  borderColor: leagueFilter === 'all' ? 'rgba(0,240,255,0.45)' : 'rgba(255,255,255,0.12)',
-                  backgroundColor: leagueFilter === 'all' ? 'rgba(0,240,255,0.14)' : 'rgba(255,255,255,0.03)',
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  borderRadius: 999,
-                }}
-              >
-                <Text style={{
-                  color: leagueFilter === 'all' ? CYAN : 'rgba(255,255,255,0.5)',
-                  fontSize: 11,
-                  fontWeight: '800',
-                }}
-                >
-                  All ({filteredGameDay.length})
-                </Text>
-              </TouchableOpacity>
-              {leagueGroups.map((g) => {
-                const active = leagueFilter === g.key;
-                return (
-                  <TouchableOpacity
-                    key={g.key}
-                    onPress={() => setLeagueFilter(g.key)}
-                    style={{
-                      borderWidth: 1,
-                      borderColor: active ? 'rgba(0,240,255,0.45)' : 'rgba(255,255,255,0.12)',
-                      backgroundColor: active ? 'rgba(0,240,255,0.14)' : 'rgba(255,255,255,0.03)',
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      borderRadius: 999,
-                      maxWidth: 220,
-                    }}
-                  >
-                    <Text
-                      numberOfLines={1}
-                      style={{
-                        color: active ? CYAN : 'rgba(255,255,255,0.5)',
-                        fontSize: 11,
-                        fontWeight: '800',
-                      }}
-                    >
-                      {g.key} ({g.count})
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+              />
+              {leagueGroups.map((g) => (
+                <LeaguePill
+                  key={g.key}
+                  label={`${g.key} (${g.count})`}
+                  active={leagueFilter === g.key}
+                  onPress={() => setLeagueFilter(g.key)}
+                />
+              ))}
             </ScrollView>
           ) : null}
 
-          <SectionCard>
-            <SectionTitle eyebrow={sectionEyebrow}>{sectionTitle}</SectionTitle>
-
-            {list.length === 0 ? (
-              <View style={{ alignItems: 'center', paddingVertical: 36, gap: 10 }}>
-                <Ionicons name="calendar-outline" size={36} color="rgba(255,255,255,0.2)" />
+          <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(0,0,0,0.28)' }}>
+            {playable.length === 0 ? (
+              <View style={{ alignItems: 'center', paddingVertical: 28, paddingHorizontal: 24, gap: 8 }}>
+                <Ionicons name="flash-outline" size={32} color="rgba(245,197,66,0.35)" />
                 <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, fontWeight: '800' }}>
-                  {tab === 'live'
-                    ? 'No live matches'
-                    : tab === 'upcoming'
-                      ? 'No upcoming fixtures'
-                      : 'No results yet'}
-                </Text>
-                <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, textAlign: 'center' }}>
-                  Arrange a VS fixture, or pull to refresh when new fixtures drop.
+                  No scheduled games
                 </Text>
                 <TouchableOpacity onPress={() => setArrangeOpen(true)}>
-                  <Text style={{ color: CYAN, fontSize: 12, fontWeight: '800' }}>Arrange VS fixture</Text>
+                  <Text style={{ color: '#F5C542', fontSize: 12, fontWeight: '800' }}>Arrange VS fixture</Text>
                 </TouchableOpacity>
               </View>
-            ) : tab === 'results' ? (
-              <View style={{
-                borderRadius: 14,
-                overflow: 'hidden',
-                borderWidth: 1,
-                borderColor: 'rgba(0,232,255,0.18)',
-                backgroundColor: 'rgba(0,0,0,0.25)',
-              }}
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}
+              >
+                {playable.map((event) => (
+                  <GameDayFixtureChip
+                    key={event.id}
+                    event={event}
+                    selected={featured?.id === event.id}
+                    myClub={myClub}
+                    onPress={() => setFeaturedId(event.id)}
+                  />
+                ))}
+              </ScrollView>
+            )}
+          </View>
+
+          {featured && featuredMatch ? (
+            <TouchableOpacity activeOpacity={0.92} onPress={() => openMatch(featured)}>
+              <GameDayKickoffArena
+                compact
+                homeName={featured.homeName}
+                awayName={featured.awayName}
+                homeLogo={resolveCrestUrl(featuredMatch, 'home', myClub, myPlayer)}
+                awayLogo={resolveCrestUrl(featuredMatch, 'away', myClub, myPlayer)}
+                homeYou={featured.isHome}
+                awayYou={!featured.isHome}
+                date={featured.date}
+                status={featured.status}
+                statusLabel={MATCH_STATUS_LABEL[featured.status] || featured.status}
+                competitionLabel={featured.competition}
+                homeScore={featuredMatch.home_score}
+                awayScore={featuredMatch.away_score}
+                wagerStc={featuredMatch.wager_stc}
+                wagerLocked={Boolean(featuredMatch.wager_home_locked && featuredMatch.wager_away_locked)}
               >
                 <View style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  paddingHorizontal: 14,
-                  paddingVertical: 10,
-                  backgroundColor: 'rgba(0,232,255,0.08)',
-                  borderBottomWidth: 1,
-                  borderBottomColor: 'rgba(255,255,255,0.08)',
+                  backgroundColor: '#F5C542',
+                  paddingVertical: 14,
+                  alignItems: 'center',
                 }}
                 >
-                  <Text style={{
-                    color: 'rgba(255,255,255,0.45)',
-                    fontSize: 10,
-                    fontWeight: '800',
-                    letterSpacing: 1.5,
-                    textTransform: 'uppercase',
-                  }}
-                  >
-                    Match
-                  </Text>
-                  <Text style={{
-                    color: 'rgba(255,255,255,0.45)',
-                    fontSize: 10,
-                    fontWeight: '800',
-                    letterSpacing: 1.5,
-                    textTransform: 'uppercase',
-                  }}
-                  >
-                    Result
-                  </Text>
+                      <Text style={[headingStyle, { color: '#041018', letterSpacing: 3, fontSize: 16 }]}>
+                        ENTER KICKOFF
+                      </Text>
                 </View>
-                {list.map((event) => (
-                  <ScheduleMatchRow key={event.id} event={event} onPress={() => openMatch(event)} />
-                ))}
-              </View>
-            ) : (
-              <View style={{ gap: 10 }}>
-                {list.map((event) => (
-                  <GameDayMatchCard key={event.id} event={event} onPress={() => openMatch(event)} />
-                ))}
-              </View>
-            )}
-          </SectionCard>
+              </GameDayKickoffArena>
+            </TouchableOpacity>
+          ) : null}
+
+          {results.length > 0 ? (
+            <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+              <SectionCard accent="gold">
+                <SectionTitle eyebrow="ARCHIVE">Match results</SectionTitle>
+                <View style={{
+                  overflow: 'hidden',
+                  borderWidth: 1,
+                  borderColor: 'rgba(245,197,66,0.18)',
+                  backgroundColor: 'rgba(0,0,0,0.25)',
+                }}
+                >
+                  {results.map((event) => (
+                    <ScheduleMatchRow key={event.id} event={event} onPress={() => openMatch(event)} />
+                  ))}
+                </View>
+              </SectionCard>
+            </View>
+          ) : null}
         </ScrollView>
         <ArrangeGameModal
           visible={arrangeOpen}
@@ -379,5 +284,32 @@ export default function MatchesIndex() {
         />
       </SafeAreaView>
     </GamerProfileShell>
+  );
+}
+
+function LeaguePill({ label, active, onPress }) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={{
+        borderWidth: 1,
+        borderColor: active ? 'rgba(245,197,66,0.55)' : 'rgba(255,255,255,0.12)',
+        backgroundColor: active ? 'rgba(245,197,66,0.14)' : 'rgba(255,255,255,0.03)',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        maxWidth: 220,
+      }}
+    >
+      <Text
+        numberOfLines={1}
+        style={{
+          color: active ? '#F5C542' : 'rgba(255,255,255,0.5)',
+          fontSize: 11,
+          fontWeight: '800',
+        }}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
   );
 }

@@ -16,15 +16,13 @@ import {
   GamerProfileShell,
   GlassIconButton,
   CYAN,
-  GAMER_BG,
 } from '@/components/profile/gamer/GamerProfileUI';
-import { FUT, PitchAtmosphere, SectionCard } from '@/components/dashboard/CommandCenterUI';
-import { headingStyle, headingStyleSm } from '@/lib/fonts';
+import { FUT, SectionCard } from '@/components/dashboard/CommandCenterUI';
+import { headingStyle } from '@/lib/fonts';
 import {
   MATCH_STATUS_LABEL,
   afterMatchCompleted,
   bothDressingRoomsReady,
-  canKickoffMatch,
   kickoffMatch,
   loadDressingCounts,
   mapKickoffError,
@@ -32,11 +30,14 @@ import {
   reloadMatch,
   resolveMatchSides,
 } from '@/lib/gameDayOps';
-import { getResultSubmissionControls } from '@/lib/gameDayResultFlow';
+import { getKickoffControls, getResultSubmissionControls } from '@/lib/gameDayResultFlow';
 import GameDayWagerCard from '@/components/matches/GameDayWagerCard';
 import GameDayDressingRoom from '@/components/matches/GameDayDressingRoom';
 import GameDayResultSheet from '@/components/matches/GameDayResultSheet';
+import GameDayScoreReport from '@/components/matches/GameDayScoreReport';
 import GameDayStreamCard from '@/components/matches/GameDayStreamCard';
+import GameDayKickoffArena from '@/components/matches/GameDayKickoffArena';
+import { resolveCrestUrl } from '@/lib/gameDayPresentation';
 
 export default function MatchDetailScreen() {
   const { matchId } = useLocalSearchParams();
@@ -50,6 +51,7 @@ export default function MatchDetailScreen() {
   const [kickoffLoading, setKickoffLoading] = useState(false);
   const [error, setError] = useState('');
   const [showResult, setShowResult] = useState(false);
+  const [crests, setCrests] = useState({ home: null, away: null });
 
   const load = useCallback(async () => {
     if (!matchId) return;
@@ -73,6 +75,60 @@ export default function MatchDetailScreen() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    if (!game?.id) return undefined;
+    let cancelled = false;
+    const fallbackHome = resolveCrestUrl(game, 'home', myClub, myPlayer);
+    const fallbackAway = resolveCrestUrl(game, 'away', myClub, myPlayer);
+    setCrests({ home: fallbackHome, away: fallbackAway });
+
+    async function loadCrests() {
+      const isClub = Boolean(game.home_club_id || game.away_club_id) && game.mode !== 'solo';
+      if (isClub) {
+        const [homeClub, awayClub] = await Promise.all([
+          game.home_club_id && stageClient.entities.Club?.get
+            ? stageClient.entities.Club.get(game.home_club_id).catch(() => null)
+            : Promise.resolve(null),
+          game.away_club_id && stageClient.entities.Club?.get
+            ? stageClient.entities.Club.get(game.away_club_id).catch(() => null)
+            : Promise.resolve(null),
+        ]);
+        if (cancelled) return;
+        setCrests({
+          home: homeClub?.logo_url || fallbackHome,
+          away: awayClub?.logo_url || fallbackAway,
+        });
+        return;
+      }
+      const [homePlayer, awayPlayer] = await Promise.all([
+        game.home_player_id && stageClient.entities.Player?.get
+          ? stageClient.entities.Player.get(game.home_player_id).catch(() => null)
+          : Promise.resolve(null),
+        game.away_player_id && stageClient.entities.Player?.get
+          ? stageClient.entities.Player.get(game.away_player_id).catch(() => null)
+          : Promise.resolve(null),
+      ]);
+      if (cancelled) return;
+      setCrests({
+        home: homePlayer?.avatar_url || fallbackHome,
+        away: awayPlayer?.avatar_url || fallbackAway,
+      });
+    }
+
+    loadCrests();
+    return () => { cancelled = true; };
+  }, [game?.id, game?.home_club_id, game?.away_club_id, game?.home_player_id, game?.away_player_id, game?.mode, myClub, myPlayer]);
+
+  useEffect(() => {
+    if (!game?.id) return undefined;
+    if (!['in_progress', 'disputed', 'awaiting_confirmation'].includes(game.status)) return undefined;
+    const timer = setInterval(async () => {
+      const fresh = await reloadMatch(game.id);
+      if (fresh) setGame(fresh);
+    }, 8000);
+    return () => clearInterval(timer);
+  }, [game?.id, game?.status]);
+
   const sides = resolveMatchSides(game, myClub, myPlayer);
   const isLive = game?.status === 'in_progress';
   const isCompleted = game?.status === 'completed';
@@ -84,8 +140,17 @@ export default function MatchDetailScreen() {
     amIHomeTeam: sides.amIHomeTeam,
   });
   const mins = minutesUntil(game?.scheduled_date);
-  const kickoffReady = canKickoffMatch(game);
   const roomsReady = bothDressingRoomsReady(sides.isClubMatch, dressingCounts);
+  const kickoffControls = getKickoffControls({
+    game,
+    isMyMatch: sides.isMyMatch,
+    amIHomeTeam: sides.amIHomeTeam,
+    isLive,
+    showResultForm: showResult,
+    minutesUntilMatch: mins,
+    isClubMatch: sides.isClubMatch,
+    bothClubsReady: roomsReady,
+  });
 
   const onKickoff = async () => {
     setKickoffLoading(true);
@@ -129,7 +194,7 @@ export default function MatchDetailScreen() {
   if (!game) {
     return (
       <GamerProfileShell>
-        <SafeAreaView style={{ flex: 1, backgroundColor: GAMER_BG }} edges={['top']}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
           <View style={{ padding: 16 }}>
             <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
             <Text style={{ color: 'rgba(255,255,255,0.5)', marginTop: 24, textAlign: 'center' }}>
@@ -144,58 +209,82 @@ export default function MatchDetailScreen() {
   return (
     <GamerProfileShell>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: GAMER_BG }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 }}>
           <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
           <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, marginLeft: 12, flex: 1 }}>GAME DAY</Text>
         </View>
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, gap: 12 }}
+          contentContainerStyle={{ paddingBottom: 120 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={CYAN} />}
         >
-          <PitchAtmosphere style={{ borderWidth: 1.5, borderColor: 'rgba(0,232,255,0.35)' }}>
-            <View style={{ padding: 18 }}>
-              <Text style={[headingStyleSm, { color: FUT.cyan, fontSize: 10, letterSpacing: 3 }]}>
-                {game.competition_context || (game.tournament_id === 'ranked' ? 'RANKED MATCH' : 'FIXTURE')}
-              </Text>
-              <Text style={[headingStyle, { color: '#fff', fontSize: 22, marginTop: 6 }]}>
-                {sides.homeName} vs {sides.awayName}
-              </Text>
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 10, alignItems: 'center' }}>
-                <View style={{
-                  paddingHorizontal: 8,
-                  paddingVertical: 4,
-                  borderRadius: 999,
-                  backgroundColor: isLive ? 'rgba(124,255,107,0.14)' : 'rgba(0,232,255,0.12)',
-                }}
-                >
-                  <Text style={{ color: isLive ? FUT.lime : CYAN, fontSize: 10, fontWeight: '900' }}>
-                    {MATCH_STATUS_LABEL[game.status] || game.status}
-                  </Text>
-                </View>
-                {mins != null && game.status === 'scheduled' && mins > 0 ? (
-                  <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>
-                    in {mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h ${mins % 60}m`}
+          <GameDayKickoffArena
+            homeName={sides.homeName}
+            awayName={sides.awayName}
+            homeLogo={crests.home}
+            awayLogo={crests.away}
+            homeYou={sides.isMyMatch && sides.amIHomeTeam}
+            awayYou={sides.isMyMatch && !sides.amIHomeTeam}
+            date={game.scheduled_date}
+            status={game.status}
+            statusLabel={MATCH_STATUS_LABEL[game.status] || game.status}
+            competitionLabel={game.competition_context || (game.tournament_id === 'ranked' ? 'Ranked Match' : 'Fixture')}
+            homeScore={game.home_score}
+            awayScore={game.away_score}
+            wagerStc={game.wager_stc}
+            wagerLocked={Boolean(game.wager_home_locked && game.wager_away_locked)}
+          >
+            {kickoffControls.showHomeKickoff ? (
+              <View style={{ gap: 8 }}>
+                {kickoffControls.tooEarly ? (
+                  <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12, textAlign: 'center' }}>
+                    Kickoff available 15 minutes before match time.
                   </Text>
                 ) : null}
+                {kickoffControls.dressingBlocked && !kickoffControls.tooEarly ? (
+                  <Text style={{ color: '#F5C542', fontSize: 12, textAlign: 'center' }}>
+                    Waiting for both dressing rooms
+                  </Text>
+                ) : null}
+                <TouchableOpacity
+                  onPress={onKickoff}
+                  disabled={kickoffLoading || !kickoffControls.canPressKickoff}
+                  style={{
+                    backgroundColor: kickoffControls.canPressKickoff ? '#F5C542' : '#2A2410',
+                    borderWidth: 1,
+                    borderColor: kickoffControls.canPressKickoff ? '#F5C542' : '#8A7A40',
+                    paddingVertical: 16,
+                    alignItems: 'center',
+                    opacity: kickoffLoading ? 0.6 : 1,
+                    shadowColor: '#F5C542',
+                    shadowOpacity: kickoffControls.canPressKickoff ? 0.45 : 0,
+                    shadowRadius: 18,
+                    shadowOffset: { width: 0, height: 0 },
+                  }}
+                >
+                  {kickoffLoading
+                    ? <ActivityIndicator color="#041018" />
+                    : (
+                      <Text style={[headingStyle, {
+                        color: kickoffControls.canPressKickoff ? '#041018' : '#8A7A40',
+                        letterSpacing: 3,
+                        fontSize: 18,
+                      }]}
+                      >
+                        KICK OFF
+                      </Text>
+                    )}
+                </TouchableOpacity>
               </View>
-              {(isLive || isCompleted || isDisputed) ? (
-                <Text style={{ color: '#fff', fontSize: 36, fontWeight: '900', textAlign: 'center', marginTop: 16 }}>
-                  {game.home_score ?? 0} – {game.away_score ?? 0}
-                </Text>
-              ) : null}
-            </View>
-          </PitchAtmosphere>
-
-          {isDisputed ? (
-            <SectionCard accent="rose">
-              <Text style={{ color: FUT.rose, fontWeight: '800' }}>Disputed</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 4 }}>
-                The two sides submitted different scores. An admin will pick a side or enter the official score.
+            ) : null}
+            {kickoffControls.showAwayWaiting ? (
+              <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12, textAlign: 'center' }}>
+                Waiting for home team to kick off.
               </Text>
-            </SectionCard>
-          ) : null}
+            ) : null}
+          </GameDayKickoffArena>
 
+          <View style={{ paddingHorizontal: 16, gap: 12, marginTop: 12 }}>
           {error ? (
             <SectionCard accent="rose">
               <Text style={{ color: FUT.rose, fontSize: 12 }}>{error}</Text>
@@ -221,48 +310,19 @@ export default function MatchDetailScreen() {
             <GameDayDressingRoom game={game} myClub={myClub} myPlayer={myPlayer} />
           ) : null}
 
-          {sides.isMyMatch && sides.amIHomeTeam && kickoffReady ? (
-            <TouchableOpacity
-              onPress={onKickoff}
-              disabled={kickoffLoading || !roomsReady}
-              style={{
-                backgroundColor: roomsReady ? CYAN : 'rgba(255,255,255,0.12)',
-                borderRadius: 14,
-                paddingVertical: 14,
-                alignItems: 'center',
-                opacity: kickoffLoading ? 0.6 : 1,
-              }}
-            >
-              {kickoffLoading
-                ? <ActivityIndicator color="#041018" />
-                : (
-                  <Text style={{ color: roomsReady ? '#041018' : 'rgba(255,255,255,0.45)', fontWeight: '900' }}>
-                    {roomsReady ? 'KICK OFF' : 'Waiting for both dressing rooms'}
-                  </Text>
-                )}
-            </TouchableOpacity>
-          ) : null}
-
-          {resultControls.showHomeSubmit || resultControls.showAwaySubmit ? (
-            <TouchableOpacity
-              onPress={() => setShowResult(true)}
-              style={{ backgroundColor: FUT.lime, borderRadius: 14, paddingVertical: 14, alignItems: 'center' }}
-            >
-              <Text style={{ color: '#041018', fontWeight: '900' }}>
-                {sides.amIHomeTeam ? 'SUBMIT FULL TIME' : 'SUBMIT MY RESULT'}
-              </Text>
-            </TouchableOpacity>
-          ) : null}
-
-          {resultControls.showAwayWaitingForHome ? (
-            <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, textAlign: 'center' }}>
-              Waiting for home to submit the result.
-            </Text>
-          ) : null}
-          {resultControls.showHomeWaitingForAway ? (
-            <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, textAlign: 'center' }}>
-              Result sent. Waiting for away confirmation.
-            </Text>
+          {(isLive || isCompleted || isDisputed || resultControls.homeResultSubmitted || resultControls.awayResultSubmitted) ? (
+            <GameDayScoreReport
+              game={game}
+              homeName={sides.homeName}
+              awayName={sides.awayName}
+              isMyMatch={sides.isMyMatch}
+              amIHomeTeam={sides.amIHomeTeam}
+              isLive={isLive}
+              isCompleted={isCompleted}
+              isDisputed={isDisputed}
+              showResultForm={showResult}
+              onSubmitPress={() => setShowResult(true)}
+            />
           ) : null}
 
           <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -280,6 +340,7 @@ export default function MatchDetailScreen() {
               <Ionicons name="cloud-upload" size={14} color={CYAN} />
               <Text style={{ color: CYAN, fontWeight: '800' }}>Upload video</Text>
             </TouchableOpacity>
+          </View>
           </View>
         </ScrollView>
 

@@ -42,7 +42,19 @@ describe('mobile match / tournament / season parity wiring', () => {
     expect(source).toMatch(/initializeTournamentDraw/);
     expect(source).toMatch(/advanceTournamentRound/);
     expect(source).toMatch(/matchdetailscreen/);
+    expect(source).toMatch(/isPlayerTournament/);
     expect(source).not.toMatch(/api\.get\(`\/tournaments\//);
+    expect(source).not.toMatch(/tournament\.mode !== 'club'/);
+  });
+
+  test('match hub and tournament list use Game Day / Open Tournaments labels', () => {
+    expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/KICKOFF/);
+    expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/Game Day/);
+    expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/GameDayKickoffArena/);
+    expect(read('../../app/(tabs)/matches/index.jsx')).not.toMatch(/MATCH CENTER/);
+    expect(read('../../app/(tabs)/_layout.jsx')).toMatch(/title: 'Game Day'/);
+    expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).toMatch(/Open tournaments/);
+    expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).not.toMatch(/Stage cups/);
   });
 
   test('season and competition screens exist', () => {

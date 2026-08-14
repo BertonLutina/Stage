@@ -7,13 +7,19 @@ import {
   parseIdList,
   resolveMatchSides,
 } from '../../lib/gameDayOps';
-import { formatSideClaim, getResultSubmissionControls } from '../../lib/gameDayResultFlow';
+import { formatSideClaim, getKickoffControls, getResultSubmissionControls, declaredScoresAgree } from '../../lib/gameDayResultFlow';
 import { applyWagerOptimistic, formatStc } from '../../lib/wagerActions';
 import { roleForClub } from '../../lib/scheduleEngine';
 import { sortStandings } from '../../lib/competitionUtils';
 import { hasStagePlus } from '../../lib/subscriptionUtils';
 import { canResolveDisputeWithScore } from '../../lib/gameDayResultFlow';
 import { absoluteProofUrl, isStageAdmin, parseSubmission } from '../../lib/adminDisputes';
+import {
+  clubInitials,
+  formatBroadcastUnit,
+  getKickoffCountdownParts,
+  pad2,
+} from '../../lib/gameDayPresentation';
 
 describe('gameDayOps', () => {
   test('parses seated player lists', () => {
@@ -27,6 +33,22 @@ describe('gameDayOps', () => {
     expect(canKickoffMatch({ status: 'in_progress' })).toBe(false);
   });
 
+  test('home still sees kickoff 75 hours out, but cannot press it yet', () => {
+    const controls = getKickoffControls({
+      game: { status: 'scheduled' },
+      isMyMatch: true,
+      amIHomeTeam: true,
+      isLive: false,
+      showResultForm: false,
+      minutesUntilMatch: 75 * 60,
+      isClubMatch: false,
+      bothClubsReady: true,
+    });
+    expect(controls.showHomeKickoff).toBe(true);
+    expect(controls.tooEarly).toBe(true);
+    expect(controls.canPressKickoff).toBe(false);
+  });
+
   test('resolves club and solo sides', () => {
     const club = resolveMatchSides(
       { mode: 'club', home_club_id: 'c1', away_club_id: 'c2', home_club_name: 'Home', away_club_name: 'Away' },
@@ -35,6 +57,13 @@ describe('gameDayOps', () => {
     );
     expect(club.isMyMatch).toBe(true);
     expect(club.amIHomeTeam).toBe(true);
+    const clubLoose = resolveMatchSides(
+      { mode: 'club', home_club_id: 12, away_club_id: 34, home_club_name: 'Home', away_club_name: 'Away' },
+      { id: '12' },
+      { id: 'p1' },
+    );
+    expect(clubLoose.isMyMatch).toBe(true);
+    expect(clubLoose.amIHomeTeam).toBe(true);
     const solo = resolveMatchSides(
       { mode: 'solo', home_player_id: 'p2', away_player_id: 'p1' },
       null,
@@ -48,6 +77,17 @@ describe('gameDayOps', () => {
     expect(bothDressingRoomsReady(true, { home: 1, away: 0 })).toBe(false);
     expect(bothDressingRoomsReady(true, { home: 1, away: 1 })).toBe(true);
     expect(bothDressingRoomsReady(false, { home: 0, away: 0 })).toBe(true);
+  });
+
+  test('matching home/away own scores complete, swapped team goals dispute', () => {
+    expect(declaredScoresAgree(
+      { own_score: 5, opponent_score: 2 },
+      { own_score: 2, opponent_score: 5 },
+    )).toBe(true);
+    expect(declaredScoresAgree(
+      { home_score: 5, away_score: 2 },
+      { home_score: 2, away_score: 5 },
+    )).toBe(false);
   });
 
   test('builds matchKickoff submit_result payload', () => {
@@ -93,6 +133,16 @@ describe('gameDayOps', () => {
     expect(minutesUntil(null)).toBeNull();
     expect(typeof minutesUntil(new Date().toISOString())).toBe('number');
   });
+
+  test('kickoff arena countdown and crest initials', () => {
+    expect(clubInitials('Lutina FC')).toBe('LF');
+    expect(clubInitials('Lengarose')).toBe('LEN');
+    expect(pad2(5)).toBe('05');
+    expect(formatBroadcastUnit(73)).toBe('73');
+    const parts = getKickoffCountdownParts('2026-08-17T22:00:00.000Z', new Date('2026-08-14T21:00:00.000Z'));
+    expect(parts.started).toBe(false);
+    expect(parts.hours).toBe(73);
+  });
 });
 
 describe('result + wager + season helpers', () => {
@@ -131,7 +181,7 @@ describe('result + wager + season helpers', () => {
     expect(canResolveDisputeWithScore('', { home_score: 5, away_score: 2 })).toBe(false);
     expect(isStageAdmin({ role_id: 0 })).toBe(true);
     expect(parseSubmission('{"home_score":5,"away_score":2}').home_score).toBe(5);
-    expect(formatSideClaim({ own_score: 2, opponent_score: 5 }, 'away')).toBe('Away 2–Home 5');
+    expect(formatSideClaim({ own_score: 2, opponent_score: 5 }, 'away')).toBe('Home 5–Away 2');
     expect(formatSideClaim({ own_score: 2, opponent_score: 5 }, 'home')).toBe('Home 2–Away 5');
     expect(absoluteProofUrl('/uploads/home.png')).toMatch(/\/uploads\/home\.png$/);
     expect(absoluteProofUrl('https://cdn.example/proof.png')).toBe('https://cdn.example/proof.png');

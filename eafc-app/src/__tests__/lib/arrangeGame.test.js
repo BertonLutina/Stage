@@ -210,6 +210,10 @@ describe('Matches hub arrange fixture wiring', () => {
       'utf8',
     );
     expect(source).toMatch(/kickoffMatch/);
+    expect(source).toMatch(/getKickoffControls/);
+    expect(source).toMatch(/GameDayKickoffArena/);
+    expect(source).toMatch(/KICK OFF/);
+    expect(source).toMatch(/GameDayScoreReport/);
     expect(source).toMatch(/GameDayResultSheet/);
     expect(source).toMatch(/GameDayWagerCard/);
     expect(source).toMatch(/GameDayDressingRoom/);
