@@ -1,6 +1,7 @@
 import {
   getEffectiveInboxActionType,
   inboxMessageNeedsAction,
+  isMatchCancelRequest,
   resolveNotificationHref,
   groupInboxMessages,
   upsertInboxMessage,
@@ -10,6 +11,12 @@ import {
 describe('inbox action types', () => {
   test('recovers match_invite action type when action_type missing', () => {
     expect(getEffectiveInboxActionType({ message_type: 'match_invite' })).toBe('accept_decline_date');
+  });
+
+  test('cancel requests require opponent accept/decline', () => {
+    const message = { message_type: 'match_invite', metadata: { cancel_request: true }, status: 'pending' };
+    expect(isMatchCancelRequest(message)).toBe(true);
+    expect(getEffectiveInboxActionType(message)).toBe('accept_decline');
   });
 
   test('needs action only while pending', () => {

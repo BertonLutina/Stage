@@ -1,4 +1,5 @@
 import { stageClient } from '@/api/stageClient';
+import { isActiveGameDayMatch } from '@/lib/gameDayPresentation';
 
 const PHASE_LABEL = {
   league: (md) => `League Phase – Matchday ${md}`,
@@ -29,12 +30,15 @@ export async function createMatchFromFixture(fixture, fixtureType) {
   const existingByLinkedId = fixture.match_id
     ? await stageClient.entities.Match.get(fixture.match_id).catch(() => null)
     : null;
-  if (existingByLinkedId?.id) return existingByLinkedId;
+  if (existingByLinkedId?.id) {
+    return isActiveGameDayMatch(existingByLinkedId) ? existingByLinkedId : null;
+  }
 
   const existingBySource = await stageClient.entities.Match
     .filter({ source_fixture_id: fixture.id, source_fixture_type: sourceType }, '-created_date', 1)
     .catch(() => []);
   if (existingBySource[0]?.id) {
+    if (!isActiveGameDayMatch(existingBySource[0])) return null;
     if (!fixture.match_id && fixtureEntity?.update) {
       await fixtureEntity.update(fixture.id, { match_id: existingBySource[0].id }).catch(() => {});
     }
@@ -47,7 +51,7 @@ export async function createMatchFromFixture(fixture, fixtureType) {
       fixture_type: sourceType,
     });
     const match = result?.data?.match || result?.match || null;
-    if (match?.id) return match;
+    if (match?.id) return isActiveGameDayMatch(match) ? match : null;
   } catch {
     /* fall through to entity create */
   }
@@ -108,7 +112,7 @@ export async function materializeConfirmedFixtures(clubId) {
     if (!(fixture.scheduling_status === 'confirmed' || fixture.status === 'scheduled')) continue;
     seen.add(fixture.id);
     const match = await createMatchFromFixture(fixture, type).catch(() => null);
-    if (match?.id) created.push(match);
+    if (match?.id && isActiveGameDayMatch(match)) created.push(match);
   }
   return created;
 }

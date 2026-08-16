@@ -32,6 +32,7 @@ import {
 } from '@/lib/gameDayOps';
 import { getKickoffControls, getResultSubmissionControls } from '@/lib/gameDayResultFlow';
 import GameDayWagerCard from '@/components/matches/GameDayWagerCard';
+import GameDayFixtureActions from '@/components/matches/GameDayFixtureActions';
 import GameDayDressingRoom from '@/components/matches/GameDayDressingRoom';
 import GameDayResultSheet from '@/components/matches/GameDayResultSheet';
 import GameDayScoreReport from '@/components/matches/GameDayScoreReport';
@@ -319,6 +320,14 @@ export default function MatchDetailScreen() {
             game={game}
             isMyMatch={sides.isMyMatch}
             amIHomeTeam={sides.amIHomeTeam}
+            onGameUpdate={setGame}
+          />
+
+          <GameDayFixtureActions
+            game={game}
+            myPlayer={myPlayer}
+            myClub={myClub}
+            isMyMatch={sides.isMyMatch}
             onGameUpdate={setGame}
           />
 

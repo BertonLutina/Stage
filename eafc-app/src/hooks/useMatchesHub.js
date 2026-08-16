@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { resolveMyPlayerAndClub, stageClient } from '../api/stageClient';
 import { materializeConfirmedFixtures } from '../lib/gameDayIntegration';
-
-const DAY_MS = 24 * 60 * 60 * 1000;
+import { isActiveGameDayMatch } from '../lib/gameDayPresentation';
 
 function uniqById(rows = []) {
   const map = new Map();
@@ -81,13 +80,7 @@ function toEvent(match, { club, player, tournamentMap }) {
 }
 
 function isActiveGameDay(match) {
-  if (!match || match.status === 'forfeit') return false;
-  if (match.status === 'completed') {
-    const updated = match.updated_date || match.scheduled_date;
-    if (!updated) return false;
-    return Date.now() - new Date(updated).getTime() < DAY_MS;
-  }
-  return ['scheduled', 'in_progress', 'awaiting_confirmation'].includes(match.status);
+  return isActiveGameDayMatch(match);
 }
 
 export default function useMatchesHub() {

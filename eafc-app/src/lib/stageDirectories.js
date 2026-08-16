@@ -37,13 +37,13 @@ const CATEGORY_DISPLAY_MAP = {
 
 export const NEWS_FILTERS = [
   { id: 'all', label: 'All' },
-  { id: 'transfers', label: 'Transfers' },
-  { id: 'contracts', label: 'Contracts' },
-  { id: 'club_news', label: 'Club' },
-  { id: 'player_news', label: 'Players' },
-  { id: 'market', label: 'Market' },
+  { id: 'mercato', label: 'Mercato' },
+  { id: 'club_news', label: 'Club News' },
+  { id: 'player_news', label: 'Player News' },
   { id: 'tournament', label: 'Tournaments' },
-  { id: 'press_conference', label: 'Press' },
+  { id: 'competitions', label: 'Competitions' },
+  { id: 'daily_news', label: 'Daily News' },
+  { id: 'world_news', label: 'World News' },
 ];
 
 export const CREDIT_PACKS = [
@@ -154,6 +154,7 @@ export function resolveNewsCategory(item) {
     transfer: 'transfers',
     contract: 'contracts',
     tournament: 'tournament',
+    ranking: 'ranking',
     press: 'press_conference',
     press_conference: 'press_conference',
   };
@@ -196,8 +197,30 @@ export function isNewsVisible(item, myPlayer, myClub) {
 }
 
 export function filterNewsItems(items, filterId = 'all') {
-  if (filterId === 'all') return items;
-  return items.filter((item) => item._category === filterId);
+  if (!filterId || filterId === 'all') return items;
+  return items.filter((item) => {
+    if (filterId === 'daily_news') {
+      const published = new Date(item?.published_at || item?.created_date || 0);
+      if (Number.isNaN(published.getTime())) return false;
+      const now = new Date();
+      return published.getUTCFullYear() === now.getUTCFullYear()
+        && published.getUTCMonth() === now.getUTCMonth()
+        && published.getUTCDate() === now.getUTCDate();
+    }
+    if (filterId === 'world_news') return true;
+    const category = item._category;
+    const tags = Array.isArray(item.tags) ? item.tags : [];
+    if (tags.includes(filterId)) return true;
+    if (filterId === 'mercato') return ['transfers', 'contracts', 'market'].includes(category);
+    if (filterId === 'club_news') {
+      return ['club_news', 'stadium', 'shirts', 'tickets', 'trophy'].includes(category);
+    }
+    if (filterId === 'player_news') {
+      return ['player_news', 'lifestyle', 'achievement', 'ranking', 'motm'].includes(category);
+    }
+    if (filterId === 'competitions') return category === 'competitions' || category === 'league';
+    return category === filterId;
+  });
 }
 
 export function normalizeFollowRows(rows) {

@@ -9,6 +9,7 @@ import {
   inboxMessageIsActioned,
   senderInitials,
   parseInboxMetadata,
+  isMatchCancelRequest,
 } from '@/lib/inboxHelpers';
 import { deleteInboxMessage, respondToInboxMessage } from '@/lib/inboxData';
 import DateTimeZoneFields from '@/components/matches/DateTimeZoneFields';
@@ -48,6 +49,7 @@ export default function InboxMessageDetail({
   const hasAction = inboxMessageNeedsAction(message);
   const isActioned = inboxMessageIsActioned(message);
   const meta = parseInboxMetadata(message);
+  const isCancelRequest = isMatchCancelRequest(message);
   const showGenericActions = hasAction
     && !['contract_offer', 'trial_request', 'league_schedule'].includes(message.message_type);
   const showContractActions = hasAction && message.message_type === 'contract_offer';
@@ -196,13 +198,13 @@ export default function InboxMessageDetail({
             {(showGenericActions || showContractActions || showScheduleActions || showTrialActions) ? (
               <>
                 <ActionBtn
-                  label={showScheduleActions ? 'Accept time' : 'Accept'}
+                  label={isCancelRequest ? 'Confirm cancel' : (showScheduleActions ? 'Accept time' : 'Accept')}
                   tone="good"
                   loading={loading === 'accepted' || loading === 'confirmed'}
                   onPress={() => runAction(showScheduleActions ? 'confirmed' : 'accepted')}
                 />
                 <ActionBtn
-                  label="Decline"
+                  label={isCancelRequest ? 'Keep match' : 'Decline'}
                   tone="bad"
                   loading={loading === 'declined'}
                   onPress={() => runAction('declined')}

@@ -42,12 +42,19 @@ describe('stage directory helpers', () => {
   });
 
   test('merges news and press, then applies visibility', () => {
+    const today = new Date().toISOString();
     const items = mergeNewsAndPress(
       [{ id: 'n1', title: 'Deal', category: 'transfers', published_at: '2026-08-02' }],
-      [{ id: 'pr1', title: 'Press', published_at: '2026-08-03' }],
+      [{ id: 'pr1', title: 'Press', published_at: today }],
     );
     expect(items[0]._category).toBe('press_conference');
-    expect(filterNewsItems(items, 'transfers')).toHaveLength(1);
+    expect(filterNewsItems(items, 'mercato')).toHaveLength(1);
+    expect(filterNewsItems(items, 'club_news')).toHaveLength(0);
+    expect(filterNewsItems(items, 'player_news')).toHaveLength(0);
+    expect(filterNewsItems(items, 'daily_news')).toHaveLength(1);
+    expect(filterNewsItems(items, 'tournament')).toHaveLength(0);
+    expect(filterNewsItems(items, 'competitions')).toHaveLength(0);
+    expect(filterNewsItems(items, 'all')).toHaveLength(2);
     expect(isNewsVisible({ is_global: true }, null, null)).toBe(true);
     expect(isNewsVisible({
       visible_to_club_ids: ['c1'],
