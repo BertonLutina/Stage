@@ -2,6 +2,7 @@ import React from 'react';
 import { View, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { openSocialAuth, STAGE_OAUTH_PROVIDERS } from '../../hooks/useSocialAuth';
+import { useRouter } from 'expo-router';
 
 const GoogleIcon = () => (
   <Svg width={20} height={20} viewBox="0 0 48 48">
@@ -48,10 +49,14 @@ const STAGE_PROVIDERS = STAGE_OAUTH_PROVIDERS.map((key) => ({
 export default function SocialAuthIconButtons({ providers, mode = 'signin' }) {
   const list = providers ?? STAGE_PROVIDERS;
   const action = mode === 'signup' ? 'Sign up' : 'Sign in';
+  const router = useRouter();
 
   const onPress = async (provider) => {
     const result = await openSocialAuth(provider);
-    if (result?.success) return;
+    if (result?.success) {
+      if (result.isNewUser) router.replace('/auth/onboarding');
+      return;
+    }
     if (result?.cancelled) return;
     if (result?.error) {
       Alert.alert('Sign in failed', result.error);

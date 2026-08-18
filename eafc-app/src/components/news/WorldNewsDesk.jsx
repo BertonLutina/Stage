@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
-import { filterDeskFeed, formatDeskClock, loadNewsDesk } from '@/lib/stageNews';
+import { countryMatches, filterDeskFeed, formatDeskClock, loadNewsDesk } from '@/lib/stageNews';
 import { Stamp, StoryCard, StoryDetail, WindowLine } from './NewsPaperParts';
 import WorldAtlas from './WorldAtlas';
 import { PAPER, paperStyles as s } from './newsPaperStyles';
@@ -49,7 +49,7 @@ export default function WorldNewsDesk({
     () => filterDeskFeed(
       (desk?.feed || []).filter((row) => {
         if (continent && row.continent !== continent) return false;
-        if (country && String(row.country_code || '').toUpperCase() !== country) return false;
+        if (country && !countryMatches(row.country_code, country)) return false;
         return true;
       }),
       { query },
@@ -90,7 +90,7 @@ export default function WorldNewsDesk({
         {desk?.kicker || 'World News'} · {activeCountry?.name || active?.name || 'Geographic desk'}
       </WindowLine>
 
-      <WorldAtlas continents={continents} selectedId={continent} onSelect={pickContinent} />
+      <WorldAtlas continents={continents} countries={countries} selectedId={continent} onSelect={pickContinent} />
 
       <Text style={s.worldCountryLabel}>Country</Text>
       {continent || country ? (

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { resolveMyPlayerAndClub, stageClient } from '../api/stageClient';
 import { materializeConfirmedFixtures } from '../lib/gameDayIntegration';
 import { isActiveGameDayMatch } from '../lib/gameDayPresentation';
+import { isGameDayMatchSocketPayload, sameRecordId } from '../lib/gameDayRealtime';
 
 function uniqById(rows = []) {
   const map = new Map();
@@ -151,7 +152,12 @@ export default function useMatchesHub() {
   }, [load]);
 
   useEffect(() => {
-    const unsub = stageClient.entities.Match.subscribe(() => {
+    const unsub = stageClient.entities.Match.subscribe((event) => {
+      if (event?.type === 'delete') {
+        setEvents((prev) => prev.filter((row) => !sameRecordId(row.id, event.id)));
+        return;
+      }
+      if (!isGameDayMatchSocketPayload(event?.data)) return;
       load({ silent: true });
     });
     return () => {

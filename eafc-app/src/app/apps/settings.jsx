@@ -13,11 +13,10 @@ import { createTranslator } from '@/translations';
 import { DISPLAY_LANGUAGES } from '@/lib/languages';
 import { localStorage } from '@/lib/polyfillStorage';
 import {
-  NOTIFICATION_SETTINGS,
-  NOTIFICATION_SETTING_GROUPS,
+  NOTIFICATION_CHANNELS,
   getDefaultNotificationSettings,
-  parseNotificationSettings,
-  isSettingOn,
+  materializeNotificationSettings,
+  setChannelCategory,
 } from '@/lib/notificationTypes';
 import {
   getNativePushStatus,
@@ -25,6 +24,7 @@ import {
   syncOneSignalTags,
 } from '@/lib/oneSignal';
 import NotificationPushSection from '@/components/settings/NotificationPushSection';
+import NotificationChannelSwitches from '@/components/settings/NotificationChannelSwitches';
 import {
   LIVE_DARK_BG_OPTIONS,
   LIVE_DARK_MAX_UPLOADS,
@@ -233,9 +233,13 @@ export default function SettingsScreen() {
         const p = resolved?.player || null;
         setPlayer(p);
         if (p?.notification_settings) {
-          const parsed = parseNotificationSettings(p.notification_settings);
-          setNotifSettings({ ...getDefaultNotificationSettings(), ...parsed });
-          syncOneSignalTags({ ...getDefaultNotificationSettings(), ...parsed });
+          const parsed = materializeNotificationSettings(p.notification_settings);
+          setNotifSettings(parsed);
+          syncOneSignalTags(parsed);
+        } else {
+          const defaults = getDefaultNotificationSettings();
+          setNotifSettings(defaults);
+          syncOneSignalTags(defaults);
         }
         setBiometricEnabledState(bioOn);
         setBiometricAvailable(bioOk);
@@ -292,8 +296,8 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleToggleNotif = async (key, value) => {
-    const updated = { ...notifSettings, [key]: value };
+  const handleToggleNotif = async (channel, key, value) => {
+    const updated = setChannelCategory(notifSettings, channel, key, value);
     setNotifSettings(updated);
     syncOneSignalTags(updated);
     if (!player?.id) return;
@@ -386,8 +390,6 @@ export default function SettingsScreen() {
       setDeleting(false);
     }
   };
-
-  const settingsByKey = Object.fromEntries(NOTIFICATION_SETTINGS.map((row) => [row.key, row]));
 
   if (loading) {
     return (
@@ -618,44 +620,31 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </SettingsSection>
 
-          <NotificationPushSection
-            status={pushStatus}
-            busy={pushBusy}
-            onToggle={handleTogglePhonePush}
-          />
-
-          <SettingsSection
-            title="Notification Settings"
-            description="These switches save to your STAGE account. They control in-app alerts and phone push together."
-            icon="notifications-outline"
-            action={notifSaving ? <Text style={{ color: tokens.muted, fontSize: 11 }}>Saving...</Text> : null}
-          >
-            {NOTIFICATION_SETTING_GROUPS.map((group) => (
-              <View key={group.label} style={{ marginBottom: 10 }}>
-                <Text style={{ color: tokens.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1.4, marginBottom: 6 }}>
-                  {group.label.toUpperCase()}
-                </Text>
-                {group.keys.map((key) => {
-                  const row = settingsByKey[key];
-                  if (!row) return null;
-                  return (
-                    <View key={key} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 }}>
-                      <View style={{ flex: 1, paddingRight: 12 }}>
-                        <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 13 }}>{row.label}</Text>
-                        <Text style={{ color: tokens.muted, fontSize: 11, marginTop: 2 }}>{row.description}</Text>
-                      </View>
-                      <Switch
-                        value={isSettingOn(notifSettings, key)}
-                        onValueChange={(next) => handleToggleNotif(key, next)}
-                        trackColor={{ false: 'rgba(255,255,255,0.15)', true: CYAN }}
-                        thumbColor="#fff"
-                      />
-                    </View>
-                  );
-                })}
-              </View>
-            ))}
-          </SettingsSection>
+          {NOTIFICATION_CHANNELS.map((channel) => (
+            <SettingsSection
+              key={channel.key}
+              title={channel.label}
+              description={channel.description}
+              icon={channel.key === 'email' ? 'mail-outline' : channel.key === 'mobile' ? 'phone-portrait-outline' : 'notifications-outline'}
+              action={notifSaving ? <Text style={{ color: tokens.muted, fontSize: 11 }}>Saving...</Text> : null}
+            >
+              {channel.key === 'push' ? (
+                <View style={{ marginBottom: 12 }}>
+                  <NotificationPushSection
+                    status={pushStatus}
+                    busy={pushBusy}
+                    onToggle={handleTogglePhonePush}
+                    embedded
+                  />
+                </View>
+              ) : null}
+              <NotificationChannelSwitches
+                settings={notifSettings}
+                channel={channel.key}
+                onToggle={handleToggleNotif}
+              />
+            </SettingsSection>
+          ))}
 
           <TouchableOpacity
             onPress={handleSave}

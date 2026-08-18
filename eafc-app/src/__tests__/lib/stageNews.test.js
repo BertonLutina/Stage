@@ -4,6 +4,7 @@ import {
   DESK_FILTERS,
   NEWS_SECTION_FILTERS,
   clubRoute,
+  countryMatches,
   filterCompetitionFields,
   filterDeskFeed,
   filterMercatoFeed,
@@ -136,6 +137,15 @@ describe('stage news desks', () => {
       transfer_fee: 2_000_000,
       status: 'official',
     }).photo_url).toBe('/neo.jpg');
+  });
+
+  test('World News treats UK home nations as the same country filter', () => {
+    expect(countryMatches('ENG', 'GB')).toBe(true);
+    expect(countryMatches('SCO', 'UK')).toBe(true);
+    expect(countryMatches('WAL', 'NIR')).toBe(true);
+    expect(countryMatches('BE', 'GB')).toBe(false);
+    expect(countryMatches('FR', 'FR')).toBe(true);
+    expect(countryMatches('FR', '')).toBe(true);
   });
 
   test('news screen mounts STAGE TIMES desks instead of the old directory list', () => {

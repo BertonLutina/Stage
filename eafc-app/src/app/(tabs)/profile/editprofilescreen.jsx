@@ -25,6 +25,7 @@ import useAuthStore from '@/store/authStore';
 import { COUNTRIES } from '@/lib/countries';
 import { PLAYER_POSITIONS, PLATFORMS } from '@/lib/stageDirectories';
 import { headingStyleLg } from '@/lib/fonts';
+import { hostedMediaUrl } from '@/lib/uploadProfileMedia';
 import {
   GamerProfileShell,
   GlassIconButton,
@@ -57,17 +58,6 @@ function matchCountry(player) {
     || null;
 }
 
-function fileFromUri(uri) {
-  const clean = String(uri || '').split('?')[0];
-  const name = clean.split('/').pop() || 'avatar.jpg';
-  const ext = name.split('.').pop()?.toLowerCase() || 'jpg';
-  return {
-    uri,
-    name: name.includes('.') ? name : `avatar.${ext}`,
-    type: ext === 'png' ? 'image/png' : 'image/jpeg',
-  };
-}
-
 export default function EditProfileScreen() {
   const router = useRouter();
   const { user, updateUser } = useAuthStore();
@@ -86,6 +76,7 @@ export default function EditProfileScreen() {
   const [platform, setPlatform] = useState('PlayStation');
   const [country, setCountry] = useState(null);
   const [avatarUri, setAvatarUri] = useState(null);
+  const [bannerUri, setBannerUri] = useState(null);
   const [countryPicker, setCountryPicker] = useState(false);
   const [countryQuery, setCountryQuery] = useState('');
 
@@ -120,6 +111,7 @@ export default function EditProfileScreen() {
         setPlatform(nextPlayer?.platform || 'PlayStation');
         setCountry(matchCountry(nextPlayer) || matchCountry(user));
         setAvatarUri(nextPlayer?.avatar_url || nextPresident?.avatar_url || user?.avatar || user?.avatar_url || null);
+        setBannerUri(nextPlayer?.banner_url || nextPresident?.banner_url || null);
       } catch {
         const tag = user?.gamer_tag || user?.gamertag || '';
         const names = splitName(tag, user?.email);
@@ -129,6 +121,7 @@ export default function EditProfileScreen() {
         setBio(user?.bio || '');
         setCountry(matchCountry(user));
         setAvatarUri(user?.avatar || user?.avatar_url || null);
+        setBannerUri(null);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -153,6 +146,23 @@ export default function EditProfileScreen() {
     }
   };
 
+  const pickBanner = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Photo library access is required to change your banner.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets?.[0]?.uri) {
+      setBannerUri(result.assets[0].uri);
+    }
+  };
+
   const save = async () => {
     const tag = gamertag.trim();
     if (!tag) {
@@ -161,12 +171,8 @@ export default function EditProfileScreen() {
     }
     setSaving(true);
     try {
-      let avatarUrl = avatarUri;
-      const isLocal = typeof avatarUri === 'string' && (avatarUri.startsWith('file:') || avatarUri.startsWith('content:'));
-      if (isLocal) {
-        const uploaded = await stageClient.integrations.Core.UploadFile({ file: fileFromUri(avatarUri) });
-        avatarUrl = uploaded?.file_url || uploaded?.url || avatarUri;
-      }
+      const avatarUrl = await hostedMediaUrl(avatarUri, { fallbackName: 'avatar.jpg' });
+      const bannerUrl = await hostedMediaUrl(bannerUri, { fallbackName: 'banner.jpg' });
 
       const playerPayload = {
         gamertag: tag,
@@ -178,6 +184,7 @@ export default function EditProfileScreen() {
         country_code: country?.code || null,
       };
       if (avatarUrl) playerPayload.avatar_url = avatarUrl;
+      if (bannerUrl) playerPayload.banner_url = bannerUrl;
 
       let savedPlayer = player;
       if (player?.id) {
@@ -195,6 +202,7 @@ export default function EditProfileScreen() {
           display_name: tag,
           bio: bio.trim() || null,
           ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+          ...(bannerUrl ? { banner_url: bannerUrl } : {}),
         });
       }
 
@@ -212,6 +220,7 @@ export default function EditProfileScreen() {
         bio: bio.trim() || null,
         avatar: avatarUrl || user?.avatar,
         avatar_url: avatarUrl || user?.avatar_url,
+        banner_url: bannerUrl || user?.banner_url,
         country: country?.name || null,
         country_code: country?.code || null,
         position,
@@ -261,6 +270,20 @@ export default function EditProfileScreen() {
               </View>
             </TouchableOpacity>
             <Text style={styles.hint}>Tap to change photo</Text>
+
+            <TouchableOpacity onPress={pickBanner} style={styles.bannerWrap} accessibilityLabel="Change banner">
+              {bannerUri ? (
+                <Image source={{ uri: bannerUri }} style={styles.bannerImg} />
+              ) : (
+                <View style={styles.bannerEmpty}>
+                  <Ionicons name="image-outline" size={22} color={CYAN} />
+                  <Text style={styles.bannerEmptyText}>Tap to change banner</Text>
+                </View>
+              )}
+              <View style={[styles.cameraBadge, { right: 10, bottom: 10 }]}>
+                <Ionicons name="camera" size={14} color="#041018" />
+              </View>
+            </TouchableOpacity>
 
             <GamerSectionCard title="Identity">
               <View style={styles.row}>
@@ -459,8 +482,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 13,
     fontWeight: '600',
+    marginBottom: 12,
+  },
+  bannerWrap: {
+    height: 110,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: '#0A1222',
     marginBottom: 18,
   },
+  bannerImg: { width: '100%', height: '100%' },
+  bannerEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6 },
+  bannerEmptyText: { color: 'rgba(255,255,255,0.55)', fontSize: 13, fontWeight: '600' },
   row: { flexDirection: 'row', gap: 10 },
   label: {
     color: 'rgba(255,255,255,0.72)',

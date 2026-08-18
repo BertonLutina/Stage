@@ -12,6 +12,7 @@ import {
 import { SectionCard } from '@/components/dashboard/CommandCenterUI';
 import { DashboardLayoutBody } from '@/components/dashboard/DashboardLayoutLab';
 import { DashboardHomeLayoutSheet } from '@/components/dashboard/DashboardHomeLayoutPicker';
+import { useTransferWindowStatus } from '@/hooks/useTransferWindowStatus';
 import useDashboardLayoutStore from '@/store/dashboardLayoutStore';
 
 /**
@@ -27,6 +28,7 @@ export default function PlayerDashboardScreen() {
   const needsOnboarding = useDashboardLayoutStore((s) => s.needsOnboarding);
   const initializeLayout = useDashboardLayoutStore((s) => s.initialize);
   const completeOnboarding = useDashboardLayoutStore((s) => s.completeOnboarding);
+  const { windowOpen } = useTransferWindowStatus();
 
   useEffect(() => {
     initializeLayout();
@@ -87,8 +89,9 @@ export default function PlayerDashboardScreen() {
       wins, draws, losses, matchesPlayed, rankingPoints, winRate, goals, avgRating,
       opponentInfo: getMatchOpponent(nextMatch, player, club),
       gamertag: player?.gamertag || user?.email?.split('@')[0] || 'Guest',
+      transferWindowOpen: windowOpen,
     };
-  }, [data, open]);
+  }, [data, open, windowOpen]);
 
   if (loading && !data) {
     return (

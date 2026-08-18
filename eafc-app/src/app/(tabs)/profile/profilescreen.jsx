@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   View, ScrollView, TouchableOpacity, ActivityIndicator, StatusBar, Alert, Text,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -10,6 +9,8 @@ import { stageClient, resolveMyPlayerAndClub } from '@/api/stageClient';
 import api from '@/utils/api';
 import useAuthStore from '@/store/authStore';
 import { leaveStageClub } from '@/lib/leaveClub';
+import { canShowLoanRequestButton } from '@/lib/contractOfferVisibility';
+import RequestLoanDialog from '@/components/transfer/RequestLoanDialog';
 import {
   GamerProfileShell,
   GamerBanner,
@@ -17,14 +18,18 @@ import {
   GamerMetaPill,
   GamerRecordStrip,
   GamerTabNav,
-  GamerSectionCard,
   GlassIconButton,
   GlassTextButton,
   EmptyTabPanel,
   CYAN,
+  AMBER,
 } from '@/components/profile/gamer/GamerProfileUI';
 import { headingStyleLg } from '@/lib/fonts';
 import PlayerShowcase from '@/components/profile/PlayerShowcase';
+import PlayerCareerSummary from '@/components/profile/PlayerCareerSummary';
+import PlayerTransferHistory from '@/components/profile/PlayerTransferHistory';
+import FollowToggleButton from '@/components/profile/FollowToggleButton';
+import { uploadLocalMedia } from '@/lib/uploadProfileMedia';
 
 /** One primary rail — extras live under More. */
 const PRIMARY_TABS = [
@@ -34,7 +39,7 @@ const PRIMARY_TABS = [
 ];
 
 const MORE_TOOLS = [
-  { id: 'career', label: 'Career', icon: 'trail-sign-outline', hint: 'EA FC link and FUT log' },
+  { id: 'career', label: 'Career', icon: 'trail-sign-outline', hint: 'Club and player record, recent matches, transfers' },
   { id: 'trophies', label: 'Trophies', icon: 'trophy-outline', hint: 'Cabinet and achievements' },
   { id: 'lifestyle', label: 'Lifestyle', icon: 'cafe-outline', hint: 'Off-pitch profile' },
   { id: 'availability', label: 'Availability', icon: 'calendar-outline', hint: 'When you can play', ownOnly: true },
@@ -72,6 +77,12 @@ export default function ProfileScreen({
   const [moreTool, setMoreTool] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [viewerClub, setViewerClub] = useState(presidentClub || null);
+  const [playerContracts, setPlayerContracts] = useState([]);
+  const [liveLoans, setLiveLoans] = useState([]);
+  const [loanOpen, setLoanOpen] = useState(false);
+  const [career, setCareer] = useState(null);
+  const [careerLoading, setCareerLoading] = useState(false);
 
   const isOwn = !viewingOther;
 
@@ -129,6 +140,47 @@ export default function ProfileScreen({
     return () => { cancelled = true; };
   }, [playerProp, signedClubProp, isOwn, params?.userId, params?.playerId]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const resolved = await resolveMyPlayerAndClub().catch(() => ({}));
+      if (cancelled) return;
+      setViewerClub(resolved.presidentClub || resolved.club || presidentClub || null);
+      if (!player?.id) return;
+      const [contracts, loans] = await Promise.all([
+        stageClient.entities.PlayerContract.filter({ target_player_id: player.id }).catch(() => []),
+        stageClient.entities.PlayerLoan.filter({ player_id: player.id }).catch(() => []),
+      ]);
+      if (!cancelled) {
+        setPlayerContracts(Array.isArray(contracts) ? contracts : []);
+        setLiveLoans(Array.isArray(loans) ? loans : []);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [player?.id, presidentClub]);
+
+  useEffect(() => {
+    if (!player?.id) {
+      setCareer(null);
+      setCareerLoading(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setCareerLoading(true);
+    stageClient.http.get(`/player-careers/${player.id}`)
+      .then((data) => { if (!cancelled) setCareer(data && typeof data === 'object' ? data : null); })
+      .catch(() => { if (!cancelled) setCareer(null); })
+      .finally(() => { if (!cancelled) setCareerLoading(false); });
+    return () => { cancelled = true; };
+  }, [player?.id]);
+
+  const canRequestLoan = canShowLoanRequestButton({
+    player,
+    viewerClub,
+    playerContracts,
+    loans: liveLoans,
+  });
+
   const pickAndUploadAvatar = async () => {
     if (!isOwn || uploading || !player?.id) return;
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -140,14 +192,42 @@ export default function ProfileScreen({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [3, 4],
+      quality: 0.85,
     });
     if (result.canceled || !result.assets?.[0]?.uri) return;
     setUploading(true);
     try {
-      await stageClient.entities.Player.update(player.id, { avatar_url: result.assets[0].uri }).catch(() => null);
-      setPlayer((p) => (p ? { ...p, avatar_url: result.assets[0].uri } : p));
+      const url = await uploadLocalMedia(result.assets[0], { fallbackName: 'avatar.jpg' });
+      await stageClient.entities.Player.update(player.id, { avatar_url: url });
+      setPlayer((p) => (p ? { ...p, avatar_url: url } : p));
     } catch (e) {
       Alert.alert('Upload failed', e?.message || 'Could not update avatar.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const pickAndUploadBanner = async () => {
+    if (!isOwn || uploading || !player?.id) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Photo library access is required to change your banner.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.85,
+    });
+    if (result.canceled || !result.assets?.[0]?.uri) return;
+    setUploading(true);
+    try {
+      const url = await uploadLocalMedia(result.assets[0], { fallbackName: 'banner.jpg' });
+      await stageClient.entities.Player.update(player.id, { banner_url: url });
+      setPlayer((p) => (p ? { ...p, banner_url: url } : p));
+    } catch (e) {
+      Alert.alert('Upload failed', e?.message || 'Could not update banner.');
     } finally {
       setUploading(false);
     }
@@ -238,16 +318,10 @@ export default function ProfileScreen({
             <Text style={{ color: CYAN, fontWeight: '800', fontSize: 12, letterSpacing: 1 }}>MORE</Text>
           </TouchableOpacity>
           {moreTool === 'career' ? (
-            <GamerSectionCard title="Career">
-              <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, lineHeight: 19 }}>
-                Link your EA FC club and FUT match log to fill this tab.
-              </Text>
-              {isOwn ? (
-                <TouchableOpacity onPress={() => router.push('/(tabs)/profile/availabilityscreen')} style={{ marginTop: 12 }}>
-                  <Text style={{ color: CYAN, fontWeight: '700', fontSize: 13 }}>Set availability →</Text>
-                </TouchableOpacity>
-              ) : null}
-            </GamerSectionCard>
+            <View style={{ gap: 12 }}>
+              <PlayerCareerSummary career={career} loading={careerLoading} />
+              <PlayerTransferHistory playerId={player?.id} />
+            </View>
           ) : (
             <EmptyTabPanel
               icon={tool?.icon || 'albums-outline'}
@@ -386,6 +460,7 @@ export default function ProfileScreen({
           height={132}
           topLeft={topLeftExtra}
           topRight={bannerActions}
+          onPress={isOwn ? pickAndUploadBanner : undefined}
         />
         <View style={{ paddingHorizontal: 16, marginTop: -72, zIndex: 10, gap: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
@@ -447,29 +522,22 @@ export default function ProfileScreen({
                     {signedClub.name}
                   </GamerMetaPill>
                 ) : null}
+                {canRequestLoan ? (
+                  <GamerMetaPill icon="swap-horizontal" iconColor={AMBER} onPress={() => setLoanOpen(true)}>
+                    Request loan
+                  </GamerMetaPill>
+                ) : null}
               </View>
             </View>
           </View>
 
-          {!isOwn ? (
-            <TouchableOpacity
-              onPress={() => {}}
-              activeOpacity={0.88}
-              accessibilityRole="button"
-              accessibilityLabel="Follow"
-              style={{ minHeight: 44 }}
-            >
-              <LinearGradient
-                colors={['#00F0FF', '#00C2B3']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{ paddingVertical: 13, borderRadius: 12, alignItems: 'center' }}
-              >
-                <Text style={{ color: '#041018', fontSize: 12, fontWeight: '900', letterSpacing: 1.4, textTransform: 'uppercase' }}>
-                  Follow
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
+          {!isOwn && player?.id ? (
+            <FollowToggleButton
+              targetType="player"
+              targetId={player.id}
+              targetName={player.gamertag || player.display_name || player.gamer_tag}
+              accent="cyan"
+            />
           ) : null}
 
           {hasRecord ? (
@@ -522,12 +590,29 @@ export default function ProfileScreen({
     </ScrollView>
   );
 
-  if (embedded) return <View style={{ flex: 1 }}>{body}</View>;
+  const loanDialog = (
+    <RequestLoanDialog
+      open={loanOpen}
+      onClose={() => setLoanOpen(false)}
+      player={player}
+      club={viewerClub}
+      onSubmitted={() => {
+        if (player?.id) {
+          stageClient.entities.PlayerLoan.filter({ player_id: player.id })
+            .then((rows) => setLiveLoans(Array.isArray(rows) ? rows : []))
+            .catch(() => {});
+        }
+      }}
+    />
+  );
+
+  if (embedded) return <View style={{ flex: 1 }}>{body}{loanDialog}</View>;
 
   return (
     <GamerProfileShell>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       {body}
+      {loanDialog}
     </GamerProfileShell>
   );
 }

@@ -89,7 +89,7 @@ export default function TutorialPopup({ open, onClose, intent = 'player' }) {
                 marginBottom: 8,
               }}
             >
-              <STText style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>Each point</STText>
+              <STText style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>Your path</STText>
               {points.map((point, i) => (
                 <View key={point} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
                   <View

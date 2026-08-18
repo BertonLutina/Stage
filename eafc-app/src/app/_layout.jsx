@@ -17,6 +17,7 @@ import useToastStore from '../store/toastStore';
 import { ThemeProvider, DarkTheme } from '@react-navigation/native';
 import GradientBackground from '../components/common/GradientBackground';
 import Toast from '../components/common/Toast';
+import PageWalkthrough from '../components/onboarding/PageWalkthrough';
 
 const NAV_THEME = {
   ...DarkTheme,
@@ -82,6 +83,7 @@ export default function RootLayout() {
             <Stack.Screen name="social" />
           </Stack>
           <Toast visible={visible} message={message} onHide={hide} />
+          {user ? <PageWalkthrough /> : null}
           {!bootReady && (
             <View style={[StyleSheet.absoluteFill, styles.loader]}>
               <ActivityIndicator size="large" color="#5FE3E8" />

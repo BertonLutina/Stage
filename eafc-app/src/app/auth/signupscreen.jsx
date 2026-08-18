@@ -13,13 +13,15 @@ import {
   Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import STText from '../../components/common/STText';
 import useAuthStore from '../../store/authStore';
 import SocialAuthIconButtons from '../../components/auth/SocialAuthIconButtons';
-import { SUPPORTED_LANGUAGES } from '../../lib/languages';
+import { SettingsListbox } from '../../components/settings/SettingsListbox';
+import { DISPLAY_LANGUAGES } from '../../lib/languages';
 import { localStorage } from '../../lib/polyfillStorage';
 import { DISCORD_INVITE_URL, isDiscordConfigured } from '../../lib/discordConfig';
 
@@ -79,7 +81,12 @@ export default function SignupScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.card}>
+            <BlurView
+              intensity={92}
+              tint="systemUltraThinMaterialDark"
+              experimentalBlurMethod="dimezisBlurView"
+              style={styles.card}
+            >
               <View style={styles.brand}>
                 <Image source={STADIUM_LOGO} style={styles.logo} resizeMode="contain" />
                 <STText style={styles.subtitle}>Create account</STText>
@@ -167,20 +174,19 @@ export default function SignupScreen() {
                   <STText style={styles.errorText}>{displayError}</STText>
                 ) : null}
 
-                <STText style={styles.langLabel}>Choose language</STText>
-                <View style={styles.langRow}>
-                  {SUPPORTED_LANGUAGES.map((item) => (
-                    <TouchableOpacity
-                      key={item.value}
-                      onPress={() => setLanguage(item.value)}
-                      style={[styles.langChip, language === item.value && styles.langChipActive]}
-                    >
-                      <STText style={[styles.langChipText, language === item.value && styles.langChipTextActive]}>
-                        {item.flag} {item.nativeLabel}
-                      </STText>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                <SettingsListbox
+                  label="Choose language"
+                  value={language}
+                  title="Language"
+                  searchPlaceholder="Search…"
+                  options={DISPLAY_LANGUAGES.map((item) => ({
+                    id: item.value,
+                    label: `${item.flag} ${item.nativeLabel}`,
+                    description: item.label,
+                    disabled: !item.enabled,
+                  }))}
+                  onChange={(id) => setLanguage(id)}
+                />
 
                 <TouchableOpacity
                   onPress={handleSignup}
@@ -222,7 +228,7 @@ export default function SignupScreen() {
                   </View>
                 ) : null}
               </View>
-            </View>
+            </BlurView>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -257,9 +263,10 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 384,
     alignSelf: 'center',
-    backgroundColor: 'rgba(255,255,255,0.10)',
+    overflow: 'hidden',
+    backgroundColor: 'rgba(4, 14, 48, 0.22)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.20)',
+    borderColor: 'rgba(255,255,255,0.22)',
     borderRadius: 16,
     padding: 32,
     shadowColor: '#000',
@@ -336,39 +343,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     paddingTop: 4,
-  },
-  langLabel: {
-    color: 'rgba(255,255,255,0.45)',
-    fontSize: 11,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  langRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    justifyContent: 'center',
-  },
-  langChip: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-  },
-  langChipActive: {
-    borderColor: 'rgba(255,255,255,0.55)',
-    backgroundColor: 'rgba(255,255,255,0.16)',
-  },
-  langChipText: {
-    color: 'rgba(255,255,255,0.65)',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  langChipTextActive: {
-    color: '#FFFFFF',
   },
   submit: {
     width: '100%',

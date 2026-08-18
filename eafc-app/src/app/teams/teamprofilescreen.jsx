@@ -23,6 +23,7 @@ import {
   AMBER,
 } from '@/components/profile/gamer/GamerProfileUI';
 import { headingStyleLg } from '@/lib/fonts';
+import FollowToggleButton from '@/components/profile/FollowToggleButton';
 
 const TABS = [
   { id: 'squad', label: 'Squad' },
@@ -408,6 +409,14 @@ export default function TeamProfileScreen() {
                     <Text style={{ color: '#fff', fontSize: 11, fontWeight: '900', letterSpacing: 1 }}>CHAT</Text>
                   </TouchableOpacity>
                 ) : null}
+                <FollowToggleButton
+                  targetType="club"
+                  targetId={teamId}
+                  targetName={clubName}
+                  accent="amber"
+                  compact
+                  hidden={isOwner}
+                />
                 <GoldCta
                   label={primaryLabel}
                   onPress={onPrimary}

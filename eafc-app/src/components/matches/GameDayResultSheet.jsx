@@ -2,8 +2,12 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
+  Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -124,22 +128,27 @@ export default function GameDayResultSheet({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.65)' }}>
-        <View style={{
-          backgroundColor: '#071018',
-          borderTopLeftRadius: 22,
-          borderTopRightRadius: 22,
-          borderWidth: 1,
-          borderColor: 'rgba(0,232,255,0.28)',
-          maxHeight: '88%',
-          paddingBottom: 28,
-        }}
-        >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.root}
+      >
+        <Pressable
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Close submit result"
+          style={styles.scrim}
+        />
+        <View style={styles.sheet} onStartShouldSetResponder={() => true}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 16 }}>
             <Text style={{ color: '#fff', fontWeight: '900', letterSpacing: 0.6 }}>SUBMIT RESULT</Text>
             <TouchableOpacity onPress={onClose}><Ionicons name="close" size={22} color="rgba(255,255,255,0.7)" /></TouchableOpacity>
           </View>
-          <ScrollView contentContainerStyle={{ paddingHorizontal: 16, gap: 12, paddingBottom: 24 }}>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            automaticallyAdjustKeyboardInsets
+            contentContainerStyle={{ paddingHorizontal: 16, gap: 12, paddingBottom: 24 }}
+          >
             <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, lineHeight: 18 }}>
               Enter the final score and attach a screenshot of the match. Home submits first, then away. If both scores match, the match completes. If they do not, it goes to dispute and an admin picks the winner from the proofs.
             </Text>
@@ -184,7 +193,7 @@ export default function GameDayResultSheet({
             </TouchableOpacity>
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -212,6 +221,26 @@ function ScoreBox({ label, value, onChange }) {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  scrim: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+  },
+  sheet: {
+    backgroundColor: '#071018',
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(0,232,255,0.28)',
+    maxHeight: '88%',
+    paddingBottom: 28,
+  },
+});
 
 const proofBtn = {
   borderWidth: 1,

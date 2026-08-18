@@ -3,15 +3,12 @@ import {
   View,
   TextInput,
   TouchableOpacity,
-  Modal,
-  FlatList,
   ActivityIndicator,
-  Pressable,
-  StyleSheet,
 } from 'react-native';
 import STText from '../common/STText';
 import { stageClient } from '../../api/stageClient';
 import { COUNTRIES } from '../../lib/countries';
+import { SettingsListbox } from '../settings/SettingsListbox';
 import { onboardingStyles as s } from './onboardingStyles';
 
 const POSITIONS = ['GK', 'CB', 'LB', 'RB', 'CDM', 'CM', 'CAM', 'LM', 'RM', 'LW', 'RW', 'ST', 'CF'];
@@ -21,16 +18,13 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
   const [position, setPosition] = useState(initialPlayer?.position || 'ST');
   const [secondaryPosition, setSecondaryPosition] = useState(initialPlayer?.secondary_position || 'none');
   const [country, setCountry] = useState(initialPlayer?.country || '');
-  const [countryPicker, setCountryPicker] = useState(false);
-  const [countryQuery, setCountryQuery] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  const filteredCountries = useMemo(() => {
-    const q = countryQuery.trim().toLowerCase();
-    if (!q) return COUNTRIES.slice(0, 80);
-    return COUNTRIES.filter((c) => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)).slice(0, 80);
-  }, [countryQuery]);
+  const countryOptions = useMemo(
+    () => COUNTRIES.map((item) => ({ id: item.name, label: item.name })),
+    [],
+  );
 
   const handleSave = async () => {
     if (!gamertag.trim() || !country) {
@@ -128,12 +122,15 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
         ))}
       </View>
 
-      <STText style={s.label}>Country</STText>
-      <TouchableOpacity onPress={() => setCountryPicker(true)} style={[s.input, { justifyContent: 'center' }]}>
-        <STText style={{ color: country ? '#fff' : 'rgba(255,255,255,0.35)', fontSize: 16 }}>
-          {country || 'Select country'}
-        </STText>
-      </TouchableOpacity>
+      <SettingsListbox
+        label="Country"
+        value={country}
+        placeholder="Select country"
+        title="Country"
+        searchPlaceholder="Search…"
+        options={countryOptions}
+        onChange={(id) => setCountry(id)}
+      />
 
       {error ? <STText style={s.error}>{error}</STText> : null}
 
@@ -146,42 +143,6 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
           </STText>
         )}
       </TouchableOpacity>
-
-      <Modal visible={countryPicker} animationType="slide" transparent>
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' }} onPress={() => setCountryPicker(false)} />
-        <View style={s.sheet}>
-          <STText style={[s.title, { fontSize: 22, marginBottom: 12 }]}>Country</STText>
-          <TextInput
-            value={countryQuery}
-            onChangeText={setCountryQuery}
-            placeholder="Search…"
-            placeholderTextColor="rgba(255,255,255,0.35)"
-            style={s.input}
-            autoFocus
-          />
-          <FlatList
-            data={filteredCountries}
-            keyExtractor={(item) => item.code}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => {
-                  setCountry(item.name);
-                  setCountryPicker(false);
-                  setCountryQuery('');
-                }}
-                style={{
-                  paddingVertical: 12,
-                  borderBottomWidth: StyleSheet.hairlineWidth,
-                  borderBottomColor: 'rgba(255,255,255,0.08)',
-                }}
-              >
-                <STText style={{ color: '#fff', fontSize: 14 }}>{item.name}</STText>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      </Modal>
     </View>
   );
 }

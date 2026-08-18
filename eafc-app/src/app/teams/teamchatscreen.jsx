@@ -14,8 +14,8 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { io } from 'socket.io-client';
-import api, { SOCKET_URL } from '../../utils/api';
+import api from '../../utils/api';
+import { stageClient } from '../../api/stageClient';
 import useAuthStore from '../../store/authStore';
 import ChatMessageBubble from '../../components/chat/ChatMessageBubble';
 import ChatAttachmentMenu from '../../components/chat/ChatAttachmentMenu';
@@ -29,6 +29,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const BASE_URL = api.defaults.baseURL;
 
 const QUICK_REPLIES = ["I'm in", "Can't make it", 'On my way', 'Need a sub'];
+
+function isOwnChatMessage(item, user) {
+  const email = String(user?.email || '').trim().toLowerCase();
+  const sender = String(item?.sender_email || '').trim().toLowerCase();
+  if (email && sender && email === sender) return true;
+  return item?.user_id === user?.id || item?.user_id === user?.email;
+}
+
+function upsertChatMessage(prev, payload) {
+  if (!payload) return prev;
+  const id = payload.id;
+  if (!id) return [...prev, payload];
+  const idx = prev.findIndex((m) => m.id === id);
+  if (idx >= 0) {
+    const next = [...prev];
+    next[idx] = { ...next[idx], ...payload };
+    return next;
+  }
+  return [...prev, payload];
+}
 
 function buildChatParams(search, activeFilters) {
   const params = {};
@@ -69,7 +89,6 @@ export default function TeamChatScreen() {
   const [attachmentMenuVisible, setAttachmentMenuVisible] = useState(false);
   const [createPollVisible, setCreatePollVisible] = useState(false);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
-  const socketRef = useRef(null);
   const flatListRef = useRef(null);
   const searchDebounceRef = useRef(null);
   const inputRef = useRef(null);
@@ -101,26 +120,21 @@ export default function TeamChatScreen() {
   }, [teamId, search, activeFilters, fetchChat]);
 
   useEffect(() => {
-    if (!teamId) return;
-    const socket = io(`${SOCKET_URL}/team-chat`);
-    socketRef.current = socket;
-    socket.on('connect', () => {
-      setSocketConnected(true);
-      socket.emit('join_team', teamId);
-    });
-    socket.on('disconnect', () => setSocketConnected(false));
-    socket.on('new_message', (data) => {
-      setMessages((prev) => [...prev, { ...data, id: data.id || `m-${Date.now()}` }]);
-    });
-    socket.on('poll_updated', (data) => {
-      setMessages((prev) =>
-        prev.map((m) => (m.id === data.id ? { ...m, ...data } : m))
-      );
-    });
-    socket.on('chat_error', (data) => setError(data?.message));
+    if (!teamId) return undefined;
+    const channel = `club:${teamId}`;
+    setSocketConnected(true);
+    const unsub = stageClient.entities.ChatMessage.subscribe((event) => {
+      const payload = event?.data;
+      if (!payload || payload.match_id !== channel) return;
+      if (event.type === 'delete') {
+        setMessages((prev) => prev.filter((m) => m.id !== event.id && m.id !== payload.id));
+        return;
+      }
+      setMessages((prev) => upsertChatMessage(prev, payload));
+    }, { match_id: channel });
     return () => {
-      socket.emit('leave_team', teamId);
-      socket.disconnect();
+      setSocketConnected(false);
+      if (typeof unsub === 'function') unsub();
     };
   }, [teamId]);
 
@@ -155,15 +169,9 @@ export default function TeamChatScreen() {
       const url = data?.data?.url;
       if (!url) throw new Error('No URL returned');
       const fullUrl = url.startsWith('http') ? url : `${BASE_URL}${url}`;
-      socketRef.current?.emit('send_message', {
-        teamId,
-        user_id: user.id,
-        gamer_tag: user.gamer_tag || user.email?.split('@')[0] || 'Anonymous',
-        content: '',
-        message_type: messageType,
-        media_url: fullUrl,
-        media_metadata: metadata,
-      });
+      const res = await api.post(`/teams/${teamId}/chat`, { content: fullUrl });
+      const saved = res.data?.data;
+      if (saved) setMessages((prev) => upsertChatMessage(prev, saved));
     } catch (err) {
       setError('Failed to upload. Try again.');
     }
@@ -223,25 +231,29 @@ export default function TeamChatScreen() {
     }
   };
 
-  const sendPoll = (data) => {
+  const sendPoll = async (data) => {
     if (!user) return;
-    socketRef.current?.emit('send_message', data);
+    const content = data?.content || data?.question || 'Poll';
+    try {
+      const res = await api.post(`/teams/${teamId}/chat`, { content });
+      const saved = res.data?.data;
+      if (saved) setMessages((prev) => upsertChatMessage(prev, saved));
+    } catch {
+      setError('Failed to send poll. Try again.');
+    }
   };
 
-  const send = () => {
+  const send = async () => {
     if (!text.trim() || !user) return;
     const trimmed = text.trim();
-    const isLink = /^https?:\/\//.test(trimmed);
-    const messageType = isLink ? 'link' : 'text';
-    socketRef.current?.emit('send_message', {
-      teamId,
-      user_id: user.id,
-      gamer_tag: user.gamer_tag || user.email?.split('@')[0] || 'Anonymous',
-      content: trimmed,
-      message_type: messageType,
-      media_url: isLink ? trimmed : null,
-    });
     setText('');
+    try {
+      const res = await api.post(`/teams/${teamId}/chat`, { content: trimmed });
+      const saved = res.data?.data;
+      if (saved) setMessages((prev) => upsertChatMessage(prev, saved));
+    } catch {
+      setError('Failed to send. Try again.');
+    }
   };
 
   const onMicOrSend = () => {
@@ -335,16 +347,9 @@ export default function TeamChatScreen() {
               renderItem={({ item }) => (
                 <ChatMessageBubble
                   item={item}
-                  isMe={item.user_id === user?.id}
+                  isMe={isOwnChatMessage(item, user)}
                   baseUrl={BASE_URL}
-                  onPollVote={(messageId, optionIndex) => {
-                    socketRef.current?.emit('poll_vote', {
-                      messageId,
-                      teamId,
-                      optionIndex,
-                      user_id: user?.id,
-                    });
-                  }}
+                  onPollVote={() => {}}
                   currentUserId={user?.id}
                 />
               )}

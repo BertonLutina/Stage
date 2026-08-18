@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import EditProfileScreen from '../../app/(tabs)/profile/editprofilescreen';
+import * as ImagePicker from 'expo-image-picker';
 import { stageClient, resolveMyPlayerAndClub } from '../../api/stageClient';
 
 const mockBack = jest.fn();
@@ -59,6 +60,7 @@ describe('EditProfileScreen', () => {
     mockUpdateUser.mockClear();
     stageClient.entities.Player.update.mockClear();
     stageClient.entities.President.update.mockClear();
+    stageClient.integrations.Core.UploadFile.mockClear();
     resolveMyPlayerAndClub.mockResolvedValue({
       player: {
         id: 'player-1',
@@ -129,5 +131,37 @@ describe('EditProfileScreen', () => {
     );
     expect(mockUpdateUser).toHaveBeenCalled();
     expect(mockBack).toHaveBeenCalled();
+  });
+
+  it('uploads a local avatar to the server instead of saving the phone file path', async () => {
+    ImagePicker.launchImageLibraryAsync.mockResolvedValueOnce({
+      canceled: false,
+      assets: [{ uri: 'file:///tmp/photo.jpg' }],
+    });
+    stageClient.integrations.Core.UploadFile.mockResolvedValueOnce({
+      file_url: 'https://stageleagues.com/uploads/hosted.jpg',
+    });
+
+    const { getByLabelText, getByText } = render(<EditProfileScreen />);
+    await waitFor(() => {
+      expect(getByLabelText('Gamertag').props.value).toBe('Lutina');
+    });
+
+    fireEvent.press(getByLabelText('Change photo'));
+    await waitFor(() => {
+      expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalled();
+    });
+    fireEvent.press(getByText('Save Changes'));
+
+    await waitFor(() => {
+      expect(stageClient.integrations.Core.UploadFile).toHaveBeenCalled();
+      expect(stageClient.entities.Player.update).toHaveBeenCalledWith(
+        'player-1',
+        expect.objectContaining({
+          avatar_url: 'https://stageleagues.com/uploads/hosted.jpg',
+        }),
+      );
+    });
+    expect(stageClient.entities.Player.update.mock.calls[0][1].avatar_url).not.toMatch(/^file:/);
   });
 });

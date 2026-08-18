@@ -14,8 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { io } from 'socket.io-client';
-import api, { SOCKET_URL } from '../../../utils/api';
+import api from '../../../utils/api';
+import { stageClient } from '../../../api/stageClient';
 import VideoPlayer from '../../../components/common/VideoPlayer';
 import STText from '../../../components/common/STText';
 import GradientBackground from '../../../components/common/GradientBackground';
@@ -30,6 +30,26 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const VIDEO_HEIGHT = Math.round(SCREEN_WIDTH * (9 / 16));
 const CHAT_HEIGHT = 220;
 const BASE_URL = api.defaults.baseURL;
+
+function isOwnChatMessage(item, user) {
+  const email = String(user?.email || '').trim().toLowerCase();
+  const sender = String(item?.sender_email || '').trim().toLowerCase();
+  if (email && sender && email === sender) return true;
+  return item?.user_id === user?.id || item?.user_id === user?.email;
+}
+
+function upsertChatMessage(prev, payload) {
+  if (!payload) return prev;
+  const id = payload.id;
+  if (!id) return [...prev, payload];
+  const idx = prev.findIndex((m) => m.id === id);
+  if (idx >= 0) {
+    const next = [...prev];
+    next[idx] = { ...next[idx], ...payload };
+    return next;
+  }
+  return [...prev, payload];
+}
 
 function buildChatParams(search, activeFilters) {
   const params = {};
@@ -53,7 +73,6 @@ export default function WatchMatchScreen() {
   const [activeFilters, setActiveFilters] = useState(['all']);
   const [socketConnected, setSocketConnected] = useState(false);
   const [attachmentMenuVisible, setAttachmentMenuVisible] = useState(false);
-  const socketRef = useRef(null);
   const flatListRef = useRef(null);
   const searchDebounceRef = useRef(null);
 
@@ -81,26 +100,25 @@ export default function WatchMatchScreen() {
     return () => clearTimeout(searchDebounceRef.current);
   }, [matchId, search, activeFilters, fetchChat]);
 
-  // Socket: join match room and listen for comments
   useEffect(() => {
     if (matchId && user) api.post(`/matches/${matchId}/chat/read`).catch(() => {});
   }, [matchId, user]);
 
   useEffect(() => {
-    if (!matchId) return;
-    const socket = io(`${SOCKET_URL}/match-chat`);
-    socketRef.current = socket;
-    socket.on('connect', () => {
-      setSocketConnected(true);
-      socket.emit('join_match', matchId);
-    });
-    socket.on('disconnect', () => setSocketConnected(false));
-    socket.on('new_comment', (data) => {
-      setComments((prev) => [...prev, { ...data, id: data.id || `c-${Date.now()}` }]);
-    });
+    if (!matchId) return undefined;
+    setSocketConnected(true);
+    const unsub = stageClient.entities.ChatMessage.subscribe((event) => {
+      const payload = event?.data;
+      if (!payload || payload.match_id !== matchId) return;
+      if (event.type === 'delete') {
+        setComments((prev) => prev.filter((m) => m.id !== event.id && m.id !== payload.id));
+        return;
+      }
+      setComments((prev) => upsertChatMessage(prev, payload));
+    }, { match_id: matchId });
     return () => {
-      socket.emit('leave_match', matchId);
-      socket.disconnect();
+      setSocketConnected(false);
+      if (typeof unsub === 'function') unsub();
     };
   }, [matchId]);
 
@@ -125,15 +143,9 @@ export default function WatchMatchScreen() {
       const url = data?.data?.url;
       if (!url) throw new Error('No URL returned');
       const fullUrl = url.startsWith('http') ? url : `${BASE_URL}${url}`;
-      socketRef.current?.emit('send_comment', {
-        matchId,
-        user_id: user.id,
-        gamer_tag: user.gamer_tag || user.email?.split('@')[0] || 'Anonymous',
-        content: '',
-        message_type: messageType,
-        media_url: fullUrl,
-        media_metadata: metadata,
-      });
+      const res = await api.post(`/matches/${matchId}/chat`, { content: fullUrl });
+      const saved = res.data?.data;
+      if (saved) setComments((prev) => upsertChatMessage(prev, saved));
     } catch (_) {}
   };
 
@@ -166,20 +178,23 @@ export default function WatchMatchScreen() {
     }
   };
 
-  const sendComment = () => {
+  const sendComment = async () => {
     if (!commentText.trim() || !user) return;
     const trimmed = commentText.trim();
-    const isLink = /^https?:\/\//.test(trimmed);
-    const data = {
-      matchId,
-      user_id: user.id,
-      gamer_tag: user.gamer_tag || user.email?.split('@')[0] || 'Anonymous',
-      content: trimmed,
-      message_type: isLink ? 'link' : 'text',
-      media_url: isLink ? trimmed : null,
-    };
-    socketRef.current?.emit('send_comment', data);
     setCommentText('');
+    try {
+      const res = await api.post(`/matches/${matchId}/chat`, { content: trimmed });
+      const saved = res.data?.data;
+      if (saved) setComments((prev) => upsertChatMessage(prev, saved));
+    } catch {
+      setComments((prev) => [...prev, {
+        id: `local-${Date.now()}`,
+        content: trimmed,
+        sender_email: user.email,
+        gamer_tag: user.gamer_tag || user.email?.split('@')[0] || 'Anonymous',
+        user_id: user.email || user.id,
+      }]);
+    }
   };
 
   if (loading) {
@@ -304,7 +319,7 @@ export default function WatchMatchScreen() {
                 onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
                 contentContainerStyle={{ padding: 12, paddingBottom: 8 }}
                 renderItem={({ item }) => (
-                  <ChatMessageBubble item={item} isMe={item.user_id === user?.id} baseUrl={BASE_URL} />
+                  <ChatMessageBubble item={item} isMe={isOwnChatMessage(item, user)} baseUrl={BASE_URL} />
                 )}
                 ListEmptyComponent={
                   <STText className="text-gray-500 text-sm">

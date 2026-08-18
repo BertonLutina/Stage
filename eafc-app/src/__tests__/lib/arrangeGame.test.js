@@ -215,6 +215,12 @@ describe('Matches hub arrange fixture wiring', () => {
     expect(source).toMatch(/KICK OFF/);
     expect(source).toMatch(/GameDayScoreReport/);
     expect(source).toMatch(/GameDayResultSheet/);
+    const resultSheet = fs.readFileSync(
+      path.join(__dirname, '../../components/matches/GameDayResultSheet.jsx'),
+      'utf8',
+    );
+    expect(resultSheet).toMatch(/KeyboardAvoidingView/);
+    expect(resultSheet).toMatch(/automaticallyAdjustKeyboardInsets/);
     expect(source).toMatch(/GameDayWagerCard/);
     expect(source).toMatch(/GameDayDressingRoom/);
     expect(source).not.toMatch(/getMockMatchById/);

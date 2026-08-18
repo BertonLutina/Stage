@@ -15,6 +15,9 @@ import { deleteInboxMessage, respondToInboxMessage } from '@/lib/inboxData';
 import DateTimeZoneFields from '@/components/matches/DateTimeZoneFields';
 import { CYAN, AMBER } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT } from '@/components/dashboard/CommandCenterUI';
+import InboxLoanCard from '@/components/inbox/InboxLoanCard';
+
+const LOAN_TYPES = ['loan_proposal', 'loan_early_end', 'loan_purchase', 'loan_recalled', 'loan_terminated_early'];
 
 function formatFullDate(value) {
   const d = value ? new Date(value) : null;
@@ -51,7 +54,8 @@ export default function InboxMessageDetail({
   const meta = parseInboxMetadata(message);
   const isCancelRequest = isMatchCancelRequest(message);
   const showGenericActions = hasAction
-    && !['contract_offer', 'trial_request', 'league_schedule'].includes(message.message_type);
+    && !['contract_offer', 'trial_request', 'league_schedule', ...LOAN_TYPES].includes(message.message_type);
+  const showLoanCard = LOAN_TYPES.includes(message.message_type);
   const showContractActions = hasAction && message.message_type === 'contract_offer';
   const showScheduleActions = hasAction && message.message_type === 'league_schedule';
   const showTrialActions = hasAction && message.message_type === 'trial_request';
@@ -157,6 +161,12 @@ export default function InboxMessageDetail({
 
         <View style={styles.bodyCard}>
           <Text style={styles.body}>{message.body || ''}</Text>
+          {showLoanCard ? (
+            <InboxLoanCard
+              message={message}
+              onActioned={(action) => onStatusChanged?.(message.id, action)}
+            />
+          ) : null}
           {message.related_entity_type === 'match' ? (
             <Text style={styles.linked}>Linked to a scheduled match — check Schedule for details.</Text>
           ) : null}

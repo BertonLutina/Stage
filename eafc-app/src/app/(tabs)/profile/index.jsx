@@ -308,6 +308,7 @@ function ClubProfileSurface({ club: seedClub, president: seedPresident, isOwner,
             club={club}
             isOwner={isOwner}
             canOpenOperations={isOwner}
+            currentPlayerId={playerId}
             memberCount={memberLabel}
             players={bundle?.players}
             matches={bundle?.matches}

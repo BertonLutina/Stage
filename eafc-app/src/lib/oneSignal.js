@@ -1,4 +1,4 @@
-import { NOTIFICATION_SETTINGS, isSettingOn } from './notificationTypes';
+import { NOTIFICATION_SETTINGS, isChannelCategoryOn } from './notificationTypes';
 
 export function getOneSignalAppId() {
   return String(process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID || '').trim();
@@ -120,7 +120,7 @@ export function syncOneSignalTags(settings = {}) {
   if (!sdk?.OneSignal?.User?.addTags) return false;
   const tags = {};
   NOTIFICATION_SETTINGS.forEach((row) => {
-    tags[row.key] = isSettingOn(settings, row.key) ? 'true' : 'false';
+    tags[row.key] = isChannelCategoryOn(settings, 'push', row.key) ? 'true' : 'false';
   });
   sdk.OneSignal.User.addTags(tags);
   return true;

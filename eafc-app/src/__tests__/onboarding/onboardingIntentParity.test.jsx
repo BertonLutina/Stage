@@ -31,8 +31,14 @@ describe('mobile onboarding intent parity', () => {
     );
     expect(tutorial).toMatch(/animationType="fade"/);
     expect(tutorial).toMatch(/justifyContent: 'center'/);
-    expect(tutorial).toMatch(/Each point/);
+    expect(tutorial).toMatch(/Your path/);
     expect(tutorial).not.toMatch(/justifyContent: 'flex-end'/);
+  });
+
+  it('does not skip onboarding just because an OAuth stub already has a gamertag', () => {
+    expect(source).toMatch(/isFinishedOnboardingProfile/);
+    expect(source).not.toMatch(/pl\?\.country \|\| pl\?\.gamertag/);
+    expect(source).not.toMatch(/u\?\.player_id \|\| pl\?\.id\) && !force && \(pl\?\.country \|\| pl\?\.gamertag\)/);
   });
 
   it('uses a phone-first shell instead of a centered web card', () => {

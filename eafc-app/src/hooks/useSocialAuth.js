@@ -83,7 +83,7 @@ export async function openSocialAuth(provider) {
           const { markNeedsOnboarding } = await import('../api/stageClient');
           markNeedsOnboarding(parsed.user.id);
         }
-        return { success: true };
+        return { success: true, isNewUser: Boolean(parsed.isNewUser) };
       }
     }
 

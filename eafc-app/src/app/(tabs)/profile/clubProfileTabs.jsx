@@ -1,8 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { ActionSheetIOS, Alert, Platform, View, Text, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { stageClient } from '@/api/stageClient';
-import { getContractTypeLabel, statusLabel, weeklyWage } from '@/lib/playerContractFields';
+import { getContractTargetPlayerId, getContractTypeLabel, statusLabel, weeklyWage } from '@/lib/playerContractFields';
+import {
+  applyLoanAnnotations,
+  canProposeEarlyEnd,
+  isEarlyEndWaitingOnClub,
+  isLoanRecallable,
+  isPurchaseAwaitingPlayer,
+  splitSquadByLoan,
+} from '@/lib/playerLoanDisplay';
+import { playerRoute } from '@/lib/stageNews';
 import {
   GamerTabNav,
   GamerSectionCard,
@@ -29,14 +39,21 @@ const OFFICE_TOOLS = [
   { id: 'chat', label: 'Chat', icon: 'chatbubbles-outline', hint: 'Club channel' },
 ];
 
-function MemberRow({ player }) {
+function MemberRow({ player, onPress }) {
   const ovr = player?.overall_rating;
   const ovrLabel = ovr == null || ovr === ''
     ? null
     : (Number.isInteger(Number(ovr)) ? String(Math.round(Number(ovr))) : (Math.round(Number(ovr) * 10) / 10).toFixed(1));
+  const loanLabel = player?.loan_status === 'loaned_in'
+    ? 'LOAN'
+    : player?.loan_status === 'loaned_out'
+      ? 'OUT'
+      : null;
 
   return (
-    <View
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.85}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -75,15 +92,21 @@ function MemberRow({ player }) {
         </Text>
         <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 2, letterSpacing: 0.4 }}>
           {[player?.position, player?.role].filter(Boolean).join(' · ') || 'Squad'}
+          {loanLabel ? ` · ${loanLabel}` : ''}
         </Text>
       </View>
+      {loanLabel ? (
+        <View style={{ borderWidth: 1, borderColor: AMBER, paddingHorizontal: 6, paddingVertical: 3 }}>
+          <Text style={{ color: AMBER, fontSize: 9, fontWeight: '900' }}>{loanLabel}</Text>
+        </View>
+      ) : null}
       {ovrLabel ? (
         <View style={{ alignItems: 'flex-end' }}>
           <Text style={{ color: AMBER, fontWeight: '900', fontSize: 18, letterSpacing: -0.5 }}>{ovrLabel}</Text>
           <Text style={{ color: 'rgba(255,214,10,0.55)', fontSize: 9, fontWeight: '800', letterSpacing: 1 }}>OVR</Text>
         </View>
       ) : null}
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -184,10 +207,35 @@ function OfficeToolRow({ tool, onPress }) {
  * one primary rail (Squad / Feed / Operations / Office).
  * Office tools are a list, not a second tab row.
  */
+function presentActions(title, message, actions) {
+  const cancel = { label: 'Cancel', style: 'cancel' };
+  const all = [...actions, cancel];
+  if (Platform.OS === 'ios') {
+    const destructive = all.findIndex((item) => item.style === 'destructive');
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        title,
+        message,
+        options: all.map((item) => item.label),
+        cancelButtonIndex: all.length - 1,
+        destructiveButtonIndex: destructive >= 0 ? destructive : undefined,
+      },
+      (index) => all[index]?.onPress?.(),
+    );
+    return;
+  }
+  Alert.alert(title, message, all.map((item) => ({
+    text: item.label,
+    style: item.style || 'default',
+    onPress: item.onPress,
+  })));
+}
+
 export default function ClubProfileTabs({
   club,
   isOwner = false,
   canOpenOperations = false,
+  currentPlayerId = null,
   memberCount: _memberCount,
   players: playersProp,
   matches: _matchesProp,
@@ -207,15 +255,17 @@ export default function ClubProfileTabs({
   finance,
   shirts,
 }) {
+  const router = useRouter();
   const [tab, setTab] = useState('squad');
   const [officeTool, setOfficeTool] = useState(null);
   const [squad, setSquad] = useState(Array.isArray(playersProp) ? playersProp : []);
+  const [loans, setLoans] = useState([]);
   const [loadingTab, setLoadingTab] = useState(false);
 
   const primaryTabs = useMemo(() => {
     return PRIMARY_TABS.filter((item) => {
       if (item.id === 'operations') return canOpenOperations;
-      if (item.id === 'office') return isOwner || canOpenOperations;
+      if (item.id === 'office') return isOwner;
       return true;
     });
   }, [isOwner, canOpenOperations]);
@@ -250,6 +300,217 @@ export default function ClubProfileTabs({
     })();
     return () => { cancelled = true; };
   }, [club?.id, tab, playersProp]);
+
+  useEffect(() => {
+    if (!club?.id) return undefined;
+    let cancelled = false;
+    (async () => {
+      const [incoming, outgoing] = await Promise.all([
+        stageClient.entities.PlayerLoan.filter({ loan_club_id: club.id, status: 'ACTIVE' }).catch(() => []),
+        stageClient.entities.PlayerLoan.filter({ parent_club_id: club.id, status: 'ACTIVE' }).catch(() => []),
+      ]);
+      const rows = [...(Array.isArray(incoming) ? incoming : []), ...(Array.isArray(outgoing) ? outgoing : [])];
+      if (cancelled) return;
+      setLoans(rows);
+      const missingIds = [...new Set(rows.map((loan) => loan.player_id).filter(Boolean))];
+      if (!missingIds.length) return;
+      const extras = await Promise.all(missingIds.map((id) => stageClient.entities.Player.get(id).catch(() => null)));
+      if (cancelled) return;
+      setSquad((prev) => {
+        const seen = new Set(prev.map((player) => String(player.id)));
+        const add = extras.filter((player) => player?.id && !seen.has(String(player.id)));
+        return add.length ? [...prev, ...add] : prev;
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [club?.id]);
+
+  const annotatedSquad = useMemo(
+    () => applyLoanAnnotations(squad, loans, club?.id),
+    [squad, loans, club?.id],
+  );
+  const { selectable: homeSquad, onLoan: outOnLoan } = useMemo(
+    () => splitSquadByLoan(annotatedSquad),
+    [annotatedSquad],
+  );
+
+  const contractsFor = (player) => (contracts || []).filter((row) => (
+    String(getContractTargetPlayerId(row)) === String(player?.id)
+  ));
+  const activeContractFor = (player) => (
+    contractsFor(player).find((row) => String(row.status || '').toLowerCase() === 'active') || null
+  );
+
+  const postLoan = async (loanId, path, body = {}) => {
+    await stageClient.http.post(`/player-loans/${encodeURIComponent(loanId)}/${path}`, body);
+    const [incoming, outgoing] = await Promise.all([
+      stageClient.entities.PlayerLoan.filter({ loan_club_id: club.id, status: 'ACTIVE' }).catch(() => []),
+      stageClient.entities.PlayerLoan.filter({ parent_club_id: club.id, status: 'ACTIVE' }).catch(() => []),
+    ]);
+    setLoans([...(Array.isArray(incoming) ? incoming : []), ...(Array.isArray(outgoing) ? outgoing : [])]);
+  };
+
+  const confirmThen = (title, message, confirmLabel, onConfirm) => {
+    Alert.alert(title, message, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: confirmLabel, style: 'destructive', onPress: () => { onConfirm().catch((err) => Alert.alert('Could not update', err?.message || 'Try again.')); } },
+    ]);
+  };
+
+  const releaseSquadPlayer = async (player) => {
+    const contract = activeContractFor(player);
+    if (contract?.id) {
+      await stageClient.functions.invoke('contractManagement', { action: 'terminate', contract_id: contract.id });
+    } else {
+      await stageClient.entities.Player.update(player.id, {
+        club_id: null,
+        club_roles: [],
+        role: 'member',
+        dressing_room_seat: null,
+        is_ready: false,
+      });
+    }
+    setSquad((prev) => prev.filter((row) => String(row.id) !== String(player.id)));
+  };
+
+  const removePlayerRole = async (player) => {
+    await stageClient.entities.Player.update(player.id, { club_roles: [], role: 'member' });
+    setSquad((prev) => prev.map((row) => (
+      String(row.id) === String(player.id) ? { ...row, club_roles: [], role: 'member' } : row
+    )));
+  };
+
+  const openPlayerCard = (player) => {
+    const name = player?.gamertag || player?.display_name || 'Player';
+    const role = String(player?.role || 'member').toLowerCase();
+    const isSelf = currentPlayerId && String(currentPlayerId) === String(player.id);
+    const isPresidentRole = role === 'president';
+    const canReleaseOrRemove = isOwner && !isSelf && !isPresidentRole;
+    const canRemoveRole = canReleaseOrRemove && role !== 'member';
+    const active = activeContractFor(player);
+    const loanShape = player.loan_id ? {
+      status: 'ACTIVE',
+      loan_id: player.loan_id,
+      parent_club_id: player.loan_status === 'loaned_out' ? club?.id : player.loan_from_club_id,
+      loan_club_id: player.loan_status === 'loaned_in' ? club?.id : player.on_loan_club_id,
+      recall_allowed: player.recall_allowed,
+      recall_after_date: player.recall_after_date,
+      early_end_proposed_by_club_id: player.early_end_proposed_by_club_id,
+      purchase_type: player.purchase_type,
+      purchase_offer_status: player.purchase_offer_status,
+      purchase_option_deadline: player.purchase_option_deadline,
+      end_date: player.loan_end_date,
+    } : null;
+    const canRecall = isOwner && player.loan_status === 'loaned_out' && isLoanRecallable({ ...loanShape, id: player.loan_id });
+    const canReturn = isOwner && player.loan_id && canProposeEarlyEnd(loanShape, club?.id);
+    const canRespond = isOwner && player.loan_id && isEarlyEndWaitingOnClub(loanShape, club?.id);
+    const canBuy = isOwner && player.can_exercise_purchase_option;
+    const awaitingBuy = isPurchaseAwaitingPlayer(loanShape);
+
+    const actions = [
+      {
+        label: 'View profile',
+        onPress: () => {
+          const route = playerRoute(player.id);
+          if (route) router.push(route);
+        },
+      },
+    ];
+    if (isOwner || canOpenOperations) {
+      actions.push({
+        label: 'View contract',
+        onPress: () => {
+          const wage = weeklyWage(active);
+          Alert.alert(
+            'Contract',
+            active
+              ? `${getContractTypeLabel(active)} · ${statusLabel(active.status)}${wage ? ` · ${formatStc(wage)}/wk` : ''}`
+              : 'No active contract on file.',
+          );
+        },
+      });
+    }
+    if (canRecall) {
+      actions.push({
+        label: 'Recall',
+        onPress: () => confirmThen(
+          'Recall player',
+          'Recall this player from the loan? Playing rights return immediately. The loan fee is not refunded.',
+          'Recall',
+          () => postLoan(player.loan_id, 'recall'),
+        ),
+      });
+    }
+    if (canReturn) {
+      actions.push({
+        label: 'Request return',
+        onPress: () => confirmThen(
+          'Request return',
+          'Request an early return of this player? The other club must accept. The loan fee is not refunded.',
+          'Request return',
+          () => postLoan(player.loan_id, 'early-end', { actor_club_id: club.id }),
+        ),
+      });
+    }
+    if (canRespond) {
+      actions.push({
+        label: 'Accept return',
+        onPress: () => confirmThen(
+          'Accept return',
+          'Accept the early return? Playing rights go back to the parent club immediately. The loan fee is not refunded.',
+          'Accept return',
+          () => postLoan(player.loan_id, 'early-end-accept', { actor_club_id: club.id }),
+        ),
+      });
+      actions.push({
+        label: 'Reject return',
+        onPress: () => postLoan(player.loan_id, 'early-end-reject', { actor_club_id: club.id })
+          .catch((err) => Alert.alert('Could not update', err?.message || 'Try again.')),
+      });
+    }
+    if (canBuy) {
+      actions.push({
+        label: 'Exercise option to buy',
+        onPress: () => confirmThen(
+          'Exercise option to buy',
+          'Send a permanent transfer offer to the player? They must accept before ownership moves. Current wage and end date will be used.',
+          'Send offer',
+          () => postLoan(player.loan_id, 'exercise-option', { weekly_salary_stc: 0, max_days: 0 }),
+        ),
+      });
+    }
+    if (awaitingBuy) {
+      actions.push({
+        label: 'Awaiting player response',
+        onPress: () => Alert.alert('Purchase offer', 'The player still has to accept the permanent terms.'),
+      });
+    }
+    if (canReleaseOrRemove) {
+      actions.push({
+        label: 'Release player',
+        style: 'destructive',
+        onPress: () => confirmThen(
+          'Release player',
+          'Release this player from the club?',
+          'Release',
+          () => releaseSquadPlayer(player),
+        ),
+      });
+    }
+    if (canRemoveRole) {
+      actions.push({
+        label: 'Remove role',
+        style: 'destructive',
+        onPress: () => confirmThen(
+          'Remove role',
+          "Remove this player's club role?",
+          'Remove',
+          () => removePlayerRole(player),
+        ),
+      });
+    }
+    presentActions(name, [player.position, player.role].filter(Boolean).join(' · ') || 'Squad', actions);
+  };
 
   const selectPrimary = (id) => {
     setTab(id);
@@ -454,7 +715,7 @@ export default function ClubProfileTabs({
     }
 
     if (tab === 'squad') {
-      if (squad.length === 0) {
+      if (annotatedSquad.length === 0) {
         return (
           <EmptyTabPanel
             icon="people-outline"
@@ -467,10 +728,18 @@ export default function ClubProfileTabs({
         <View style={{ gap: 8 }}>
           <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4 }}>
             <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '800', letterSpacing: 1.4 }}>
-              ROSTER · {squad.length}
+              ROSTER · {homeSquad.length}
             </Text>
           </View>
-          {squad.map((p) => <MemberRow key={p.id} player={p} />)}
+          {homeSquad.map((p) => <MemberRow key={p.id} player={p} onPress={() => openPlayerCard(p)} />)}
+          {outOnLoan.length ? (
+            <View style={{ gap: 8, marginTop: 8 }}>
+              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '800', letterSpacing: 1.4 }}>
+                ON LOAN · {outOnLoan.length}
+              </Text>
+              {outOnLoan.map((p) => <MemberRow key={p.id} player={p} onPress={() => openPlayerCard(p)} />)}
+            </View>
+          ) : null}
         </View>
       );
     }

@@ -269,6 +269,16 @@ export function transferToNewspaperItem(transfer) {
   };
 }
 
+const UK_HOME_NATIONS = new Set(['GB', 'UK', 'ENG', 'SCO', 'WAL', 'NIR']);
+
+export function countryMatches(rowCode, selected) {
+  const a = String(rowCode || '').toUpperCase();
+  const b = String(selected || '').toUpperCase();
+  if (!b) return true;
+  if (a === b) return true;
+  return UK_HOME_NATIONS.has(a) && UK_HOME_NATIONS.has(b);
+}
+
 export function clubRoute(clubId) {
   if (!clubId) return null;
   return { pathname: '/apps/club/[id]', params: { id: String(clubId) } };

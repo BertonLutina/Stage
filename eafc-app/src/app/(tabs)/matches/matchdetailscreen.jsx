@@ -39,6 +39,7 @@ import GameDayScoreReport from '@/components/matches/GameDayScoreReport';
 import GameDayStreamCard from '@/components/matches/GameDayStreamCard';
 import GameDayKickoffArena from '@/components/matches/GameDayKickoffArena';
 import { resolveCrestUrl } from '@/lib/gameDayPresentation';
+import { useGameDayMatchRealtime } from '@/hooks/useGameDayMatchRealtime';
 
 export default function MatchDetailScreen() {
   const { matchId } = useLocalSearchParams();
@@ -76,29 +77,21 @@ export default function MatchDetailScreen() {
 
   useEffect(() => { load(); }, [load]);
 
-  useEffect(() => {
-    if (!matchId) return undefined;
-    const unsubMatch = stageClient.entities.Match.subscribe(async (event) => {
-      const id = event?.id || event?.data?.id;
-      if (String(id) !== String(matchId)) return;
-      if (event?.type === 'delete') return;
-      const fresh = await reloadMatch(matchId).catch(() => event.data || null);
-      if (!fresh) return;
+  useGameDayMatchRealtime({
+    matchId,
+    reloadMatch,
+    onMatch: async (fresh) => {
+      if (fresh?.deleted) return;
       setGame(fresh);
       setDressingCounts(await loadDressingCounts(fresh));
-    }, { id: matchId });
-    const unsubRoom = stageClient.entities.DressingRoom.subscribe(async (event) => {
-      if (String(event?.data?.match_id) !== String(matchId)) return;
+    },
+    onDressing: async () => {
       const fresh = await reloadMatch(matchId).catch(() => null);
       if (!fresh) return;
       setGame(fresh);
       setDressingCounts(await loadDressingCounts(fresh));
-    }, { match_id: matchId });
-    return () => {
-      if (typeof unsubMatch === 'function') unsubMatch();
-      if (typeof unsubRoom === 'function') unsubRoom();
-    };
-  }, [matchId]);
+    },
+  });
 
   useEffect(() => {
     if (!game?.id) return undefined;

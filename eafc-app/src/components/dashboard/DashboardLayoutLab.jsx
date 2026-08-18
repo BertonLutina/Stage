@@ -8,6 +8,7 @@ import { CYAN, AMBER, useGamerTokens } from '@/components/profile/gamer/GamerPro
 import { headingStyleLg } from '@/lib/fonts';
 import { getMatchOpponent } from '@/lib/dashboardData';
 import { DASHBOARD_LAYOUTS } from '@/lib/dashboardLayouts';
+import TransferWindowHomeIcon from '@/components/dashboard/TransferWindowHomeIcon';
 import {
   DashboardRankRing,
   DashboardGamerStatCard,
@@ -60,6 +61,29 @@ function Chip({ label, gold }) {
     }}
     >
       <Text style={{ color, fontSize: 11, fontWeight: '900' }}>{label}</Text>
+    </View>
+  );
+}
+
+function GamertagTitle({ vm, style, centered = false }) {
+  return (
+    <View style={{
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: centered ? 'center' : 'flex-start',
+      gap: 10,
+      minWidth: 0,
+    }}
+    >
+      <Text
+        style={[headingStyleLg, { flexShrink: 1 }, style]}
+        numberOfLines={1}
+      >
+        {vm.gamertag}
+      </Text>
+      {vm.transferWindowOpen ? (
+        <TransferWindowHomeIcon onPress={() => vm.open('/apps/transfers')} />
+      ) : null}
     </View>
   );
 }
@@ -542,9 +566,7 @@ function LayoutA({ vm }) {
         <DashboardRankRing rank={vm.playerRank?.rank} winRate={vm.winRate} size={72} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={{ color: tokens.cyan, fontSize: 10, fontWeight: '900', letterSpacing: 2.4 }}>COMMAND CENTER</Text>
-          <Text style={[headingStyleLg, { color: tokens.text, marginTop: 4, fontSize: 22 }]} numberOfLines={1}>
-            {vm.gamertag}
-          </Text>
+          <GamertagTitle vm={vm} style={{ color: tokens.text, marginTop: 4, fontSize: 22 }} />
           <View style={{ marginTop: 8 }}>
             <IdentityChips player={vm.player} />
           </View>
@@ -574,7 +596,7 @@ function LayoutB({ vm }) {
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={{ color: tokens.cyan, fontSize: 10, fontWeight: '900', letterSpacing: 2.4 }}>COMMAND CENTER</Text>
-          <Text style={[headingStyleLg, { color: tokens.text, marginTop: 4 }]} numberOfLines={1}>{vm.gamertag}</Text>
+          <GamertagTitle vm={vm} style={{ color: tokens.text, marginTop: 4 }} />
         </View>
         <Text style={{ color: tokens.text, fontWeight: '900', fontSize: 22 }}>
           {vm.playerRank?.rank ? `#${vm.playerRank.rank}` : '—'}
@@ -708,9 +730,7 @@ function LayoutC({ vm }) {
       >
         <View style={{ padding: 18, alignItems: 'center' }}>
           <DashboardRankRing rank={vm.playerRank?.rank} winRate={vm.winRate} size={104} />
-          <Text style={[headingStyleLg, { color: tokens.text, marginTop: 12 }]} numberOfLines={1}>
-            {vm.gamertag}
-          </Text>
+          <GamertagTitle vm={vm} centered style={{ color: tokens.text, marginTop: 12 }} />
           <View style={{ marginTop: 10 }}>
             <IdentityChips player={vm.player} />
           </View>
@@ -807,7 +827,7 @@ function LayoutD({ vm }) {
     <>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={[headingStyleLg, { color: tokens.text, fontSize: 22 }]} numberOfLines={1}>{vm.gamertag}</Text>
+          <GamertagTitle vm={vm} style={{ color: tokens.text, fontSize: 22 }} />
           <View style={{ marginTop: 8 }}>
             <IdentityChips player={vm.player} />
           </View>

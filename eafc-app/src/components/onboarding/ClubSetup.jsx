@@ -3,14 +3,12 @@ import {
   View,
   TextInput,
   TouchableOpacity,
-  Modal,
-  FlatList,
   ActivityIndicator,
-  Pressable,
 } from 'react-native';
 import STText from '../common/STText';
 import { stageClient } from '../../api/stageClient';
 import { COUNTRIES } from '../../lib/countries';
+import { SettingsListbox } from '../settings/SettingsListbox';
 import { onboardingStyles as s } from './onboardingStyles';
 
 const REGIONS = ['Europe', 'North America', 'South America', 'Asia', 'Oceania', 'Africa', 'Middle East'];
@@ -32,8 +30,6 @@ export default function ClubSetup({
   const [platform, setPlatform] = useState(player?.platform || 'PlayStation');
   const [region, setRegion] = useState('Europe');
   const [country, setCountry] = useState(player?.country || '');
-  const [countryPicker, setCountryPicker] = useState(false);
-  const [countryQuery, setCountryQuery] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -41,11 +37,10 @@ export default function ClubSetup({
     onPhaseChange?.(phase === 'club' ? 'club' : 'president');
   }, [phase, onPhaseChange]);
 
-  const filteredCountries = useMemo(() => {
-    const q = countryQuery.trim().toLowerCase();
-    if (!q) return COUNTRIES.slice(0, 80);
-    return COUNTRIES.filter((c) => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)).slice(0, 80);
-  }, [countryQuery]);
+  const countryOptions = useMemo(
+    () => COUNTRIES.map((item) => ({ id: item.name, label: item.name })),
+    [],
+  );
 
   const continuePresident = () => {
     if (!displayName.trim()) {
@@ -183,12 +178,15 @@ export default function ClubSetup({
         ))}
       </View>
 
-      <STText style={s.label}>Country *</STText>
-      <TouchableOpacity onPress={() => setCountryPicker(true)} style={[s.input, { justifyContent: 'center' }]}>
-        <STText style={{ color: country ? '#fff' : 'rgba(255,255,255,0.35)', fontSize: 14 }}>
-          {country || 'Select country'}
-        </STText>
-      </TouchableOpacity>
+      <SettingsListbox
+        label="Country *"
+        value={country}
+        placeholder="Select country"
+        title="Country"
+        searchPlaceholder="Search…"
+        options={countryOptions}
+        onChange={(id) => setCountry(id)}
+      />
 
       {error ? <STText style={s.error}>{error}</STText> : null}
 
@@ -198,38 +196,6 @@ export default function ClubSetup({
       <TouchableOpacity onPress={() => setPhase('president')} style={s.ghostBtn}>
         <STText style={s.ghostBtnText}>Back</STText>
       </TouchableOpacity>
-
-      <Modal visible={countryPicker} animationType="slide" transparent>
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' }} onPress={() => setCountryPicker(false)} />
-        <View style={s.sheet}>
-          <STText style={[s.title, { fontSize: 22, marginBottom: 12 }]}>Country</STText>
-          <TextInput
-            value={countryQuery}
-            onChangeText={setCountryQuery}
-            placeholder="Search…"
-            placeholderTextColor="rgba(255,255,255,0.35)"
-            style={s.input}
-            autoFocus
-          />
-          <FlatList
-            data={filteredCountries}
-            keyExtractor={(item) => item.code}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => {
-                  setCountry(item.name);
-                  setCountryPicker(false);
-                  setCountryQuery('');
-                }}
-                style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)' }}
-              >
-                <STText style={{ color: '#fff', fontSize: 14 }}>{item.name}</STText>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      </Modal>
     </View>
   );
 }

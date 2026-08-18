@@ -10,12 +10,12 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0F0F0F"
+      "backgroundColor": "#07153C"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0F0F0F"
+        "backgroundColor": "#07153C"
       },
       "package": "com.eafc.platform",
       "permissions": [
@@ -29,7 +29,10 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.eafc.platform",
-      "appleTeamId": "SN94V6837Q"
+      "appleTeamId": "SN94V6837Q",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "plugins": [
       "expo-image-picker",

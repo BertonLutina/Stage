@@ -30,6 +30,7 @@ import {
 import { writeAccountIntent } from '../../lib/accountIntent';
 import { isDiscordConfigured } from '../../lib/discordConfig';
 import { markOnboardingComplete } from '../../services/onboardingService';
+import { isFinishedOnboardingProfile } from '../../lib/onboardingGate';
 import { localStorage } from '../../lib/polyfillStorage';
 
 const BANNER = require('../../../assets/Banner.jpg');
@@ -125,7 +126,8 @@ export default function OnboardingScreen() {
         if (pl) setPlayer(pl);
 
         const force = Boolean(u?.id && userNeedsOnboarding(u.id));
-        if ((u?.player_id || pl?.id) && !force && (pl?.country || pl?.gamertag)) {
+        // OAuth stubs have a gamertag immediately — that is not a finished profile.
+        if (!force && isFinishedOnboardingProfile(pl)) {
           await markOnboardingComplete(u.id);
           router.replace('/(tabs)/dashboard');
           return;

@@ -12,6 +12,9 @@ export function getEffectiveInboxActionType(message = {}) {
   if (message.message_type === 'match_invite') return 'accept_decline_date';
   if (message.message_type === 'contract_offer') return 'contract_negotiation';
   if (message.message_type === 'trial_request') return 'trial_response';
+  if (message.message_type === 'loan_proposal') return 'loan_parent_response';
+  if (message.message_type === 'loan_early_end') return 'loan_early_end_response';
+  if (message.message_type === 'loan_purchase') return 'loan_purchase_response';
   if (message.message_type === 'league_schedule') return 'schedule_accept_propose';
   return 'none';
 }
@@ -88,6 +91,11 @@ const TYPE_LABELS = {
   announcement: 'Announcement',
   league_schedule: 'Schedule',
   trial_request: 'Trial',
+  loan_proposal: 'Loan',
+  loan_early_end: 'Loan return',
+  loan_purchase: 'Loan buy',
+  loan_recalled: 'Loan recall',
+  loan_terminated_early: 'Loan ended',
   general: 'Message',
 };
 

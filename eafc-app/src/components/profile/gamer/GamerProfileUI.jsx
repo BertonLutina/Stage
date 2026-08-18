@@ -666,24 +666,32 @@ export function GamerSectionCard({ title, children, style }) {
   );
 }
 
-export function GamerStatTile({ label, value, accent = 'cyan' }) {
+function tileAccentColor(accent, tokens) {
+  if (accent === 'amber' || accent === 'gold') return tokens.amber;
+  if (accent === 'green') return '#34D399';
+  if (accent === 'rose') return '#FB7185';
+  if (accent === 'violet') return '#C4B5FD';
+  return tokens.cyan;
+}
+
+export function GamerStatTile({ label, value, accent = 'cyan', compact = false }) {
   const tokens = useGamerTokens();
-  const color = accent === 'amber' ? tokens.amber : accent === 'green' ? '#34D399' : accent === 'rose' ? '#FB7185' : tokens.cyan;
+  const color = tileAccentColor(accent, tokens);
   return (
     <GlassFill
       intensity={16}
       style={{
         flex: 1,
-        minWidth: '45%',
+        minWidth: compact ? '46%' : '45%',
         borderRadius: 14,
-        padding: 14,
+        padding: compact ? 12 : 14,
         overflow: 'hidden',
       }}
     >
       <Text style={{ fontSize: 9, fontWeight: '800', letterSpacing: 2, color: tokens.muted, textTransform: 'uppercase', marginBottom: 6 }}>
         {label}
       </Text>
-      <Text style={{ fontSize: 28, fontWeight: '900', color, letterSpacing: -1 }}>{value}</Text>
+      <Text style={{ fontSize: compact ? 22 : 28, fontWeight: '900', color, letterSpacing: -1 }}>{value}</Text>
     </GlassFill>
   );
 }

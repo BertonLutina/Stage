@@ -23,6 +23,18 @@ describe('inbox action types', () => {
     expect(inboxMessageNeedsAction({ message_type: 'contract_offer', status: 'pending' })).toBe(true);
     expect(inboxMessageNeedsAction({ message_type: 'contract_offer', status: 'accepted' })).toBe(false);
   });
+
+  test('maps loan inbox types to the same action types as web', () => {
+    expect(getEffectiveInboxActionType({ message_type: 'loan_proposal' })).toBe('loan_parent_response');
+    expect(getEffectiveInboxActionType({ message_type: 'loan_early_end' })).toBe('loan_early_end_response');
+    expect(getEffectiveInboxActionType({ message_type: 'loan_purchase' })).toBe('loan_purchase_response');
+    expect(getEffectiveInboxActionType({
+      message_type: 'loan_proposal',
+      action_type: 'loan_player_response',
+    })).toBe('loan_player_response');
+    expect(inboxMessageNeedsAction({ message_type: 'loan_proposal', status: 'pending' })).toBe(true);
+    expect(inboxMessageNeedsAction({ message_type: 'loan_recalled', status: 'pending' })).toBe(false);
+  });
 });
 
 describe('resolveNotificationHref', () => {

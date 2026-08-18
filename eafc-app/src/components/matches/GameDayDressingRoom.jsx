@@ -56,7 +56,7 @@ export default function GameDayDressingRoom({ game, myClub, myPlayer }) {
   useEffect(() => {
     if (!game?.id || !myClub?.id) return undefined;
     const unsub = stageClient.entities.DressingRoom.subscribe((event) => {
-      if (event.data?.match_id !== game.id || event.data?.club_id !== myClub.id) return;
+      if (String(event.data?.match_id) !== String(game.id) || String(event.data?.club_id) !== String(myClub.id)) return;
       const ids = parseIdList(event.data.seated_players);
       setSeated(availableIds.size
         ? ids.filter((id) => [...availableIds].some((availableId) => sameId(availableId, id)))

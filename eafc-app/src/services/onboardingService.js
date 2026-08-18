@@ -6,6 +6,7 @@ import {
   resolveMyPlayerAndClub,
 } from '../api/stageClient';
 import { getOwnedClubId, getPresidentClubId } from '../lib/userIdentityFields';
+import { isFinishedOnboardingProfile } from '../lib/onboardingGate';
 
 function completedKey(userId) {
   return `stage_onboarding_completed_${userId}`;
@@ -35,8 +36,8 @@ export async function hasCompletedOnboarding(userId) {
 }
 
 /**
- * Same gate logic as web AuthenticatedApp:
- * skip onboarding if profile already exists (unless force flag).
+ * Same gate as web: new sign-ups always see onboarding.
+ * An OAuth stub gamertag is not enough to skip.
  */
 export async function shouldShowOnboarding(user) {
   if (!user?.id) return false;
@@ -46,11 +47,7 @@ export async function shouldShowOnboarding(user) {
   try {
     const { player, presidentClub, club } = await resolveMyPlayerAndClub();
     const owned = getOwnedClubId(user) || getPresidentClubId(user);
-    if (user.player_id || player?.id) {
-      // Stub OAuth players without country still need setup.
-      if (player?.country || player?.gamertag) return false;
-      return true;
-    }
+    if (isFinishedOnboardingProfile(player)) return false;
     if (owned || presidentClub?.id || club?.id) return false;
   } catch {
     /* fall through */

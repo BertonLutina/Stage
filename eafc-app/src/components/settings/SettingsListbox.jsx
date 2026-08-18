@@ -3,6 +3,8 @@ import {
   View,
   Text,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   TouchableOpacity,
   TextInput,
@@ -109,7 +111,10 @@ export function OptionsBottomSheet({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.sheetRoot}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.sheetRoot}
+      >
         <Pressable
           onPress={() => { setQuery(''); onClose?.(); }}
           accessibilityRole="button"
@@ -200,7 +205,7 @@ export function OptionsBottomSheet({
             )}
           />
         </LiveGlass>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -232,7 +237,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   scrim: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
     backgroundColor: 'rgba(0,0,0,0.55)',
   },
   sheet: {
