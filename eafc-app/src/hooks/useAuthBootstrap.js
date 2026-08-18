@@ -49,7 +49,7 @@ export default function useAuthBootstrap() {
       ].includes(authScreen);
 
       if (!user && !inAuthGroup) {
-        router.replace('/auth/welcome');
+        router.replace('/auth/loginscreen');
         return;
       }
       if (!user && inLegacySetup) {

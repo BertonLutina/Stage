@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Image,
@@ -21,10 +21,14 @@ import useAuthStore from '../../store/authStore';
 import SocialAuthIconButtons from '../../components/auth/SocialAuthIconButtons';
 import { checkBackendConnection } from '../../utils/healthCheck';
 import {
-  authenticateForLogin,
+  biometricPromptCopy,
+  getBiometricCredentials,
   getBiometricEnabled,
+  getSupportedBiometricKinds,
   isBiometricAvailable,
+  saveBiometricCredentials,
   setBiometricEnabled,
+  unlockSavedCredentials,
 } from '../../services/biometricAuthService';
 
 const LOGIN_BANNER = require('../../../assets/Banner-mobile.jpg');
@@ -37,24 +41,31 @@ export default function LoginScreen() {
   const [biometricEnabled, setBiometricEnabledState] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricError, setBiometricError] = useState('');
+  const [hasSavedLogin, setHasSavedLogin] = useState(false);
+  const [bioCopy, setBioCopy] = useState(biometricPromptCopy([]));
   const [connectionStatus, setConnectionStatus] = useState(null);
   const { login, loading, error, clearError } = useAuthStore();
   const router = useRouter();
+  const autoPrompted = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
 
     async function bootstrap() {
-      const [enabled, available, connection] = await Promise.all([
+      const [enabled, available, saved, kinds, connection] = await Promise.all([
         getBiometricEnabled(),
         isBiometricAvailable(),
+        getBiometricCredentials(),
+        getSupportedBiometricKinds(),
         checkBackendConnection(),
       ]);
-      if (!cancelled) {
-        setBiometricEnabledState(enabled);
-        setBiometricAvailable(available);
-        setConnectionStatus(connection);
-      }
+      if (cancelled) return;
+      setBiometricEnabledState(enabled);
+      setBiometricAvailable(available);
+      setHasSavedLogin(Boolean(saved));
+      setBioCopy(biometricPromptCopy(kinds));
+      setConnectionStatus(connection);
+      if (saved?.identifier) setEmail(saved.identifier);
     }
 
     bootstrap();
@@ -63,15 +74,51 @@ export default function LoginScreen() {
     };
   }, []);
 
+  const signInWithSavedLogin = useCallback(async () => {
+    setBiometricError('');
+    clearError?.();
+    const unlocked = await unlockSavedCredentials();
+    if (!unlocked.success) {
+      if (unlocked.reason === 'unavailable') {
+        setBiometricError('Biometric authentication is unavailable on this device.');
+      } else if (unlocked.reason === 'user_cancel' || unlocked.reason === 'app_cancel' || unlocked.reason === 'system_cancel') {
+        setBiometricError('Biometric authentication was cancelled.');
+      } else if (unlocked.reason !== 'none') {
+        setBiometricError('Biometric authentication failed. Sign in with your password.');
+      }
+      return false;
+    }
+    const ok = await login(unlocked.credentials.identifier, unlocked.credentials.password);
+    if (!ok) {
+      setHasSavedLogin(false);
+      setBiometricError('Saved login expired. Sign in with your password.');
+      return false;
+    }
+    return true;
+  }, [clearError, login]);
+
+  useEffect(() => {
+    if (autoPrompted.current) return;
+    if (!biometricEnabled || !biometricAvailable || !hasSavedLogin || loading) return;
+    autoPrompted.current = true;
+    signInWithSavedLogin();
+  }, [biometricEnabled, biometricAvailable, hasSavedLogin, loading, signInWithSavedLogin]);
+
   const toggleBiometric = async () => {
     const next = !biometricEnabled;
     setBiometricEnabledState(next);
     await setBiometricEnabled(next);
+    if (!next) setHasSavedLogin(false);
   };
 
   const handleSignIn = async () => {
     setBiometricError('');
     clearError?.();
+
+    if (biometricEnabled && hasSavedLogin && !password) {
+      await signInWithSavedLogin();
+      return;
+    }
 
     const identifier = email.trim();
     if (!identifier || !password) {
@@ -79,22 +126,11 @@ export default function LoginScreen() {
       return;
     }
 
-    if (biometricEnabled) {
-      const bio = await authenticateForLogin();
-      if (!bio.success) {
-        if (bio.reason === 'unavailable') {
-          setBiometricError('Biometric authentication is unavailable on this device.');
-        } else if (bio.reason === 'user_cancel' || bio.reason === 'app_cancel' || bio.reason === 'system_cancel') {
-          setBiometricError('Biometric authentication was cancelled.');
-          return;
-        } else {
-          setBiometricError('Biometric authentication failed. You can try again or use password.');
-          return;
-        }
-      }
+    const ok = await login(identifier, password);
+    if (ok && biometricEnabled) {
+      await saveBiometricCredentials(identifier, password);
+      setHasSavedLogin(true);
     }
-
-    await login(identifier, password);
   };
 
   return (
@@ -197,9 +233,25 @@ export default function LoginScreen() {
                   )}
                 </TouchableOpacity>
 
+                {biometricAvailable && biometricEnabled && hasSavedLogin ? (
+                  <TouchableOpacity
+                    onPress={signInWithSavedLogin}
+                    disabled={loading}
+                    activeOpacity={0.85}
+                    style={styles.bioSignIn}
+                  >
+                    <Ionicons
+                      name={Platform.OS === 'ios' ? 'scan-outline' : 'finger-print'}
+                      size={18}
+                      color="#FFFFFF"
+                    />
+                    <STText style={styles.bioSignInText}>{bioCopy.buttonLabel}</STText>
+                  </TouchableOpacity>
+                ) : null}
+
                 {biometricAvailable ? (
                   <TouchableOpacity onPress={toggleBiometric} style={styles.bioRow} activeOpacity={0.7}>
-                    <STText style={styles.bioLabel}>Biometric login</STText>
+                    <STText style={styles.bioLabel}>{bioCopy.settingsLabel}</STText>
                     <STText style={[styles.bioValue, biometricEnabled && styles.bioOn]}>
                       {biometricEnabled ? 'On' : 'Off'}
                     </STText>
@@ -358,6 +410,24 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  bioSignIn: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  bioSignInText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.6,
     textTransform: 'uppercase',
   },
   bioRow: {

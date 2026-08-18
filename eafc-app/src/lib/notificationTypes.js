@@ -18,6 +18,17 @@ export const NOTIFICATION_SETTING_GROUPS = [
   { label: 'General', keys: ['announcements'] },
 ];
 
+export const TEST_TOAST_SAMPLES = [
+  { key: 'messages', label: 'Messages', message: 'Messages · New chat from Neo' },
+  { key: 'contract_offers', label: 'Contract offers', message: 'Contract offers · Ajax sent you a contract' },
+  { key: 'contract_updates', label: 'Contract updates', message: 'Contract updates · Your offer was accepted' },
+  { key: 'match_reminders', label: 'Match reminders', message: 'Match reminders · Kickoff in 30 minutes' },
+  { key: 'match_results', label: 'Match results', message: 'Match results · Result confirmed 3–1' },
+  { key: 'club_updates', label: 'Club updates', message: 'Club updates · Join request approved' },
+  { key: 'tournament_updates', label: 'Tournament updates', message: 'Tournament updates · The cup is starting' },
+  { key: 'announcements', label: 'Announcements', message: 'Announcements · Transfer window is open' },
+];
+
 export const NOTIFICATION_CHANNEL_KEYS = ['web', 'email', 'mobile', 'push'];
 
 export const NOTIFICATION_CHANNELS = [

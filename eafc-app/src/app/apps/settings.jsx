@@ -14,6 +14,7 @@ import { DISPLAY_LANGUAGES } from '@/lib/languages';
 import { localStorage } from '@/lib/polyfillStorage';
 import {
   NOTIFICATION_CHANNELS,
+  TEST_TOAST_SAMPLES,
   getDefaultNotificationSettings,
   materializeNotificationSettings,
   setChannelCategory,
@@ -25,6 +26,7 @@ import {
 } from '@/lib/oneSignal';
 import NotificationPushSection from '@/components/settings/NotificationPushSection';
 import NotificationChannelSwitches from '@/components/settings/NotificationChannelSwitches';
+import { showToast } from '@/utils/toast';
 import {
   LIVE_DARK_BG_OPTIONS,
   LIVE_DARK_MAX_UPLOADS,
@@ -41,8 +43,10 @@ import {
 import { DISCORD_INVITE_URL } from '@/lib/discordConfig';
 import {
   getBiometricEnabled,
+  getSupportedBiometricKinds,
   isBiometricAvailable,
   setBiometricEnabled,
+  biometricPromptCopy,
 } from '@/services/biometricAuthService';
 import SettingsSection from '@/components/settings/SettingsSection';
 import AccountRoleUpgradeSection from '@/components/settings/AccountRoleUpgradeSection';
@@ -201,6 +205,7 @@ export default function SettingsScreen() {
   const [deleting, setDeleting] = useState(false);
   const [biometricEnabled, setBiometricEnabledState] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [bioLabel, setBioLabel] = useState('Biometric login');
   const homeLayout = useDashboardLayoutStore((s) => s.layout);
   const setHomeLayout = useDashboardLayoutStore((s) => s.setLayout);
   const initializeHomeLayout = useDashboardLayoutStore((s) => s.initialize);
@@ -213,11 +218,12 @@ export default function SettingsScreen() {
     let cancelled = false;
     (async () => {
       try {
-        const [me, resolved, bioOn, bioOk] = await Promise.all([
+        const [me, resolved, bioOn, bioOk, bioKinds] = await Promise.all([
           stageClient.auth.me().catch(() => null),
           resolveMyPlayerAndClub().catch(() => ({})),
           getBiometricEnabled(),
           isBiometricAvailable(),
+          getSupportedBiometricKinds(),
         ]);
         if (cancelled) return;
         if (me?.language) setLanguage(me.language);
@@ -243,6 +249,7 @@ export default function SettingsScreen() {
         }
         setBiometricEnabledState(bioOn);
         setBiometricAvailable(bioOk);
+        setBioLabel(biometricPromptCopy(bioKinds).settingsLabel);
         const nextPush = await getNativePushStatus();
         if (cancelled) return;
         setPushStatus(nextPush);
@@ -563,7 +570,7 @@ export default function SettingsScreen() {
           <SettingsSection title={t('settingsPage.stgAccountSecurity')} description={t('settingsPage.stgAccountSecurityDesc')} icon="lock-closed-outline">
             {biometricAvailable ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <Text style={{ color: tokens.text, fontWeight: '700' }}>Biometric login</Text>
+                <Text style={{ color: tokens.text, fontWeight: '700' }}>{bioLabel}</Text>
                 <Switch
                   value={biometricEnabled}
                   onValueChange={async (next) => {
@@ -643,6 +650,39 @@ export default function SettingsScreen() {
                 channel={channel.key}
                 onToggle={handleToggleNotif}
               />
+              {channel.key === 'mobile' ? (
+                <View style={{ marginTop: 12, gap: 8 }}>
+                  <TouchableOpacity
+                    onPress={() => TEST_TOAST_SAMPLES.forEach((row) => showToast(row.message))}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: 'rgba(0,240,255,0.35)',
+                      borderRadius: 12,
+                      paddingVertical: 12,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ color: CYAN, fontWeight: '800' }}>Send all test toasts</Text>
+                  </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                    {TEST_TOAST_SAMPLES.map((row) => (
+                      <TouchableOpacity
+                        key={row.key}
+                        onPress={() => showToast(row.message)}
+                        style={{
+                          borderWidth: 1,
+                          borderColor: 'rgba(255,255,255,0.14)',
+                          borderRadius: 999,
+                          paddingHorizontal: 12,
+                          paddingVertical: 8,
+                        }}
+                      >
+                        <Text style={{ color: tokens.text, fontSize: 11, fontWeight: '800' }}>{row.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
             </SettingsSection>
           ))}
 

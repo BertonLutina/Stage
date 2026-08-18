@@ -1,19 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 
-const TOAST_DURATION = 3500;
+const TOAST_DURATION = 2800;
 
 export default function Toast({ visible, message, onHide }) {
   const [opacity] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
-    if (!visible || !message) return;
-    Animated.sequence([
+    if (!visible || !message) return undefined;
+    opacity.setValue(0);
+    const animation = Animated.sequence([
       Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
       Animated.delay(TOAST_DURATION - 400),
       Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-    ]).start(() => onHide?.());
-  }, [visible, message]);
+    ]);
+    animation.start(({ finished }) => {
+      if (finished) onHide?.();
+    });
+    return () => animation.stop();
+  }, [visible, message, opacity, onHide]);
 
   if (!visible || !message) return null;
 
