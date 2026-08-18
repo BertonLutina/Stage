@@ -478,17 +478,73 @@ export function GamerRecordStrip({ wins = 0, draws = 0, losses = 0 }) {
   );
 }
 
-export function GamerTabNav({ tabs, active, onChange, accent = 'cyan' }) {
+export function GamerTabNav({ tabs, active, onChange, accent = 'cyan', shape = 'rounded' }) {
   const tokens = useGamerTokens();
   const activeBorder = accent === 'amber' ? tokens.amberBorder : tokens.cyanBorder;
   const activeBg = accent === 'amber' ? 'rgba(255,214,10,0.14)' : (tokens.isDark ? 'rgba(0,240,255,0.16)' : 'rgba(14,116,144,0.12)');
   const activeText = accent === 'amber' ? tokens.amber : tokens.cyan;
   const list = Array.isArray(tabs) ? tabs : [];
+  const useParallelogram = shape === 'parallelogram';
 
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
       {list.map((tab) => {
         const isActive = active === tab.id;
+        const tabBody = (
+          <>
+            <Text
+              style={{
+                color: isActive ? (useParallelogram ? '#E0FBFF' : activeText) : (useParallelogram ? 'rgba(0,229,255,0.45)' : tokens.muted),
+                fontSize: useParallelogram ? 10 : 11,
+                fontWeight: '900',
+                letterSpacing: 1.8,
+                textTransform: 'uppercase',
+              }}
+            >
+              {tab.label}
+            </Text>
+            {tab.badge != null && tab.badge !== '' ? (
+              <View
+                style={{
+                  minWidth: 18,
+                  height: 18,
+                  borderRadius: useParallelogram ? 0 : 9,
+                  paddingHorizontal: 5,
+                  backgroundColor: isActive ? (useParallelogram ? CYAN : activeText) : 'rgba(255,255,255,0.2)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ color: '#000', fontSize: 9, fontWeight: '900' }}>{tab.badge}</Text>
+              </View>
+            ) : null}
+          </>
+        );
+
+        if (useParallelogram) {
+          return (
+            <TouchableOpacity
+              key={tab.id}
+              onPress={() => onChange?.(tab.id)}
+              activeOpacity={0.88}
+              style={{
+                transform: [{ skewX: '-10deg' }],
+                borderWidth: 1,
+                borderColor: isActive ? 'rgba(0,229,255,0.55)' : 'rgba(0,229,255,0.15)',
+                backgroundColor: isActive ? 'rgba(0,229,255,0.18)' : 'rgba(6,17,29,0.82)',
+                paddingHorizontal: 18,
+                paddingVertical: 11,
+                minHeight: 44,
+                justifyContent: 'center',
+              }}
+            >
+              <View style={{ transform: [{ skewX: '10deg' }], flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                {tabBody}
+              </View>
+            </TouchableOpacity>
+          );
+        }
+
         return (
           <TouchableOpacity
             key={tab.id}
@@ -503,34 +559,10 @@ export function GamerTabNav({ tabs, active, onChange, accent = 'cyan' }) {
               flexDirection: 'row',
               alignItems: 'center',
               gap: 6,
+              minHeight: 44,
             }}
           >
-            <Text
-              style={{
-                color: isActive ? activeText : tokens.muted,
-                fontSize: 11,
-                fontWeight: '900',
-                letterSpacing: 1.8,
-                textTransform: 'uppercase',
-              }}
-            >
-              {tab.label}
-            </Text>
-            {tab.badge != null && tab.badge !== '' ? (
-              <View
-                style={{
-                  minWidth: 18,
-                  height: 18,
-                  borderRadius: 9,
-                  paddingHorizontal: 5,
-                  backgroundColor: isActive ? activeText : 'rgba(255,255,255,0.2)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text style={{ color: '#000', fontSize: 9, fontWeight: '900' }}>{tab.badge}</Text>
-              </View>
-            ) : null}
+            {tabBody}
           </TouchableOpacity>
         );
       })}
@@ -538,7 +570,7 @@ export function GamerTabNav({ tabs, active, onChange, accent = 'cyan' }) {
   );
 }
 
-/** Two-level club nav — group pills + sub-tab strip (matches web GamerClubTabNav). */
+/** Two-level club nav — parallelogram tabs matching web GamerClubTabNav. */
 export function GamerClubTabNav({ groups = [], activeTab, tabLabels = {}, onChange, badgeForTab }) {
   const safeGroups = (groups || []).filter((g) => Array.isArray(g.tabs) && g.tabs.length > 0);
   const activeGroup = safeGroups.find((g) => g.tabs.includes(activeTab)) || safeGroups[0];
@@ -547,33 +579,48 @@ export function GamerClubTabNav({ groups = [], activeTab, tabLabels = {}, onChan
 
   return (
     <View style={{ gap: 10 }}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
         {safeGroups.map((group) => {
           const isActive = group.tabs.includes(activeTab);
+          const badge = group.tabs.map((id) => badgeForTab?.(id)).find(Boolean);
           return (
             <TouchableOpacity
-              key={group.id || group.label}
+              key={group.label}
               onPress={() => onChange?.(group.tabs[0])}
+              activeOpacity={0.88}
               style={{
-                borderRadius: 999,
-                paddingHorizontal: 14,
-                paddingVertical: 9,
+                transform: [{ skewX: '-10deg' }],
                 borderWidth: 1,
-                borderColor: isActive ? 'rgba(255,214,10,0.45)' : 'rgba(255,255,255,0.1)',
-                backgroundColor: isActive ? 'rgba(255,214,10,0.14)' : 'rgba(255,255,255,0.03)',
+                borderColor: isActive ? 'rgba(0,229,255,0.55)' : 'rgba(0,229,255,0.15)',
+                backgroundColor: isActive ? 'rgba(0,229,255,0.18)' : 'rgba(6,17,29,0.82)',
+                paddingHorizontal: 18,
+                paddingVertical: 11,
+                minHeight: 44,
+                justifyContent: 'center',
+                shadowColor: isActive ? '#00E5FF' : 'transparent',
+                shadowOpacity: isActive ? 0.35 : 0,
+                shadowRadius: isActive ? 12 : 0,
+                shadowOffset: { width: 0, height: 0 },
               }}
             >
-              <Text
-                style={{
-                  color: isActive ? AMBER : 'rgba(255,255,255,0.4)',
-                  fontSize: 10,
-                  fontWeight: '900',
-                  letterSpacing: 1.8,
-                  textTransform: 'uppercase',
-                }}
-              >
-                {group.label}
-              </Text>
+              <View style={{ transform: [{ skewX: '10deg' }], flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text
+                  style={{
+                    color: isActive ? '#E0FBFF' : 'rgba(0,229,255,0.45)',
+                    fontSize: 10,
+                    fontWeight: '900',
+                    letterSpacing: 1.8,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {group.label}
+                </Text>
+                {badge ? (
+                  <View style={{ minWidth: 18, height: 18, paddingHorizontal: 5, backgroundColor: CYAN, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: '#000', fontSize: 9, fontWeight: '900' }}>{badge}</Text>
+                  </View>
+                ) : null}
+              </View>
             </TouchableOpacity>
           );
         })}
@@ -582,6 +629,7 @@ export function GamerClubTabNav({ groups = [], activeTab, tabLabels = {}, onChan
       {activeGroup && activeGroup.tabs.length > 1 ? (
         <GamerTabNav
           accent="cyan"
+          shape="parallelogram"
           active={activeTab}
           onChange={onChange}
           tabs={activeGroup.tabs.map((id) => ({

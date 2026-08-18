@@ -57,8 +57,21 @@ export default function StoreScreen() {
             {config.headline || 'One membership for serious competitors'}
           </Text>
           <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 6, lineHeight: 18 }}>
-            {config.description || 'Unlock official competitions, full rankings, and a monthly credit refresh.'}
+            {config.description || 'Unlock official competitions, custom player card backgrounds, club stats tile backgrounds, uploads, and a monthly credit refresh.'}
           </Text>
+          <View style={{ marginTop: 10, gap: 4 }}>
+            {[
+              'Custom player card backgrounds',
+              'Upload your own player card background',
+              'Exclusive Stage+ card background designs',
+              'Custom Club Profile stats tile backgrounds',
+              'Upload your own club stats tile background',
+            ].map((perk) => (
+              <Text key={perk} style={{ color: 'rgba(255,255,255,0.62)', fontSize: 11, lineHeight: 16 }}>
+                • {perk}
+              </Text>
+            ))}
+          </View>
         </View>
       )}
       renderItem={({ item }) => (

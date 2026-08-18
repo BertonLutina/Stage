@@ -21,6 +21,7 @@ import {
   IdentityRail,
 } from '@/components/profile/gamer/GamerProfileUI';
 import ClubProfileTabs from './clubProfileTabs';
+import PresidentChip from '@/components/club/PresidentChip';
 import { headingStyleLg } from '@/lib/fonts';
 import { loadClubProfile } from '@/lib/clubProfileData';
 import { leaveStageClub } from '@/lib/leaveClub';
@@ -118,6 +119,13 @@ function ClubProfileSurface({ club: seedClub, president: seedPresident, isOwner,
     ?? club?.member_count
     ?? club?.members_count
     ?? null;
+  const myPlayer = bundle?.players?.find((player) => String(player.id) === String(playerId)) || null;
+  const clubRoles = Array.isArray(myPlayer?.club_roles) ? myPlayer.club_roles : [];
+  const primaryRole = String(myPlayer?.role || '').toLowerCase();
+  const isPresidentRole = isOwner || primaryRole === 'president' || clubRoles.includes('president');
+  const isCaptainRole = primaryRole === 'captain' || clubRoles.includes('captain');
+  const isViceCaptainRole = primaryRole === 'vice_captain' || clubRoles.includes('vice_captain');
+  const isClubMember = Boolean(myPlayer);
 
   if (!club) {
     return (
@@ -179,43 +187,7 @@ function ClubProfileSurface({ club: seedClub, president: seedPresident, isOwner,
           {/* President = secondary chip; one primary CTA */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             {president ? (
-              <TouchableOpacity
-                onPress={onOpenPresident}
-                activeOpacity={0.85}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 8,
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.12)',
-                  backgroundColor: 'rgba(0,0,0,0.4)',
-                  paddingHorizontal: 10,
-                  paddingVertical: 8,
-                  maxWidth: '48%',
-                }}
-              >
-                <View
-                  style={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: 12,
-                    overflow: 'hidden',
-                    backgroundColor: '#101827',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {president.avatar_url ? (
-                    <Image source={{ uri: president.avatar_url }} style={{ width: 24, height: 24 }} />
-                  ) : (
-                    <Ionicons name="person" size={12} color="rgba(255,255,255,0.4)" />
-                  )}
-                </View>
-                <Text numberOfLines={1} style={{ color: 'rgba(255,255,255,0.85)', fontWeight: '700', fontSize: 11, flexShrink: 1 }}>
-                  {president.display_name || president.gamertag || 'President'}
-                </Text>
-              </TouchableOpacity>
+              <PresidentChip president={president} onPress={onOpenPresident} />
             ) : null}
             {isOwner && playerId ? (
               <TouchableOpacity
@@ -307,21 +279,18 @@ function ClubProfileSurface({ club: seedClub, president: seedPresident, isOwner,
           <ClubProfileTabs
             club={club}
             isOwner={isOwner}
-            canOpenOperations={isOwner}
+            isPresident={isPresidentRole}
+            isCaptain={isCaptainRole}
+            isViceCaptain={isViceCaptainRole}
+            isMember={isClubMember}
             currentPlayerId={playerId}
-            memberCount={memberLabel}
             players={bundle?.players}
             matches={bundle?.matches}
             upcomingMatches={bundle?.upcomingMatches}
             posts={bundle?.posts}
-            historyRows={bundle?.historyRows}
             trophies={bundle?.trophies}
             chatMessages={bundle?.chatMessages}
-            record={record}
             contracts={bundle?.contracts}
-            staffRoles={bundle?.staffRoles}
-            applicants={bundle?.applicants}
-            lineups={bundle?.lineups}
             auditLogs={bundle?.auditLogs}
             availability={bundle?.availability}
             stadium={bundle?.stadium}

@@ -3,23 +3,24 @@ import { resolve } from 'path';
 
 const source = readFileSync(resolve(__dirname, '../../app/(tabs)/profile/clubProfileTabs.jsx'), 'utf8');
 const profile = readFileSync(resolve(__dirname, '../../app/(tabs)/profile/profilescreen.jsx'), 'utf8');
+const officeTabs = readFileSync(resolve(__dirname, '../../lib/clubOfficeTabs.js'), 'utf8');
 
-describe('club and player parity with Stage web (Aug 15–17)', () => {
-  test('Office tab is owner-only, not staff/operations', () => {
-    expect(source).toMatch(/if \(item\.id === 'office'\) return isOwner;/);
-    expect(source).not.toMatch(/if \(item\.id === 'office'\) return isOwner \|\| canOpenOperations;/);
+describe('club profile web parity (mobile)', () => {
+  test('uses web club tab groups: posts, squad, stats, fixtures, trophies, chat, club office', () => {
+    expect(source).toMatch(/buildClubTabGroups/);
+    expect(source).toMatch(/GamerClubTabNav/);
+    expect(officeTabs).toMatch(/Fixtures/);
+    expect(officeTabs).toMatch(/club-office/);
+    expect(source).not.toMatch(/PRIMARY_TABS/);
+    expect(source).not.toMatch(/operations/);
   });
 
-  test('squad gamecards open profile, contract, release, role, and loan actions', () => {
-    expect(source).toMatch(/applyLoanAnnotations/);
-    expect(source).toMatch(/splitSquadByLoan/);
-    expect(source).toMatch(/View profile/);
-    expect(source).toMatch(/View contract/);
+  test('squad uses premium cards with nationality and fixture availability', () => {
+    expect(source).toMatch(/SquadPlayerCard/);
+    expect(source).toMatch(/ClubFixturesPanel/);
+    expect(source).toMatch(/ClubStatsPanel/);
+    expect(source).toMatch(/ClubOfficePanel/);
     expect(source).toMatch(/Release player/);
-    expect(source).toMatch(/Remove role/);
-    expect(source).toMatch(/Recall/);
-    expect(source).toMatch(/Request return/);
-    expect(source).toMatch(/ON LOAN/);
   });
 
   test('player profile can request a loan from another club', () => {

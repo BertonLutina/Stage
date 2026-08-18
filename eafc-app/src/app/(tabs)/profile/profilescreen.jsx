@@ -569,6 +569,7 @@ export default function ProfileScreen({
           active={tab}
           onChange={(id) => { setTab(id); setMoreTool(null); }}
           accent="cyan"
+          shape="parallelogram"
         />
 
         {tab === 'feed' && (

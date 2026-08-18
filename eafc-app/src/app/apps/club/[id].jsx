@@ -65,11 +65,11 @@ export default function PublicClubScreen() {
               <ClubProfileTabs
                 club={club}
                 isOwner={false}
+                isMember={false}
                 players={bundle.players}
                 matches={bundle.matches}
                 upcomingMatches={bundle.upcomingMatches}
                 posts={bundle.posts}
-                historyRows={bundle.historyRows}
                 trophies={bundle.trophies}
                 record={bundle.record}
                 contracts={bundle.contracts}
