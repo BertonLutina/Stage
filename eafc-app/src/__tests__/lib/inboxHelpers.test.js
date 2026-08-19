@@ -6,6 +6,7 @@ import {
   groupInboxMessages,
   upsertInboxMessage,
   isNotificationUnread,
+  applyNotificationRead,
 } from '../../lib/inboxHelpers';
 
 describe('inbox action types', () => {
@@ -82,5 +83,23 @@ describe('isNotificationUnread', () => {
   test('supports read and is_read fields', () => {
     expect(isNotificationUnread({ is_read: false })).toBe(true);
     expect(isNotificationUnread({ read: true })).toBe(false);
+  });
+
+  test('treats mysql 0/1 read flags as unread/read', () => {
+    expect(isNotificationUnread({ read: 0 })).toBe(true);
+    expect(isNotificationUnread({ read: 1 })).toBe(false);
+    expect(isNotificationUnread({ read: '0' })).toBe(true);
+    expect(isNotificationUnread({ read: '1' })).toBe(false);
+    expect(isNotificationUnread({ is_read: 1 })).toBe(false);
+  });
+});
+
+describe('applyNotificationRead', () => {
+  test('sets both mysql read and is_read', () => {
+    expect(applyNotificationRead({ id: 'n1', read: 0 }, true)).toEqual({
+      id: 'n1',
+      read: 1,
+      is_read: true,
+    });
   });
 });

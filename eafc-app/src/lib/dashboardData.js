@@ -1,5 +1,6 @@
 import { stageClient, resolveMyPlayerAndClub } from '@/api/stageClient';
 import { getContractProgress, CONTRACT_TYPES } from '@/lib/contractTypes';
+import { isNotificationUnread } from '@/lib/inboxHelpers';
 import { getContractType, normalizePlayerContracts } from '@/lib/playerContractFields';
 
 const ACTIVE_MATCH_STATUSES = new Set(['scheduled', 'live', 'pending', 'in_progress', 'awaiting_confirmation']);
@@ -336,11 +337,7 @@ export async function loadDashboardGlance(player, user) {
     stageClient.entities.Notification.filter({ recipient_email: email }, '-created_date', 30).catch(() => []),
   ]);
   const unreadInbox = inbox.filter((m) => !m.is_read);
-  const unreadNotifications = notifications.filter((n) => {
-    if (typeof n.is_read === 'boolean') return !n.is_read;
-    if (typeof n.read === 'boolean') return !n.read;
-    return true;
-  });
+  const unreadNotifications = notifications.filter(isNotificationUnread);
   return {
     stc: Number(player?.stc || 0),
     credits: Number(player?.credits || 0),

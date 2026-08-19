@@ -18,6 +18,11 @@
         "backgroundImage": "./assets/adaptive-icon-background.png",
         "backgroundColor": "#07153C"
       },
+      "splash": {
+        "image": "./assets/adaptive-icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#07153C"
+      },
       "package": "com.eafc.platform",
       "permissions": [
         "android.permission.RECORD_AUDIO",

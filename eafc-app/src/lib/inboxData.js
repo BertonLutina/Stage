@@ -113,3 +113,25 @@ export async function loadNotifications() {
     .catch(() => []);
   return { user, email, notifications: notifications || [] };
 }
+
+export async function markNotificationRead(notif) {
+  if (!notif?.id) return notif;
+  const updated = await stageClient.http.post(`/notifications/${notif.id}/read`, {}).catch(() => null);
+  if (updated?.id) return { ...notif, ...updated, read: 1, is_read: true };
+  await stageClient.entities.Notification.update(notif.id, { read: true }).catch(() => {});
+  return { ...notif, read: 1, is_read: true };
+}
+
+export async function markAllNotificationsRead(notifications = []) {
+  await Promise.all((notifications || []).map((row) => markNotificationRead(row)));
+  return notifications.map((row) => ({ ...row, read: 1, is_read: true }));
+}
+
+export async function deleteNotification(id) {
+  if (!id) return;
+  await stageClient.entities.Notification.delete(id);
+}
+
+export async function deleteAllNotifications(notifications = []) {
+  await Promise.all((notifications || []).map((row) => deleteNotification(row.id)));
+}

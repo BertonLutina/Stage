@@ -1,50 +1,66 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { showToast } from '../utils/toast';
 import { stageClient, resolveMyPlayerAndClub } from '../api/stageClient';
-import { isNotificationEnabled, parseNotificationSettings } from '../lib/notificationTypes';
+import { parseNotificationSettings } from '../lib/notificationTypes';
+import {
+  createToastDedupe,
+  notificationEmailsForUser,
+  toastFromInbox,
+  toastFromMatchUpdate,
+  toastFromNotification,
+} from '../lib/matchNotificationToasts';
 
 /**
- * Surface new Notification / Inbox toasts from the shared STAGE socket.
- * Entity.subscribe() joins STAGE_NOTIFICATION_* / STAGE_INBOX_* rooms.
+ * Surface new Notification / Inbox / Match toasts from the shared STAGE socket.
+ * Entity.subscribe() joins STAGE_NOTIFICATION_* / STAGE_INBOX_* / STAGE_MATCH rooms.
  * Toasts follow the Mobile notification channel in Settings.
  */
 export default function useNotificationsSocket(userId) {
-  const settingsRef = useRef({});
-
   useEffect(() => {
     if (!userId) return undefined;
     let cancelled = false;
+    const unsubs = [];
+    const allowToast = createToastDedupe();
+    const matchSnapshots = new Map();
+
+    const toast = (message) => {
+      if (allowToast(message)) showToast(message);
+    };
+
     resolveMyPlayerAndClub()
-      .then(({ player }) => {
+      .then(({ user, player, club }) => {
         if (cancelled) return;
-        settingsRef.current = parseNotificationSettings(player?.notification_settings);
+        const settings = parseNotificationSettings(player?.notification_settings);
+        const emails = notificationEmailsForUser({ user, player, club });
+        const identity = {
+          playerId: player?.id || user?.player_id || null,
+          clubId: club?.id || player?.club_id || null,
+          emails,
+        };
+
+        unsubs.push(stageClient.entities.Notification.subscribe((event) => {
+          toast(toastFromNotification(event, settings));
+        }, { emails }));
+
+        unsubs.push(stageClient.entities.InboxMessage.subscribe((event) => {
+          toast(toastFromInbox(event, settings));
+        }, { emails }));
+
+        unsubs.push(stageClient.entities.Match.subscribe((event) => {
+          const match = event?.data;
+          if (!match?.id || event?.type === 'delete') return;
+          const previous = matchSnapshots.get(String(match.id)) || null;
+          matchSnapshots.set(String(match.id), match);
+          toast(toastFromMatchUpdate(match, previous, identity, settings));
+        }));
       })
       .catch(() => {});
-    return () => { cancelled = true; };
-  }, [userId]);
-
-  useEffect(() => {
-    if (!userId) return undefined;
-
-    const unsubNotif = stageClient.entities.Notification.subscribe((event) => {
-      if (!event.data) return;
-      if (event.type !== 'create' && event.type !== 'update') return;
-      if (event.data.read === true || event.data.read === 1) return;
-      if (!isNotificationEnabled(event.data.type, settingsRef.current, 'mobile')) return;
-      const title = event.data.title || 'New notification';
-      showToast(title);
-    });
-
-    const unsubInbox = stageClient.entities.InboxMessage.subscribe((event) => {
-      if (event?.type !== 'create' || !event.data) return;
-      if (!isNotificationEnabled(event.data.message_type || event.data.type || 'message', settingsRef.current, 'mobile')) return;
-      const subject = event.data.subject || 'New inbox message';
-      showToast(subject);
-    });
 
     return () => {
-      if (typeof unsubNotif === 'function') unsubNotif();
-      if (typeof unsubInbox === 'function') unsubInbox();
+      cancelled = true;
+      unsubs.forEach((unsub) => {
+        if (typeof unsub === 'function') unsub();
+      });
     };
   }, [userId]);
 }

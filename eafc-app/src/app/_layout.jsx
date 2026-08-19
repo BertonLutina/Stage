@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet, Linking } from 'react-native';
+import { View, Linking } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import '../../global.css';
 import '@/lib/polyfillStorage';
@@ -18,6 +19,13 @@ import { ThemeProvider, DarkTheme } from '@react-navigation/native';
 import GradientBackground from '../components/common/GradientBackground';
 import Toast from '../components/common/Toast';
 import PageWalkthrough from '../components/onboarding/PageWalkthrough';
+import SplashOverlay from '../components/common/SplashOverlay';
+
+// Hold the native splash until SplashOverlay has painted; it hides itself then.
+SplashScreen.preventAutoHideAsync().catch(() => {});
+// Cross-fade the native splash out instead of cutting to the JS overlay.
+// `fade` is iOS-only; on Android this is a harmless no-op.
+SplashScreen.setOptions({ fade: true, duration: 300 });
 
 const NAV_THEME = {
   ...DarkTheme,
@@ -84,11 +92,7 @@ export default function RootLayout() {
           </Stack>
           <Toast visible={visible} message={message} onHide={hide} />
           {user ? <PageWalkthrough /> : null}
-          {!bootReady && (
-            <View style={[StyleSheet.absoluteFill, styles.loader]}>
-              <ActivityIndicator size="large" color="#5FE3E8" />
-            </View>
-          )}
+          <SplashOverlay visible={!bootReady} />
         </View>
         </ThemeProvider>
       </GradientBackground>
@@ -97,10 +101,3 @@ export default function RootLayout() {
   );
 }
 
-const styles = StyleSheet.create({
-  loader: {
-    backgroundColor: 'rgba(7,22,58,0.85)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

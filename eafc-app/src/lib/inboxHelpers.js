@@ -72,15 +72,22 @@ export function resolveNotificationHref(link) {
   return { pathname: '/apps/inbox' };
 }
 
+function isFlagOn(value) {
+  return value === true || value === 1 || value === '1' || value === 'true';
+}
+
 export function isNotificationUnread(notif = {}) {
-  if (typeof notif.is_read === 'boolean') return !notif.is_read;
-  if (typeof notif.read === 'boolean') return !notif.read;
+  if (notif.is_read !== undefined && notif.is_read !== null) return !isFlagOn(notif.is_read);
+  if (notif.read !== undefined && notif.read !== null) return !isFlagOn(notif.read);
   return true;
 }
 
-export function notificationMarkReadPayload(notif = {}) {
-  if ('is_read' in notif || !('read' in notif)) return { is_read: true };
+export function notificationMarkReadPayload() {
   return { read: true };
+}
+
+export function applyNotificationRead(notif = {}, read = true) {
+  return { ...notif, read: read ? 1 : 0, is_read: Boolean(read) };
 }
 
 const TYPE_LABELS = {

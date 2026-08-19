@@ -31,6 +31,10 @@ describe('notification settings (backend parity)', () => {
     expect(isNotificationEnabled('contract_offer', { contract_offers: false })).toBe(false);
     expect(isNotificationEnabled('message', {})).toBe(true);
     expect(isNotificationEnabled('message', { messages: false })).toBe(false);
+    expect(isNotificationEnabled('match_invite', { match_reminders: false }, 'mobile')).toBe(false);
+    expect(isNotificationEnabled('league_schedule', {}, 'mobile')).toBe(true);
+    expect(isNotificationEnabled('match_result_requested', { match_results: false }, 'mobile')).toBe(false);
+    expect(isNotificationEnabled('match_disputed', { match_results: true }, 'mobile')).toBe(true);
   });
 
   test('nested email, mobile, and push channels are independent', () => {

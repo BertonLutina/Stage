@@ -331,14 +331,22 @@ function makeEntity(name) {
           channels.push(ch);
           setSocketListeners(ch, onPayload);
         };
+        const addEmailRooms = (emails, channel) => {
+          for (const email of emails || []) {
+            const raw = String(email || '').trim();
+            if (!raw) continue;
+            add(makeChannel(raw, channel));
+            add(makeChannel(raw.toLowerCase(), channel));
+          }
+        };
 
         switch (name) {
           case "Notification":
-            if (me?.email) add(makeChannel(me.email, CHANNELS.NOTIFICATION));
+            addEmailRooms([me?.email, ...(filters.emails || [])], CHANNELS.NOTIFICATION);
             break;
           case "InboxMessage":
           case "DirectMessage":
-            if (me?.email) add(makeChannel(me.email, CHANNELS.INBOX));
+            addEmailRooms([me?.email, ...(filters.emails || [])], CHANNELS.INBOX);
             if (me?.player_id) add(makeChannel(me.player_id, CHANNELS.INBOX));
             break;
           case "Match":

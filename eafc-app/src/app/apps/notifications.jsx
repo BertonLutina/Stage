@@ -1,16 +1,16 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StatusBar,
-  ActivityIndicator, RefreshControl,
+  ActivityIndicator, RefreshControl, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { stageClient } from '@/api/stageClient';
-import { loadNotifications } from '@/lib/inboxData';
+import { loadNotifications, markNotificationRead, deleteNotification } from '@/lib/inboxData';
 import {
+  applyNotificationRead,
   isNotificationUnread,
-  notificationMarkReadPayload,
   resolveNotificationHref,
   formatRelativeInboxTime,
 } from '@/lib/inboxHelpers';
@@ -84,10 +84,12 @@ export default function NotificationsScreen() {
 
   const markRead = async (notif) => {
     if (!isNotificationUnread(notif)) return;
-    const payload = notificationMarkReadPayload(notif);
-    await stageClient.entities.Notification.update(notif.id, payload).catch(() => {});
     setNotifications((prev) => prev.map((n) => (
-      n.id === notif.id ? { ...n, ...payload } : n
+      n.id === notif.id ? applyNotificationRead(n, true) : n
+    )));
+    const updated = await markNotificationRead(notif);
+    setNotifications((prev) => prev.map((n) => (
+      n.id === notif.id ? applyNotificationRead({ ...n, ...updated }, true) : n
     )));
   };
 
@@ -100,10 +102,39 @@ export default function NotificationsScreen() {
 
   const markAll = async () => {
     const unread = notifications.filter(isNotificationUnread);
-    await Promise.all(unread.map((n) => (
-      stageClient.entities.Notification.update(n.id, notificationMarkReadPayload(n)).catch(() => {})
-    )));
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true, read: true })));
+    if (!unread.length) return;
+    setNotifications((prev) => prev.map((n) => applyNotificationRead(n, true)));
+    await Promise.all(unread.map((n) => markNotificationRead(n)));
+  };
+
+  const removeNotif = async (notif) => {
+    if (!notif?.id) return;
+    setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
+    await deleteNotification(notif.id).catch(() => {
+      setNotifications((prev) => [notif, ...prev]);
+    });
+  };
+
+  const removeAll = () => {
+    if (!notifications.length) return;
+    Alert.alert(
+      'Delete all alerts?',
+      `This removes ${notifications.length} notification${notifications.length === 1 ? '' : 's'} from your list.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const snapshot = notifications;
+            setNotifications([]);
+            await Promise.all(snapshot.map((n) => deleteNotification(n.id))).catch(() => {
+              setNotifications(snapshot);
+            });
+          },
+        },
+      ],
+    );
   };
 
   const unreadCount = notifications.filter(isNotificationUnread).length;
@@ -154,6 +185,11 @@ export default function NotificationsScreen() {
               <Ionicons name="checkmark-done" size={20} color={AMBER} />
             </TouchableOpacity>
           ) : null}
+          {notifications.length > 0 ? (
+            <TouchableOpacity onPress={removeAll} hitSlop={8} style={{ padding: 8 }}>
+              <Ionicons name="trash-outline" size={20} color="rgba(255,255,255,0.55)" />
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         {error ? (
@@ -176,9 +212,7 @@ export default function NotificationsScreen() {
           renderItem={({ item }) => {
             const unread = isNotificationUnread(item);
             return (
-              <TouchableOpacity
-                onPress={() => openNotif(item)}
-                activeOpacity={0.85}
+              <View
                 style={{
                   paddingHorizontal: 16,
                   paddingVertical: 14,
@@ -187,42 +221,67 @@ export default function NotificationsScreen() {
                   backgroundColor: unread ? 'rgba(255,210,74,0.06)' : 'transparent',
                   flexDirection: 'row',
                   gap: 12,
+                  alignItems: 'center',
                 }}
               >
-                <View style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 12,
-                  backgroundColor: 'rgba(255,210,74,0.12)',
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,210,74,0.3)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                <TouchableOpacity
+                  onPress={() => openNotif(item)}
+                  activeOpacity={0.85}
+                  style={{ flex: 1, flexDirection: 'row', gap: 12, minWidth: 0 }}
                 >
-                  <Ionicons name="notifications" size={18} color={AMBER} />
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
-                    <Text style={{
-                      color: unread ? '#fff' : 'rgba(255,255,255,0.7)',
-                      fontWeight: unread ? '900' : '700',
-                      fontSize: 14,
-                      flex: 1,
-                    }}
-                      numberOfLines={1}
-                    >
-                      {item.title || item.type || 'Notification'}
-                    </Text>
-                    <Text style={{ color: unread ? AMBER : 'rgba(255,255,255,0.35)', fontSize: 11 }}>
-                      {formatRelativeInboxTime(item.created_date)}
+                  <View style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 12,
+                    backgroundColor: 'rgba(255,210,74,0.12)',
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,210,74,0.3)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  >
+                    <Ionicons name="notifications" size={18} color={AMBER} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+                      <Text style={{
+                        color: unread ? '#fff' : 'rgba(255,255,255,0.7)',
+                        fontWeight: unread ? '900' : '700',
+                        fontSize: 14,
+                        flex: 1,
+                      }}
+                        numberOfLines={1}
+                      >
+                        {item.title || item.type || 'Notification'}
+                      </Text>
+                      <Text style={{ color: unread ? AMBER : 'rgba(255,255,255,0.35)', fontSize: 11 }}>
+                        {formatRelativeInboxTime(item.created_date)}
+                      </Text>
+                    </View>
+                    <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 4 }} numberOfLines={2}>
+                      {item.body || item.message || ''}
                     </Text>
                   </View>
-                  <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 4 }} numberOfLines={2}>
-                    {item.body || item.message || ''}
-                  </Text>
+                </TouchableOpacity>
+                <View style={{ justifyContent: 'center', gap: 4 }}>
+                  {unread ? (
+                    <TouchableOpacity
+                      onPress={() => markRead(item)}
+                      hitSlop={8}
+                      style={{ padding: 6 }}
+                    >
+                      <Ionicons name="checkmark" size={18} color={AMBER} />
+                    </TouchableOpacity>
+                  ) : null}
+                  <TouchableOpacity
+                    onPress={() => removeNotif(item)}
+                    hitSlop={8}
+                    style={{ padding: 6 }}
+                  >
+                    <Ionicons name="trash-outline" size={16} color="rgba(255,255,255,0.4)" />
+                  </TouchableOpacity>
                 </View>
-              </TouchableOpacity>
+              </View>
             );
           }}
         />
