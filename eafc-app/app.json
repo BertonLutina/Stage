@@ -9,12 +9,13 @@
     "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/splash.png",
-      "resizeMode": "contain",
+      "resizeMode": "cover",
       "backgroundColor": "#07153C"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundImage": "./assets/adaptive-icon-background.png",
         "backgroundColor": "#07153C"
       },
       "package": "com.eafc.platform",
@@ -72,6 +73,9 @@
       "url": "https://u.expo.dev/3af5dbe7-a3dd-4462-b872-7603a6b6572f",
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 5000
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     }
   }
 }

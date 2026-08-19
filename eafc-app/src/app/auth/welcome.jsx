@@ -10,7 +10,7 @@ export default function WelcomeScreen() {
   return (
     <SafeAreaView className="flex-1 px-6">
       <View className="flex-1 items-center justify-center">
-        <Image source={require('../../../assets/logo.png')} className="h-64 w-64" style={{ resizeMode: 'contain' }} />
+        <Image source={require('../../../assets/logo-lockup.png')} className="h-20 w-80" style={{ resizeMode: 'contain' }} />
         <STText color="#FFFFFF" className="text-center mt-3 px-4 opacity-80">
           Football and esports club platform. Build your identity, join clubs, and compete.
         </STText>
