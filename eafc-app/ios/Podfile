@@ -1,4 +1,3 @@
-ENV['ONESIGNAL_DISABLE_LOCATION'] = 'true'
 require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
 require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
 
@@ -61,4 +60,9 @@ target 'Stage' do
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
   end
+end
+
+target 'OneSignalNotificationServiceExtension' do
+  pod 'OneSignalXCFramework', '>= 5.0', '< 6.0'
+  use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']
 end
