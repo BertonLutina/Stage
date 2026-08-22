@@ -107,3 +107,19 @@ export function getCountryFlagColors(code) {
   const normalized = normalizeCountryCode(code);
   return COUNTRY_FLAG_PALETTES[normalized] || ['rgba(0,229,255,0.18)', 'rgba(255,255,255,0.08)', 'rgba(245,197,66,0.12)'];
 }
+
+const HOME_NATION_FLAGS = {
+  ENG: '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+  SCO: '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+  WAL: '🏴󠁧󠁢󠁷󠁬󠁳󠁿',
+  NIR: '🇬🇧',
+};
+
+export function countryCodeToFlagEmoji(code, country) {
+  const normalized = normalizeCountryCode(code, country);
+  if (HOME_NATION_FLAGS[normalized]) return HOME_NATION_FLAGS[normalized];
+  const iso = String(normalized || '').toUpperCase();
+  if (iso.length !== 2 || /[^A-Z]/.test(iso)) return '';
+  return String.fromCodePoint(...[...iso].map((char) => 0x1F1E6 + char.charCodeAt(0) - 65));
+}
+

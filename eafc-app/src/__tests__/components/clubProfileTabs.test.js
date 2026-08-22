@@ -15,12 +15,15 @@ describe('club profile web parity (mobile)', () => {
     expect(source).not.toMatch(/operations/);
   });
 
-  test('squad uses premium cards with nationality and fixture availability', () => {
+  test('squad uses premium cards with nationality flag and fixture availability', () => {
     expect(source).toMatch(/SquadPlayerCard/);
     expect(source).toMatch(/ClubFixturesPanel/);
     expect(source).toMatch(/ClubStatsPanel/);
     expect(source).toMatch(/ClubOfficePanel/);
     expect(source).toMatch(/Release player/);
+    const squadCard = readFileSync(resolve(__dirname, '../../components/club/SquadPlayerCard.jsx'), 'utf8');
+    expect(squadCard).toMatch(/FlagMark/);
+    expect(squadCard).not.toMatch(/<Text[^>]*>\{\s*nationality\.label\s*\}<\/Text>/);
   });
 
   test('player profile can request a loan from another club', () => {

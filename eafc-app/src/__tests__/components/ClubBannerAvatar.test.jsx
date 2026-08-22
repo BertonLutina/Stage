@@ -43,14 +43,19 @@ describe('profile banner avatars', () => {
 
     expect(player).not.toMatch(/ProfileBannerAvatar/);
     expect(player).toMatch(/FutIdentityCard/);
+    expect(readRepoFile('components/profile/gamer/GamerProfileUI.jsx')).toMatch(/TrapeziumPhotoCard/);
+    expect(readRepoFile('components/profile/TrapeziumPhotoCard.jsx')).toMatch(/parallelogramPoints/);
 
     expect(president).not.toMatch(/ProfileBannerAvatar/);
     expect(president).toMatch(/FutIdentityCard/);
 
     expect(clubTab).not.toMatch(/ClubBannerAvatar/);
-    expect(clubTab).toMatch(/ClubCrest/);
+    expect(clubTab).not.toMatch(/ClubCrest/);
 
-    expect(publicClub).toMatch(/GamerBanner/);
+    expect(publicClub).toMatch(/GamerBanner|ClubHero/);
     expect(publicClub).toMatch(/ClubProfileTabs/);
+    expect(publicClub).toMatch(/ClubHero/);
+    expect(readRepoFile('components/club/ClubHero.jsx')).toMatch(/club\?\.logo_url/);
+    expect(readRepoFile('components/club/ClubHero.jsx')).not.toMatch(/president\?\.avatar_url/);
   });
 });

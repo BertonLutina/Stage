@@ -21,10 +21,12 @@ import { FUT, SectionCard } from '@/components/dashboard/CommandCenterUI';
 import { REGIONS } from '@/lib/qualificationConfig';
 import { applyForLeague, ACTIVE_STATUSES } from '@/lib/registrationEngine';
 import { loadSeasonRegistrations } from '@/lib/competitionSeason';
+import { hasStagePlus } from '@/lib/subscriptionUtils';
 
 export default function SeasonRegisterScreen() {
   const router = useRouter();
   const [myClub, setMyClub] = useState(null);
+  const [presidentClub, setPresidentClub] = useState(null);
   const [user, setUser] = useState(null);
   const [leagues, setLeagues] = useState([]);
   const [apps, setApps] = useState([]);
@@ -36,14 +38,20 @@ export default function SeasonRegisterScreen() {
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
-    const { user: u, club } = await resolveMyPlayerAndClub();
-    setUser(u);
-    setMyClub(club || null);
-    const data = await loadSeasonRegistrations(u);
-    setLeagues(data.leagues);
-    setApps(data.myApps);
-    setLoading(false);
-    setRefreshing(false);
+    try {
+      const { user: u, club, presidentClub: ownedClub } = await resolveMyPlayerAndClub();
+      setUser(u);
+      setMyClub(club || null);
+      setPresidentClub(ownedClub || null);
+      const data = await loadSeasonRegistrations(u);
+      setLeagues(data.leagues);
+      setApps(data.myApps);
+    } catch (err) {
+      setError(err?.message || 'Failed to load registrations');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -55,17 +63,22 @@ export default function SeasonRegisterScreen() {
     }
   });
 
+  const registrationClub = presidentClub || null;
+  const plusOk = hasStagePlus(user?.subscription);
+  const isAdmin = user?.role === 'admin' || [0, 2].includes(Number(user?.role_id));
+  const canApply = !!registrationClub && (plusOk || isAdmin);
+
   const submit = async () => {
-    if (!myClub || !selected) return;
+    if (!registrationClub || !selected) return;
     setBusy(true);
     setError('');
     try {
       const regionLeagues = leagues.filter((l) => l.region_slug === selected.slug);
       await applyForLeague(
-        myClub,
+        registrationClub,
         selected.slug,
         selected.name,
-        myClub.platform || 'Cross-Platform',
+        registrationClub.platform || 'Cross-Platform',
         {
           preferredDivision: 1,
           note: note.trim(),
@@ -97,9 +110,23 @@ export default function SeasonRegisterScreen() {
             contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, gap: 10 }}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={CYAN} />}
           >
-            {!myClub ? (
+            {!registrationClub ? (
               <SectionCard>
-                <Text style={{ color: 'rgba(255,255,255,0.55)' }}>You need a club to apply for a regional league.</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.55)' }}>
+                  {myClub
+                    ? 'Only the club president can apply for a regional league.'
+                    : 'You need a club to apply for a regional league.'}
+                </Text>
+              </SectionCard>
+            ) : null}
+            {registrationClub && !plusOk && !isAdmin ? (
+              <SectionCard>
+                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }}>
+                  STAGE Plus is required to enter STAGE regional leagues and official competitions.
+                </Text>
+                <TouchableOpacity onPress={() => router.push('/apps/store')} style={{ marginTop: 8 }}>
+                  <Text style={{ color: CYAN, fontWeight: '800' }}>Open Store</Text>
+                </TouchableOpacity>
               </SectionCard>
             ) : null}
             {error ? <Text style={{ color: FUT.rose, fontSize: 12 }}>{error}</Text> : null}
@@ -112,10 +139,14 @@ export default function SeasonRegisterScreen() {
                     <Text style={{ color: FUT.gold, marginTop: 6, fontSize: 12, fontWeight: '800' }}>
                       {String(app.status).toUpperCase()}
                     </Text>
-                  ) : (
+                  ) : canApply ? (
                     <TouchableOpacity onPress={() => setSelected(region)} style={{ marginTop: 8 }}>
                       <Text style={{ color: CYAN, fontWeight: '800' }}>Apply</Text>
                     </TouchableOpacity>
+                  ) : (
+                    <Text style={{ color: 'rgba(255,255,255,0.35)', marginTop: 6, fontSize: 12 }}>
+                      Registration locked
+                    </Text>
                   )}
                 </SectionCard>
               );

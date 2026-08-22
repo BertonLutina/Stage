@@ -14,11 +14,12 @@ export function normalizeClubRole(role) {
 }
 
 export function getPrimaryClubRole(player = {}) {
+  const source = player && typeof player === 'object' ? player : {};
   const roles = [
-    normalizeClubRole(player.role),
-    ...(Array.isArray(player.club_roles) ? player.club_roles.map(normalizeClubRole) : []),
+    normalizeClubRole(source.role),
+    ...(Array.isArray(source.club_roles) ? source.club_roles.map(normalizeClubRole) : []),
   ].filter(Boolean);
-  return ROLE_PRIORITY.find((role) => roles.includes(role)) || normalizeClubRole(player.role) || 'member';
+  return ROLE_PRIORITY.find((role) => roles.includes(role)) || normalizeClubRole(source.role) || 'member';
 }
 
 export function mergeStaffRolesIntoPlayers(players = [], staffRoles = []) {

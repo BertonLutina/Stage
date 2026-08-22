@@ -68,7 +68,7 @@ export default function PlayerDashboardScreen() {
     const {
       user, player, club, playerRank, clubRank, nextMatch, upcomingMatches,
       activeTournaments, leagueStandings, activity, tenure,
-      glance, form, futActivity,
+      glance, form,
     } = data || {};
 
     const rankedPlayer = playerRank?.row;
@@ -85,7 +85,7 @@ export default function PlayerDashboardScreen() {
     return {
       user, player, club, playerRank, clubRank, nextMatch, upcomingMatches,
       activeTournaments, leagueStandings, activity, tenure,
-      glance, form, futActivity, open,
+      glance, form, open,
       wins, draws, losses, matchesPlayed, rankingPoints, winRate, goals, avgRating,
       opponentInfo: getMatchOpponent(nextMatch, player, club),
       gamertag: player?.gamertag || user?.email?.split('@')[0] || 'Guest',

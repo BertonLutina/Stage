@@ -10,14 +10,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { stageClient } from '@/api/stageClient';
 import { loadClubProfile } from '@/lib/clubProfileData';
+import { playerRoute } from '@/lib/stageNews';
 import ClubProfileTabs from '@/app/(tabs)/profile/clubProfileTabs';
+import ClubHero from '@/components/club/ClubHero';
 import {
   GamerProfileShell,
-  GamerBanner,
-  GlassIconButton,
   CYAN,
 } from '@/components/profile/gamer/GamerProfileUI';
-import { headingStyleLg } from '@/lib/fonts';
 
 export default function PublicClubScreen() {
   const { id } = useLocalSearchParams();
@@ -44,10 +43,6 @@ export default function PublicClubScreen() {
     <GamerProfileShell>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 }}>
-          <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
-          <Text style={{ color: '#fff', fontWeight: '900', marginLeft: 12, fontSize: 16 }}>CLUB</Text>
-        </View>
         {loading ? (
           <ActivityIndicator color={CYAN} style={{ marginTop: 40 }} />
         ) : !club ? (
@@ -56,12 +51,18 @@ export default function PublicClubScreen() {
           </Text>
         ) : (
           <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-            <GamerBanner bannerUrl={club.banner_url} wash="club" height={140} />
-            <View style={{ paddingHorizontal: 16, marginTop: -28, gap: 8 }}>
-              <Text style={[headingStyleLg, { color: '#fff' }]}>{club.name}</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.5)' }}>
-                {[club.tag ? `[${club.tag}]` : null, club.region, club.platform].filter(Boolean).join(' · ')}
-              </Text>
+            <ClubHero
+              club={club}
+              president={bundle.president}
+              record={bundle.record}
+              memberCount={bundle.players?.length}
+              onBack={() => router.back()}
+              onOpenPresident={() => {
+                const route = playerRoute(bundle.president?.player_id || bundle.president?.id);
+                if (route) router.push(route);
+              }}
+            />
+            <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
               <ClubProfileTabs
                 club={club}
                 isOwner={false}

@@ -1,8 +1,19 @@
 /** Same `/player-careers/:id` payload the web profile Career tab uses. */
 
 export const CAREER_LABELS = {
+  clubEyebrow: 'Career Record',
   clubTitle: 'My Club Career',
+  playerEyebrow: 'Career Record',
   playerTitle: 'My Player Career',
+  fixturesEyebrow: 'Next Fixtures',
+  fixturesTitle: 'Upcoming',
+  transferEyebrow: 'Movement',
+  noFixtures: 'No upcoming fixtures yet.',
+  noRecentMatches: 'No recent matches yet.',
+  noTransfers: 'No transfer history yet',
+  noTransfersHint: 'Transfers will appear here once this player moves clubs.',
+  careerMode: 'Career Mode',
+  careerBannerHint: 'StageLeagues career record, fixtures, form, and transfer path in one competitive profile.',
   games: 'Games',
   goals: 'Goals',
   assists: 'Assists',

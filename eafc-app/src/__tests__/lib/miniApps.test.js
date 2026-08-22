@@ -18,7 +18,6 @@ describe('mini apps catalog', () => {
     const clubIds = groups.find((g) => g.id === 'club').items.map((item) => item.id);
 
     expect(marketIds).toEqual([
-      'find-clubs',
       'find-players',
       'find-presidents',
       'scouting',
@@ -27,7 +26,6 @@ describe('mini apps catalog', () => {
       'wallet',
     ]);
     expect(accountIds).not.toEqual(expect.arrayContaining([
-      'find-clubs',
       'find-players',
       'lifestyle',
       'wallet',
@@ -40,16 +38,17 @@ describe('mini apps catalog', () => {
     const items = getMiniAppGroups('player').flatMap((group) => group.items);
     const byId = Object.fromEntries(items.map((item) => [item.id, item]));
     expect(byId['find-players'].href).toBe('/apps/find-players');
-    expect(byId['find-clubs'].href).toBe('/apps/find-clubs');
     expect(byId.rankings.href).toBe('/apps/rankings');
     expect(items.filter((item) => !item.ready).map((item) => item.id)).toEqual([]);
+    expect(items.map((item) => item.id)).not.toEqual(expect.arrayContaining(['find-clubs']));
   });
 
   test('president catalog keeps club squad separate from market find players', () => {
     const groups = getMiniAppGroups('club');
     const marketIds = groups.find((g) => g.id === 'market').items.map((item) => item.id);
     const clubIds = groups.find((g) => g.id === 'club').items.map((item) => item.id);
-    expect(marketIds).toEqual(expect.arrayContaining(['find-players', 'find-clubs', 'find-presidents']));
+    expect(marketIds).toEqual(expect.arrayContaining(['find-players', 'find-presidents']));
+    expect(marketIds).not.toEqual(expect.arrayContaining(['find-clubs']));
     expect(clubIds).toEqual(expect.arrayContaining(['club-players', 'contracts']));
   });
 });

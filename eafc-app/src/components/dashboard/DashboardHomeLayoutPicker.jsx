@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { CYAN, useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
 import { headingStyleLg } from '@/lib/fonts';
 import { DASHBOARD_LAYOUTS } from '@/lib/dashboardLayouts';
-import { FUT } from '@/components/dashboard/CommandCenterUI';
 import LiveGlass from '@/components/theme/LiveGlass';
 
 export function DashboardLayoutOptions({ layout, onChange }) {
@@ -42,7 +41,7 @@ export function DashboardLayoutOptions({ layout, onChange }) {
               backgroundColor: active ? 'rgba(0,232,255,0.18)' : 'rgba(255,255,255,0.06)',
             }}
             >
-              <Text style={{ color: active ? FUT.cyan : 'rgba(255,255,255,0.55)', fontWeight: '900' }}>
+              <Text style={{ color: active ? CYAN : 'rgba(255,255,255,0.55)', fontWeight: '900' }}>
                 {item.id}
               </Text>
             </View>
@@ -52,7 +51,7 @@ export function DashboardLayoutOptions({ layout, onChange }) {
                 {item.blurb}
               </Text>
             </View>
-            {active ? <Ionicons name="checkmark-circle" size={20} color={FUT.cyan} /> : null}
+            {active ? <Ionicons name="checkmark-circle" size={20} color={CYAN} /> : null}
           </TouchableOpacity>
         );
       })}

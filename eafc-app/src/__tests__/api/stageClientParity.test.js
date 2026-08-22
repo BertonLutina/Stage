@@ -25,6 +25,12 @@ describe('mobile stageClient parity wrappers', () => {
     expect(source).toMatch(/stageClient\s*=\s*{[^}]*posts[^}]*comments/s);
   });
 
+  it('converts RN uri FormData parts before Expo fetch uploads', () => {
+    expect(source).toMatch(/import \{ asFormDataFile \} from '@\/lib\/formDataFile'/);
+    expect(source).toMatch(/asFormDataFile\(file\)/);
+    expect(source).toMatch(/form\.append\('file', uploadFile, filename\)/);
+  });
+
   it('documents legacy President as compatibility fallback only', () => {
     expect(source).toMatch(/player-president flows use clubs\.president_player_id as the public identity/);
     expect(source).toMatch(/legacy first-class President entity/i);

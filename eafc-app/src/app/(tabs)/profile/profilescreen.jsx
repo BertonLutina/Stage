@@ -16,33 +16,34 @@ import {
   GamerBanner,
   FutIdentityCard,
   GamerMetaPill,
-  GamerRecordStrip,
   GamerTabNav,
   GlassIconButton,
   GlassTextButton,
   EmptyTabPanel,
+  IdentityVerifiedBar,
+  RoleChip,
   CYAN,
   AMBER,
 } from '@/components/profile/gamer/GamerProfileUI';
 import { headingStyleLg } from '@/lib/fonts';
+import { formatPlatformLabel } from '@/lib/platformDisplay';
+import { getPlayerNationality } from '@/lib/countryDisplay';
+import FlagMark from '@/components/common/FlagMark';
 import PlayerShowcase from '@/components/profile/PlayerShowcase';
-import PlayerCareerSummary from '@/components/profile/PlayerCareerSummary';
-import PlayerTransferHistory from '@/components/profile/PlayerTransferHistory';
+import ProfileFeedPanel from '@/components/profile/ProfileFeedPanel';
+import ProfileCareerBoard from '@/components/profile/ProfileCareerBoard';
 import FollowToggleButton from '@/components/profile/FollowToggleButton';
 import { uploadLocalMedia } from '@/lib/uploadProfileMedia';
+import { getPrimaryClubRole } from '@/lib/clubStaffRoles';
+import { clubRoleLabel } from '@/lib/clubSquadDisplay';
+import { isFounderPlayerContract } from '@/lib/playerContractFields';
 
-/** One primary rail — extras live under More. */
 const PRIMARY_TABS = [
-  { id: 'feed', label: 'Feed' },
+  { id: 'posts', label: 'Posts' },
   { id: 'showcase', label: 'Showcase' },
-  { id: 'more', label: 'More' },
-];
-
-const MORE_TOOLS = [
-  { id: 'career', label: 'Career', icon: 'trail-sign-outline', hint: 'Club and player record, recent matches, transfers' },
-  { id: 'trophies', label: 'Trophies', icon: 'trophy-outline', hint: 'Cabinet and achievements' },
-  { id: 'lifestyle', label: 'Lifestyle', icon: 'cafe-outline', hint: 'Off-pitch profile' },
-  { id: 'availability', label: 'Availability', icon: 'calendar-outline', hint: 'When you can play', ownOnly: true },
+  { id: 'career', label: 'Career' },
+  { id: 'trophies', label: 'Trophies' },
+  { id: 'lifestyle', label: 'Lifestyle' },
 ];
 
 function formatPositions(player) {
@@ -73,8 +74,7 @@ export default function ProfileScreen({
   const [player, setPlayer] = useState(playerProp);
   const [signedClub, setSignedClub] = useState(signedClubProp);
   const [loading, setLoading] = useState(!playerProp);
-  const [tab, setTab] = useState('feed');
-  const [moreTool, setMoreTool] = useState(null);
+  const [tab, setTab] = useState('posts');
   const [uploading, setUploading] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [viewerClub, setViewerClub] = useState(presidentClub || null);
@@ -233,11 +233,6 @@ export default function ProfileScreen({
     }
   };
 
-  const wins = player?.wins_count ?? player?.wins ?? 0;
-  const draws = player?.draws_count ?? player?.draws ?? 0;
-  const losses = player?.losses_count ?? player?.losses ?? 0;
-  const hasRecord = (Number(wins) + Number(draws) + Number(losses)) > 0;
-
   const openClub = (id) => {
     if (!id) return;
     if (onOpenClub) onOpenClub(id);
@@ -288,8 +283,9 @@ export default function ProfileScreen({
   const bannerActions = hideChrome ? null : (
     isOwn ? (
       <GlassTextButton
-        label="Edit"
+        label="Edit Profile"
         icon="settings-outline"
+        tone="outline"
         onPress={() => router.push('/(tabs)/profile/editprofilescreen')}
       />
     ) : (
@@ -301,144 +297,102 @@ export default function ProfileScreen({
     )
   );
 
-  const moreItems = MORE_TOOLS.filter((t) => !t.ownOnly || isOwn);
+  const isPresident = getPrimaryClubRole(player) === 'president';
+  const isFounder = (playerContracts || []).some((row) => (
+    isFounderPlayerContract(row) && String(row.status || '').toLowerCase() === 'active'
+  ));
+  const displayName = player?.gamertag || me?.gamer_tag || 'Player';
+  const verified = Number(player?.is_verified) === 1;
 
-  const renderMore = () => {
-    if (moreTool === 'availability') {
-      router.push('/(tabs)/profile/availabilityscreen');
-      setMoreTool(null);
-      return null;
-    }
-    if (moreTool) {
-      const tool = MORE_TOOLS.find((t) => t.id === moreTool);
-      return (
-        <View style={{ gap: 12 }}>
-          <TouchableOpacity onPress={() => setMoreTool(null)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Ionicons name="chevron-back" size={16} color={CYAN} />
-            <Text style={{ color: CYAN, fontWeight: '800', fontSize: 12, letterSpacing: 1 }}>MORE</Text>
-          </TouchableOpacity>
-          {moreTool === 'career' ? (
-            <View style={{ gap: 12 }}>
-              <PlayerCareerSummary career={career} loading={careerLoading} />
-              <PlayerTransferHistory playerId={player?.id} />
-            </View>
-          ) : (
-            <EmptyTabPanel
-              icon={tool?.icon || 'albums-outline'}
-              title={tool?.label}
-              hint={tool?.hint || 'Coming soon.'}
-            />
-          )}
-        </View>
-      );
-    }
-
-    return (
-      <View style={{ gap: 8 }}>
-        <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: '800', letterSpacing: 1.4, marginBottom: 4 }}>
-          MORE
+  const renderLifestyle = () => (
+    <View style={{ gap: 8 }}>
+      {player.bio ? (
+        <Text style={{ color: 'rgba(255,255,255,0.62)', fontSize: 14, lineHeight: 20, marginBottom: 6 }}>
+          {player.bio}
         </Text>
-        {moreItems.map((tool) => (
-          <TouchableOpacity
-            key={tool.id}
-            onPress={() => {
-              if (tool.id === 'availability') {
-                router.push('/(tabs)/profile/availabilityscreen');
-                return;
-              }
-              setMoreTool(tool.id);
-            }}
-            activeOpacity={0.85}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 12,
-              minHeight: 56,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: 'rgba(0,240,255,0.18)',
-              backgroundColor: 'rgba(0,240,255,0.05)',
-              paddingHorizontal: 14,
-              paddingVertical: 12,
-            }}
-          >
-            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(0,240,255,0.12)', alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name={tool.icon} size={18} color={CYAN} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>{tool.label}</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 2 }}>{tool.hint}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.35)" />
-          </TouchableOpacity>
-        ))}
-        {isOwn && signedClub?.id ? (
-          <TouchableOpacity
-            onPress={leaveClub}
-            disabled={leaving}
-            accessibilityRole="button"
-            accessibilityLabel="Leave club"
-            activeOpacity={0.85}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 12,
-              minHeight: 56,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: 'rgba(251,113,133,0.35)',
-              backgroundColor: 'rgba(251,113,133,0.08)',
-              paddingHorizontal: 14,
-              paddingVertical: 12,
-            }}
-          >
-            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(251,113,133,0.12)', alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="exit-outline" size={18} color="#FB7185" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: '#FB7185', fontWeight: '800', fontSize: 14 }}>
-                {leaving ? 'Leaving…' : 'Leave club'}
-              </Text>
-              <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 2 }}>
-                End your contracts and return as a free agent
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ) : null}
-        {isOwn ? (
-          <TouchableOpacity
-            onPress={async () => {
-              await logout();
-              router.replace('/auth/loginscreen');
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Sign out"
-            activeOpacity={0.85}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 12,
-              minHeight: 56,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.12)',
-              backgroundColor: 'rgba(255,255,255,0.03)',
-              paddingHorizontal: 14,
-              paddingVertical: 12,
-            }}
-          >
-            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="log-out-outline" size={18} color="rgba(255,255,255,0.7)" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Sign out</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 2 }}>End this session</Text>
-            </View>
-          </TouchableOpacity>
-        ) : null}
-      </View>
-    );
-  };
+      ) : !isOwn ? (
+        <EmptyTabPanel
+          icon="cafe-outline"
+          title="Lifestyle"
+          hint="Off-pitch profile details will land here."
+        />
+      ) : null}
+      {isOwn ? (
+        <TouchableOpacity
+          onPress={() => router.push('/(tabs)/profile/availabilityscreen')}
+          accessibilityRole="button"
+          accessibilityLabel="Availability"
+          activeOpacity={0.85}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+            minHeight: 56,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: 'rgba(0,240,255,0.18)',
+            backgroundColor: 'rgba(0,240,255,0.05)',
+            paddingHorizontal: 14,
+          }}
+        >
+          <Ionicons name="calendar-outline" size={18} color={CYAN} />
+          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14, flex: 1 }}>Availability</Text>
+          <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.35)" />
+        </TouchableOpacity>
+      ) : null}
+      {isOwn && signedClub?.id ? (
+        <TouchableOpacity
+          onPress={leaveClub}
+          disabled={leaving}
+          accessibilityRole="button"
+          accessibilityLabel="Leave club"
+          activeOpacity={0.85}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+            minHeight: 56,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: 'rgba(251,113,133,0.35)',
+            backgroundColor: 'rgba(251,113,133,0.08)',
+            paddingHorizontal: 14,
+          }}
+        >
+          <Ionicons name="exit-outline" size={18} color="#FB7185" />
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: '#FB7185', fontWeight: '800', fontSize: 14 }}>
+              {leaving ? 'Leaving…' : 'Leave club'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      ) : null}
+      {isOwn ? (
+        <TouchableOpacity
+          onPress={async () => {
+            await logout();
+            router.replace('/auth/loginscreen');
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Sign out"
+          activeOpacity={0.85}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+            minHeight: 56,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.12)',
+            paddingHorizontal: 14,
+          }}
+        >
+          <Ionicons name="log-out-outline" size={18} color="rgba(255,255,255,0.7)" />
+          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Sign out</Text>
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  );
 
   const body = loading ? (
     <View style={{ paddingTop: 80, alignItems: 'center' }}>
@@ -453,140 +407,130 @@ export default function ProfileScreen({
     </View>
   ) : (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: embedded ? 40 : 120 }}>
-      <View>
-        <GamerBanner
-          bannerUrl={player.banner_url}
-          wash="player"
-          height={132}
-          topLeft={topLeftExtra}
-          topRight={bannerActions}
-          onPress={isOwn ? pickAndUploadBanner : undefined}
-        />
-        <View style={{ paddingHorizontal: 16, marginTop: -72, zIndex: 10, gap: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
-            <FutIdentityCard
-              imageUrl={player.avatar_url}
-              accent="cyan"
-              overall={player.overall_rating ?? 70}
-              position={player.position || '—'}
-              shirtNumber={player.shirt_number}
-              name={player.gamertag || me?.gamer_tag || 'Player'}
-              subtitle={uploading ? 'Uploading…' : (player.platform || null)}
-              onPress={isOwn ? pickAndUploadAvatar : undefined}
-              width={112}
-            />
-            <View style={{ flex: 1, paddingBottom: 2, gap: 8 }}>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-                <Text
-                  numberOfLines={2}
-                  style={[
-                    headingStyleLg,
-                    {
-                      color: '#fff',
-                      lineHeight: 28,
-                      flexShrink: 1,
-                    },
-                  ]}
-                >
-                  {player.gamertag || me?.gamer_tag || 'Player'}
-                </Text>
-                {Number(player.is_verified) === 1 ? (
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 4,
-                      borderRadius: 999,
-                      borderWidth: 1,
-                      borderColor: 'rgba(0,240,255,0.45)',
-                      backgroundColor: 'rgba(0,240,255,0.14)',
-                      paddingHorizontal: 8,
-                      paddingVertical: 4,
-                    }}
+      {tab !== 'career' ? (
+        <View>
+          <GamerBanner
+            bannerUrl={player.banner_url}
+            wash="player"
+            height={188}
+            topLeft={topLeftExtra}
+            topRight={bannerActions}
+            onPress={isOwn ? pickAndUploadBanner : undefined}
+          />
+          <View style={{ paddingHorizontal: 16, marginTop: -108, zIndex: 10, gap: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 14 }}>
+              <FutIdentityCard
+                imageUrl={player.avatar_url}
+                accent="cyan"
+                variant="overlay"
+                overall={player.overall_rating ?? 70}
+                position={player.position}
+                onPress={isOwn ? pickAndUploadAvatar : undefined}
+                width={170}
+              />
+              <View style={{ flex: 1, paddingBottom: 2, gap: 8 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+                  <Text
+                    numberOfLines={2}
+                    style={[headingStyleLg, { color: '#fff', lineHeight: 28, flexShrink: 1 }]}
                   >
-                    <Ionicons name="checkmark-circle" size={12} color={CYAN} />
-                    <Text style={{ color: CYAN, fontSize: 10, fontWeight: '900' }}>EA</Text>
+                    {displayName}
+                  </Text>
+                  {verified ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Text style={{ color: CYAN, fontSize: 10, fontWeight: '900' }}>EA</Text>
+                      <Ionicons name="checkmark-circle" size={14} color={CYAN} />
+                    </View>
+                  ) : null}
+                </View>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                  {player.position ? (
+                    <GamerMetaPill icon="locate" iconColor={CYAN}>{formatPositions(player)}</GamerMetaPill>
+                  ) : null}
+                  {player.platform ? (
+                    <GamerMetaPill icon="game-controller" iconColor={CYAN}>
+                      {formatPlatformLabel(player.platform)}
+                    </GamerMetaPill>
+                  ) : null}
+                  {getPlayerNationality(player).code ? (
+                    <GamerMetaPill
+                      leading={(
+                        <FlagMark
+                          code={getPlayerNationality(player).code}
+                          country={player.country}
+                          size={14}
+                          accessibilityLabel="National flag"
+                        />
+                      )}
+                    />
+                  ) : null}
+                  {signedClub ? (
+                    <GamerMetaPill icon="shield" iconColor={CYAN} onPress={() => openClub(signedClub.id)}>
+                      {signedClub.name}
+                    </GamerMetaPill>
+                  ) : null}
+                  {canRequestLoan ? (
+                    <GamerMetaPill icon="swap-horizontal" iconColor={AMBER} onPress={() => setLoanOpen(true)}>
+                      Request loan
+                    </GamerMetaPill>
+                  ) : null}
+                </View>
+                {(isFounder || isPresident) ? (
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                    {isFounder ? <RoleChip label="Founder" tone="gold" /> : null}
+                    {isPresident ? <RoleChip label={clubRoleLabel('president')} tone="cyan" /> : null}
                   </View>
                 ) : null}
               </View>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                {player.position ? (
-                  <GamerMetaPill icon="locate" iconColor={CYAN}>{formatPositions(player)}</GamerMetaPill>
-                ) : null}
-                {player.platform ? (
-                  <GamerMetaPill icon="game-controller" iconColor={CYAN}>{player.platform}</GamerMetaPill>
-                ) : null}
-                {player.country ? <GamerMetaPill>{player.country}</GamerMetaPill> : null}
-                {signedClub ? (
-                  <GamerMetaPill icon="shield" iconColor={CYAN} onPress={() => openClub(signedClub.id)}>
-                    {signedClub.name}
-                  </GamerMetaPill>
-                ) : null}
-                {canRequestLoan ? (
-                  <GamerMetaPill icon="swap-horizontal" iconColor={AMBER} onPress={() => setLoanOpen(true)}>
-                    Request loan
-                  </GamerMetaPill>
-                ) : null}
-              </View>
             </View>
+
+            {!isOwn && player?.id ? (
+              <FollowToggleButton
+                targetType="player"
+                targetId={player.id}
+                targetName={displayName}
+                accent="cyan"
+              />
+            ) : null}
+
+            {verified ? <IdentityVerifiedBar name={displayName} /> : null}
           </View>
-
-          {!isOwn && player?.id ? (
-            <FollowToggleButton
-              targetType="player"
-              targetId={player.id}
-              targetName={player.gamertag || player.display_name || player.gamer_tag}
-              accent="cyan"
-            />
-          ) : null}
-
-          {hasRecord ? (
-            <GamerRecordStrip wins={wins} draws={draws} losses={losses} />
-          ) : (
-            <TouchableOpacity
-              onPress={() => router.push('/(tabs)/matches')}
-              accessibilityRole="button"
-              accessibilityLabel="Open Game Day"
-              style={{ minHeight: 44, justifyContent: 'center' }}
-            >
-              <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 13, fontWeight: '700' }}>
-                No match record yet — open Game Day
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {player.bio ? (
-            <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, lineHeight: 18 }} numberOfLines={2}>
-              {player.bio}
-            </Text>
-          ) : null}
         </View>
-      </View>
+      ) : null}
 
-      <View style={{ paddingHorizontal: 16, marginTop: 18, gap: 14 }}>
+      {tab === 'career' ? (
+        <View style={{ paddingHorizontal: 16, paddingTop: 10, alignItems: 'flex-end' }}>
+          {bannerActions}
+        </View>
+      ) : null}
+
+      <View style={{ paddingHorizontal: 16, marginTop: tab === 'career' ? 8 : 16, gap: 14 }}>
         <GamerTabNav
           tabs={PRIMARY_TABS}
           active={tab}
-          onChange={(id) => { setTab(id); setMoreTool(null); }}
+          onChange={setTab}
           accent="cyan"
           shape="parallelogram"
         />
 
-        {tab === 'feed' && (
-          <EmptyTabPanel
-            icon="newspaper-outline"
-            title="No posts yet"
-            hint="Share updates from your player feed."
-            actionLabel={isOwn ? 'Create post' : undefined}
-            onAction={isOwn ? () => router.push('/social') : undefined}
+        {tab === 'posts' && <ProfileFeedPanel player={player} isOwn={isOwn} />}
+        {tab === 'showcase' && <PlayerShowcase player={player} canEdit={isOwn} />}
+        {tab === 'career' && (
+          <ProfileCareerBoard
+            player={player}
+            signedClub={signedClub}
+            career={career}
+            careerLoading={careerLoading}
           />
         )}
-
-        {tab === 'showcase' && (
-          <PlayerShowcase player={player} canEdit={isOwn} />
+        {tab === 'trophies' && (
+          <EmptyTabPanel
+            icon="trophy-outline"
+            title="Trophies"
+            hint="Cabinet and achievements will show here."
+          />
         )}
-
-        {tab === 'more' && renderMore()}
+        {tab === 'lifestyle' && renderLifestyle()}
       </View>
     </ScrollView>
   );

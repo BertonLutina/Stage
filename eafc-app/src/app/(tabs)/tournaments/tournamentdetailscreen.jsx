@@ -5,6 +5,7 @@ import {
   ScrollView,
   StatusBar,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -47,8 +48,10 @@ export default function TournamentDetailScreen() {
   const [tournament, setTournament] = useState(null);
   const [matches, setMatches] = useState([]);
   const [myClub, setMyClub] = useState(null);
+  const [presidentClub, setPresidentClub] = useState(null);
   const [myPlayer, setMyPlayer] = useState(null);
   const [user, setUser] = useState(null);
+  const [eaClubName, setEaClubName] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -57,7 +60,7 @@ export default function TournamentDetailScreen() {
   const load = useCallback(async () => {
     if (!tournamentId) return;
     try {
-      const [{ user: u, player, club }, t, m] = await Promise.all([
+      const [{ user: u, player, club, presidentClub: ownedClub }, t, m] = await Promise.all([
         resolveMyPlayerAndClub(),
         fetchTournamentPublic(tournamentId),
         fetchTournamentMatches(tournamentId),
@@ -65,6 +68,7 @@ export default function TournamentDetailScreen() {
       setUser(u);
       setMyPlayer(player || null);
       setMyClub(club || null);
+      setPresidentClub(ownedClub || null);
       setTournament(t);
       setMatches(m || []);
     } catch (err) {
@@ -79,8 +83,21 @@ export default function TournamentDetailScreen() {
 
   const clubs = parseList(tournament?.registered_clubs);
   const players = parseList(tournament?.registered_players);
-  const clubEntered = myClub && clubs.some((c) => (c.id || c) === myClub.id);
-  const playerEntered = myPlayer && players.some((p) => (p.id || p) === myPlayer.id);
+  const ownsClub = (club) => {
+    if (!club || !user) return false;
+    return String(club.president_user_id || '') === String(user.id)
+      || String(club.user_id || '') === String(user.id)
+      || String(club.owner_email || '').toLowerCase() === String(user.email || '').toLowerCase()
+      || (myPlayer && String(club.president_player_id || '') === String(myPlayer.id));
+  };
+  const registrationClub = [presidentClub, myClub].find((club) => ownsClub(club)) || presidentClub || null;
+  const sameId = (left, right) => left != null && right != null && String(left) === String(right);
+  const clubEntered = registrationClub && clubs.some((c) => sameId(c.id || c, registrationClub.id));
+  const playerEntered = myPlayer && players.some((p) => sameId(p.id || p, myPlayer.id));
+  const clubProof = registrationClub
+    ? tournament?.registration_proofs?.club?.[String(registrationClub.id)]
+    : null;
+  const clubPending = String(clubProof?.status || '').toLowerCase() === 'pending';
   const isOwner = user && (
     tournament?.created_by === user.email
     || tournament?.creator_email === user.email
@@ -89,6 +106,7 @@ export default function TournamentDetailScreen() {
   const canRegister = tournament?.status === 'registration';
   const canStart = isOwner && (tournament?.status === 'registration' || tournament?.status === 'draft');
   const playerTournament = isPlayerTournament(tournament);
+  const canSubmitClub = canRegister && !playerTournament && registrationClub && !clubEntered && !clubPending;
 
   const run = async (key, fn) => {
     setBusy(key);
@@ -158,12 +176,57 @@ export default function TournamentDetailScreen() {
             </SectionCard>
           ) : null}
 
-          {canRegister && !playerTournament && myClub && !clubEntered ? (
-            <Primary
-              label="Register my club"
-              busy={busy === 'regClub'}
-              onPress={() => run('regClub', () => registerTournamentClub(tournament.id, myClub.id))}
-            />
+          {canRegister && !playerTournament && !registrationClub ? (
+            <SectionCard>
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }}>
+                {myClub
+                  ? 'Only the club president can register this club for a tournament.'
+                  : 'You need a club to register. Create one first, then come back as president.'}
+              </Text>
+            </SectionCard>
+          ) : null}
+          {canSubmitClub ? (
+            <SectionCard>
+              <Text style={{ color: '#fff', fontWeight: '800' }}>Register {registrationClub.name}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 6, lineHeight: 17 }}>
+                Enter the exact EA FC Pro Clubs name your team uses in-game. Admin verifies it before your club appears in the tournament.
+              </Text>
+              <TextInput
+                value={eaClubName}
+                onChangeText={setEaClubName}
+                placeholder="EA FC Pro Clubs name"
+                placeholderTextColor="rgba(255,255,255,0.3)"
+                autoCapitalize="words"
+                style={{
+                  marginTop: 10,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.12)',
+                  borderRadius: 12,
+                  color: '#fff',
+                  padding: 10,
+                }}
+              />
+              <View style={{ marginTop: 12 }}>
+                <Primary
+                  label="Register my club"
+                  busy={busy === 'regClub'}
+                  onPress={() => run('regClub', async () => {
+                    const name = eaClubName.trim();
+                    if (!name) throw new Error('Enter your EA FC Pro Clubs name so admins can verify your club.');
+                    await registerTournamentClub(tournament.id, registrationClub.id, { eaClubName: name });
+                    setEaClubName('');
+                  })}
+                />
+              </View>
+            </SectionCard>
+          ) : null}
+          {canRegister && !playerTournament && clubPending ? (
+            <SectionCard accent="gold">
+              <Text style={{ color: FUT.gold, fontWeight: '800' }}>Pending admin approval</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 6 }}>
+                Your EA FC club name is waiting for verification.
+              </Text>
+            </SectionCard>
           ) : null}
           {canRegister && playerTournament && myPlayer && !playerEntered ? (
             <Primary
@@ -176,7 +239,7 @@ export default function TournamentDetailScreen() {
             <Ghost
               label="Withdraw club"
               busy={busy === 'withdraw'}
-              onPress={() => run('withdraw', () => withdrawTournamentClub(tournament.id, myClub.id))}
+              onPress={() => run('withdraw', () => withdrawTournamentClub(tournament.id, registrationClub.id))}
             />
           ) : null}
           {canStart ? (

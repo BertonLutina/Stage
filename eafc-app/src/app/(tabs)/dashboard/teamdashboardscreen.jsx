@@ -85,7 +85,6 @@ export default function TeamDashboardScreen() {
   const { isDark } = useColorSchemeColors();
   const [team, setTeam] = useState(null);
   const [joinLoading, setJoinLoading] = useState(false);
-  const [requestStatus, setRequestStatus] = useState(null);
 
   useEffect(() => {
     if (!teamId) return;
@@ -95,52 +94,35 @@ export default function TeamDashboardScreen() {
       .catch(() => {});
   }, [teamId]);
 
-  useEffect(() => {
-    if (!teamId || !user?.id) return;
-    api.get(`/teams/${teamId}/join-request-status`).then((r) => setRequestStatus(r.data?.data?.status ?? null)).catch(() => setRequestStatus(null));
-  }, [teamId, user?.id]);
-
   const isOwner = team?.owner_id === user?.id;
   const joined = !!(team?.players ?? []).some((p) => p.user_id === user?.id);
-  const pending = requestStatus === 'pending';
 
   const handleJoinLeave = async () => {
-    if (!user || !teamId || joinLoading) return;
-    if (joined) {
-      Alert.alert(
-        'Leave Club',
-        'Leave this club? Your player and president contracts with this club will end, and you will return to the transfer market as a free agent.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Leave Club', style: 'destructive', onPress: () => performJoinLeave() },
-        ],
-      );
-      return;
-    }
-    await performJoinLeave();
+    if (!user || !teamId || joinLoading || !joined) return;
+    Alert.alert(
+      'Leave Club',
+      'Leave this club? Your player and president contracts with this club will end, and you will return to the transfer market as a free agent.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Leave Club', style: 'destructive', onPress: () => performJoinLeave() },
+      ],
+    );
   };
 
   const performJoinLeave = async () => {
-    if (!user || !teamId || joinLoading) return;
+    if (!user || !teamId || joinLoading || !joined) return;
     setJoinLoading(true);
     try {
-      if (joined) {
-        const rosterPlayer = (team?.players ?? []).find((p) => p.user_id === user?.id || p.id === user?.id);
-        const playerId = rosterPlayer?.player_id || (await resolveMyPlayerAndClub())?.player?.id;
-        if (!playerId) throw new Error('No player profile');
-        await leaveStageClub({ clubId: teamId, playerId, userId: user.id });
-        const refreshed = await api.get(`/teams/${teamId}`).catch(() => null);
-        if (refreshed?.data?.data) setTeam(refreshed.data.data);
-        else setTeam((prev) => (prev ? { ...prev, players: (prev.players || []).filter((p) => p.user_id !== user.id && p.id !== user.id) } : prev));
-      } else {
-        await api.post(`/teams/${teamId}/join-request`);
-        setRequestStatus('pending');
-        Alert.alert('Request sent', 'The club owner will review your request.');
-      }
+      const rosterPlayer = (team?.players ?? []).find((p) => p.user_id === user?.id || p.id === user?.id);
+      const playerId = rosterPlayer?.player_id || (await resolveMyPlayerAndClub())?.player?.id;
+      if (!playerId) throw new Error('No player profile');
+      await leaveStageClub({ clubId: teamId, playerId, userId: user.id });
+      const refreshed = await api.get(`/teams/${teamId}`).catch(() => null);
+      if (refreshed?.data?.data) setTeam(refreshed.data.data);
+      else setTeam((prev) => (prev ? { ...prev, players: (prev.players || []).filter((p) => p.user_id !== user.id && p.id !== user.id) } : prev));
     } catch (err) {
-      const msg = err.response?.data?.message || err?.message || (joined ? 'Failed to leave' : 'Failed to send request');
-      if (err.response?.status === 409) setRequestStatus('pending');
-      Alert.alert(joined ? 'Could not leave the club' : 'Request failed', msg);
+      const msg = err.response?.data?.message || err?.message || 'Failed to leave';
+      Alert.alert('Could not leave the club', msg);
     } finally {
       setJoinLoading(false);
     }
@@ -328,20 +310,24 @@ export default function TeamDashboardScreen() {
                 >
                   <STText className="font-semibold" style={{ color: '#FFFFFF' }}>Invite Player</STText>
                 </TouchableOpacity>
-              ) : (
+              ) : joined ? (
                 <TouchableOpacity
-                  onPress={joined || !isOwner ? handleJoinLeave : () => router.push({ pathname: '/teams/manageteamscreen', params: { teamId } })}
-                  disabled={joinLoading || pending}
+                  onPress={handleJoinLeave}
+                  disabled={joinLoading}
                   className="flex-1 rounded-2xl bg-[#1E57CB] py-3 items-center"
                 >
                   {joinLoading ? (
                     <ActivityIndicator color="white" size="small" />
                   ) : (
-                    <STText className="font-semibold" style={{ color: '#FFFFFF' }}>
-                      {joined ? 'Leave Club' : isOwner ? 'Invite Player' : pending ? 'Request Pending' : 'Join Club'}
-                    </STText>
+                    <STText className="font-semibold" style={{ color: '#FFFFFF' }}>Leave Club</STText>
                   )}
                 </TouchableOpacity>
+              ) : (
+                <View className="flex-1 rounded-2xl border py-3 items-center justify-center" style={{ borderColor: isDark ? 'rgba(255,255,255,0.2)' : '#BFD1F0' }}>
+                  <STText className="text-xs text-center px-2" style={{ color: isDark ? '#E9F0FD' : '#5E718F' }}>
+                    Clubs offer contracts. Wait for an offer.
+                  </STText>
+                </View>
               )}
               <TouchableOpacity
                 onPress={() => router.push({ pathname: '/teams/dressingroomscreen', params: { teamId } })}

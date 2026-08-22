@@ -114,7 +114,7 @@ describe('EditProfileScreen', () => {
           bio: 'Free agent',
           position: 'ST',
           secondary_position: 'CAM',
-          platform: 'PlayStation',
+          platform: 'PS5',
           country_code: 'BE',
           avatar_url: 'https://cdn.example/a.png',
         }),

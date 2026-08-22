@@ -7,20 +7,10 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#07153C"
-    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundImage": "./assets/adaptive-icon-background.png",
-        "backgroundColor": "#07153C"
-      },
-      "splash": {
-        "image": "./assets/adaptive-icon.png",
-        "resizeMode": "contain",
         "backgroundColor": "#07153C"
       },
       "package": "com.eafc.platform",
@@ -41,13 +31,13 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.eafc.platform",
       "appleTeamId": "SN94V6837Q",
+      "deploymentTarget": "16.4",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "plugins": [
       "expo-image-picker",
-      "expo-av",
       [
         "expo-local-authentication",
         {
@@ -63,7 +53,22 @@
           "mode": "development",
           "devTeam": "SN94V6837Q"
         }
-      ]
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#07153C",
+          "image": "./assets/splash.png",
+          "resizeMode": "cover",
+          "enableFullScreenImage_legacy": true,
+          "android": {
+            "image": "./assets/adaptive-icon.png",
+            "resizeMode": "contain",
+            "backgroundColor": "#07153C"
+          }
+        }
+      ],
+      "expo-status-bar"
     ],
     "extra": {
       "router": {

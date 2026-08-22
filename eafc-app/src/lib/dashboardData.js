@@ -208,67 +208,6 @@ export function buildTenureSummary({ user, player, club, activeContract }) {
   };
 }
 
-export async function loadFutMatches(player, limit = 20) {
-  if (!player?.id) return [];
-  return stageClient.entities.FutMatch.filter({ player_id: player.id }, '-played_at', limit).catch(() => []);
-}
-
-export function buildFutSummary(matches) {
-  let wins = 0;
-  let draws = 0;
-  let losses = 0;
-  for (const m of matches || []) {
-    const r = String(m.result || '').toLowerCase();
-    if (r === 'win') wins += 1;
-    else if (r === 'draw') draws += 1;
-    else if (r === 'loss') losses += 1;
-  }
-  return { wins, draws, losses, total: matches?.length || 0 };
-}
-
-export function buildFutFormStrip(matches, limit = 10) {
-  return [...(matches || [])]
-    .sort((a, b) => new Date(b.played_at || 0) - new Date(a.played_at || 0))
-    .slice(0, limit)
-    .reverse()
-    .map((m) => String(m.result || 'draw').toLowerCase());
-}
-
-export function buildFutWeeklyBuckets(matches, weeksBack = 8) {
-  const buckets = [];
-  const now = new Date();
-  now.setHours(23, 59, 59, 999);
-  for (let i = weeksBack - 1; i >= 0; i--) {
-    const end = new Date(now);
-    end.setDate(end.getDate() - i * 7);
-    const start = new Date(end);
-    start.setDate(start.getDate() - 6);
-    start.setHours(0, 0, 0, 0);
-    buckets.push({
-      label: start.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
-      start,
-      end,
-      wins: 0,
-      draws: 0,
-      losses: 0,
-      matches: 0,
-    });
-  }
-  (matches || []).forEach((m) => {
-    const d = new Date(m.played_at || 0);
-    const bucket = buckets.find((b) => d >= b.start && d <= b.end);
-    if (!bucket) return;
-    bucket.matches += 1;
-    const r = String(m.result || '').toLowerCase();
-    if (r === 'win') bucket.wins += 1;
-    else if (r === 'loss') bucket.losses += 1;
-    else bucket.draws += 1;
-  });
-  return buckets.map(({ label, wins, draws, losses, matches: total }) => ({
-    label, wins, draws, losses, matches: total,
-  }));
-}
-
 export function matchOutcomeForPlayer(match, player, club) {
   if (!match) return null;
   const homeScore = Number(match.home_score);
@@ -375,7 +314,6 @@ export async function loadPlayerDashboard() {
     leagueStandings,
     matchStats,
     activeContract,
-    futMatches,
     recentCompleted,
     glance,
   ] = await Promise.all([
@@ -385,7 +323,6 @@ export async function loadPlayerDashboard() {
     loadClubLeagueStandings(club),
     loadPlayerMatchStats(player),
     loadActiveContract(player, club),
-    loadFutMatches(player, 30),
     loadRecentCompletedMatches(player, club, 10),
     loadDashboardGlance(player, user),
   ]);
@@ -413,7 +350,6 @@ export async function loadPlayerDashboard() {
       totalRecorded: matchStats.length,
     },
     tenure: buildTenureSummary({ user, player, club, activeContract }),
-    futMatches,
     eafcSummary: player?.eafc_club_id
       ? {
           clubId: player.eafc_club_id,
@@ -424,11 +360,6 @@ export async function loadPlayerDashboard() {
     form: {
       stage: buildStageFormStrip(recentCompleted, player, club, 10),
       rating: buildRatingFormStrip(matchStats, 10),
-      fut: buildFutFormStrip(futMatches, 10),
-    },
-    futActivity: {
-      weekly: buildFutWeeklyBuckets(futMatches, 8),
-      summary: buildFutSummary(futMatches),
     },
   };
 }

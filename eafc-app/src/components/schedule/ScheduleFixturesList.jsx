@@ -114,7 +114,7 @@ export default function ScheduleFixturesList({ events, onOpenMatch }) {
   }
 
   return (
-    <SectionCard style={{ padding: 0 }}>
+    <SectionCard padded={false}>
       <View style={{
         flexDirection: 'row',
         justifyContent: 'space-between',

@@ -20,6 +20,10 @@ describe('stage directory helpers', () => {
     ];
     expect(filterPlayerDirectory(players, { query: 'tri' }).map((p) => p.id)).toEqual(['2']);
     expect(filterPlayerDirectory(players, { platform: 'PC' }).map((p) => p.id)).toEqual(['1']);
+    expect(filterPlayerDirectory(
+      [...players, { id: '3', gamertag: 'Morpheus', platform: 'PS5', position: 'CB' }],
+      { platform: 'PlayStation' },
+    ).map((p) => p.id)).toEqual(['3', '2']);
     expect(filterPlayerDirectory(players, { position: 'CAM' }).map((p) => p.id)).toEqual(['2']);
   });
 

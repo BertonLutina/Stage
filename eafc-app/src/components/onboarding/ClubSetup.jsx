@@ -8,11 +8,11 @@ import {
 import STText from '../common/STText';
 import { stageClient } from '../../api/stageClient';
 import { COUNTRIES } from '../../lib/countries';
+import { CONSOLE_OPTIONS, normalizeConsoleChoice } from '../../lib/platformDisplay';
 import { SettingsListbox } from '../settings/SettingsListbox';
 import { onboardingStyles as s } from './onboardingStyles';
 
 const REGIONS = ['Europe', 'North America', 'South America', 'Asia', 'Oceania', 'Africa', 'Middle East'];
-const PLATFORMS = ['PlayStation', 'Xbox', 'PC'];
 
 export default function ClubSetup({
   onComplete,
@@ -27,7 +27,7 @@ export default function ClubSetup({
   const [roleTitle, setRoleTitle] = useState('President');
   const [name, setName] = useState('');
   const [tag, setTag] = useState('');
-  const [platform, setPlatform] = useState(player?.platform || 'PlayStation');
+  const [platform, setPlatform] = useState(normalizeConsoleChoice(player?.platform) || 'PS5');
   const [region, setRegion] = useState('Europe');
   const [country, setCountry] = useState(player?.country || '');
   const [saving, setSaving] = useState(false);
@@ -162,7 +162,7 @@ export default function ClubSetup({
 
       <STText style={s.label}>Platform</STText>
       <View style={s.chipRow}>
-        {PLATFORMS.map((p) => (
+        {CONSOLE_OPTIONS.map((p) => (
           <TouchableOpacity key={p} onPress={() => setPlatform(p)} style={[s.tileWide, platform === p && s.chipActive]}>
             <STText style={[s.chipText, platform === p && s.chipTextActive]}>{p}</STText>
           </TouchableOpacity>

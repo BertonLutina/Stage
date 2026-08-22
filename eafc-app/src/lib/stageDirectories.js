@@ -10,7 +10,7 @@ import {
   buildTransferMarketEntries,
   normalizeTransferMarketPlayers,
 } from '@/lib/transferMarketEntries';
-import { normalizePlayerContracts } from '@/lib/playerContractFields';
+import { matchesPlatformFilter } from '@/lib/platformDisplay';
 
 export const PLAYER_POSITIONS = ['All', 'GK', 'CB', 'LB', 'RB', 'CDM', 'CM', 'CAM', 'LM', 'RM', 'LW', 'RW', 'ST', 'CF'];
 export const PLATFORMS = ['All', 'PlayStation', 'Xbox', 'PC'];
@@ -107,7 +107,7 @@ export function filterPlayerDirectory(players, { query = '', platform = 'All', p
     .filter((player) => {
       const name = `${player.gamertag || ''} ${player.display_name || ''}`.toLowerCase();
       if (q && !name.includes(q)) return false;
-      if (platform !== 'All' && player.platform !== platform) return false;
+      if (platform !== 'All' && !matchesPlatformFilter(player.platform, platform)) return false;
       if (position !== 'All' && player.position !== position && player.secondary_position !== position) return false;
       return true;
     })
@@ -121,7 +121,7 @@ export function filterClubDirectory(clubs, { query = '', platform = 'All', regio
       const name = (club.name || club.club_name || '').toLowerCase();
       const tag = (club.tag || '').toLowerCase();
       if (q && !name.includes(q) && !tag.includes(q)) return false;
-      if (platform !== 'All' && club.platform !== platform) return false;
+      if (platform !== 'All' && !matchesPlatformFilter(club.platform, platform)) return false;
       if (region !== 'All' && club.region !== region) return false;
       return true;
     })
@@ -143,7 +143,7 @@ export function filterTransferEntries(entries, { query = '', position = 'All', s
     }
     if (q && !playerDisplayName(player).toLowerCase().includes(q)) return false;
     if (position !== 'All' && player.position !== position && player.secondary_position !== position) return false;
-    if (platform !== 'All' && player.platform !== platform) return false;
+    if (platform !== 'All' && !matchesPlatformFilter(player.platform, platform)) return false;
     return true;
   });
 }
@@ -347,17 +347,18 @@ export async function loadRankings(client = stageClient) {
 }
 
 export async function loadStore(client = stageClient) {
-  const { player, club } = await resolveMyPlayerAndClub();
+  const { user, player, club } = await resolveMyPlayerAndClub();
   const cfgRows = await client.entities.StoreConfig.filter(
     { is_active: 1, with_defaults: 1 },
     '-updated_date',
     1,
   ).catch(() => []);
   return {
+    user,
     player,
     club,
     config: asObjectArray(cfgRows)[0] || null,
-    credits: Number(player?.credits || 0),
+    credits: Number(user?.credits ?? player?.credits ?? 0),
     stc: Number(player?.stc || 0),
   };
 }

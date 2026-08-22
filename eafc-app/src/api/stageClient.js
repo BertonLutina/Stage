@@ -9,6 +9,7 @@ import { toMysqlDateTime, asWallClockDateTimeString } from '@/lib/momentDate';
 import { getOwnedClubId, getPresidentClubId, getPresidentId } from '@/lib/userIdentityFields';
 import { clearAccountIntent } from '@/lib/accountIntent';
 import { clearAccountMode } from '@/lib/accountMode';
+import { asFormDataFile } from '@/lib/formDataFile';
 
 function resolveApiBase() {
   const explicit = process.env.EXPO_PUBLIC_STAGE_API_URL || process.env.EXPO_PUBLIC_API_BASE;
@@ -710,7 +711,9 @@ const integrations = {
   Core: {
     async UploadFile({ file, timeoutMs = 20000 }) {
       const form = new FormData();
-      form.append('file', file);
+      const uploadFile = await asFormDataFile(file);
+      const filename = file?.name || file?.fileName || uploadFile?.name || 'upload.bin';
+      form.append('file', uploadFile, filename);
       const controller = new AbortController();
       const timeout = globalThis.setTimeout(() => controller.abort(), timeoutMs);
       try {

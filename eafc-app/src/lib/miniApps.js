@@ -21,14 +21,6 @@ function withoutNativeTabs(groups) {
 
 const MARKET_ITEMS = [
   {
-    id: 'find-clubs',
-    label: 'Find Clubs',
-    icon: 'shield-outline',
-    keywords: ['search clubs', 'teams', 'directory'],
-    href: '/apps/find-clubs',
-    ready: true,
-  },
-  {
     id: 'find-players',
     label: 'Find Players',
     icon: 'people-outline',

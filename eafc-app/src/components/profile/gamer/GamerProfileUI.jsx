@@ -8,6 +8,7 @@ import useThemeStore from '@/store/themeStore';
 import { hexToRgba } from '@/lib/stageTheme';
 import LiveGlass from '@/components/theme/LiveGlass';
 import LiveDarkWallpaper from '@/components/theme/LiveDarkWallpaper';
+import TrapeziumPhotoCard from '@/components/profile/TrapeziumPhotoCard';
 
 export const GAMER_BG = '#05070F';
 export const CYAN = '#00F0FF';
@@ -223,8 +224,9 @@ export function GlassIconButton({ icon, onPress, badge, badgeColor, accessibilit
   );
 }
 
-export function GlassTextButton({ label, icon, onPress }) {
+export function GlassTextButton({ label, icon, onPress, tone = 'glass' }) {
   const tokens = useGamerTokens();
+  const outline = tone === 'outline';
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -232,22 +234,89 @@ export function GlassTextButton({ label, icon, onPress }) {
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <GlassFill
+      <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
           gap: 6,
-          paddingHorizontal: 12,
-          paddingVertical: 9,
-          borderRadius: 999,
+          paddingHorizontal: outline ? 12 : 12,
+          paddingVertical: outline ? 8 : 9,
+          borderRadius: outline ? 6 : 999,
+          borderWidth: 1,
+          borderColor: outline ? 'rgba(226,234,244,0.72)' : tokens.hairline,
+          backgroundColor: outline ? 'rgba(5,7,15,0.42)' : tokens.glass,
+          minHeight: 40,
         }}
       >
         {icon ? <Ionicons name={icon} size={14} color={tokens.text} /> : null}
         <Text style={{ color: tokens.text, fontSize: 10, fontWeight: '900', letterSpacing: 1.4, textTransform: 'uppercase' }}>
           {label}
         </Text>
-      </GlassFill>
+      </View>
     </TouchableOpacity>
+  );
+}
+
+function OverlayIdentityCard({
+  imageUrl,
+  overall,
+  position,
+  emptyIcon = 'person',
+  onPress,
+  width = 170,
+}) {
+  const height = Math.round(width * 1.12);
+  const ovr = overall == null || overall === ''
+    ? null
+    : (Number.isInteger(Number(overall)) ? String(Math.round(Number(overall))) : (Math.round(Number(overall) * 10) / 10).toFixed(1));
+
+  return (
+    <TrapeziumPhotoCard
+      width={width}
+      height={height}
+      imageUrl={imageUrl}
+      onPress={onPress}
+      edgeColor="rgba(0,240,255,0.7)"
+    >
+      {!imageUrl ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name={emptyIcon} size={42} color="rgba(0,240,255,0.35)" />
+        </View>
+      ) : null}
+      {ovr != null ? (
+        <View
+          style={{
+            position: 'absolute',
+            top: 10,
+            right: 4,
+            transform: [{ skewX: '-12deg' }],
+          }}
+        >
+          <View style={{ backgroundColor: AMBER, minWidth: 38, paddingHorizontal: 7, paddingTop: 3, paddingBottom: 4, alignItems: 'center' }}>
+            <View style={{ transform: [{ skewX: '12deg' }], alignItems: 'center' }}>
+              <Text style={{ color: '#1A1200', fontSize: 8, fontWeight: '800', letterSpacing: 0.8 }}>OVR</Text>
+              <Text style={{ color: '#1A1200', fontSize: 16, fontWeight: '900', lineHeight: 18 }}>{ovr}</Text>
+            </View>
+          </View>
+        </View>
+      ) : null}
+      {position ? (
+        <Text
+          style={{
+            position: 'absolute',
+            left: 14,
+            bottom: 10,
+            color: '#fff',
+            fontSize: 11,
+            fontWeight: '900',
+            letterSpacing: 1.4,
+            textTransform: 'uppercase',
+          }}
+        >
+          POS {position}
+        </Text>
+      ) : null}
+    </TrapeziumPhotoCard>
   );
 }
 
@@ -265,7 +334,20 @@ export function FutIdentityCard({
   emptyIcon = 'person',
   onPress,
   width = 148,
+  variant = 'fut',
 }) {
+  if (variant === 'overlay') {
+    return (
+      <OverlayIdentityCard
+        imageUrl={imageUrl}
+        overall={overall}
+        position={position}
+        emptyIcon={emptyIcon}
+        onPress={onPress}
+        width={width}
+      />
+    );
+  }
   const height = Math.round(width * 1.45);
   const isAmber = accent === 'amber' || accent === 'gold';
   const frame = isAmber
@@ -417,29 +499,77 @@ export function OvrBadge() { return null; }
 export function PrezBadge() { return null; }
 export function WrBadge() { return null; }
 
-export function GamerMetaPill({ children, icon, iconColor, onPress, style }) {
+export function GamerMetaPill({ children, icon, iconColor, leading, onPress, style }) {
   const tokens = useGamerTokens();
   const tint = iconColor || tokens.muted;
   const Wrapper = onPress ? TouchableOpacity : View;
   return (
     <Wrapper onPress={onPress} activeOpacity={0.8}>
-      <GlassFill
+      <View
         style={[{
           flexDirection: 'row',
           alignItems: 'center',
           gap: 5,
-          borderRadius: 999,
+          borderRadius: 4,
           paddingHorizontal: 10,
           paddingVertical: 6,
+          borderWidth: 1,
+          borderColor: 'rgba(226,234,244,0.16)',
+          backgroundColor: 'rgba(8,12,22,0.72)',
         }, style]}
-        intensity={18}
       >
-        {icon ? <Ionicons name={icon} size={12} color={tint} /> : null}
-        <Text style={{ color: tokens.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' }}>
-          {children}
-        </Text>
-      </GlassFill>
+        {leading || (icon ? <Ionicons name={icon} size={12} color={tint} /> : null)}
+        {typeof children === 'string' || typeof children === 'number' ? (
+          <Text style={{ color: tokens.text, fontSize: 10, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' }}>
+            {children}
+          </Text>
+        ) : children}
+      </View>
     </Wrapper>
+  );
+}
+
+export function RoleChip({ label, tone = 'cyan' }) {
+  const gold = tone === 'gold' || tone === 'amber';
+  const color = gold ? AMBER : CYAN;
+  return (
+    <View
+      style={{
+        borderRadius: 4,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        backgroundColor: gold ? 'rgba(255,214,10,0.16)' : 'rgba(0,240,255,0.16)',
+        borderWidth: 1,
+        borderColor: gold ? 'rgba(255,214,10,0.38)' : 'rgba(0,240,255,0.38)',
+      }}
+    >
+      <Text style={{ color, fontSize: 9, fontWeight: '900', letterSpacing: 1.2, textTransform: 'uppercase' }}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+export function IdentityVerifiedBar({ name }) {
+  const tokens = useGamerTokens();
+  return (
+    <View
+      style={{
+        backgroundColor: 'rgba(14,18,28,0.96)',
+        borderRadius: 6,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        borderWidth: 1,
+        borderColor: tokens.hairline,
+      }}
+    >
+      <Text style={{ color: tokens.text, fontSize: 12, fontWeight: '900', letterSpacing: 1.6, textTransform: 'uppercase' }}>
+        Identity Verified
+      </Text>
+      <Text style={{ color: tokens.muted, fontSize: 12, lineHeight: 18, marginTop: 4 }}>
+        This profile has been reviewed by STAGE staff and linked to {name}.
+      </Text>
+    </View>
   );
 }
 
@@ -478,7 +608,7 @@ export function GamerRecordStrip({ wins = 0, draws = 0, losses = 0 }) {
   );
 }
 
-export function GamerTabNav({ tabs, active, onChange, accent = 'cyan', shape = 'rounded' }) {
+export function GamerTabNav({ tabs, active, onChange, accent = 'cyan', shape = 'parallelogram' }) {
   const tokens = useGamerTokens();
   const activeBorder = accent === 'amber' ? tokens.amberBorder : tokens.cyanBorder;
   const activeBg = accent === 'amber' ? 'rgba(255,214,10,0.14)' : (tokens.isDark ? 'rgba(0,240,255,0.16)' : 'rgba(14,116,144,0.12)');
@@ -494,10 +624,12 @@ export function GamerTabNav({ tabs, active, onChange, accent = 'cyan', shape = '
           <>
             <Text
               style={{
-                color: isActive ? (useParallelogram ? '#E0FBFF' : activeText) : (useParallelogram ? 'rgba(0,229,255,0.45)' : tokens.muted),
-                fontSize: useParallelogram ? 10 : 11,
+                color: isActive
+                  ? (useParallelogram ? '#041018' : activeText)
+                  : (useParallelogram ? 'rgba(226,234,244,0.55)' : tokens.muted),
+                fontSize: 11,
                 fontWeight: '900',
-                letterSpacing: 1.8,
+                letterSpacing: 1.6,
                 textTransform: 'uppercase',
               }}
             >
@@ -527,18 +659,20 @@ export function GamerTabNav({ tabs, active, onChange, accent = 'cyan', shape = '
               key={tab.id}
               onPress={() => onChange?.(tab.id)}
               activeOpacity={0.88}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
               style={{
-                transform: [{ skewX: '-10deg' }],
-                borderWidth: 1,
-                borderColor: isActive ? 'rgba(0,229,255,0.55)' : 'rgba(0,229,255,0.15)',
-                backgroundColor: isActive ? 'rgba(0,229,255,0.18)' : 'rgba(6,17,29,0.82)',
-                paddingHorizontal: 18,
+                transform: [{ skewX: '-12deg' }],
+                borderWidth: isActive ? 0 : 1,
+                borderColor: 'rgba(0,229,255,0.14)',
+                backgroundColor: isActive ? tokens.cyan : 'transparent',
+                paddingHorizontal: 16,
                 paddingVertical: 11,
-                minHeight: 44,
+                minHeight: 40,
                 justifyContent: 'center',
               }}
             >
-              <View style={{ transform: [{ skewX: '10deg' }], flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={{ transform: [{ skewX: '12deg' }], flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 {tabBody}
               </View>
             </TouchableOpacity>

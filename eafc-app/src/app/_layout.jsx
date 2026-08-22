@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Linking } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, ThemeProvider, DarkTheme } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -15,7 +15,6 @@ import { SocketProvider } from '@/lib/SocketContext';
 import useOneSignal from '../hooks/useOneSignal';
 import useThemeStore from '../store/themeStore';
 import useToastStore from '../store/toastStore';
-import { ThemeProvider, DarkTheme } from '@react-navigation/native';
 import GradientBackground from '../components/common/GradientBackground';
 import Toast from '../components/common/Toast';
 import PageWalkthrough from '../components/onboarding/PageWalkthrough';
@@ -52,14 +51,20 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    const openAuthCallback = (url) => {
-      if (!url || !/auth\/callback/i.test(url)) return;
+    const openIncomingUrl = (url) => {
+      if (!url) return;
       const query = url.includes('?') ? url.slice(url.indexOf('?') + 1) : '';
-      router.replace(query ? `/auth/callback?${query}` : '/auth/callback');
+      if (/auth\/callback/i.test(url)) {
+        router.replace(query ? `/auth/callback?${query}` : '/auth/callback');
+        return;
+      }
+      if (/apps\/store/i.test(url) || /store\/mobile-return/i.test(url)) {
+        router.replace(query ? `/apps/store?${query}` : '/apps/store');
+      }
     };
 
-    const sub = Linking.addEventListener('url', ({ url }) => openAuthCallback(url));
-    Linking.getInitialURL().then(openAuthCallback).catch(() => {});
+    const sub = Linking.addEventListener('url', ({ url }) => openIncomingUrl(url));
+    Linking.getInitialURL().then(openIncomingUrl).catch(() => {});
     return () => sub.remove();
   }, [router]);
   const { visible, message, hide } = useToastStore();

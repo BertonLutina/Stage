@@ -34,6 +34,12 @@ describe('mobile match / tournament / season parity wiring', () => {
     expect(read('../../app/apps/wallet.jsx')).toMatch(/loadWallet/);
     expect(read('../../app/apps/rankings.jsx')).toMatch(/loadRankings/);
     expect(read('../../app/apps/rankings.jsx')).not.toMatch(/router\.replace\('\/apps\/competitions'\)/);
+    expect(read('../../app/apps/store.jsx')).toMatch(/startStagePlusCheckout/);
+    expect(read('../../app/apps/store.jsx')).toMatch(/startCreditPackCheckout/);
+    expect(read('../../app/apps/store.jsx')).toMatch(/completeStoreCheckoutFromUrl/);
+    expect(read('../../lib/stripeCheckout.js')).toMatch(/stripeSubscription/);
+    expect(read('../../lib/stripeCheckout.js')).toMatch(/store\/mobile-return/);
+    expect(read('../../app/_layout.jsx')).toMatch(/apps\\\/store/);
   });
 
   test('tournament detail uses Stage registration and Game Day matches', () => {
@@ -43,6 +49,8 @@ describe('mobile match / tournament / season parity wiring', () => {
     expect(source).toMatch(/advanceTournamentRound/);
     expect(source).toMatch(/matchdetailscreen/);
     expect(source).toMatch(/isPlayerTournament/);
+    expect(source).toMatch(/eaClubName/);
+    expect(source).toMatch(/presidentClub/);
     expect(source).not.toMatch(/api\.get\(`\/tournaments\//);
     expect(source).not.toMatch(/tournament\.mode !== 'club'/);
   });
@@ -59,6 +67,8 @@ describe('mobile match / tournament / season parity wiring', () => {
 
   test('season and competition screens exist', () => {
     expect(read('../../app/apps/register.jsx')).toMatch(/applyForLeague/);
+    expect(read('../../app/apps/register.jsx')).toMatch(/hasStagePlus/);
+    expect(read('../../app/apps/register.jsx')).toMatch(/presidentClub/);
     expect(read('../../app/apps/competitions.jsx')).toMatch(/loadCompetitionsHub/);
     expect(read('../../app/apps/competitions/[slug].jsx')).toMatch(/createMatchFromFixture/);
     expect(read('../../app/apps/leagues/[slug].jsx')).toMatch(/regional_league/);

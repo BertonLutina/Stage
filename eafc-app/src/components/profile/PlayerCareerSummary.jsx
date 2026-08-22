@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { GamerSectionCard, useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
 import {
   CAREER_LABELS,
-  careerTileRows,
   clubCareerTiles,
   playerCareerTiles,
   recentCareerHistory,
@@ -29,14 +28,16 @@ function CareerTile({ label, value, accent, tokens }) {
   return (
     <View
       style={{
-        flex: 1,
-        minHeight: 78,
-        borderRadius: 14,
+        width: '31%',
+        flexGrow: 1,
+        minWidth: 84,
+        minHeight: 68,
+        borderRadius: 6,
         borderWidth: 1,
         borderColor: tokens.hairline,
         backgroundColor: tokens.inputFill,
-        paddingHorizontal: 12,
-        paddingVertical: 10,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
         justifyContent: 'space-between',
       }}
     >
@@ -72,14 +73,9 @@ function CareerTile({ label, value, accent, tokens }) {
 
 function StatGrid({ tiles, tokens }) {
   return (
-    <View style={{ gap: 8 }}>
-      {careerTileRows(tiles).map((row) => (
-        <View key={row.map((tile) => tile.label).join('-')} style={{ flexDirection: 'row', gap: 8 }}>
-          {row.map((tile) => (
-            <CareerTile key={tile.label} {...tile} tokens={tokens} />
-          ))}
-          {row.length === 1 ? <View style={{ flex: 1 }} /> : null}
-        </View>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+      {tiles.map((tile) => (
+        <CareerTile key={tile.label} {...tile} tokens={tokens} />
       ))}
     </View>
   );
@@ -87,7 +83,13 @@ function StatGrid({ tiles, tokens }) {
 
 function HistoryRows({ history, playerCareer, tokens }) {
   const rows = recentCareerHistory(history, { playerCareer });
-  if (rows.length === 0) return null;
+  if (rows.length === 0) {
+    return (
+      <Text style={{ color: tokens.muted, fontSize: 13, marginTop: 4 }}>
+        {CAREER_LABELS.noRecentMatches}
+      </Text>
+    );
+  }
 
   return (
     <View style={{ marginTop: 4, paddingTop: 12, borderTopWidth: 1, borderTopColor: tokens.hairline }}>
@@ -150,9 +152,9 @@ function HistoryRows({ history, playerCareer, tokens }) {
   );
 }
 
-function CareerSection({ title, tiles, history, playerCareer, tokens }) {
+function CareerSection({ eyebrow, title, tiles, history, playerCareer, tokens }) {
   return (
-    <GamerSectionCard title={title}>
+    <GamerSectionCard eyebrow={eyebrow} title={title}>
       <View style={{ gap: 12 }}>
         <StatGrid tiles={tiles} tokens={tokens} />
         <HistoryRows history={history} playerCareer={playerCareer} tokens={tokens} />
@@ -180,12 +182,14 @@ export default function PlayerCareerSummary({ career, loading }) {
   return (
     <View style={{ gap: 12 }}>
       <CareerSection
+        eyebrow={CAREER_LABELS.clubEyebrow}
         title={CAREER_LABELS.clubTitle}
         tiles={clubCareerTiles(club)}
         history={club.history}
         tokens={tokens}
       />
       <CareerSection
+        eyebrow={CAREER_LABELS.playerEyebrow}
         title={CAREER_LABELS.playerTitle}
         tiles={playerCareerTiles(player)}
         history={player.history}

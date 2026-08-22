@@ -33,7 +33,7 @@ export default function FindClubsScreen() {
 
   return (
     <AppDirectoryScreen
-      title="Find Clubs"
+      title="Clubs"
       subtitle={`${rows.length} clubs`}
       searchPlaceholder="Search name or tag"
       query={query}

@@ -12,7 +12,7 @@ import useThemeStore from '@/store/themeStore';
 import { hexToRgba } from '@/lib/stageTheme';
 import LiveGlass from '@/components/theme/LiveGlass';
 
-/** EA FC 27 / FUT night palette */
+/** EA FC night palette */
 export const FUT = {
   void: '#03060D',
   panel: '#0A1222',
@@ -619,117 +619,6 @@ export function ObjectivesWidget({ playerId }) {
   );
 }
 
-export function FutMatchLogPanel({ playerId, initialMatches = [] }) {
-  const tokens = useThemeStore((s) => s.tokens);
-  const [matches, setMatches] = useState(initialMatches);
-  const [result, setResult] = useState('win');
-  const [score, setScore] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => { setMatches(initialMatches); }, [initialMatches]);
-
-  const refresh = async () => {
-    if (!playerId) return;
-    const rows = await stageClient.entities.FutMatch.filter({ player_id: playerId }, '-played_at', 20).catch(() => []);
-    setMatches(Array.isArray(rows) ? rows : []);
-  };
-
-  const add = async () => {
-    if (!playerId) return;
-    setBusy(true);
-    try {
-      await stageClient.entities.FutMatch.create({
-        player_id: playerId,
-        result,
-        score: score || null,
-        played_at: new Date().toISOString(),
-      });
-      setScore('');
-      await refresh();
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const remove = async (id) => {
-    setBusy(true);
-    try {
-      await stageClient.entities.FutMatch.delete(id);
-      await refresh();
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <View style={{ gap: 10 }}>
-      <View style={{ flexDirection: 'row', gap: 8 }}>
-        {['win', 'draw', 'loss'].map((r) => {
-          const active = result === r;
-          const color = r === 'win' ? FUT.lime : r === 'loss' ? FUT.rose : FUT.cyan;
-          return (
-            <TouchableOpacity
-              key={r}
-              onPress={() => setResult(r)}
-              style={{
-                flex: 1, minHeight: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
-                borderWidth: 1.5,
-                borderColor: active ? color : 'rgba(255,255,255,0.12)',
-                backgroundColor: active ? `${color}22` : 'rgba(255,255,255,0.03)',
-              }}
-            >
-              <Text style={{ color: active ? color : 'rgba(255,255,255,0.45)', fontWeight: '900', textTransform: 'uppercase', fontSize: 11 }}>{r}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-      <View style={{
-        flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 14, borderWidth: 1.5,
-        borderColor: 'rgba(0,232,255,0.25)', backgroundColor: 'rgba(0,0,0,0.3)', paddingHorizontal: 12, minHeight: 48,
-      }}
-      >
-        <TextInput
-          value={score}
-          onChangeText={setScore}
-          placeholder="Score e.g. 3-1"
-          placeholderTextColor={tokens.faint}
-          style={{ flex: 1, color: tokens.text, fontSize: 14, paddingVertical: 10, fontWeight: '700' }}
-        />
-        <TouchableOpacity onPress={add} disabled={busy} style={{
-          paddingHorizontal: 14, minHeight: 36, borderRadius: 11, backgroundColor: 'rgba(0,232,255,0.16)',
-          borderWidth: 1, borderColor: 'rgba(0,232,255,0.4)', alignItems: 'center', justifyContent: 'center',
-        }}
-        >
-          <Text style={{ color: FUT.cyan, fontWeight: '900', fontSize: 12 }}>{busy ? '…' : 'ADD'}</Text>
-        </TouchableOpacity>
-      </View>
-      {(matches || []).slice(0, 8).map((m) => (
-        <View key={m.id} style={{
-          flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(0,0,0,0.28)', padding: 12,
-        }}
-        >
-          <Text style={{ color: FUT.gold, fontWeight: '900', width: 42, textTransform: 'uppercase' }}>
-            {String(m.result || 'D').slice(0, 1)}
-          </Text>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: tokens.text, fontSize: 13, fontWeight: '700' }}>{m.score || '—'}</Text>
-            <Text style={{ color: tokens.faint, fontSize: 11, marginTop: 2 }}>
-              {m.played_at ? String(m.played_at).slice(0, 10) : ''}
-            </Text>
-          </View>
-          <TouchableOpacity onPress={() => remove(m.id)} hitSlop={8}>
-            <Ionicons name="trash-outline" size={16} color="rgba(255,77,109,0.85)" />
-          </TouchableOpacity>
-        </View>
-      ))}
-      {!matches?.length ? (
-        <Text style={{ color: tokens.muted, fontSize: 12 }}>Log FUT matches to track form.</Text>
-      ) : null}
-    </View>
-  );
-}
-
 export function EafcClubPanel({ player, eafcSummary, onRefresh }) {
   const tokens = useThemeStore((s) => s.tokens);
   const [clubId, setClubId] = useState(player?.eafc_club_id || '');
@@ -825,46 +714,6 @@ export function ClubCrest({ club, size = 52 }) {
         ? <Image source={{ uri: club.logo_url }} style={{ width: size, height: size }} />
         : <Ionicons name="shield" size={size * 0.4} color={FUT.gold} />}
     </View>
-  );
-}
-
-export function FutCta({ label, onPress, primary = false, icon }) {
-  const tokens = useThemeStore((s) => s.tokens);
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.88}
-      style={{ flex: 1, minHeight: 48 }}
-    >
-      <LiveGlass
-        intensity={36}
-        style={{
-          flex: 1,
-          minHeight: 48,
-          borderRadius: 14,
-          borderWidth: 1.5,
-          borderColor: primary ? tokens.cyanBorder : tokens.hairline,
-        }}
-      >
-        <LinearGradient
-          colors={primary
-            ? [tokens.tileFill, 'rgba(10,18,32,0.45)']
-            : [tokens.inputFill, tokens.card]}
-          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-        >
-        {icon ? <Ionicons name={icon} size={15} color={primary ? tokens.cyan : tokens.text} /> : null}
-        <Text style={{
-          color: primary ? tokens.cyan : tokens.text,
-          fontWeight: '900',
-          fontSize: 12,
-          letterSpacing: 1.1,
-        }}
-        >
-          {label}
-        </Text>
-        </LinearGradient>
-      </LiveGlass>
-    </TouchableOpacity>
   );
 }
 

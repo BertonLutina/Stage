@@ -12,7 +12,8 @@ module.exports = function (api) {
         {
           root: ['./src'],
           alias: {
-            '@': './src',
+            '@expo/vector-icons': './node_modules/@expo/vector-icons',
+            '^@/(.*)$': './src/\\1',
             '@/api': './src/api',
             '@/lib': './src/lib',
             '@/translations': './src/translations',

@@ -38,18 +38,23 @@ jest.mock('react-native-webview', () => {
 
 jest.mock('react-native-svg', () => {
   const RN = jest.requireActual('react-native');
+  const Mock = RN.View;
   return {
-    Svg: RN.View,
-    Rect: RN.View,
-    Circle: RN.View,
+    __esModule: true,
+    default: Mock,
+    Svg: Mock,
+    Rect: Mock,
+    Circle: Mock,
     Text: RN.Text,
-    Image: RN.View,
-    G: RN.View,
-    Path: RN.View,
-    Line: RN.View,
-    Polygon: RN.View,
-    ClipPath: RN.View,
-    Defs: RN.View,
+    Image: Mock,
+    G: Mock,
+    Path: Mock,
+    Line: Mock,
+    Polygon: Mock,
+    ClipPath: Mock,
+    Defs: Mock,
+    LinearGradient: Mock,
+    Stop: Mock,
   };
 });
 

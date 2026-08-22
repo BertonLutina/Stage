@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { hexToRgba } from '@/lib/stageTheme';
 import LiveGlass from '@/components/theme/LiveGlass';
-import { CYAN, AMBER, useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
+import { CYAN, AMBER, FutIdentityCard, useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
 import { headingStyleLg } from '@/lib/fonts';
 import { getMatchOpponent } from '@/lib/dashboardData';
 import { DASHBOARD_LAYOUTS } from '@/lib/dashboardLayouts';
 import TransferWindowHomeIcon from '@/components/dashboard/TransferWindowHomeIcon';
 import {
-  DashboardRankRing,
   DashboardGamerStatCard,
   DashboardQuickGlance,
   DashboardFormStrip,
@@ -20,9 +18,6 @@ import {
   MiniBarChart,
   ObjectivesWidget,
   ClubCrest,
-  PitchAtmosphere,
-  FutCta,
-  FUT,
   formatNumber,
   formatDays,
   formatWhen,
@@ -33,10 +28,10 @@ export { DASHBOARD_LAYOUTS };
 function tournamentBadge(status) {
   const s = String(status || '').toLowerCase();
   if (['open', 'registration'].includes(s)) {
-    return { text: 'OPEN', color: FUT.lime, bg: 'rgba(124,255,107,0.12)', border: 'rgba(124,255,107,0.35)' };
+    return { text: 'OPEN', color: '#34D399', bg: 'rgba(124,255,107,0.12)', border: 'rgba(124,255,107,0.35)' };
   }
   if (['league_phase', 'in_progress', 'group_stage', 'knockout', 'playoffs'].includes(s)) {
-    return { text: 'LIVE', color: FUT.cyan, bg: 'rgba(0,232,255,0.12)', border: 'rgba(0,232,255,0.35)' };
+    return { text: 'LIVE', color: CYAN, bg: 'rgba(0,232,255,0.12)', border: 'rgba(0,232,255,0.35)' };
   }
   return {
     text: s.replace(/_/g, ' ').toUpperCase() || '—',
@@ -46,31 +41,12 @@ function tournamentBadge(status) {
   };
 }
 
-function Chip({ label, gold }) {
-  const tokens = useGamerTokens();
-  const color = gold ? tokens.amber : tokens.cyan;
-  const border = gold ? tokens.amberBorder : tokens.cyanBorder;
-  return (
-    <View style={{
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: 999,
-      backgroundColor: tokens.live ? 'transparent' : (tokens.isDark ? hexToRgba(color, 0.12) : tokens.cardSolid),
-      borderWidth: 1,
-      borderColor: border,
-    }}
-    >
-      <Text style={{ color, fontSize: 11, fontWeight: '900' }}>{label}</Text>
-    </View>
-  );
-}
-
-function GamertagTitle({ vm, style, centered = false }) {
+function GamertagTitle({ vm, style }) {
   return (
     <View style={{
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: centered ? 'center' : 'flex-start',
+      justifyContent: 'flex-start',
       gap: 10,
       minWidth: 0,
     }}
@@ -88,96 +64,145 @@ function GamertagTitle({ vm, style, centered = false }) {
   );
 }
 
-function IdentityChips({ player }) {
+function FormPips({ items }) {
   const tokens = useGamerTokens();
+  const recent = (items || []).slice(-5);
+  if (!recent.length) {
+    return (
+      <Text style={{ color: tokens.faint, fontSize: 12 }}>No recent form</Text>
+    );
+  }
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-      {player?.position ? <Chip label={player.position} gold /> : null}
-      {player?.platform ? <Chip label={player.platform} /> : null}
-      {player?.is_verified ? (
-        <View style={{
-          flexDirection: 'row', alignItems: 'center', gap: 4,
-          paddingHorizontal: tokens.isDark ? 0 : 10, paddingVertical: 5, borderRadius: 999,
-          backgroundColor: tokens.isDark ? 'transparent' : tokens.cardSolid,
-          borderWidth: tokens.isDark ? 0 : 1, borderColor: tokens.cyanBorder,
-        }}
-        >
-          <Ionicons name="checkmark-circle" size={15} color={tokens.cyan} />
-          <Text style={{ color: tokens.cyan, fontSize: 12, fontWeight: '800' }}>Verified</Text>
-        </View>
-      ) : null}
+    <View style={{ flexDirection: 'row', gap: 5 }}>
+      {recent.map((item, i) => {
+        const key = String(item || 'draw').toLowerCase();
+        const win = key === 'win';
+        const loss = key === 'loss';
+        const color = win ? '#34D399' : loss ? '#FB7185' : tokens.muted;
+        const letter = win ? 'W' : loss ? 'L' : 'D';
+        return (
+          <View
+            key={`${letter}-${i}`}
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 6,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: hexToRgba(color, 0.16),
+              borderWidth: 1,
+              borderColor: hexToRgba(color, 0.4),
+            }}
+          >
+            <Text style={{ color, fontSize: 10, fontWeight: '900' }}>{letter}</Text>
+          </View>
+        );
+      })}
     </View>
   );
 }
 
-function KickoffCard({ vm, compact = false }) {
+function PlayerIdentityHero({ vm }) {
+  const tokens = useGamerTokens();
+  const player = vm.player;
+  const rankLabel = vm.playerRank?.rank ? `#${vm.playerRank.rank}` : 'Unranked';
+  const openProfile = () => vm.open('/(tabs)/profile/profilescreen');
+  const openClub = () => {
+    if (!vm.club?.id) return;
+    vm.open({ pathname: '/teams/teamprofilescreen', params: { teamId: String(vm.club.id) } });
+  };
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 14 }}>
+      <FutIdentityCard
+        imageUrl={player?.avatar_url}
+        accent="cyan"
+        variant="overlay"
+        overall={player?.overall_rating ?? vm.avgRating}
+        position={player?.position}
+        onPress={openProfile}
+        width={148}
+      />
+      <View style={{ flex: 1, minWidth: 0, paddingBottom: 2, gap: 8 }}>
+        <GamertagTitle vm={vm} style={{ color: tokens.text, fontSize: 22 }} />
+        <TouchableOpacity
+          onPress={openClub}
+          activeOpacity={vm.club ? 0.85 : 1}
+          disabled={!vm.club}
+          accessibilityRole={vm.club ? 'button' : 'text'}
+          accessibilityLabel={vm.club?.name || 'Free agent'}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+        >
+          {vm.club ? <ClubCrest club={vm.club} size={28} /> : null}
+          <Text style={{ color: tokens.muted, fontSize: 13, fontWeight: '700', flex: 1 }} numberOfLines={1}>
+            {vm.club?.name || 'Free agent'}
+          </Text>
+        </TouchableOpacity>
+        <Text style={{ color: tokens.text, fontWeight: '900', fontSize: 15 }}>
+          {rankLabel}
+          <Text style={{ color: tokens.muted, fontWeight: '700' }}>
+            {`  ·  ${vm.wins}W ${vm.draws}D ${vm.losses}L`}
+          </Text>
+        </Text>
+        <FormPips items={vm.form?.stage} />
+      </View>
+    </View>
+  );
+}
+
+function KickoffCard({ vm }) {
   const tokens = useGamerTokens();
   const { nextMatch, opponentInfo, open } = vm;
   return (
-    <PitchAtmosphere style={{
-      borderWidth: 1.5,
-      borderColor: tokens.isDark ? tokens.cyanBorder : tokens.amberBorder,
-      shadowColor: tokens.isDark ? tokens.cyan : '#0B1A3A',
-      shadowOpacity: tokens.isDark ? 0.35 : 0.18,
-      shadowRadius: 16,
-      shadowOffset: { width: 0, height: 8 },
-      elevation: 10,
-    }}
+    <TouchableOpacity
+      onPress={() => open('/(tabs)/matches')}
+      activeOpacity={0.88}
+      accessibilityRole="button"
+      accessibilityLabel={nextMatch ? `Next match versus ${opponentInfo.opponent}` : 'Open Game Day'}
     >
-      <View style={{ padding: compact ? 14 : 16 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={{ color: tokens.amber, fontSize: 10, fontWeight: '900', letterSpacing: 2.4 }}>KICKOFF</Text>
-            <Text
-              style={[headingStyleLg, { color: tokens.text, marginTop: 6, fontSize: compact ? 20 : 24 }]}
-              numberOfLines={1}
+      <LiveGlass
+        intensity={28}
+        style={{
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: tokens.hairline,
+        }}
+      >
+        <View style={{
+          minHeight: 58,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+        }}
+        >
+          {vm.club ? <ClubCrest club={vm.club} size={36} /> : (
+            <View style={{
+              width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
+              backgroundColor: tokens.inputFill, borderWidth: 1, borderColor: tokens.hairline,
+            }}
             >
-              {nextMatch ? opponentInfo.opponent : 'No match lined up'}
+              <Ionicons name="football-outline" size={18} color={tokens.cyan} />
+            </View>
+          )}
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={{ color: tokens.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1.4 }}>
+              {nextMatch ? (opponentInfo.isHome ? 'HOME' : 'AWAY') : 'NEXT MATCH'}
             </Text>
-            <Text style={{ color: tokens.muted, fontSize: 13, marginTop: 8, lineHeight: 19 }}>
+            <Text style={{ color: tokens.text, fontWeight: '900', fontSize: 15, marginTop: 2 }} numberOfLines={1}>
+              {nextMatch ? opponentInfo.opponent : 'No fixture yet'}
+            </Text>
+            <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
               {nextMatch
                 ? `${formatWhen(nextMatch.scheduled_date)}${nextMatch.competition ? ` · ${nextMatch.competition}` : ''}`
-                : 'Check Game Day when your next fixture drops.'}
+                : 'Open Game Day to find a match'}
             </Text>
           </View>
-          {!compact ? (
-            <LinearGradient
-              colors={[hexToRgba(tokens.cyan, 0.22), hexToRgba(tokens.amber, 0.16)]}
-              style={{
-                width: 54, height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center',
-                borderWidth: 1.5, borderColor: tokens.cyanBorder,
-              }}
-            >
-              <Ionicons name="flash" size={24} color={tokens.cyan} />
-            </LinearGradient>
-          ) : null}
+          <Ionicons name="chevron-forward" size={16} color={tokens.faint} />
         </View>
-        {nextMatch ? (
-          <View style={{
-            marginTop: 14, borderRadius: 14, borderWidth: 1.5, borderColor: tokens.amberBorder,
-            backgroundColor: tokens.inputFill, padding: 14, flexDirection: 'row', justifyContent: 'space-between',
-          }}
-          >
-            <Text style={{ color: opponentInfo.isHome ? tokens.cyan : tokens.text, fontWeight: '900', flex: 1 }} numberOfLines={1}>
-              {opponentInfo.home}
-            </Text>
-            <Text style={{ color: tokens.amber, fontWeight: '900', fontSize: 11, marginHorizontal: 10 }}>VS</Text>
-            <Text
-              style={{ color: !opponentInfo.isHome ? tokens.cyan : tokens.text, fontWeight: '900', flex: 1, textAlign: 'right' }}
-              numberOfLines={1}
-            >
-              {opponentInfo.away}
-            </Text>
-          </View>
-        ) : null}
-        <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
-          <FutCta label="GAME DAY" icon="flash" primary onPress={() => open('/(tabs)/matches')} />
-          {!compact ? (
-            <FutCta label="SCHEDULE" icon="calendar-outline" onPress={() => open('/apps/schedule')} />
-          ) : null}
-        </View>
-      </View>
-    </PitchAtmosphere>
+      </LiveGlass>
+    </TouchableOpacity>
   );
 }
 
@@ -247,18 +272,9 @@ function ClubBlock({ vm, compact = false }) {
         </TouchableOpacity>
       ) : (
         <View>
-          <Text style={{ color: tokens.muted, fontSize: 13 }}>You’re a free agent — find a club.</Text>
-          <TouchableOpacity
-            onPress={() => open('/(tabs)/search/searchclubs')}
-            accessibilityRole="button"
-            accessibilityLabel="Find a club"
-            style={{
-              marginTop: 12, minHeight: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
-              borderWidth: 1, borderColor: tokens.hairline,
-            }}
-          >
-            <Text style={{ color: tokens.text, fontWeight: '800' }}>Find Club</Text>
-          </TouchableOpacity>
+          <Text style={{ color: tokens.muted, fontSize: 13, lineHeight: 19 }}>
+            You’re a free agent. Clubs offer contracts — wait for an offer in Inbox.
+          </Text>
         </View>
       )}
     </SectionCard>
@@ -271,10 +287,7 @@ function FormBlock({ vm, stageOnly = false }) {
       <SectionTitle eyebrow="FORM">Recent form</SectionTitle>
       <DashboardFormStrip label="Stage form" mode="outcome" items={vm.form?.stage} emptyLabel="No completed Stage matches yet." />
       {!stageOnly ? (
-        <>
-          <DashboardFormStrip label="Rating form" mode="rating" items={vm.form?.rating} emptyLabel="No match ratings tracked yet." />
-          <DashboardFormStrip label="FUT form" mode="outcome" items={vm.form?.fut} emptyLabel="Log FUT matches below." />
-        </>
+        <DashboardFormStrip label="Rating form" mode="rating" items={vm.form?.rating} emptyLabel="No match ratings tracked yet." />
       ) : null}
     </SectionCard>
   );
@@ -453,26 +466,6 @@ function LeagueBlock({ vm }) {
   );
 }
 
-function FutBlock({ vm }) {
-  const tokens = useGamerTokens();
-  return (
-    <SectionCard accent="gold">
-      <SectionTitle eyebrow="ULTIMATE TEAM">FUT activity</SectionTitle>
-      <MiniBarChart
-        data={vm.futActivity?.weekly}
-        valueKey="wins"
-        color={AMBER}
-        emptyLabel="No FUT wins logged this month."
-      />
-      {vm.futActivity?.summary ? (
-        <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 10 }}>
-          {vm.futActivity.summary.wins}W {vm.futActivity.summary.draws}D {vm.futActivity.summary.losses}L · {vm.futActivity.summary.total} logged
-        </Text>
-      ) : null}
-    </SectionCard>
-  );
-}
-
 function BelowFold({ vm }) {
   return (
     <>
@@ -481,50 +474,31 @@ function BelowFold({ vm }) {
       <ObjectivesBlock vm={vm} />
       <TournamentsBlock vm={vm} />
       <LeagueBlock vm={vm} />
-      <FutBlock vm={vm} />
     </>
   );
 }
 
 function KpiGrid({ vm }) {
   return (
-    <View style={{ gap: 10 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 10 }}>
-        <DashboardGamerStatCard
-          label="Global Rank"
-          value={vm.playerRank?.rank ? `#${vm.playerRank.rank}` : '—'}
-          sub={vm.rankingPoints ? `${formatNumber(vm.rankingPoints, 1)} pts` : 'Unranked'}
-          accent="gold"
-          icon="trophy-outline"
-        />
-        <DashboardGamerStatCard
-          label="Record"
-          value={`${vm.wins}W ${vm.draws}D ${vm.losses}L`}
-          sub={`${formatNumber(vm.winRate, 1)}% win rate`}
-          accent="green"
-          icon="football-outline"
-        />
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 10 }}>
-        <DashboardGamerStatCard
-          label="Avg rating"
-          value={formatNumber(vm.avgRating, 1)}
-          sub={vm.activity?.totalRecorded ? `${vm.activity.totalRecorded} tracked` : 'Ranked only'}
-          accent="gold"
-          icon="trending-up-outline"
-        />
-        <DashboardGamerStatCard
-          label="Contract"
-          value={vm.tenure?.contractLabel || '—'}
-          sub={
-            vm.tenure?.contractProgress
-              ? `${vm.tenure.contractProgress.gamesLeft} games left`
-              : 'No active contract'
-          }
-          accent={vm.tenure?.contractLabel ? 'green' : 'rose'}
-          icon="shield-outline"
-        />
-      </View>
+    <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 10 }}>
+      <DashboardGamerStatCard
+        label="Avg rating"
+        value={formatNumber(vm.avgRating, 1)}
+        sub={vm.activity?.totalRecorded ? `${vm.activity.totalRecorded} tracked` : 'Ranked only'}
+        accent="gold"
+        icon="trending-up-outline"
+      />
+      <DashboardGamerStatCard
+        label="Contract"
+        value={vm.tenure?.contractLabel || '—'}
+        sub={
+          vm.tenure?.contractProgress
+            ? `${vm.tenure.contractProgress.gamesLeft} games left`
+            : 'No active contract'
+        }
+        accent={vm.tenure?.contractLabel ? 'green' : 'rose'}
+        icon="shield-outline"
+      />
     </View>
   );
 }
@@ -559,19 +533,9 @@ function KpiRow({ icon, label, value, sub }) {
 }
 
 function LayoutA({ vm }) {
-  const tokens = useGamerTokens();
   return (
     <>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <DashboardRankRing rank={vm.playerRank?.rank} winRate={vm.winRate} size={72} />
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ color: tokens.cyan, fontSize: 10, fontWeight: '900', letterSpacing: 2.4 }}>COMMAND CENTER</Text>
-          <GamertagTitle vm={vm} style={{ color: tokens.text, marginTop: 4, fontSize: 22 }} />
-          <View style={{ marginTop: 8 }}>
-            <IdentityChips player={vm.player} />
-          </View>
-        </View>
-      </View>
+      <PlayerIdentityHero vm={vm} />
       <KickoffCard vm={vm} />
       <KpiGrid vm={vm} />
       <FormBlock vm={vm} stageOnly />
@@ -593,15 +557,8 @@ function LayoutB({ vm }) {
 
   return (
     <>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ color: tokens.cyan, fontSize: 10, fontWeight: '900', letterSpacing: 2.4 }}>COMMAND CENTER</Text>
-          <GamertagTitle vm={vm} style={{ color: tokens.text, marginTop: 4 }} />
-        </View>
-        <Text style={{ color: tokens.text, fontWeight: '900', fontSize: 22 }}>
-          {vm.playerRank?.rank ? `#${vm.playerRank.rank}` : '—'}
-        </Text>
-      </View>
+      <PlayerIdentityHero vm={vm} />
+      <KickoffCard vm={vm} />
 
       <View
         accessibilityRole="tablist"
@@ -661,7 +618,6 @@ function LayoutB({ vm }) {
               sub={vm.tenure?.contractProgress ? 'games remaining' : 'No active contract'}
             />
           </SectionCard>
-          <KickoffCard vm={vm} />
           <FormBlock vm={vm} stageOnly />
         </>
       ) : null}
@@ -680,7 +636,6 @@ function LayoutB({ vm }) {
           <TournamentsBlock vm={vm} />
           <LeagueBlock vm={vm} />
           <ActivityBlock vm={vm} />
-          <FutBlock vm={vm} />
         </>
       ) : null}
     </>
@@ -715,30 +670,10 @@ function ShortcutTile({ icon, label, onPress, accent = 'cyan' }) {
 }
 
 function LayoutC({ vm }) {
-  const tokens = useGamerTokens();
   return (
     <>
-      <PitchAtmosphere style={{
-        borderWidth: 1.5,
-        borderColor: tokens.amberBorder,
-        shadowColor: tokens.amber,
-        shadowOpacity: tokens.isDark ? 0.3 : 0.12,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 8 },
-        elevation: 10,
-      }}
-      >
-        <View style={{ padding: 18, alignItems: 'center' }}>
-          <DashboardRankRing rank={vm.playerRank?.rank} winRate={vm.winRate} size={104} />
-          <GamertagTitle vm={vm} centered style={{ color: tokens.text, marginTop: 12 }} />
-          <View style={{ marginTop: 10 }}>
-            <IdentityChips player={vm.player} />
-          </View>
-          <Text style={{ color: tokens.text, fontWeight: '900', fontSize: 16, marginTop: 14 }}>
-            {vm.wins}W · {vm.draws}D · {vm.losses}L
-          </Text>
-        </View>
-      </PitchAtmosphere>
+      <PlayerIdentityHero vm={vm} />
+      <KickoffCard vm={vm} />
 
       <View style={{ gap: 10 }}>
         <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 10 }}>
@@ -752,69 +687,17 @@ function LayoutC({ vm }) {
             accent="gold"
             onPress={() => (vm.club
               ? vm.open({ pathname: '/teams/teamprofilescreen', params: { teamId: String(vm.club.id) } })
-              : vm.open('/(tabs)/search/searchclubs'))}
+              : vm.open('/apps/inbox'))}
           />
           <ShortcutTile icon="mail-outline" label="Inbox" onPress={() => vm.open('/apps/inbox')} />
         </View>
       </View>
-
-      <TouchableOpacity
-        onPress={() => vm.open('/(tabs)/matches')}
-        activeOpacity={0.85}
-        accessibilityRole="button"
-        accessibilityLabel={vm.nextMatch ? `Next match ${vm.opponentInfo.opponent}` : 'Open Game Day'}
-        style={{
-          minHeight: 52, borderRadius: 14, borderWidth: 1, borderColor: tokens.cyanBorder,
-          backgroundColor: hexToRgba(tokens.cyan, 0.1), paddingHorizontal: 14,
-          flexDirection: 'row', alignItems: 'center', gap: 10,
-        }}
-      >
-        <Ionicons name="football-outline" size={18} color={tokens.cyan} />
-        <Text style={{ color: tokens.cyan, fontWeight: '800', flex: 1 }} numberOfLines={1}>
-          {vm.nextMatch
-            ? `${vm.opponentInfo.opponent} · ${formatWhen(vm.nextMatch.scheduled_date)}`
-            : 'No match lined up'}
-        </Text>
-        <Ionicons name="chevron-forward" size={16} color={tokens.cyan} />
-      </TouchableOpacity>
 
       <FormBlock vm={vm} stageOnly />
       <ClubBlock vm={vm} compact />
       <DashboardQuickGlance glance={vm.glance} onOpen={vm.open} />
       <BelowFold vm={vm} />
     </>
-  );
-}
-
-function BentoTile({ label, value, sub, gold, onPress }) {
-  const tokens = useGamerTokens();
-  const inner = (
-    <LiveGlass
-        intensity={24}
-      style={{
-        flex: 1, minHeight: 88, borderRadius: 16, padding: 12, justifyContent: 'space-between',
-        borderWidth: 1.5,
-        borderColor: gold ? tokens.amberBorder : tokens.cyanBorder,
-        backgroundColor: tokens.live ? 'transparent' : tokens.cardSolid,
-        shadowColor: tokens.cyan,
-        shadowOpacity: tokens.live ? 0.35 : 0.2,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 5 },
-        elevation: 6,
-      }}
-    >
-      <Text style={{ color: tokens.muted, fontSize: 10, fontWeight: '900', letterSpacing: 1.4 }}>
-        {label}
-      </Text>
-      <Text style={{ color: gold ? tokens.amber : tokens.text, fontWeight: '900', fontSize: 26 }}>{value}</Text>
-      {sub ? <Text style={{ color: tokens.muted, fontSize: 11 }}>{sub}</Text> : null}
-    </LiveGlass>
-  );
-  if (!onPress) return inner;
-  return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={{ flex: 1 }} accessibilityRole="button">
-      {inner}
-    </TouchableOpacity>
   );
 }
 
@@ -825,37 +708,8 @@ function LayoutD({ vm }) {
 
   return (
     <>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <GamertagTitle vm={vm} style={{ color: tokens.text, fontSize: 22 }} />
-          <View style={{ marginTop: 8 }}>
-            <IdentityChips player={vm.player} />
-          </View>
-        </View>
-        <Text style={{ color: tokens.text, fontWeight: '900', fontSize: 22 }}>
-          {vm.playerRank?.rank ? `#${vm.playerRank.rank}` : '—'}
-        </Text>
-      </View>
-
-      <View style={{ flexDirection: 'row', gap: 10, alignItems: 'stretch' }}>
-        <View style={{ flex: 1.25 }}>
-          <KickoffCard vm={vm} compact />
-        </View>
-        <View style={{ flex: 0.75, gap: 10 }}>
-          <BentoTile
-            label="RANK"
-            value={vm.playerRank?.rank ? `#${vm.playerRank.rank}` : '—'}
-            sub={vm.rankingPoints ? `${formatNumber(vm.rankingPoints, 1)} pts` : 'Unranked'}
-            gold
-            onPress={() => vm.open('/apps/rankings')}
-          />
-          <BentoTile
-            label="RATING"
-            value={formatNumber(vm.avgRating, 1)}
-            sub={`${formatNumber(vm.winRate, 1)}% WR`}
-          />
-        </View>
-      </View>
+      <PlayerIdentityHero vm={vm} />
+      <KickoffCard vm={vm} />
 
       <FormBlock vm={vm} stageOnly />
 
@@ -870,10 +724,10 @@ function LayoutD({ vm }) {
         <TouchableOpacity
           onPress={() => (vm.club
             ? vm.open({ pathname: '/teams/teamprofilescreen', params: { teamId: String(vm.club.id) } })
-            : vm.open('/(tabs)/search/searchclubs'))}
+            : vm.open('/apps/inbox'))}
           activeOpacity={0.85}
           accessibilityRole="button"
-          accessibilityLabel={vm.club ? vm.club.name : 'Find a club'}
+          accessibilityLabel={vm.club ? vm.club.name : 'Inbox for contract offers'}
           style={{
             flex: 1, minHeight: 120, padding: 16, justifyContent: 'space-between',
           }}
@@ -886,7 +740,7 @@ function LayoutD({ vm }) {
             </Text>
           </View>
           <Text style={{ color: tokens.muted, fontSize: 12 }}>
-            {vm.clubRank?.rank ? `Rank #${vm.clubRank.rank}` : 'Find a club'}
+            {vm.clubRank?.rank ? `Rank #${vm.clubRank.rank}` : 'Waiting for a contract offer'}
           </Text>
         </TouchableOpacity>
         </LiveGlass>
@@ -929,20 +783,6 @@ function LayoutD({ vm }) {
         </TouchableOpacity>
         </LiveGlass>
       </View>
-
-      <LiveGlass
-        intensity={22}
-        style={{
-          borderRadius: 14, borderWidth: 1, borderColor: tokens.hairline,
-          paddingVertical: 12, paddingHorizontal: 14,
-          flexDirection: 'row', justifyContent: 'space-between',
-        }}
-      >
-        <Text style={{ color: tokens.cyan, fontWeight: '900' }}>{vm.wins}W</Text>
-        <Text style={{ color: tokens.muted, fontWeight: '900' }}>{vm.draws}D</Text>
-        <Text style={{ color: tokens.amber, fontWeight: '900' }}>{vm.losses}L</Text>
-        <Text style={{ color: tokens.text, fontWeight: '900' }}>{formatNumber(vm.winRate, 1)}% WR</Text>
-      </LiveGlass>
 
       <DashboardQuickGlance glance={vm.glance} onOpen={vm.open} />
       <BelowFold vm={vm} />

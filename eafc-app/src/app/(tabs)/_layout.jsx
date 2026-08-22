@@ -1,25 +1,10 @@
 import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { BlurView } from 'expo-blur';
 import useThemeStore from '../../store/themeStore';
-
-let NativeTabs = null;
-let NativeIcon = null;
-let NativeLabel = null;
-let NativeVectorIcon = null;
-
-if (Platform.OS === 'ios') {
-  try {
-    ({ NativeTabs } = require('expo-router/unstable-native-tabs'));
-    ({ Icon: NativeIcon, Label: NativeLabel, VectorIcon: NativeVectorIcon } =
-      require('expo-router/build/native-tabs/common/elements'));
-  } catch {
-    // NativeTabs unavailable in this expo-router version — falls back to AndroidTabs
-  }
-}
-
 
 const SCREENS = [
   {
@@ -27,24 +12,28 @@ const SCREENS = [
     title: 'Home',
     icon: 'home',
     iconFocused: 'home',
+    sf: { default: 'house', selected: 'house.fill' },
   },
   {
     name: 'matches',
     title: 'Game Day',
     icon: 'football-outline',
     iconFocused: 'football',
+    sf: { default: 'soccerball', selected: 'soccerball.fill' },
   },
   {
     name: 'tournaments',
     title: 'Tournaments',
     icon: 'trophy-outline',
     iconFocused: 'trophy',
+    sf: { default: 'trophy', selected: 'trophy.fill' },
   },
   {
     name: 'profile',
     title: 'Profile',
     icon: 'person-outline',
     iconFocused: 'person',
+    sf: { default: 'person', selected: 'person.fill' },
   },
 ];
 
@@ -62,7 +51,7 @@ export default function TabsLayout() {
     tabBarInactiveTintColor: tokens.muted,
   };
 
-  if (Platform.OS === 'ios' && NativeTabs && !tokens.live) {
+  if (Platform.OS === 'ios' && !tokens.live) {
     return (
       <NativeTabs
         backBehavior="history"
@@ -71,15 +60,15 @@ export default function TabsLayout() {
           tabBarStyle: { backgroundColor: C.surface },
         }}
       >
-        {SCREENS.map(({ name, icon }) => (
+        {SCREENS.map(({ name, sf }) => (
           <NativeTabs.Trigger key={name} name={name}>
-            <NativeIcon src={<NativeVectorIcon family={Ionicons} name={icon} />} />
-            <NativeLabel hidden />
+            <NativeTabs.Trigger.Icon sf={sf} />
+            <NativeTabs.Trigger.Label hidden />
           </NativeTabs.Trigger>
         ))}
         <NativeTabs.Trigger key="search" name="search" role="search">
-          <NativeIcon src={<NativeVectorIcon family={Ionicons} name="search" />} />
-          <NativeLabel hidden />
+          <NativeTabs.Trigger.Icon sf="magnifyingglass" />
+          <NativeTabs.Trigger.Label hidden />
         </NativeTabs.Trigger>
       </NativeTabs>
     );

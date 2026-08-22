@@ -13,6 +13,8 @@ lerna-debug.log*
 
 node_modules
 eafc-app/node_modules
+eafc-app/.expo
+.expo/
 eafc-backend/node_modules
 dist
 dist-ssr

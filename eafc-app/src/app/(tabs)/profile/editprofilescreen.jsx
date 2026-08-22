@@ -23,7 +23,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { stageClient, resolveMyPlayerAndClub } from '@/api/stageClient';
 import useAuthStore from '@/store/authStore';
 import { COUNTRIES } from '@/lib/countries';
-import { PLAYER_POSITIONS, PLATFORMS } from '@/lib/stageDirectories';
+import { PLAYER_POSITIONS } from '@/lib/stageDirectories';
+import { CONSOLE_OPTIONS, normalizeConsoleChoice } from '@/lib/platformDisplay';
 import { headingStyleLg } from '@/lib/fonts';
 import { hostedMediaUrl } from '@/lib/uploadProfileMedia';
 import {
@@ -35,7 +36,7 @@ import {
 } from '@/components/profile/gamer/GamerProfileUI';
 
 const POSITIONS = PLAYER_POSITIONS.filter((p) => p !== 'All');
-const PLATFORM_OPTIONS = PLATFORMS.filter((p) => p !== 'All');
+const PLATFORM_OPTIONS = CONSOLE_OPTIONS;
 
 function splitName(gamertag, email) {
   const base = String(gamertag || email?.split('@')[0] || 'Player').trim();
@@ -73,7 +74,7 @@ export default function EditProfileScreen() {
   const [bio, setBio] = useState(user?.bio || '');
   const [position, setPosition] = useState('ST');
   const [secondaryPosition, setSecondaryPosition] = useState('none');
-  const [platform, setPlatform] = useState('PlayStation');
+  const [platform, setPlatform] = useState('PS5');
   const [country, setCountry] = useState(null);
   const [avatarUri, setAvatarUri] = useState(null);
   const [bannerUri, setBannerUri] = useState(null);
@@ -108,7 +109,7 @@ export default function EditProfileScreen() {
         setBio(nextPlayer?.bio || nextPresident?.bio || user?.bio || '');
         setPosition(nextPlayer?.position || 'ST');
         setSecondaryPosition(nextPlayer?.secondary_position || 'none');
-        setPlatform(nextPlayer?.platform || 'PlayStation');
+        setPlatform(normalizeConsoleChoice(nextPlayer?.platform) || 'PS5');
         setCountry(matchCountry(nextPlayer) || matchCountry(user));
         setAvatarUri(nextPlayer?.avatar_url || nextPresident?.avatar_url || user?.avatar || user?.avatar_url || null);
         setBannerUri(nextPlayer?.banner_url || nextPresident?.banner_url || null);

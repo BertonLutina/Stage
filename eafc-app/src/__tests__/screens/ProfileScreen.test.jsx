@@ -45,6 +45,10 @@ jest.mock('../../api/stageClient', () => ({
       PlayerContract: { filter: jest.fn(() => Promise.resolve([])) },
       PlayerLoan: { filter: jest.fn(() => Promise.resolve([])) },
       Club: { get: jest.fn(() => Promise.resolve(null)) },
+      Post: {
+        filter: jest.fn(() => Promise.resolve([])),
+        create: jest.fn(),
+      },
       Follow: {
         filter: jest.fn(() => Promise.resolve([])),
         create: jest.fn(async (body) => ({ id: 'follow-1', ...body })),
@@ -103,26 +107,20 @@ describe('ProfileScreen tabs', () => {
   it('shows the current primary profile tabs for an own player profile', () => {
     const { getByText, queryByText } = render(<ProfileScreen player={player} />);
 
-    expect(getByText('Feed')).toBeTruthy();
+    expect(getByText('Posts')).toBeTruthy();
     expect(getByText('Showcase')).toBeTruthy();
-    expect(getByText('More')).toBeTruthy();
+    expect(getByText('Career')).toBeTruthy();
+    expect(getByText('Trophies')).toBeTruthy();
+    expect(getByText('Lifestyle')).toBeTruthy();
+    expect(queryByText('Feed')).toBeNull();
+    expect(queryByText('More')).toBeNull();
     expect(queryByText('Matches')).toBeNull();
     expect(queryByText('Stats')).toBeNull();
   });
 
-  it('opens the More tool list from the primary tab rail', () => {
+  it('opens Career as a first-class tab with Stage club and player records', async () => {
     const { getByText } = render(<ProfileScreen player={player} />);
 
-    fireEvent.press(getByText('More'));
-
-    expect(getByText('Career')).toBeTruthy();
-    expect(getByText('Trophies')).toBeTruthy();
-  });
-
-  it('shows Stage club and player career data in the Career tool', async () => {
-    const { getByText } = render(<ProfileScreen player={player} />);
-
-    fireEvent.press(getByText('More'));
     fireEvent.press(getByText('Career'));
 
     await waitFor(() => {
@@ -130,6 +128,7 @@ describe('ProfileScreen tabs', () => {
       expect(getByText('My Player Career')).toBeTruthy();
       expect(getByText('Ranking Points')).toBeTruthy();
       expect(getByText('Goals For')).toBeTruthy();
+      expect(getByText('Career Mode')).toBeTruthy();
     });
   });
 
@@ -143,16 +142,25 @@ describe('ProfileScreen tabs', () => {
     });
   });
 
+  it('shows the console generation and nationality flag only', () => {
+    const { getByText, queryByText, getByLabelText } = render(<ProfileScreen player={player} />);
+
+    expect(getByText('PS5')).toBeTruthy();
+    expect(queryByText('PlayStation')).toBeNull();
+    expect(queryByText('Belgium')).toBeNull();
+    expect(getByLabelText('National flag')).toBeTruthy();
+  });
+
   it('keeps Dashboard and logout out of the player hero', () => {
     const { queryByText, getByLabelText } = render(<ProfileScreen player={player} />);
 
     expect(queryByText('Dashboard')).toBeNull();
     expect(queryByText('LEAVE')).toBeNull();
     expect(queryByText('Leave')).toBeNull();
-    expect(getByLabelText('Edit')).toBeTruthy();
+    expect(getByLabelText('Edit Profile')).toBeTruthy();
   });
 
-  it('puts Leave club and Sign out under More', () => {
+  it('puts Leave club and Sign out under Lifestyle', () => {
     const signedClub = { id: 'club-1', name: 'FC Congo' };
     const { getByText, queryByText } = render(
       <ProfileScreen player={{ ...player, club_id: 'club-1' }} signedClub={signedClub} />,
@@ -161,10 +169,20 @@ describe('ProfileScreen tabs', () => {
     expect(queryByText('Leave club')).toBeNull();
     expect(queryByText('Sign out')).toBeNull();
 
-    fireEvent.press(getByText('More'));
+    fireEvent.press(getByText('Lifestyle'));
 
     expect(getByText('Leave club')).toBeTruthy();
     expect(getByText('Sign out')).toBeTruthy();
+  });
+
+  it('shows the identity verified bar and post composer on Posts', async () => {
+    const { getByText, getByLabelText } = render(
+      <ProfileScreen player={{ ...player, is_verified: 1 }} />,
+    );
+
+    expect(getByText('Identity Verified')).toBeTruthy();
+    expect(getByLabelText('Share a moment with the community')).toBeTruthy();
+    expect(getByLabelText('Post')).toBeTruthy();
   });
 
   it('hides Follow on own profile and toggles Follow / Unfollow on another player', async () => {

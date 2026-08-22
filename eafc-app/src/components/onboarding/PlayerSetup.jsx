@@ -8,6 +8,7 @@ import {
 import STText from '../common/STText';
 import { stageClient } from '../../api/stageClient';
 import { COUNTRIES } from '../../lib/countries';
+import { CONSOLE_OPTIONS, normalizeConsoleChoice } from '../../lib/platformDisplay';
 import { SettingsListbox } from '../settings/SettingsListbox';
 import { onboardingStyles as s } from './onboardingStyles';
 
@@ -17,7 +18,7 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
   const [gamertag, setGamertag] = useState(initialPlayer?.gamertag || '');
   const [position, setPosition] = useState(initialPlayer?.position || 'ST');
   const [secondaryPosition, setSecondaryPosition] = useState(initialPlayer?.secondary_position || 'none');
-  const [country, setCountry] = useState(initialPlayer?.country || '');
+  const [platform, setPlatform] = useState(normalizeConsoleChoice(initialPlayer?.platform) || 'PS5');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -43,7 +44,7 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
         secondary_position: secondaryPosition === 'none' ? null : secondaryPosition,
         country,
         country_code: foundCountry?.code || '',
-        platform: 'PlayStation',
+        platform,
         credits: 50,
         stc: 50000,
       };
@@ -118,6 +119,19 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
             style={[s.tile, secondaryPosition === p && s.chipActive]}
           >
             <STText style={[s.chipText, secondaryPosition === p && s.chipTextActive]}>{p}</STText>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <STText style={s.label}>Console</STText>
+      <View style={s.tileGrid}>
+        {CONSOLE_OPTIONS.map((p) => (
+          <TouchableOpacity
+            key={p}
+            onPress={() => setPlatform(p)}
+            style={[s.tile, platform === p && s.chipActive]}
+          >
+            <STText style={[s.chipText, platform === p && s.chipTextActive]}>{p}</STText>
           </TouchableOpacity>
         ))}
       </View>

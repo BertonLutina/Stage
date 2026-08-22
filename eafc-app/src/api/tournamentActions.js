@@ -44,12 +44,39 @@ function parseJsonList(value) {
   }
 }
 
+function parseRegistrationProofs(value) {
+  const empty = { club: {}, player: {} };
+  if (!value) return empty;
+  let parsed = value;
+  if (typeof value === 'string') {
+    try {
+      parsed = JSON.parse(value);
+    } catch {
+      return empty;
+    }
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return empty;
+  return {
+    club: parsed.club && typeof parsed.club === 'object' ? parsed.club : {},
+    player: parsed.player && typeof parsed.player === 'object' ? parsed.player : {},
+  };
+}
+
+function unwrapFunctionResult(result, fallback = 'Action failed') {
+  const data = result?.data ?? result;
+  if (data && data.success === false) {
+    throw new Error(data.error || fallback);
+  }
+  return result;
+}
+
 function normalizeTournament(row) {
   if (!row) return row;
   return {
     ...row,
     registered_clubs: parseJsonList(row.registered_clubs),
     registered_players: parseJsonList(row.registered_players),
+    registration_proofs: parseRegistrationProofs(row.registration_proofs),
   };
 }
 
@@ -79,20 +106,28 @@ export async function fetchTournamentPublic(tournamentId) {
   }
 }
 
-export async function registerTournamentClub(tournamentId, clubId, registrationProofUrl = null) {
-  return stageClient.functions.invoke("tournamentRegistration", {
+export async function registerTournamentClub(tournamentId, clubId, options = {}) {
+  const payload = typeof options === "string"
+    ? { registration_proof_url: options, ea_club_name: null }
+    : {
+        registration_proof_url: options.registrationProofUrl || options.registration_proof_url || null,
+        ea_club_name: options.eaClubName || options.ea_club_name || null,
+      };
+  const result = await stageClient.functions.invoke("tournamentRegistration", {
     tournament_id: tournamentId,
     club_id: clubId,
-    registration_proof_url: registrationProofUrl,
+    ...payload,
   });
+  return unwrapFunctionResult(result, "Club registration failed");
 }
 
 export async function registerTournamentPlayer(tournamentId, playerId, registrationProofUrl = null) {
-  return stageClient.functions.invoke("tournamentRegistration", {
+  const result = await stageClient.functions.invoke("tournamentRegistration", {
     tournament_id: tournamentId,
     player_id: playerId,
     registration_proof_url: registrationProofUrl,
   });
+  return unwrapFunctionResult(result, "Player registration failed");
 }
 
 export function notifyTournamentRegistration(tournamentId, clubId) {
@@ -160,10 +195,11 @@ export async function initializeTournamentDraw(tournamentId, tournament, registe
 }
 
 export async function withdrawTournamentClub(tournamentId, clubId) {
-  return stageClient.functions.invoke("tournamentWithdrawal", {
+  const result = await stageClient.functions.invoke("tournamentWithdrawal", {
     tournament_id: tournamentId,
     club_id: clubId,
   });
+  return unwrapFunctionResult(result, "Withdrawal failed");
 }
 
 export async function cancelTournamentById(tournamentId) {

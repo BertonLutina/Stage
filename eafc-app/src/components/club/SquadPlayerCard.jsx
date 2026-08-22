@@ -3,14 +3,14 @@ import {
   ActionSheetIOS,
   Alert,
   Image,
+  Platform,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import ParallelogramFrame from '@/components/club/ParallelogramFrame';
-import { getCountryFlagColors, getPlayerNationality } from '@/lib/countryDisplay';
+import FlagMark from '@/components/common/FlagMark';
+import { getPlayerNationality } from '@/lib/countryDisplay';
 import {
   clubRoleLabel,
   formatOvr,
@@ -19,6 +19,7 @@ import {
   getSquadContractSummary,
 } from '@/lib/clubSquadDisplay';
 import { formatClubRating } from '@/lib/clubPlayerStats';
+import { formatPlatformLabel } from '@/lib/platformDisplay';
 
 function StatusPill({ label, color }) {
   return (
@@ -30,25 +31,25 @@ function StatusPill({ label, color }) {
   );
 }
 
-function NationalityRow({ player }) {
-  const nationality = getPlayerNationality(player);
-  const colors = getCountryFlagColors(nationality.code);
+function DataRow({ label, children }) {
   return (
-    <LinearGradient
-      colors={[colors[0], colors[1], colors[2] || colors[0]]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 0 }}
-      style={{ borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(255,255,255,0.08)',
+        paddingHorizontal: 12,
+        paddingVertical: 9,
+        gap: 10,
+      }}
     >
-      <View style={{ backgroundColor: 'rgba(0,0,0,0.58)', paddingHorizontal: 10, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 9, fontWeight: '900', letterSpacing: 1.4, textTransform: 'uppercase' }}>
-          Nationality
-        </Text>
-        <Text style={{ color: '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 0.6, textTransform: 'uppercase', flexShrink: 1 }} numberOfLines={1}>
-          {nationality.label}
-        </Text>
-      </View>
-    </LinearGradient>
+      <Text style={{ color: 'rgba(255,255,255,0.42)', fontSize: 9, fontWeight: '800', letterSpacing: 1.3, textTransform: 'uppercase' }}>
+        {label}
+      </Text>
+      {children}
+    </View>
   );
 }
 
@@ -88,6 +89,8 @@ export default function SquadPlayerCard({
   const ovr = formatOvr(player?.overall_rating ?? player?.ovr);
   const primaryPos = player?.position || player?.position_code || '--';
   const secondaryPos = player?.secondary_position || player?.alt_position || '--';
+  const nationality = getPlayerNationality(player);
+  const consoleLabel = formatPlatformLabel(player?.platform);
 
   const openMenu = (event) => {
     event?.stopPropagation?.();
@@ -100,109 +103,109 @@ export default function SquadPlayerCard({
 
   return (
     <TouchableOpacity activeOpacity={0.9} onPress={onOpenProfile} accessibilityRole="button">
-      <ParallelogramFrame skew={-6}>
-        <View
-          style={{
-            borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.1)',
-            backgroundColor: '#071018',
-            paddingHorizontal: 14,
-            paddingVertical: 12,
-            minHeight: 248,
-            gap: 8,
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-            <View
-              style={{
-                width: 52,
-                height: 52,
-                overflow: 'hidden',
-                backgroundColor: '#101827',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: 'rgba(245,197,66,0.35)',
-              }}
-            >
-              {player?.avatar_url ? (
-                <Image source={{ uri: player.avatar_url }} style={{ width: 52, height: 52 }} />
-              ) : (
-                <Text style={{ color: '#F5C542', fontWeight: '900', fontSize: 16 }}>
-                  {String(player?.gamertag || '?').slice(0, 2).toUpperCase()}
-                </Text>
-              )}
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, letterSpacing: 0.4 }} numberOfLines={1}>
-                {player?.gamertag || player?.display_name || 'Player'}
+      <View
+        style={{
+          borderWidth: 1,
+          borderColor: 'rgba(245,197,66,0.28)',
+          backgroundColor: '#071018',
+          overflow: 'hidden',
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingHorizontal: 12, paddingVertical: 12 }}>
+          <View
+            style={{
+              width: 52,
+              height: 52,
+              overflow: 'hidden',
+              backgroundColor: '#101827',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: 1,
+              borderColor: 'rgba(245,197,66,0.35)',
+            }}
+          >
+            {player?.avatar_url ? (
+              <Image source={{ uri: player.avatar_url }} style={{ width: 52, height: 52 }} />
+            ) : (
+              <Text style={{ color: '#F5C542', fontWeight: '900', fontSize: 16 }}>
+                {String(player?.gamertag || '?').slice(0, 2).toUpperCase()}
               </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
-                <StatusPill label={roleLabel} color="#00E5FF" />
-                <StatusPill label={contractSummary.label} color={contractSummary.color} />
-              </View>
-            </View>
-            <View style={{ alignItems: 'flex-end', gap: 6 }}>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ color: '#F5C542', fontWeight: '900', fontSize: 20, lineHeight: 22 }}>{ovr}</Text>
-                <Text style={{ color: 'rgba(245,197,66,0.55)', fontSize: 9, fontWeight: '900', letterSpacing: 1 }}>OVR</Text>
-              </View>
-              {menuActions.length ? (
-                <TouchableOpacity
-                  onPress={openMenu}
-                  hitSlop={12}
-                  accessibilityRole="button"
-                  accessibilityLabel="Player actions"
-                  style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <Ionicons name="ellipsis-vertical" size={18} color="rgba(255,255,255,0.55)" />
-                </TouchableOpacity>
-              ) : null}
+            )}
+          </View>
+          <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
+            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, letterSpacing: 0.4 }} numberOfLines={1}>
+              {player?.gamertag || player?.display_name || 'Player'}
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+              <StatusPill label={roleLabel} color="#00E5FF" />
+              {consoleLabel ? <StatusPill label={consoleLabel} color="#F5C542" /> : null}
             </View>
           </View>
-
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <View style={{ flex: 1, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(0,0,0,0.2)', padding: 8 }}>
-              <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '800', letterSpacing: 1.2, textTransform: 'uppercase' }}>Primary</Text>
-              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 12, marginTop: 2 }}>{primaryPos}</Text>
-            </View>
-            <View style={{ flex: 1, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(0,0,0,0.2)', padding: 8 }}>
-              <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '800', letterSpacing: 1.2, textTransform: 'uppercase' }}>Secondary</Text>
-              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 12, marginTop: 2 }}>{secondaryPos}</Text>
-            </View>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(0,0,0,0.2)', paddingHorizontal: 10, paddingVertical: 8 }}>
-            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '800', letterSpacing: 1.2, textTransform: 'uppercase' }}>Next match</Text>
-            <StatusPill label={availabilitySummary.label} color={availabilitySummary.color} />
-          </View>
-
-          <NationalityRow player={player} />
-
-          <View style={{ flexDirection: 'row', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
-            {[
-              ['AVG', formatClubRating(clubStats?.avgRating)],
-              ['G', String(clubStats?.goals ?? 0)],
-              ['A', String(clubStats?.assists ?? 0)],
-              ['MP', String(clubStats?.matches ?? 0)],
-            ].map(([label, value], index) => (
-              <View
-                key={label}
-                style={{
-                  flex: 1,
-                  alignItems: 'center',
-                  paddingVertical: 8,
-                  borderRightWidth: index < 3 ? 1 : 0,
-                  borderRightColor: 'rgba(255,255,255,0.08)',
-                }}
+          <View style={{ alignItems: 'flex-end', gap: 4 }}>
+            <Text style={{ color: '#F5C542', fontWeight: '900', fontSize: 22, lineHeight: 24 }}>{ovr}</Text>
+            <Text style={{ color: 'rgba(245,197,66,0.55)', fontSize: 9, fontWeight: '900', letterSpacing: 1 }}>OVR</Text>
+            {menuActions.length ? (
+              <TouchableOpacity
+                onPress={openMenu}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel="Player actions"
+                style={{ minWidth: 44, minHeight: 36, alignItems: 'center', justifyContent: 'center' }}
               >
-                <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15 }}>{value}</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 9, fontWeight: '900', letterSpacing: 1.2, marginTop: 2 }}>{label}</Text>
-              </View>
-            ))}
+                <Ionicons name="ellipsis-vertical" size={18} color="rgba(255,255,255,0.55)" />
+              </TouchableOpacity>
+            ) : null}
           </View>
         </View>
-      </ParallelogramFrame>
+
+        <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)' }}>
+          <View style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 9, borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.08)' }}>
+            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '800', letterSpacing: 1.2, textTransform: 'uppercase' }}>Primary</Text>
+            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 13, marginTop: 2 }}>{primaryPos}</Text>
+          </View>
+          <View style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 9 }}>
+            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '800', letterSpacing: 1.2, textTransform: 'uppercase' }}>Secondary</Text>
+            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 13, marginTop: 2 }}>{secondaryPos}</Text>
+          </View>
+        </View>
+
+        <DataRow label="Contract">
+          <StatusPill label={contractSummary.label} color={contractSummary.color} />
+        </DataRow>
+        <DataRow label="Next match">
+          <StatusPill label={availabilitySummary.label} color={availabilitySummary.color} />
+        </DataRow>
+        <DataRow label="Nationality">
+          {nationality.code ? (
+            <FlagMark code={nationality.code} country={nationality.label} size={22} accessibilityLabel="National flag" />
+          ) : (
+            <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11 }}>--</Text>
+          )}
+        </DataRow>
+
+        <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(0,0,0,0.28)' }}>
+          {[
+            ['AVG', formatClubRating(clubStats?.avgRating)],
+            ['G', String(clubStats?.goals ?? 0)],
+            ['A', String(clubStats?.assists ?? 0)],
+            ['MP', String(clubStats?.matches ?? 0)],
+          ].map(([label, value], index) => (
+            <View
+              key={label}
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                paddingVertical: 10,
+                borderRightWidth: index < 3 ? 1 : 0,
+                borderRightColor: 'rgba(255,255,255,0.08)',
+              }}
+            >
+              <Text style={{ color: 'rgba(255,255,255,0.38)', fontSize: 9, fontWeight: '900', letterSpacing: 1.2 }}>{label}</Text>
+              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15, marginTop: 2 }}>{value}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
     </TouchableOpacity>
   );
 }
