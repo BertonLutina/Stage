@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import LiveGlass from '@/components/theme/LiveGlass';
 import { useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
 import { headingStyleSm } from '@/lib/fonts';
+import { CARD_RADIUS } from '@/lib/stageTheme';
 
 export default function SettingsSection({ title, description, icon, children, action }) {
   const tokens = useGamerTokens();
@@ -11,7 +12,7 @@ export default function SettingsSection({ title, description, icon, children, ac
     <LiveGlass
       intensity={36}
       style={{
-        borderRadius: 16,
+        borderRadius: CARD_RADIUS,
         borderWidth: 1,
         borderColor: tokens.hairline,
         backgroundColor: tokens.live ? 'transparent' : tokens.card,
@@ -29,8 +30,8 @@ export default function SettingsSection({ title, description, icon, children, ac
           borderBottomColor: tokens.hairline,
           backgroundColor: 'transparent',
           overflow: 'hidden',
-          borderTopLeftRadius: 16,
-          borderTopRightRadius: 16,
+          borderTopLeftRadius: CARD_RADIUS,
+          borderTopRightRadius: CARD_RADIUS,
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, flex: 1 }}>

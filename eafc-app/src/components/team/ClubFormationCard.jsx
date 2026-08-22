@@ -161,7 +161,7 @@ export default function ClubFormationCard({
         style={{
           width: CARD_W,
           height: CARD_H,
-          borderRadius: 22,
+          borderRadius: 2,
           overflow: 'hidden',
           borderWidth: 1.5,
           borderColor: 'rgba(255,214,10,0.4)',

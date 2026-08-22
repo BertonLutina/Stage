@@ -9,7 +9,7 @@ import { stageClient } from '@/api/stageClient';
 import { CYAN, AMBER } from '@/components/profile/gamer/GamerProfileUI';
 import { headingStyle } from '@/lib/fonts';
 import useThemeStore from '@/store/themeStore';
-import { hexToRgba } from '@/lib/stageTheme';
+import { CARD_RADIUS, hexToRgba } from '@/lib/stageTheme';
 import LiveGlass from '@/components/theme/LiveGlass';
 
 /** EA FC night palette */
@@ -103,7 +103,7 @@ export function formatWhen(dateStr) {
 export function PitchAtmosphere({ children, style }) {
   const tokens = useThemeStore((s) => s.tokens);
   return (
-    <LiveGlass style={[{ borderRadius: 22 }, style]} intensity={36}>
+    <LiveGlass style={[{ borderRadius: CARD_RADIUS }, style]} intensity={36}>
       <LinearGradient
         colors={tokens.live
           ? ['rgba(12,20,36,0.55)', 'rgba(10,18,32,0.42)', 'rgba(6,10,20,0.28)']
@@ -136,7 +136,10 @@ export function PitchAtmosphere({ children, style }) {
   );
 }
 
-export function SectionCard({ children, style, accent = 'cyan' }) {
+/** Card radius for Home widgets under the player identity plate. */
+export const DASHBOARD_CARD_RADIUS = CARD_RADIUS;
+
+export function SectionCard({ children, style, accent = 'cyan', radius = CARD_RADIUS }) {
   const tokens = useThemeStore((s) => s.tokens);
   const a = ACCENTS[accent] || ACCENTS.cyan;
   const border = accent === 'gold' ? tokens.amberBorder : accent === 'rose' ? a.border : tokens.cyanBorder;
@@ -144,7 +147,7 @@ export function SectionCard({ children, style, accent = 'cyan' }) {
     <LiveGlass
       intensity={36}
       style={[{
-        borderRadius: 20,
+        borderRadius: radius,
         borderWidth: 1.5,
         borderColor: border,
         shadowColor: tokens.isDark ? a.glow : '#0B1A3A',
@@ -287,7 +290,7 @@ export function DashboardGamerStatCard({ label, value, sub, accent = 'cyan', ico
       style={{
         flex: 1,
         minHeight: 118,
-        borderRadius: 16,
+        borderRadius: DASHBOARD_CARD_RADIUS,
         borderWidth: 1.5,
         borderColor: a.border,
         shadowColor: a.glow,
@@ -370,7 +373,7 @@ export function DashboardQuickGlance({ glance, onOpen }) {
                   style={{
                     flex: 1,
                     minHeight: 72,
-                    borderRadius: 16,
+                    borderRadius: DASHBOARD_CARD_RADIUS,
                     borderWidth: 1.5,
                     borderColor: t.hot ? a.border : tokens.hairline,
                     shadowColor: t.hot ? a.glow : tokens.cyan,
@@ -496,7 +499,7 @@ export function MiniBarChart({ data = [], valueKey = 'matches', color = FUT.cyan
   return (
     <View style={{
       flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 100,
-      borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+      borderRadius: DASHBOARD_CARD_RADIUS, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
       backgroundColor: 'rgba(0,0,0,0.28)', paddingHorizontal: 8, paddingTop: 10, paddingBottom: 6,
     }}
     >
@@ -580,7 +583,7 @@ export function ObjectivesWidget({ playerId }) {
             key={item.id}
             colors={['rgba(0,232,255,0.08)', 'rgba(0,0,0,0.35)']}
             style={{
-              borderRadius: 14, borderWidth: 1, borderColor: 'rgba(0,232,255,0.22)', padding: 12,
+              borderRadius: DASHBOARD_CARD_RADIUS, borderWidth: 1, borderColor: 'rgba(0,232,255,0.22)', padding: 12,
             }}
           >
             <Text style={{ color: tokens.text, fontWeight: '800', fontSize: 13 }}>{title}</Text>

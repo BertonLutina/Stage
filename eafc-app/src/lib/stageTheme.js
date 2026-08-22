@@ -2,6 +2,9 @@ const THEME_KEY = 'stage-theme';
 
 export const STAGE_THEME_IDS = ['theme-dark', 'theme-video'];
 
+/** Sharp HUD cards. Player/club identity plates keep their own radii. */
+export const CARD_RADIUS = 2;
+
 const MARINE = '#0B1A3A';
 /** HUD floodlight — cool off-white, never printer white */
 const PAPER = '#E2EAF4';
@@ -87,6 +90,7 @@ function tokensFromSurface({ id, bg, primary, text, muted }) {
     glass: live ? 'rgba(8,12,24,0.58)' : a.glass,
     card: live ? 'rgba(10,18,32,0.62)' : a.card,
     cardSolid: live ? 'rgba(10,18,32,0.62)' : a.cardSolid,
+    cardRadius: CARD_RADIUS,
     inputFill: 'rgba(226,234,244,0.06)',
     inputBorder: 'rgba(226,234,244,0.16)',
     overlay: 'rgba(5,7,15,0.55)',

@@ -23,7 +23,7 @@ export default function LeagueStandingsScreen() {
             <Text className="text-white text-xl font-bold flex-1">League Standings</Text>
           </View>
           <ScrollView className="px-4">
-            <View className="bg-card border border-border rounded-2xl overflow-hidden">
+            <View className="bg-card border border-border overflow-hidden" style={{ borderRadius: 2 }}>
               <View className="flex-row bg-surface px-4 py-2 border-b border-border">
                 <Text className="text-muted text-xs w-6">#</Text>
                 <Text className="text-muted text-xs flex-1">Club</Text>

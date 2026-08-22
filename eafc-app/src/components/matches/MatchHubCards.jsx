@@ -6,6 +6,7 @@ import { CYAN, AMBER } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT } from '@/components/dashboard/CommandCenterUI';
 import LiveGlass from '@/components/theme/LiveGlass';
 import useThemeStore from '@/store/themeStore';
+import { CARD_RADIUS } from '@/lib/stageTheme';
 import GameDayCrest from './GameDayCrest';
 
 function parseDate(d) {
@@ -204,7 +205,7 @@ export function ScheduleMatchRow({ event, onPress }) {
 
 const styles = StyleSheet.create({
   gameCardShadow: {
-    borderRadius: 16,
+    borderRadius: CARD_RADIUS,
     shadowColor: FUT.cyan,
     shadowOpacity: 0.2,
     shadowRadius: 12,
@@ -212,7 +213,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   gameCardClip: {
-    borderRadius: 16,
+    borderRadius: CARD_RADIUS,
     borderWidth: 1,
     borderColor: 'rgba(0,232,255,0.28)',
   },

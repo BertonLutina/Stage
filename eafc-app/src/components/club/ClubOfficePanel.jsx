@@ -12,7 +12,7 @@ function formatStc(value) {
 
 function LineItem({ title, subtitle, trailing }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.03)', paddingHorizontal: 12, paddingVertical: 10 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, borderRadius: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.03)', paddingHorizontal: 12, paddingVertical: 10 }}>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }} numberOfLines={1}>{title}</Text>
         {subtitle ? <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 2 }} numberOfLines={1}>{subtitle}</Text> : null}
@@ -27,7 +27,7 @@ function OfficeToolRow({ tool, onPress }) {
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.85}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(0,229,255,0.18)', backgroundColor: 'rgba(0,229,255,0.05)', paddingHorizontal: 14, paddingVertical: 12 }}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, borderRadius: 2, borderWidth: 1, borderColor: 'rgba(0,229,255,0.18)', backgroundColor: 'rgba(0,229,255,0.05)', paddingHorizontal: 14, paddingVertical: 12 }}
     >
       <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(0,229,255,0.12)', alignItems: 'center', justifyContent: 'center' }}>
         <Ionicons name={tool.icon} size={18} color="#00E5FF" />

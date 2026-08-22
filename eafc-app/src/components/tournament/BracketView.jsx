@@ -4,7 +4,7 @@ import { ScrollView, View, Text } from 'react-native';
 function MatchCard({ match }) {
   const done = match.status === 'completed';
   return (
-    <View className="bg-surface border border-border rounded-xl px-3 py-2 mb-2 flex-row items-center">
+    <View className="bg-surface border border-border px-3 py-2 mb-2 flex-row items-center" style={{ borderRadius: 2 }}>
       <Text className="text-white text-xs flex-1 text-right" numberOfLines={1}>{match.home_team_name}</Text>
       <View className="mx-2 bg-card px-3 py-1 rounded-lg min-w-[52px] items-center">
         {done ? (

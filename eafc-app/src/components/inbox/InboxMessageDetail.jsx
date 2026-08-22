@@ -353,7 +353,7 @@ const styles = {
     marginHorizontal: 16,
     marginTop: 4,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 2,
     borderWidth: 1,
     borderColor: 'rgba(0,232,255,0.18)',
     backgroundColor: 'rgba(10,18,34,0.9)',

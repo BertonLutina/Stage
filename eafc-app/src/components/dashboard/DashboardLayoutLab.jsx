@@ -12,6 +12,7 @@ import {
   DashboardGamerStatCard,
   DashboardQuickGlance,
   DashboardFormStrip,
+  DASHBOARD_CARD_RADIUS,
   SectionCard,
   SectionTitle,
   LinkText,
@@ -24,6 +25,10 @@ import {
 } from '@/components/dashboard/CommandCenterUI';
 
 export { DASHBOARD_LAYOUTS };
+
+function DashCard(props) {
+  return <SectionCard radius={DASHBOARD_CARD_RADIUS} {...props} />;
+}
 
 function tournamentBadge(status) {
   const s = String(status || '').toLowerCase();
@@ -163,7 +168,7 @@ function KickoffCard({ vm }) {
       <LiveGlass
         intensity={28}
         style={{
-          borderRadius: 16,
+          borderRadius: DASHBOARD_CARD_RADIUS,
           borderWidth: 1,
           borderColor: tokens.hairline,
         }}
@@ -210,7 +215,7 @@ function ClubBlock({ vm, compact = false }) {
   const tokens = useGamerTokens();
   const { club, clubRank, tenure, open } = vm;
   return (
-    <SectionCard accent="gold">
+    <DashCard accent="gold">
       <SectionTitle
         eyebrow="SQUAD"
         right={clubRank?.rank ? (
@@ -277,19 +282,19 @@ function ClubBlock({ vm, compact = false }) {
           </Text>
         </View>
       )}
-    </SectionCard>
+    </DashCard>
   );
 }
 
 function FormBlock({ vm, stageOnly = false }) {
   return (
-    <SectionCard>
+    <DashCard>
       <SectionTitle eyebrow="FORM">Recent form</SectionTitle>
       <DashboardFormStrip label="Stage form" mode="outcome" items={vm.form?.stage} emptyLabel="No completed Stage matches yet." />
       {!stageOnly ? (
         <DashboardFormStrip label="Rating form" mode="rating" items={vm.form?.rating} emptyLabel="No match ratings tracked yet." />
       ) : null}
-    </SectionCard>
+    </DashCard>
   );
 }
 
@@ -311,7 +316,7 @@ function UpcomingBlock({ vm }) {
             onPress={() => open('/(tabs)/matches')}
             activeOpacity={0.85}
             style={{
-              borderRadius: 14, borderWidth: 1, borderColor: tokens.hairline,
+              borderRadius: DASHBOARD_CARD_RADIUS, borderWidth: 1, borderColor: tokens.hairline,
               backgroundColor: tokens.inputFill, padding: 14, minHeight: 44,
             }}
           >
@@ -331,7 +336,7 @@ function UpcomingBlock({ vm }) {
 function ActivityBlock({ vm }) {
   const tokens = useGamerTokens();
   return (
-    <SectionCard>
+    <DashCard>
       <SectionTitle eyebrow="PERFORMANCE">Activity</SectionTitle>
       <Text style={{ color: tokens.faint, fontSize: 10, fontWeight: '800', letterSpacing: 1.2, marginBottom: 8 }}>
         RATING TREND
@@ -355,7 +360,7 @@ function ActivityBlock({ vm }) {
         color={CYAN}
         emptyLabel="No weekly activity yet."
       />
-    </SectionCard>
+    </DashCard>
   );
 }
 
@@ -363,13 +368,13 @@ function ObjectivesBlock({ vm }) {
   const tokens = useGamerTokens();
   if (!vm.player?.id) return null;
   return (
-    <SectionCard accent="gold">
+    <DashCard accent="gold">
       <SectionTitle eyebrow="REWARDS">Objectives</SectionTitle>
       <Text style={{ color: tokens.muted, fontSize: 12, marginBottom: 10 }}>
         Daily and weekly rewards for staying active.
       </Text>
       <ObjectivesWidget playerId={vm.player.id} />
-    </SectionCard>
+    </DashCard>
   );
 }
 
@@ -377,7 +382,7 @@ function TournamentsBlock({ vm }) {
   const tokens = useGamerTokens();
   const { activeTournaments, open } = vm;
   return (
-    <SectionCard>
+    <DashCard>
       <SectionTitle
         eyebrow="COMPETE"
         right={<LinkText label="View all" onPress={() => open('/(tabs)/tournaments')} />}
@@ -400,7 +405,7 @@ function TournamentsBlock({ vm }) {
                 activeOpacity={0.85}
                 style={{
                   flexDirection: 'row', alignItems: 'center', gap: 10,
-                  borderRadius: 12, borderWidth: 1, borderColor: tokens.hairline,
+                  borderRadius: DASHBOARD_CARD_RADIUS, borderWidth: 1, borderColor: tokens.hairline,
                   backgroundColor: tokens.inputFill, padding: 12, minHeight: 44,
                 }}
               >
@@ -422,14 +427,14 @@ function TournamentsBlock({ vm }) {
           })}
         </View>
       )}
-    </SectionCard>
+    </DashCard>
   );
 }
 
 function LeagueBlock({ vm }) {
   const tokens = useGamerTokens();
   return (
-    <SectionCard accent="gold">
+    <DashCard accent="gold">
       <SectionTitle
         eyebrow="TABLE"
         right={<LinkText label="View all" onPress={() => vm.open('/apps/competitions')} />}
@@ -445,7 +450,7 @@ function LeagueBlock({ vm }) {
               key={row.id || `${row.season_id}-${row.club_id}`}
               style={{
                 flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-                borderRadius: 12, borderWidth: 1, borderColor: tokens.hairline,
+                borderRadius: DASHBOARD_CARD_RADIUS, borderWidth: 1, borderColor: tokens.hairline,
                 backgroundColor: tokens.inputFill, padding: 12,
               }}
             >
@@ -462,7 +467,7 @@ function LeagueBlock({ vm }) {
           ))}
         </View>
       )}
-    </SectionCard>
+    </DashCard>
   );
 }
 
@@ -563,7 +568,7 @@ function LayoutB({ vm }) {
       <View
         accessibilityRole="tablist"
         style={{
-          flexDirection: 'row', gap: 6, padding: 4, borderRadius: 14,
+          flexDirection: 'row', gap: 6, padding: 4, borderRadius: DASHBOARD_CARD_RADIUS,
           backgroundColor: tokens.inputFill, borderWidth: 1, borderColor: tokens.hairline,
         }}
       >
@@ -592,7 +597,7 @@ function LayoutB({ vm }) {
 
       {tab === 'overview' ? (
         <>
-          <SectionCard>
+          <DashCard>
             <KpiRow
               icon="trophy-outline"
               label="RANK"
@@ -617,7 +622,7 @@ function LayoutB({ vm }) {
               value={vm.tenure?.contractProgress ? `${vm.tenure.contractProgress.gamesLeft}` : '—'}
               sub={vm.tenure?.contractProgress ? 'games remaining' : 'No active contract'}
             />
-          </SectionCard>
+          </DashCard>
           <FormBlock vm={vm} stageOnly />
         </>
       ) : null}
@@ -649,7 +654,7 @@ function ShortcutTile({ icon, label, onPress, accent = 'cyan' }) {
     <LiveGlass
       intensity={22}
       style={{
-        flex: 1, minHeight: 72, borderRadius: 14,
+        flex: 1, minHeight: 72, borderRadius: DASHBOARD_CARD_RADIUS,
         borderWidth: 1.5, borderColor: accent === 'gold' ? tokens.amberBorder : tokens.cyanBorder,
       }}
     >
@@ -717,7 +722,7 @@ function LayoutD({ vm }) {
         <LiveGlass
           intensity={24}
           style={{
-            flex: 1, minHeight: 120, borderRadius: 20,
+            flex: 1, minHeight: 120, borderRadius: DASHBOARD_CARD_RADIUS,
             borderWidth: 1.5, borderColor: tokens.amberBorder,
           }}
         >
@@ -747,7 +752,7 @@ function LayoutD({ vm }) {
         <LiveGlass
           intensity={24}
           style={{
-            flex: 1, minHeight: 120, borderRadius: 20,
+            flex: 1, minHeight: 120, borderRadius: DASHBOARD_CARD_RADIUS,
             borderWidth: 1.5, borderColor: tokens.cyanBorder,
           }}
         >

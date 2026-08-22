@@ -315,7 +315,7 @@ export default function ArrangeGameModal({ visible, onClose, myPlayer, myClub, o
                   <Ionicons name="arrow-back" size={14} color="rgba(255,255,255,0.55)" />
                   <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12 }}>Back</Text>
                 </TouchableOpacity>
-                <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14, padding: 14, gap: 8 }}>
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 2, padding: 14, gap: 8 }}>
                   <Row label="Type" value={matchType === 'player' ? 'Player vs Player' : 'Club vs Club'} />
                   <Row label="Opponent" value={formatOpponentLabel(selected, recipientKind)} />
                   <Row label="Kickoff" value={formatKickoffLabel(date, time, timezone)} />

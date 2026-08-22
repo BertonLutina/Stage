@@ -6,6 +6,7 @@ import { CYAN, AMBER } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT } from '@/components/dashboard/CommandCenterUI';
 import LiveGlass from '@/components/theme/LiveGlass';
 import useThemeStore from '@/store/themeStore';
+import { CARD_RADIUS } from '@/lib/stageTheme';
 
 const TYPE_LABEL = {
   knockout: 'Knockout',
@@ -154,7 +155,7 @@ export default function TournamentCard({ tournament: t, trophyItems = [], onPres
 
 const styles = StyleSheet.create({
   cardShadow: {
-    borderRadius: 16,
+    borderRadius: CARD_RADIUS,
     shadowColor: FUT.cyan,
     shadowOpacity: 0.22,
     shadowRadius: 14,
@@ -164,7 +165,7 @@ const styles = StyleSheet.create({
   cardClip: {
     borderWidth: 1.5,
     borderColor: 'rgba(0,232,255,0.28)',
-    borderRadius: 16,
+    borderRadius: CARD_RADIUS,
     overflow: 'hidden',
   },
   banner: {

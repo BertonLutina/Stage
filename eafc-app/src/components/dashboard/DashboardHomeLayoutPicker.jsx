@@ -21,7 +21,7 @@ export function DashboardLayoutOptions({ layout, onChange }) {
             accessibilityLabel={`${item.name}. ${item.blurb}`}
             style={{
               minHeight: 56,
-              borderRadius: 14,
+              borderRadius: 2,
               borderWidth: 1.5,
               borderColor: active ? 'rgba(0,232,255,0.55)' : 'rgba(255,255,255,0.12)',
               backgroundColor: active ? 'rgba(0,232,255,0.12)' : 'rgba(255,255,255,0.04)',

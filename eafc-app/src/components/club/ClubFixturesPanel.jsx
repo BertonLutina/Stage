@@ -229,7 +229,7 @@ export default function ClubFixturesPanel({
         </View>
       ) : null}
       {grouped.map((group) => (
-        <View key={group.key} style={{ overflow: 'hidden', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+        <View key={group.key} style={{ overflow: 'hidden', borderRadius: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
           <View style={{ borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 14, paddingVertical: 12 }}>
             {group.parent ? (
               <Text style={{ color: 'rgba(0,229,255,0.65)', fontSize: 10, fontWeight: '900', letterSpacing: 1.6, textTransform: 'uppercase' }}>{group.parent}</Text>

@@ -379,7 +379,7 @@ export default function ClubProfileTabs({
     return (
       <View style={{ gap: 8 }}>
         {posts.map((post) => (
-          <View key={post.id} style={{ borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.03)', padding: 12, gap: 8 }}>
+          <View key={post.id} style={{ borderRadius: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.03)', padding: 12, gap: 8 }}>
             <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: '700' }}>
               {post.author_name || post.author_email || 'Club'}
               {post.created_date ? ` · ${String(post.created_date).slice(0, 10)}` : ''}
@@ -396,7 +396,7 @@ export default function ClubProfileTabs({
     return (
       <View style={{ gap: 8 }}>
         {trophies.map((item) => (
-          <View key={item.id} style={{ borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.03)', padding: 12 }}>
+          <View key={item.id} style={{ borderRadius: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.03)', padding: 12 }}>
             <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>{item.title || item.name || 'Trophy'}</Text>
             <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 4 }}>
               {item.subtitle || item.season || item.competition_name || 'Club achievement'}

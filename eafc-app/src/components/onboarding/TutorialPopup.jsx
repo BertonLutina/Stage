@@ -38,7 +38,7 @@ export default function TutorialPopup({ open, onClose, intent = 'player' }) {
             maxHeight: '88%',
             alignSelf: 'center',
             backgroundColor: '#0B1220',
-            borderRadius: 22,
+            borderRadius: 2,
             borderWidth: 1,
             borderColor: 'rgba(255,255,255,0.12)',
             overflow: 'hidden',

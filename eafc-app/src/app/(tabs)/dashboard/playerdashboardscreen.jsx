@@ -9,7 +9,7 @@ import {
   GamerProfileShell,
   useGamerTokens,
 } from '@/components/profile/gamer/GamerProfileUI';
-import { SectionCard } from '@/components/dashboard/CommandCenterUI';
+import { DASHBOARD_CARD_RADIUS, SectionCard } from '@/components/dashboard/CommandCenterUI';
 import { DashboardLayoutBody } from '@/components/dashboard/DashboardLayoutLab';
 import { DashboardHomeLayoutSheet } from '@/components/dashboard/DashboardHomeLayoutPicker';
 import { useTransferWindowStatus } from '@/hooks/useTransferWindowStatus';
@@ -114,7 +114,7 @@ export default function PlayerDashboardScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={tokens.cyan} />}
         >
           {!vm.player?.id ? (
-            <SectionCard>
+            <SectionCard radius={DASHBOARD_CARD_RADIUS}>
               <Text style={{ color: tokens.muted, fontSize: 14, lineHeight: 20 }}>
                 Finish player onboarding to unlock your Command Center widgets.
               </Text>

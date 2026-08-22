@@ -158,7 +158,7 @@ export default function SearchIndex() {
             <View style={{
               paddingVertical: 48,
               alignItems: 'center',
-              borderRadius: 18,
+              borderRadius: 2,
               borderWidth: 1,
               borderColor: theme.tileBorder,
               backgroundColor: theme.card,

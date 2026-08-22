@@ -3,7 +3,7 @@ import { View, Text, ScrollView } from 'react-native';
 
 export default function GroupTable({ group }) {
   return (
-    <View className="bg-card rounded-2xl border border-border mb-4 overflow-hidden">
+    <View className="bg-card border border-border mb-4 overflow-hidden" style={{ borderRadius: 2 }}>
       <View className="bg-surface px-4 py-2">
         <Text className="text-primary font-bold text-base">{group.name}</Text>
       </View>

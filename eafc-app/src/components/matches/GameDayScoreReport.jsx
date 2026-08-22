@@ -114,7 +114,7 @@ const card = {
   backgroundColor: 'rgba(124,255,107,0.06)',
   borderWidth: 1.5,
   borderColor: 'rgba(124,255,107,0.28)',
-  borderRadius: 16,
+  borderRadius: 2,
   padding: 14,
   gap: 10,
 };

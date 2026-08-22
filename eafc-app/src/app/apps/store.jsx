@@ -203,7 +203,7 @@ export default function StoreScreen() {
       emptyText="Store unavailable"
       ListHeaderComponent={(
         <View style={{
-          borderRadius: 20,
+          borderRadius: 2,
           borderWidth: 1,
           borderColor: 'rgba(0,240,255,0.25)',
           backgroundColor: 'rgba(0,240,255,0.07)',

@@ -107,7 +107,7 @@ function HistoryRows({ history, playerCareer, tokens }) {
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 10,
-                borderRadius: 12,
+                borderRadius: 2,
                 borderWidth: 1,
                 borderColor: tokens.hairline,
                 backgroundColor: tokens.inputFill,

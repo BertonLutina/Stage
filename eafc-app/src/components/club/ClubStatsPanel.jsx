@@ -14,7 +14,7 @@ import { EmptyTabPanel } from '@/components/profile/gamer/GamerProfileUI';
 
 function LeaderboardCard({ title, label, rows, stat }) {
   return (
-    <View style={{ borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(0,0,0,0.25)', overflow: 'hidden' }}>
+    <View style={{ borderRadius: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(0,0,0,0.25)', overflow: 'hidden' }}>
       <View style={{ borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 14, paddingVertical: 12 }}>
         <Text style={{ color: '#fff', fontWeight: '900', fontSize: 13, letterSpacing: 0.8, textTransform: 'uppercase' }}>{title}</Text>
       </View>
@@ -87,7 +87,7 @@ export default function ClubStatsPanel({ clubId, players = [], myPlayer, canCust
         <Text style={{ color: '#fff', fontWeight: '900', fontSize: 22, letterSpacing: 0.6, textTransform: 'uppercase', marginTop: 2 }}>Leaderboards</Text>
       </View>
       {canCustomize && !canUseBackgrounds ? (
-        <View style={{ borderRadius: 12, borderWidth: 1, borderColor: 'rgba(245,197,66,0.25)', backgroundColor: 'rgba(245,197,66,0.08)', padding: 12 }}>
+        <View style={{ borderRadius: 2, borderWidth: 1, borderColor: 'rgba(245,197,66,0.25)', backgroundColor: 'rgba(245,197,66,0.08)', padding: 12 }}>
           <Text style={{ color: '#F5C542', fontSize: 12, fontWeight: '800' }}>
             Stage+ unlocks custom stats tile backgrounds on web and mobile.
           </Text>

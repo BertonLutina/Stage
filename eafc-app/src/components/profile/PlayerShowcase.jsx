@@ -248,7 +248,7 @@ export default function PlayerShowcase({ player, canEdit = false, onChanged }) {
           borderWidth: 1,
           borderStyle: 'dashed',
           borderColor: 'rgba(255,255,255,0.16)',
-          borderRadius: 16,
+          borderRadius: 2,
           paddingVertical: 28,
           paddingHorizontal: 16,
           alignItems: 'center',
@@ -269,7 +269,7 @@ export default function PlayerShowcase({ player, canEdit = false, onChanged }) {
                 activeOpacity={0.88}
                 style={{
                   height: 168,
-                  borderRadius: 16,
+                  borderRadius: 2,
                   overflow: 'hidden',
                   backgroundColor: '#000',
                   borderWidth: 1,
@@ -300,7 +300,7 @@ export default function PlayerShowcase({ player, canEdit = false, onChanged }) {
 
       {canEdit ? (
         <View style={{
-          borderRadius: 16,
+          borderRadius: 2,
           borderWidth: 1,
           borderColor: 'rgba(255,255,255,0.1)',
           backgroundColor: 'rgba(255,255,255,0.04)',

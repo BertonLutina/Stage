@@ -59,7 +59,7 @@ function PersonRow({
         alignItems: 'center',
         gap: 12,
         minHeight: 64,
-        borderRadius: 14,
+        borderRadius: 2,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.08)',
         backgroundColor: 'rgba(255,255,255,0.03)',

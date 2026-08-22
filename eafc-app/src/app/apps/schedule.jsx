@@ -142,7 +142,7 @@ export default function ScheduleScreen() {
 
           {error ? (
             <View style={{
-              borderRadius: 14,
+              borderRadius: 2,
               borderWidth: 1,
               borderColor: 'rgba(255,77,109,0.4)',
               backgroundColor: 'rgba(255,77,109,0.1)',

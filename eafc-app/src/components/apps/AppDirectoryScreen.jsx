@@ -41,7 +41,7 @@ export function DirectoryRow({
         minHeight: 72,
         paddingHorizontal: 14,
         paddingVertical: 12,
-        borderRadius: 18,
+        borderRadius: 2,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.08)',
         backgroundColor: 'rgba(255,255,255,0.04)',

@@ -12,6 +12,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { stageClient } from '@/api/stageClient';
 import { uploadLocalMedia } from '@/lib/uploadProfileMedia';
+import { buildPlayerFeedPostPayload, playerFeedAuthorEmail } from '@/lib/playerFeedPost';
+import { CARD_RADIUS } from '@/lib/stageTheme';
+import useAuthStore from '@/store/authStore';
 import {
   CYAN,
   EmptyTabPanel,
@@ -25,23 +28,27 @@ function postAuthor(post, fallback) {
 
 export default function ProfileFeedPanel({ player, isOwn }) {
   const tokens = useGamerTokens();
+  const user = useAuthStore((s) => s.user);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState('');
   const [photo, setPhoto] = useState(null);
   const [posting, setPosting] = useState(false);
   const name = player?.gamertag || player?.display_name || 'Player';
+  const authorEmail = playerFeedAuthorEmail(player, user);
 
   const loadPosts = async () => {
-    if (!player?.id) {
+    if (!player?.id && !authorEmail) {
       setPosts([]);
       setLoading(false);
       return;
     }
     setLoading(true);
     try {
-      const rows = await stageClient.entities.Post.filter({ player_id: player.id }, '-created_date', 40);
-      setPosts(Array.isArray(rows) ? rows : []);
+      const rows = authorEmail
+        ? await stageClient.entities.Post.filter({ author_email: authorEmail }, '-created_date', 40)
+        : await stageClient.entities.Post.filter({ player_id: player.id }, '-created_date', 40);
+      setPosts((Array.isArray(rows) ? rows : []).filter((post) => !post.club_id));
     } catch {
       setPosts([]);
     } finally {
@@ -51,7 +58,7 @@ export default function ProfileFeedPanel({ player, isOwn }) {
 
   useEffect(() => {
     loadPosts();
-  }, [player?.id]);
+  }, [player?.id, authorEmail]);
 
   const pickPhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -76,12 +83,14 @@ export default function ProfileFeedPanel({ player, isOwn }) {
       if (photo?.uri) {
         mediaUrl = await uploadLocalMedia(photo, { fallbackName: 'post.jpg' });
       }
-      const created = await stageClient.entities.Post.create({
-        content,
-        player_id: player.id,
-        media_url: mediaUrl,
-        media_type: mediaUrl ? 'image' : null,
-      });
+      const created = await stageClient.entities.Post.create(
+        buildPlayerFeedPostPayload({
+          player,
+          user,
+          content,
+          mediaUrl,
+        }),
+      );
       setDraft('');
       setPhoto(null);
       setPosts((prev) => [created, ...prev.filter(Boolean)]);
@@ -180,7 +189,7 @@ export default function ProfileFeedPanel({ player, isOwn }) {
           <View
             key={post.id}
             style={{
-              borderRadius: 8,
+              borderRadius: CARD_RADIUS,
               borderWidth: 1,
               borderColor: 'rgba(0,240,255,0.14)',
               backgroundColor: tokens.cardSolid,

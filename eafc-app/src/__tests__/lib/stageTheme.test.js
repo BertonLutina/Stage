@@ -32,6 +32,7 @@ describe('stage theme palettes', () => {
     expect(theme.text).toBe(PAPER);
     expect(theme.isDark).toBe(true);
     expect(theme.live).toBe(false);
+    expect(theme.cardRadius).toBe(2);
   });
 
   test('only keeps dark and live dark', () => {

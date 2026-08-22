@@ -27,7 +27,9 @@ export default function FixturesScreen() {
           params: { matchId: item.id },
         })
       }
-      className="bg-card border border-border rounded-2xl px-4 py-4 mb-3 mx-4">
+      className="bg-card border border-border px-4 py-4 mb-3 mx-4"
+      style={{ borderRadius: 2 }}
+    >
       <Text className="text-muted text-xs mb-2">{item.tournament_name}</Text>
       <View className="flex-row items-center">
         <Text className="text-white font-semibold flex-1 text-right" numberOfLines={1}>{item.home_team_name}</Text>

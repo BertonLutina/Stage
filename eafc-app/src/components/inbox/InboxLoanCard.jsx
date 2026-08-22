@@ -187,7 +187,7 @@ export default function InboxLoanCard({ message, onActioned }) {
 const card = {
   marginTop: 14,
   padding: 14,
-  borderRadius: 14,
+  borderRadius: 2,
   borderWidth: 1,
   borderColor: 'rgba(255,214,10,0.22)',
   backgroundColor: 'rgba(0,0,0,0.28)',

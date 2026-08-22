@@ -5,7 +5,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import useThemeStore from '@/store/themeStore';
-import { hexToRgba } from '@/lib/stageTheme';
+import { CARD_RADIUS, hexToRgba } from '@/lib/stageTheme';
 import LiveGlass from '@/components/theme/LiveGlass';
 import LiveDarkWallpaper from '@/components/theme/LiveDarkWallpaper';
 import TrapeziumPhotoCard from '@/components/profile/TrapeziumPhotoCard';
@@ -556,7 +556,8 @@ export function IdentityVerifiedBar({ name }) {
     <View
       style={{
         backgroundColor: 'rgba(14,18,28,0.96)',
-        borderRadius: 6,
+        borderRadius: CARD_RADIUS,
+        overflow: 'hidden',
         paddingHorizontal: 16,
         paddingVertical: 14,
         borderWidth: 1,
@@ -587,7 +588,7 @@ export function GamerRecordStrip({ wins = 0, draws = 0, losses = 0 }) {
           key={item.label}
           style={{
             minWidth: 58,
-            borderRadius: 12,
+            borderRadius: CARD_RADIUS,
             borderWidth: 1,
             borderColor: item.border,
             backgroundColor: item.bg,
@@ -827,7 +828,7 @@ export function EmptyTabPanel({
 export function GamerSectionCard({ title, children, style }) {
   const tokens = useGamerTokens();
   return (
-    <GlassFill style={[{ borderRadius: 18, overflow: 'hidden' }, style]} intensity={22}>
+    <GlassFill style={[{ borderRadius: CARD_RADIUS, overflow: 'hidden' }, style]} intensity={22}>
       {title ? (
         <View style={{
           paddingHorizontal: 14,
@@ -835,8 +836,8 @@ export function GamerSectionCard({ title, children, style }) {
           borderBottomWidth: StyleSheet.hairlineWidth,
           borderBottomColor: tokens.hairline,
           overflow: 'hidden',
-          borderTopLeftRadius: 18,
-          borderTopRightRadius: 18,
+          borderTopLeftRadius: CARD_RADIUS,
+          borderTopRightRadius: CARD_RADIUS,
         }}>
           <Text style={{ fontSize: 11, fontWeight: '900', letterSpacing: 2, textTransform: 'uppercase', color: tokens.text }}>
             {title}
@@ -865,7 +866,7 @@ export function GamerStatTile({ label, value, accent = 'cyan', compact = false }
       style={{
         flex: 1,
         minWidth: compact ? '46%' : '45%',
-        borderRadius: 14,
+        borderRadius: CARD_RADIUS,
         padding: compact ? 12 : 14,
         overflow: 'hidden',
       }}
@@ -955,7 +956,7 @@ export function IdentityRail({ items, value, onChange }) {
       intensity={30}
       style={{
         flexDirection: 'row',
-        borderRadius: 14,
+        borderRadius: CARD_RADIUS,
         padding: 3,
         gap: 2,
       }}

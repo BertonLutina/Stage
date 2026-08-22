@@ -39,8 +39,9 @@ function GlassCard({ title, right, children }) {
   const { isDark } = useColorSchemeColors();
   return (
     <View
-      className="mx-4 mt-4 rounded-3xl border px-4 py-4"
+      className="mx-4 mt-4 border px-4 py-4"
       style={{
+        borderRadius: 2,
         borderColor: isDark ? 'rgba(199,216,243,0.2)' : '#C7D8F3',
         backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF',
       }}
@@ -133,6 +134,7 @@ export default function TeamDashboardScreen() {
   const winRate = useMemo(() => (total > 0 ? Math.round((team?.wins ?? 0) / total * 100) : 0), [team?.wins, total]);
 
   const innerCardStyle = {
+    borderRadius: 2,
     borderColor: isDark ? 'rgba(199,216,243,0.2)' : '#D8E4F7',
     backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
   };
@@ -218,7 +220,7 @@ export default function TeamDashboardScreen() {
             ) : (
               <View className="gap-2">
                 {(team?.players ?? []).map((p, idx) => (
-                  <View key={p.id || idx} className="rounded-2xl border px-3 py-2.5 flex-row items-center" style={innerCardStyle}>
+                  <View key={p.id || idx} className="border px-3 py-2.5 flex-row items-center" style={innerCardStyle}>
                     <View className="h-10 w-10 rounded-full items-center justify-center" style={{ backgroundColor: isDark ? 'rgba(234,241,253,0.3)' : '#EAF1FD' }}>
                       <Ionicons name="person" size={18} color={isDark ? '#E9F0FD' : '#1B2D4A'} />
                     </View>
@@ -235,7 +237,7 @@ export default function TeamDashboardScreen() {
 
           {/* Club matches */}
           <GlassCard title="CLUB MATCHES">
-            <View className="rounded-2xl border px-3 py-3" style={innerCardStyle}>
+            <View className="border px-3 py-3" style={innerCardStyle}>
               <STText className="font-semibold mb-2" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>Last Results</STText>
               {SAMPLE.lastResults.map((r, i) => (
                 <STText key={i} className="text-xs mb-1" style={{ color: isDark ? '#E9F0FD' : '#5E718F' }}>{r}</STText>
@@ -249,7 +251,7 @@ export default function TeamDashboardScreen() {
 
           {/* Club stats */}
           <GlassCard title="CLUB STATS">
-            <View className="rounded-2xl border px-3 py-3" style={innerCardStyle}>
+            <View className="border px-3 py-3" style={innerCardStyle}>
               <View className="flex-row justify-between mb-2">
                 <STText style={{ color: isDark ? '#E9F0FD' : '#5E718F' }}>Total Wins</STText>
                 <STText className="font-semibold" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>{team?.wins ?? 0}</STText>
@@ -271,7 +273,7 @@ export default function TeamDashboardScreen() {
 
           {/* Activity feed */}
           <GlassCard title="CLUB ACTIVITY FEED">
-            <View className="rounded-2xl border overflow-hidden" style={{ ...innerCardStyle, borderColor: isDark ? 'rgba(199,216,243,0.2)' : '#D8E4F7' }}>
+            <View className="border overflow-hidden" style={{ ...innerCardStyle, borderColor: isDark ? 'rgba(199,216,243,0.2)' : '#D8E4F7' }}>
               {SAMPLE.activity.map((a, i) => (
                 <View key={a.id} className={`px-3 py-3 ${i !== SAMPLE.activity.length - 1 ? 'border-b' : ''}`} style={{ borderBottomColor: isDark ? 'rgba(230,238,249,0.2)' : '#E6EEF9' }}>
                   <STText className="font-semibold" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>{a.label}</STText>
@@ -283,7 +285,7 @@ export default function TeamDashboardScreen() {
 
           {/* Team chat */}
           <GlassCard title="TEAM CHAT PREVIEW">
-            <View className="rounded-2xl border px-3 py-3" style={innerCardStyle}>
+            <View className="border px-3 py-3" style={innerCardStyle}>
               {SAMPLE.chatPreview.map((m) => (
                 <View key={m.id} className="mb-2">
                   <STText className="font-semibold text-xs" style={{ color: isDark ? '#FFFFFF' : '#1B2D4A' }}>{m.user}</STText>

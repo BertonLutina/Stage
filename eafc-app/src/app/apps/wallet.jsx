@@ -62,7 +62,7 @@ export default function WalletScreen() {
       ListHeaderComponent={(
         <View style={{ gap: 10, marginBottom: 6 }}>
           <View style={{
-            borderRadius: 22,
+            borderRadius: 2,
             borderWidth: 1,
             borderColor: 'rgba(0,240,255,0.28)',
             backgroundColor: 'rgba(0,240,255,0.08)',
