@@ -32,8 +32,7 @@ import { SectionCard, SectionTitle, FUT } from '@/components/dashboard/CommandCe
 import { headingStyle, headingStyleSm } from '@/lib/fonts';
 import { MATCH_STATUS_LABEL, loadDressingCounts, reloadMatch, resolveMatchSides, sameId } from '@/lib/gameDayOps';
 import { resolveCrestUrl } from '@/lib/gameDayPresentation';
-import { getGameDayTileBackgroundConfig, hasCustomGameDayTileBackground } from '@/lib/gameDayTileBackgrounds';
-import { hasStagePlus } from '@/lib/subscriptionUtils';
+import { canUseTileBackgrounds, getGameDayTileBackgroundConfig, hasCustomGameDayTileBackground } from '@/lib/gameDayTileBackgrounds';
 
 const SILVER = '#EEF3FB';
 
@@ -108,10 +107,10 @@ export default function MatchesIndex() {
     && myClub
     && featured.status !== 'disputed',
   );
-  const canCustomizeTiles = hasStagePlus(myPlayer?.subscription);
-  const matchScreensBg = getGameDayTileBackgroundConfig(myPlayer, 'match_screens');
-  const matchDetailsBg = getGameDayTileBackgroundConfig(myPlayer, 'match_details');
-  const dressingRoomBg = getGameDayTileBackgroundConfig(myPlayer, 'dressing_room');
+  const canCustomizeTiles = canUseTileBackgrounds(myPlayer);
+  const matchScreensBg = canCustomizeTiles ? getGameDayTileBackgroundConfig(myPlayer, 'match_screens') : null;
+  const matchDetailsBg = canCustomizeTiles ? getGameDayTileBackgroundConfig(myPlayer, 'match_details') : null;
+  const dressingRoomBg = canCustomizeTiles ? getGameDayTileBackgroundConfig(myPlayer, 'dressing_room') : null;
   const hasMatchScreensBg = hasCustomGameDayTileBackground(matchScreensBg);
 
   useEffect(() => {

@@ -41,8 +41,7 @@ import GameDayStreamCard from '@/components/matches/GameDayStreamCard';
 import GameDayKickoffArena from '@/components/matches/GameDayKickoffArena';
 import GameDayTileBackgroundDialog from '@/components/matches/GameDayTileBackgroundDialog';
 import { resolveCrestUrl } from '@/lib/gameDayPresentation';
-import { getGameDayTileBackgroundConfig } from '@/lib/gameDayTileBackgrounds';
-import { hasStagePlus } from '@/lib/subscriptionUtils';
+import { canUseTileBackgrounds, getGameDayTileBackgroundConfig } from '@/lib/gameDayTileBackgrounds';
 import { useGameDayMatchRealtime } from '@/hooks/useGameDayMatchRealtime';
 
 export default function MatchDetailScreen() {
@@ -68,6 +67,11 @@ export default function MatchDetailScreen() {
         resolveMyPlayerAndClub(),
         reloadMatch(matchId),
       ]);
+      if (club?.id) {
+        stageClient.functions.invoke('matchKickoff', { action: 'settle_club_matches', club_id: club.id }).catch(() => {});
+      } else if (matchId) {
+        stageClient.functions.invoke('matchKickoff', { action: 'settle_deadlines', match_id: matchId }).catch(() => {});
+      }
       setMyPlayer(player || null);
       setMyClub(club || null);
       setGame(match);
@@ -153,6 +157,7 @@ export default function MatchDetailScreen() {
   }, [game?.id, game?.status]);
 
   const sides = resolveMatchSides(game, myClub, myPlayer);
+  const canCustomizeTiles = canUseTileBackgrounds(myPlayer);
   const isLive = game?.status === 'in_progress';
   const isCompleted = game?.status === 'completed';
   const isDisputed = game?.status === 'disputed';
@@ -257,7 +262,7 @@ export default function MatchDetailScreen() {
             awayScore={game.away_score}
             wagerStc={game.wager_stc}
             wagerLocked={Boolean(game.wager_home_locked && game.wager_away_locked)}
-            backgroundConfig={getGameDayTileBackgroundConfig(myPlayer, 'match_details')}
+            backgroundConfig={canCustomizeTiles ? getGameDayTileBackgroundConfig(myPlayer, 'match_details') : undefined}
             onChangeBackground={myPlayer ? () => setTileDialog({ tileKey: 'match_details', title: 'Match Details' }) : undefined}
           >
             {kickoffControls.showHomeKickoff ? (
@@ -323,7 +328,7 @@ export default function MatchDetailScreen() {
               myClub={myClub}
               myPlayer={myPlayer}
               dressingCounts={dressingCounts}
-              backgroundConfig={getGameDayTileBackgroundConfig(myPlayer, 'dressing_room')}
+              backgroundConfig={canCustomizeTiles ? getGameDayTileBackgroundConfig(myPlayer, 'dressing_room') : undefined}
               onChangeBackground={myPlayer ? () => setTileDialog({ tileKey: 'dressing_room', title: 'Dressing Room' }) : undefined}
               onSeatChange={({ clubId, seatedPlayers }) => {
                 const count = Array.isArray(seatedPlayers) ? seatedPlayers.length : 0;
@@ -416,7 +421,7 @@ export default function MatchDetailScreen() {
           player={myPlayer}
           tileKey={tileDialog?.tileKey}
           tileTitle={tileDialog?.title}
-          canCustomize={hasStagePlus(myPlayer?.subscription)}
+          canCustomize={canCustomizeTiles}
           onPlayerChanged={(updated) => setMyPlayer((prev) => ({ ...(prev || {}), ...updated }))}
         />
       </SafeAreaView>

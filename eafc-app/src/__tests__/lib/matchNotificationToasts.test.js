@@ -2,6 +2,7 @@ import {
   createToastDedupe,
   matchParticipantSide,
   notificationEmailsForUser,
+  splitToastCopy,
   toastFromInbox,
   toastFromMatchUpdate,
   toastFromNotification,
@@ -73,6 +74,17 @@ describe('match fixture toasts', () => {
       type: 'create',
       data: { type: 'match_reminder', title: 'Kickoff', read: 0 },
     }, { mobile: { match_reminders: false } })).toBe(null);
+  });
+
+  test('splits toast copy into a STAGE title and body', () => {
+    expect(splitToastCopy('Kickoff · Home FC vs Away FC is underway.')).toEqual({
+      title: 'Kickoff',
+      body: 'Home FC vs Away FC is underway.',
+    });
+    expect(splitToastCopy('Match invite: Neo vs You')).toEqual({
+      title: 'Match invite: Neo vs You',
+      body: '',
+    });
   });
 
   test('dedupes the same toast for a few seconds', () => {

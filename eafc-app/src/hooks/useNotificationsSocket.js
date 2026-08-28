@@ -22,39 +22,47 @@ export default function useNotificationsSocket(userId) {
     const unsubs = [];
     const allowToast = createToastDedupe();
     const matchSnapshots = new Map();
+    const identityRef = { current: { playerId: null, clubId: null, emails: [] } };
+    const settingsRef = { current: {} };
 
     const toast = (message) => {
       if (allowToast(message)) showToast(message);
     };
 
-    resolveMyPlayerAndClub()
-      .then(({ user, player, club }) => {
-        if (cancelled) return;
-        const settings = parseNotificationSettings(player?.notification_settings);
-        const emails = notificationEmailsForUser({ user, player, club });
-        const identity = {
-          playerId: player?.id || user?.player_id || null,
-          clubId: club?.id || player?.club_id || null,
-          emails,
-        };
+    const start = async () => {
+      const resolved = await resolveMyPlayerAndClub().catch(() => ({
+        user: null,
+        player: null,
+        club: null,
+      }));
+      if (cancelled) return;
 
-        unsubs.push(stageClient.entities.Notification.subscribe((event) => {
-          toast(toastFromNotification(event, settings));
-        }, { emails }));
+      const { user, player, club } = resolved || {};
+      settingsRef.current = parseNotificationSettings(player?.notification_settings);
+      identityRef.current = {
+        playerId: player?.id || user?.player_id || null,
+        clubId: club?.id || player?.club_id || null,
+        emails: notificationEmailsForUser({ user, player, club }),
+      };
 
-        unsubs.push(stageClient.entities.InboxMessage.subscribe((event) => {
-          toast(toastFromInbox(event, settings));
-        }, { emails }));
+      unsubs.push(stageClient.entities.Notification.subscribe((event) => {
+        toast(toastFromNotification(event, settingsRef.current));
+      }, { emails: identityRef.current.emails }));
 
-        unsubs.push(stageClient.entities.Match.subscribe((event) => {
-          const match = event?.data;
-          if (!match?.id || event?.type === 'delete') return;
-          const previous = matchSnapshots.get(String(match.id)) || null;
-          matchSnapshots.set(String(match.id), match);
-          toast(toastFromMatchUpdate(match, previous, identity, settings));
-        }));
-      })
-      .catch(() => {});
+      unsubs.push(stageClient.entities.InboxMessage.subscribe((event) => {
+        toast(toastFromInbox(event, settingsRef.current));
+      }, { emails: identityRef.current.emails }));
+
+      unsubs.push(stageClient.entities.Match.subscribe((event) => {
+        const match = event?.data;
+        if (!match?.id || event?.type === 'delete') return;
+        const previous = matchSnapshots.get(String(match.id)) || null;
+        matchSnapshots.set(String(match.id), match);
+        toast(toastFromMatchUpdate(match, previous, identityRef.current, settingsRef.current));
+      }));
+    };
+
+    start();
 
     return () => {
       cancelled = true;

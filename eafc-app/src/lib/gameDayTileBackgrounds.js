@@ -1,3 +1,5 @@
+import { hasStagePlus } from './subscriptionUtils';
+
 /** Keys stored on player.game_day_tile_backgrounds — Game Day plus the other app pages. */
 export const PAGE_TILE_KEYS = [
   'match_screens',
@@ -10,6 +12,8 @@ export const PAGE_TILE_KEYS = [
   'inbox',
   'competitions',
   'transfers',
+  'find_players',
+  'find_clubs',
 ];
 
 export function parseGameDayTileBackgrounds(value) {
@@ -26,6 +30,10 @@ export function parseGameDayTileBackgrounds(value) {
 const TILE_KEY_ALIASES = {
   gost: 'competitions',
   transfer_hub: 'transfers',
+  findplayers: 'find_players',
+  find_player: 'find_players',
+  findclubs: 'find_clubs',
+  find_club: 'find_clubs',
   matchscreens: 'match_screens',
   matchdetails: 'match_details',
   dressingroom: 'dressing_room',
@@ -34,6 +42,29 @@ const TILE_KEY_ALIASES = {
 export function normalizePageTileKey(raw) {
   const key = String(raw || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
   return TILE_KEY_ALIASES[key] || key;
+}
+
+export function isPageTileKey(raw) {
+  return PAGE_TILE_KEYS.includes(normalizePageTileKey(raw));
+}
+
+/** First candidate that maps to a stored page-tile key. */
+export function resolvePageTileKey(...candidates) {
+  for (const raw of candidates) {
+    const key = normalizePageTileKey(raw);
+    if (PAGE_TILE_KEYS.includes(key)) return key;
+  }
+  return '';
+}
+
+/** Live and local servers have looked for tile_key, tileKey, and title_key. */
+export function pageTileKeyFields(key) {
+  return { tile_key: key, tileKey: key, title_key: key, titleKey: key };
+}
+
+export function pageTileKeyQuery(key) {
+  const encoded = encodeURIComponent(key);
+  return `tile_key=${encoded}&tileKey=${encoded}&title_key=${encoded}`;
 }
 
 export function getGameDayTileBackgroundConfig(player, tileKey) {
@@ -49,6 +80,13 @@ export function getGameDayTileBackgroundConfig(player, tileKey) {
     position: config.position || '50% 50%',
     zoom: Number(config.zoom) || 120,
   };
+}
+
+export const STAGE_PLUS_TILE_BACKGROUND_ERROR =
+  'STAGE Plus is required to change this tile background.';
+
+export function canUseTileBackgrounds(player) {
+  return hasStagePlus(player?.subscription);
 }
 
 export function hasCustomGameDayTileBackground(config) {

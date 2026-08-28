@@ -15,7 +15,13 @@ import { stageClient } from '@/api/stageClient';
 import { CYAN } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT } from '@/components/dashboard/CommandCenterUI';
 import { headingStyleSm } from '@/lib/fonts';
-import { getGameDayTileBackgroundConfig, normalizePageTileKey } from '@/lib/gameDayTileBackgrounds';
+import {
+  STAGE_PLUS_TILE_BACKGROUND_ERROR,
+  getGameDayTileBackgroundConfig,
+  pageTileKeyFields,
+  pageTileKeyQuery,
+  resolvePageTileKey,
+} from '@/lib/gameDayTileBackgrounds';
 import { uploadLocalMedia } from '@/lib/uploadProfileMedia';
 
 const SILVER = '#EEF3FB';
@@ -43,7 +49,7 @@ export default function GameDayTileBackgroundDialog({
 
   useEffect(() => {
     if (!visible) return;
-    setError('');
+    setError(canCustomize ? '' : STAGE_PLUS_TILE_BACKGROUND_ERROR);
     setPreview('');
     setPicked(null);
     setX(50);
@@ -67,17 +73,21 @@ export default function GameDayTileBackgroundDialog({
   }, [visible, canCustomize]);
 
   async function saveBackground(payload, busyKey) {
-    const key = normalizePageTileKey(tileKey);
+    if (!canCustomize) {
+      setError(STAGE_PLUS_TILE_BACKGROUND_ERROR);
+      return;
+    }
+    const key = resolvePageTileKey(tileKey, tileTitle);
     if (!player?.id || !key) {
-      setError('Valid tile_key is required');
+      setError('Valid title_key is required');
       return;
     }
     setSaving(busyKey);
     setError('');
     try {
       const updated = await stageClient.http.patch(
-        `/players/${encodeURIComponent(player.id)}/game-day-tile-background?tile_key=${encodeURIComponent(key)}`,
-        { ...payload, tile_key: key, tileKey: key },
+        `/players/${encodeURIComponent(player.id)}/game-day-tile-background?${pageTileKeyQuery(key)}`,
+        { ...payload, ...pageTileKeyFields(key) },
       );
       onPlayerChanged?.({ ...player, ...updated });
       setPreview('');
@@ -139,15 +149,15 @@ export default function GameDayTileBackgroundDialog({
 
           <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, gap: 14 }}>
             {!canCustomize ? (
-              <View style={{ borderWidth: 1, borderColor: 'rgba(216,222,232,0.25)', backgroundColor: 'rgba(216,222,232,0.08)', padding: 14, gap: 10 }}>
+              <View style={{ borderWidth: 1, borderColor: FUT.rose, backgroundColor: 'rgba(244,63,94,0.12)', padding: 14, gap: 10 }}>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
-                  <Ionicons name="lock-closed" size={18} color={SILVER} />
+                  <Ionicons name="alert-circle" size={18} color={FUT.rose} />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: '#fff', fontWeight: '900', fontSize: 14, textTransform: 'uppercase' }}>
-                      STAGE Plus feature
+                    <Text style={{ color: FUT.rose, fontWeight: '900', fontSize: 14, textTransform: 'uppercase' }}>
+                      STAGE Plus required
                     </Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, marginTop: 4 }}>
-                      STAGE Plus unlocks custom tile backgrounds, personal uploads, and official visual designs.
+                    <Text style={{ color: '#fff', fontSize: 13, marginTop: 4 }}>
+                      {STAGE_PLUS_TILE_BACKGROUND_ERROR}
                     </Text>
                   </View>
                 </View>

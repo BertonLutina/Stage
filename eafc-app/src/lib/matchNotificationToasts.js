@@ -57,6 +57,16 @@ export function toastText(title, body) {
   return head || rest || '';
 }
 
+export function splitToastCopy(message) {
+  const text = String(message || '').trim();
+  const idx = text.indexOf(' · ');
+  if (idx <= 0) return { title: text, body: '' };
+  return {
+    title: text.slice(0, idx).trim(),
+    body: text.slice(idx + 3).trim(),
+  };
+}
+
 export function toastFromNotification(event, settings) {
   const data = event?.data;
   if (!data) return null;
