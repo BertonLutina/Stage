@@ -1,5 +1,4 @@
 import { stageClient } from '@/api/stageClient';
-import { syncPlayerCareerStats } from '@/lib/gameDayIntegration';
 
 export function parseIdList(value) {
   if (!value) return [];
@@ -105,6 +104,9 @@ export function buildResultPayload({
   ratings = {},
   goalEvents = [],
   proofUrl,
+  action = 'submit_result',
+  decided_on_penalties = false,
+  penalty_winner_side = null,
 }) {
   const isClubMatch = isClubGameDayMatch(game);
   const derived = {};
@@ -131,7 +133,7 @@ export function buildResultPayload({
       player_email: myPlayer.email,
       player_gamertag: myPlayer.gamertag,
       club_id: null,
-      goals: 0,
+      goals: Number(isHomeTeam ? (ownScore ?? homeScore) : (ownScore ?? awayScore)) || 0,
       assists: 0,
       rating: 6,
     }];
@@ -143,7 +145,7 @@ export function buildResultPayload({
 
   return {
     match_id: game.id,
-    action: 'submit_result',
+    action,
     is_home_team: isHomeTeam,
     home_score: scores.home_score,
     away_score: scores.away_score,
@@ -158,6 +160,9 @@ export function buildResultPayload({
       assist_gamertag: ev.assist_gamertag || null,
       is_penalty: !!ev.is_penalty,
     })),
+    participating_player_ids: seatedPlayers.map((p) => p.id),
+    decided_on_penalties: Number(scores.home_score) === Number(scores.away_score) ? Boolean(decided_on_penalties) : false,
+    penalty_winner_side: penalty_winner_side || null,
     proof_url: proofUrl || null,
   };
 }
@@ -169,7 +174,6 @@ export async function submitMatchResult(payload) {
 export async function afterMatchCompleted(match) {
   if (!match?.id) return;
   stageClient.functions.invoke('shirtSales', { action: 'generate_for_match', match_id: match.id }).catch(() => {});
-  syncPlayerCareerStats(match.id).catch(() => {});
 }
 
 export async function reloadMatch(matchId) {

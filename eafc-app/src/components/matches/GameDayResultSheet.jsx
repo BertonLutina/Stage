@@ -18,7 +18,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { stageClient } from '@/api/stageClient';
 import { CYAN } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT } from '@/components/dashboard/CommandCenterUI';
-import { parseIdList, buildResultPayload, mapResultError, submitMatchResult, sameId } from '@/lib/gameDayOps';
+import { buildResultPayload, mapResultError, submitMatchResult } from '@/lib/gameDayOps';
+import { evidenceRequired } from '@/lib/gameDayResultFlow';
 
 export default function GameDayResultSheet({
   visible,
@@ -53,12 +54,8 @@ export default function GameDayResultSheet({
   useEffect(() => {
     if (!visible || !isClubMatch || !myClub?.id) return;
     (async () => {
-      const [dressing, allPlayers] = await Promise.all([
-        stageClient.entities.DressingRoom.filter({ match_id: game.id, club_id: myClub.id }).catch(() => []),
-        stageClient.entities.Player.filter({ club_id: myClub.id }).catch(() => []),
-      ]);
-      const ids = parseIdList(dressing?.[0]?.seated_players);
-      setSeatedPlayers((allPlayers || []).filter((p) => ids.some((id) => sameId(id, p.id))));
+      const allPlayers = await stageClient.entities.Player.filter({ club_id: myClub.id }).catch(() => []);
+      setSeatedPlayers(allPlayers || []);
     })();
   }, [visible, game?.id, myClub?.id, isClubMatch]);
 
@@ -99,7 +96,7 @@ export default function GameDayResultSheet({
   };
 
   const submit = async () => {
-    if (!proofUrl) {
+    if (evidenceRequired(game) && !proofUrl) {
       setError('Upload a screenshot of the final score before submitting.');
       return;
     }
