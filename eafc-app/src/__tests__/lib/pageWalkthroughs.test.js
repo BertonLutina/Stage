@@ -13,11 +13,23 @@ describe('page walkthroughs', () => {
 
   test('maps mobile routes to the matching guide', () => {
     expect(getPageWalkthrough('/apps/inbox', 'en').key).toBe('inbox');
-    expect(getPageWalkthrough('/apps/news', 'en').key).toBe('news');
+    expect(getPageWalkthrough('/apps/competitions', 'en').key).toBe('compete');
     expect(getPageWalkthrough('/matches', 'en').key).toBe('matches');
     expect(getPageWalkthrough('/profile', 'en').key).toBe('profile');
     expect(getPageWalkthrough('/apps/settings', 'en')).toBeNull();
     expect(getPageWalkthrough('/auth/onboarding', 'en')).toBeNull();
+  });
+
+  test('guide chrome uses Game Day silver tiles, not cyan pills', () => {
+    const src = require('fs').readFileSync(
+      require('path').resolve(__dirname, '../../components/onboarding/PageWalkthrough.jsx'),
+      'utf8',
+    );
+    expect(src).toMatch(/GAME_DAY_SILVER/);
+    expect(src).toMatch(/TILE_BORDER/);
+    expect(src).toMatch(/borderRadius: CARD_RADIUS/);
+    expect(src).not.toMatch(/borderRadius: 999/);
+    expect(src).not.toMatch(/backgroundColor: CYAN/);
   });
 
   test('inbox path tells the user where to accept contracts and loans', () => {

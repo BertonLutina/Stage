@@ -182,7 +182,7 @@ describe('Matches hub arrange fixture wiring', () => {
       'utf8',
     );
     expect(source).toMatch(/ArrangeGameModal/);
-    expect(source).toMatch(/ARRANGE VS FIXTURE/);
+    expect(source).toMatch(/Arrange Game/);
     expect(source).toMatch(/myPlayer/);
     expect(source).toMatch(/onSent/);
   });
@@ -222,7 +222,7 @@ describe('Matches hub arrange fixture wiring', () => {
     expect(resultSheet).toMatch(/KeyboardAvoidingView/);
     expect(resultSheet).toMatch(/automaticallyAdjustKeyboardInsets/);
     expect(source).toMatch(/GameDayWagerCard/);
-    expect(source).toMatch(/GameDayDressingRoom/);
+    expect(source).toMatch(/GameDayDressingRoomPanel/);
     expect(source).not.toMatch(/getMockMatchById/);
     expect(source).not.toMatch(/api\.get\(`\/matches\//);
   });

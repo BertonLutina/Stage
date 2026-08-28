@@ -9,7 +9,7 @@ export default function ThemeBackdrop({ children, style }) {
   const liveDark = useThemeStore((s) => s.liveDark);
 
   return (
-    <View style={[{ flex: 1, backgroundColor: tokens.bg }, style]}>
+    <View style={[{ flex: 1, backgroundColor: liveDark ? 'transparent' : tokens.bg }, style]}>
       {liveDark ? (
         <LiveDarkWallpaper />
       ) : (

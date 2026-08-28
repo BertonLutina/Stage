@@ -25,7 +25,7 @@ function statusMeta(status) {
   return { label: String(status || ''), bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.55)', border: 'rgba(255,255,255,0.14)' };
 }
 
-/** Compact fixture chip for the Game Day ticker */
+/** Compact fixture chip for the Game Day ticker — matches web GameDayCard */
 export function GameDayFixtureChip({ event, selected, onPress, myClub }) {
   const date = parseDate(event.date);
   const status = statusMeta(event.status);
@@ -38,16 +38,16 @@ export function GameDayFixtureChip({ event, selected, onPress, myClub }) {
       onPress={onPress}
       activeOpacity={0.88}
       style={{
-        minWidth: 220,
-        maxWidth: 280,
+        minWidth: 246,
+        maxWidth: 320,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
-        paddingHorizontal: 10,
+        paddingHorizontal: 12,
         paddingVertical: 10,
         borderWidth: 1,
-        borderColor: selected ? '#F5C542' : 'rgba(255,255,255,0.12)',
-        backgroundColor: selected ? 'rgba(245,197,66,0.12)' : 'rgba(0,0,0,0.35)',
+        borderColor: selected ? '#F8FBFF' : 'rgba(255,255,255,0.12)',
+        backgroundColor: selected ? 'rgba(255,255,255,0.14)' : 'rgba(21,27,37,0.76)',
       }}
     >
       <View style={{ flexDirection: 'row' }}>
@@ -58,7 +58,7 @@ export function GameDayFixtureChip({ event, selected, onPress, myClub }) {
       </View>
       <View style={{ flex: 1 }}>
         <Text numberOfLines={1} style={{ color: '#fff', fontSize: 11, fontWeight: '900', textTransform: 'uppercase' }}>
-          {event.homeName} <Text style={{ color: '#F5C542' }}>vs</Text> {event.awayName}
+          {event.homeName} <Text style={{ color: '#F8FBFF' }}>vs</Text> {event.awayName}
         </Text>
         <Text numberOfLines={1} style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10, marginTop: 2, letterSpacing: 0.8, textTransform: 'uppercase' }}>
           {date
@@ -67,7 +67,18 @@ export function GameDayFixtureChip({ event, selected, onPress, myClub }) {
           {status.label}
         </Text>
       </View>
-      {live ? <Ionicons name="radio" size={12} color={FUT.cyan} /> : null}
+      <View style={{ alignItems: 'flex-end', gap: 4 }}>
+        {live || event.hasStream ? <Ionicons name="radio" size={12} color="#8EEEFF" /> : null}
+        {event.isMyClub ? (
+          <Text style={{ color: '#F8FBFF', fontSize: 8, fontWeight: '900', letterSpacing: 1.2, textTransform: 'uppercase' }}>
+            Your Club
+          </Text>
+        ) : (
+          <Text numberOfLines={1} style={{ color: 'rgba(255,255,255,0.35)', fontSize: 8, letterSpacing: 1, textTransform: 'uppercase', maxWidth: 72 }}>
+            {event.competition}
+          </Text>
+        )}
+      </View>
     </TouchableOpacity>
   );
 }

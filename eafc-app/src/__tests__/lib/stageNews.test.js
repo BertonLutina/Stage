@@ -1,5 +1,3 @@
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
 import {
   DESK_FILTERS,
   NEWS_SECTION_FILTERS,
@@ -146,12 +144,5 @@ describe('stage news desks', () => {
     expect(countryMatches('BE', 'GB')).toBe(false);
     expect(countryMatches('FR', 'FR')).toBe(true);
     expect(countryMatches('FR', '')).toBe(true);
-  });
-
-  test('news screen mounts STAGE TIMES desks instead of the old directory list', () => {
-    const page = readFileSync(resolve(__dirname, '../../app/apps/news.jsx'), 'utf8');
-    expect(page).toMatch(/StageTimesNews/);
-    expect(page).not.toMatch(/AppDirectoryScreen/);
-    expect(page).not.toMatch(/Alert\.alert/);
   });
 });

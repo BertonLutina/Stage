@@ -14,6 +14,10 @@ jest.mock('expo-web-browser', () => ({
   openAuthSessionAsync: jest.fn(),
 }));
 
+jest.mock('expo-auth-session', () => ({
+  makeRedirectUri: () => 'stage://apps/store',
+}));
+
 jest.mock('../../api/stageClient', () => ({
   stageClient: { functions: { invoke: jest.fn() } },
 }));
@@ -27,11 +31,12 @@ const WebBrowser = require('expo-web-browser');
 describe('storeCheckoutUrls', () => {
   test('sends Stripe back to a mobile HTTPS handoff, not the website Store', () => {
     const urls = storeCheckoutUrls({ kind: 'subscription', extra: { tier: 'stage_plus', billing: 'monthly' } });
-    expect(urls.successUrl).toContain('https://stageleagues.com/store/mobile-return?sub=success');
+    expect(urls.successUrl).toContain('https://stageleagues.com/auth/store-return?sub=success');
     expect(urls.successUrl).toContain('client=mobile');
     expect(urls.successUrl).toContain('session_id={CHECKOUT_SESSION_ID}');
-    expect(urls.cancelUrl).toContain('/store/mobile-return?sub=cancelled');
+    expect(urls.cancelUrl).toContain('/auth/store-return?sub=cancelled');
     expect(urls.successUrl).not.toMatch(/\/store\?sub=success/);
+    expect(urls.successUrl).not.toContain('/store/mobile-return');
   });
 });
 
@@ -40,6 +45,7 @@ describe('mobile store deep link', () => {
     expect(mobileStoreDeepLinkFromSearch('client=mobile&sub=success&session_id=cs_1')).toBe(
       'stage://apps/store?sub=success&session_id=cs_1',
     );
+    expect(isMobileStoreReturnUrl('https://stageleagues.com/auth/store-return?sub=success')).toBe(true);
     expect(isMobileStoreReturnUrl('https://stageleagues.com/store/mobile-return?sub=success')).toBe(true);
     expect(isMobileStoreReturnUrl('stage://apps/store?sub=success')).toBe(true);
     expect(isMobileStoreReturnUrl('https://stageleagues.com/store?sub=success')).toBe(false);
@@ -80,7 +86,7 @@ describe('startStagePlusCheckout', () => {
     }));
     expect(WebBrowser.openAuthSessionAsync).toHaveBeenCalledWith(
       'https://checkout.stripe.com/c/cs_test',
-      'https://stageleagues.com/store/mobile-return',
+      'stage://apps/store',
       expect.any(Object),
     );
     expect(stageClient.functions.invoke).toHaveBeenNthCalledWith(2, 'fixSubscription', { session_id: 'cs_test' });

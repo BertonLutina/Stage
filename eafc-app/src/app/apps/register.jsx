@@ -15,9 +15,9 @@ import { resolveMyPlayerAndClub } from '@/api/stageClient';
 import {
   GamerProfileShell,
   GlassIconButton,
-  CYAN,
 } from '@/components/profile/gamer/GamerProfileUI';
-import { FUT, SectionCard } from '@/components/dashboard/CommandCenterUI';
+import { FUT, GAME_DAY_SILVER, SectionCard } from '@/components/dashboard/CommandCenterUI';
+import PageTile from '@/components/theme/PageTile';
 import { REGIONS } from '@/lib/qualificationConfig';
 import { applyForLeague, ACTIVE_STATUSES } from '@/lib/registrationEngine';
 import { loadSeasonRegistrations } from '@/lib/competitionSeason';
@@ -104,12 +104,18 @@ export default function SeasonRegisterScreen() {
           <Text style={{ color: '#fff', fontWeight: '900', marginLeft: 12 }}>SEASON REGISTER</Text>
         </View>
         {loading ? (
-          <ActivityIndicator color={CYAN} style={{ marginTop: 40 }} />
+          <ActivityIndicator color={GAME_DAY_SILVER} style={{ marginTop: 40 }} />
         ) : (
           <ScrollView
             contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, gap: 10 }}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={CYAN} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={GAME_DAY_SILVER} />}
           >
+            <PageTile
+              tileKey="competitions"
+              eyebrow="REGISTER"
+              subtitle="Regional leagues"
+              contentStyle={{ paddingHorizontal: 12, gap: 10 }}
+            >
             {!registrationClub ? (
               <SectionCard>
                 <Text style={{ color: 'rgba(255,255,255,0.55)' }}>
@@ -125,7 +131,7 @@ export default function SeasonRegisterScreen() {
                   STAGE Plus is required to enter STAGE regional leagues and official competitions.
                 </Text>
                 <TouchableOpacity onPress={() => router.push('/apps/store')} style={{ marginTop: 8 }}>
-                  <Text style={{ color: CYAN, fontWeight: '800' }}>Open Store</Text>
+                  <Text style={{ color: GAME_DAY_SILVER, fontWeight: '800' }}>Open Store</Text>
                 </TouchableOpacity>
               </SectionCard>
             ) : null}
@@ -136,12 +142,12 @@ export default function SeasonRegisterScreen() {
                 <SectionCard key={region.slug}>
                   <Text style={{ color: '#fff', fontWeight: '900' }}>{region.name}</Text>
                   {app ? (
-                    <Text style={{ color: FUT.gold, marginTop: 6, fontSize: 12, fontWeight: '800' }}>
+                    <Text style={{ color: GAME_DAY_SILVER, marginTop: 6, fontSize: 12, fontWeight: '800' }}>
                       {String(app.status).toUpperCase()}
                     </Text>
                   ) : canApply ? (
                     <TouchableOpacity onPress={() => setSelected(region)} style={{ marginTop: 8 }}>
-                      <Text style={{ color: CYAN, fontWeight: '800' }}>Apply</Text>
+                      <Text style={{ color: GAME_DAY_SILVER, fontWeight: '800' }}>Apply</Text>
                     </TouchableOpacity>
                   ) : (
                     <Text style={{ color: 'rgba(255,255,255,0.35)', marginTop: 6, fontSize: 12 }}>
@@ -171,12 +177,20 @@ export default function SeasonRegisterScreen() {
                 <TouchableOpacity
                   onPress={submit}
                   disabled={busy}
-                  style={{ backgroundColor: CYAN, borderRadius: 12, paddingVertical: 12, marginTop: 10, alignItems: 'center' }}
+                  style={{
+                    backgroundColor: 'rgba(255,255,255,0.12)',
+                    borderWidth: 1,
+                    borderColor: 'rgba(248,251,255,0.55)',
+                    paddingVertical: 12,
+                    marginTop: 10,
+                    alignItems: 'center',
+                  }}
                 >
-                  {busy ? <ActivityIndicator color="#041018" /> : <Text style={{ color: '#041018', fontWeight: '900' }}>Send application</Text>}
+                  {busy ? <ActivityIndicator color={GAME_DAY_SILVER} /> : <Text style={{ color: GAME_DAY_SILVER, fontWeight: '900' }}>Send application</Text>}
                 </TouchableOpacity>
               </SectionCard>
             ) : null}
+            </PageTile>
           </ScrollView>
         )}
       </SafeAreaView>

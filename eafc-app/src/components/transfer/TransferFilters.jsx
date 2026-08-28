@@ -3,7 +3,7 @@ import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-nativ
 import { Ionicons } from '@expo/vector-icons';
 import { headingStyleSm } from '@/lib/fonts';
 import { PLAYER_POSITIONS, PLATFORMS } from '@/lib/stageDirectories';
-import { GOLD } from './transferHubTheme';
+import { SILVER } from './transferHubTheme';
 
 const STATUS_OPTIONS = [
   { id: 'all', label: 'All' },
@@ -11,7 +11,7 @@ const STATUS_OPTIONS = [
   { id: 'expiring', label: 'Expiring' },
 ];
 
-function Chip({ label, active, onPress, gold }) {
+function Chip({ label, active, onPress }) {
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -20,12 +20,8 @@ function Chip({ label, active, onPress, gold }) {
         paddingHorizontal: 12,
         paddingVertical: 8,
         borderWidth: 1,
-        borderColor: active
-          ? (gold ? GOLD : 'rgba(0,229,255,0.55)')
-          : 'rgba(255,255,255,0.12)',
-        backgroundColor: active
-          ? (gold ? GOLD : 'rgba(0,229,255,0.14)')
-          : 'rgba(0,0,0,0.4)',
+        borderColor: active ? 'rgba(248,251,255,0.55)' : 'rgba(255,255,255,0.12)',
+        backgroundColor: active ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.4)',
       }}
     >
       <Text
@@ -33,7 +29,7 @@ function Chip({ label, active, onPress, gold }) {
           headingStyleSm,
           {
             fontSize: 11,
-            color: active ? (gold ? '#000' : '#00e5ff') : 'rgba(255,255,255,0.55)',
+            color: active ? SILVER : 'rgba(255,255,255,0.55)',
             letterSpacing: 1,
           },
         ]}
@@ -86,7 +82,6 @@ export default function TransferFilters({
           <Chip
             key={opt.id}
             label={opt.label}
-            gold
             active={statusFilter === opt.id}
             onPress={() => onStatus(opt.id)}
           />

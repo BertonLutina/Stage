@@ -26,10 +26,9 @@ import {
 import {
   GamerProfileShell,
   GlassIconButton,
-  CYAN,
 } from '@/components/profile/gamer/GamerProfileUI';
-import { FUT, PitchAtmosphere, SectionCard } from '@/components/dashboard/CommandCenterUI';
-import { headingStyle, headingStyleSm } from '@/lib/fonts';
+import { FUT, GAME_DAY_SILVER, SectionCard } from '@/components/dashboard/CommandCenterUI';
+import PageTile from '@/components/theme/PageTile';
 
 function parseList(value) {
   if (Array.isArray(value)) return value;
@@ -125,7 +124,7 @@ export default function TournamentDetailScreen() {
     return (
       <GamerProfileShell>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={CYAN} />
+          <ActivityIndicator color={GAME_DAY_SILVER} />
         </View>
       </GamerProfileShell>
     );
@@ -156,20 +155,16 @@ export default function TournamentDetailScreen() {
         </View>
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, gap: 12 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={CYAN} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={GAME_DAY_SILVER} />}
         >
-          <PitchAtmosphere style={{ borderWidth: 1.5, borderColor: 'rgba(0,232,255,0.35)' }}>
-            <View style={{ padding: 18 }}>
-              <Text style={[headingStyleSm, { color: FUT.cyan, fontSize: 10, letterSpacing: 3 }]}>
-                {(tournament.type || 'CUP').toUpperCase()}
-              </Text>
-              <Text style={[headingStyle, { color: '#fff', fontSize: 24, marginTop: 6 }]}>{tournament.name}</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.5)', marginTop: 8, fontSize: 12 }}>
-                {tournament.status} · {playerTournament ? `${players.length} players` : `${clubs.length} clubs`}
-              </Text>
-            </View>
-          </PitchAtmosphere>
-
+          <PageTile
+            tileKey="tournaments"
+            eyebrow={(tournament.type || 'CUP').toUpperCase()}
+            subtitle={`${tournament.status} · ${playerTournament ? `${players.length} players` : `${clubs.length} clubs`}`}
+            player={myPlayer}
+            onPlayerChanged={setMyPlayer}
+            contentStyle={{ paddingHorizontal: 12, gap: 12 }}
+          >
           {error ? (
             <SectionCard accent="rose">
               <Text style={{ color: FUT.rose, fontSize: 12 }}>{error}</Text>
@@ -221,8 +216,8 @@ export default function TournamentDetailScreen() {
             </SectionCard>
           ) : null}
           {canRegister && !playerTournament && clubPending ? (
-            <SectionCard accent="gold">
-              <Text style={{ color: FUT.gold, fontWeight: '800' }}>Pending admin approval</Text>
+            <SectionCard>
+              <Text style={{ color: GAME_DAY_SILVER, fontWeight: '800' }}>Pending admin approval</Text>
               <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 6 }}>
                 Your EA FC club name is waiting for verification.
               </Text>
@@ -294,6 +289,7 @@ export default function TournamentDetailScreen() {
               onPress={() => router.push({ pathname: '/(tabs)/tournaments/leaguestandingsscreen', params: { tournamentId } })}
             />
           </View>
+          </PageTile>
         </ScrollView>
       </SafeAreaView>
     </GamerProfileShell>
@@ -305,9 +301,15 @@ function Primary({ label, onPress, busy }) {
     <TouchableOpacity
       onPress={onPress}
       disabled={!!busy}
-      style={{ backgroundColor: CYAN, borderRadius: 14, paddingVertical: 13, alignItems: 'center' }}
+      style={{
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        borderWidth: 1,
+        borderColor: 'rgba(248,251,255,0.55)',
+        paddingVertical: 13,
+        alignItems: 'center',
+      }}
     >
-      {busy ? <ActivityIndicator color="#041018" /> : <Text style={{ color: '#041018', fontWeight: '900' }}>{label}</Text>}
+      {busy ? <ActivityIndicator color={GAME_DAY_SILVER} /> : <Text style={{ color: GAME_DAY_SILVER, fontWeight: '900' }}>{label}</Text>}
     </TouchableOpacity>
   );
 }
@@ -320,13 +322,12 @@ function Ghost({ label, onPress, busy }) {
       style={{
         flex: 1,
         borderWidth: 1,
-        borderColor: 'rgba(0,232,255,0.3)',
-        borderRadius: 14,
+        borderColor: 'rgba(255,255,255,0.12)',
         paddingVertical: 13,
         alignItems: 'center',
       }}
     >
-      {busy ? <ActivityIndicator color={CYAN} /> : <Text style={{ color: CYAN, fontWeight: '800' }}>{label}</Text>}
+      {busy ? <ActivityIndicator color={GAME_DAY_SILVER} /> : <Text style={{ color: GAME_DAY_SILVER, fontWeight: '800' }}>{label}</Text>}
     </TouchableOpacity>
   );
 }

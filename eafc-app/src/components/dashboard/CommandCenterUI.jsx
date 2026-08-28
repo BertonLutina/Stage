@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, Image, TextInput, ActivityIndicator, Animated, Easing, StyleSheet,
+  View, Text, TouchableOpacity, Image, TextInput, ActivityIndicator, Animated, Easing,
 } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient as SvgGrad, Stop } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { stageClient } from '@/api/stageClient';
-import { CYAN, AMBER } from '@/components/profile/gamer/GamerProfileUI';
 import { headingStyle } from '@/lib/fonts';
 import useThemeStore from '@/store/themeStore';
 import { CARD_RADIUS, hexToRgba } from '@/lib/stageTheme';
@@ -139,49 +138,67 @@ export function PitchAtmosphere({ children, style }) {
 /** Card radius for Home widgets under the player identity plate. */
 export const DASHBOARD_CARD_RADIUS = CARD_RADIUS;
 
+/** Game Day MATCH SCREENS tile chrome — dashboard widgets reuse this. */
+export const GAME_DAY_SILVER = '#EEF3FB';
+export const TILE_BORDER = 'rgba(238,243,251,0.22)';
+export const TILE_BORDER_HOT = 'rgba(238,243,251,0.4)';
+export const TILE_FILL = 'rgba(17,24,39,0.88)';
+export const TILE_FILL_INNER = 'rgba(0,0,0,0.35)';
+/** Over a Live Dark photo — same as Game Day MATCH SCREENS with a tile background. */
+export const TILE_FILL_LIVE = 'rgba(0,0,0,0.4)';
+export const TILE_FILL_LIVE_INNER = 'rgba(0,0,0,0.28)';
+
+export function tileChrome(tokens, extra = {}) {
+  const dark = !tokens || tokens.isDark !== false;
+  const live = tokens?.live === true;
+  return {
+    overflow: 'hidden',
+    borderRadius: CARD_RADIUS,
+    borderWidth: 1,
+    borderColor: dark ? TILE_BORDER : (tokens.hairline || TILE_BORDER),
+    backgroundColor: live
+      ? TILE_FILL_LIVE
+      : dark ? TILE_FILL : (tokens.cardSolid || TILE_FILL),
+    ...extra,
+  };
+}
+
+export function innerTileChrome(tokens, extra = {}) {
+  const live = tokens?.live === true;
+  const dark = !tokens || tokens.isDark !== false;
+  return tileChrome(tokens, {
+    backgroundColor: live
+      ? TILE_FILL_LIVE_INNER
+      : dark ? TILE_FILL_INNER : (tokens.inputFill || TILE_FILL_INNER),
+    ...extra,
+  });
+}
+
 export function SectionCard({ children, style, accent = 'cyan', radius = CARD_RADIUS }) {
   const tokens = useThemeStore((s) => s.tokens);
-  const a = ACCENTS[accent] || ACCENTS.cyan;
-  const border = accent === 'gold' ? tokens.amberBorder : accent === 'rose' ? a.border : tokens.cyanBorder;
+  const borderColor = accent === 'rose' ? 'rgba(255,77,109,0.4)' : undefined;
   return (
-    <LiveGlass
-      intensity={36}
-      style={[{
-        borderRadius: radius,
-        borderWidth: 1.5,
-        borderColor: border,
-        shadowColor: tokens.isDark ? a.glow : '#0B1A3A',
-        shadowOpacity: tokens.isDark ? 0.35 : 0.18,
-        shadowRadius: 18,
-        shadowOffset: { width: 0, height: 8 },
-        elevation: 10,
-      }, style]}
-    >
-      <LinearGradient
-        colors={tokens.live
-          ? ['rgba(12,20,36,0.55)', 'rgba(6,10,20,0.48)']
-          : tokens.isDark ? ['rgba(12,20,36,0.98)', 'rgba(6,10,20,0.96)'] : [tokens.cardSolid, tokens.cardSolid]}
-        style={StyleSheet.absoluteFill}
-      />
+    <View style={[tileChrome(tokens, { borderRadius: radius, ...(borderColor ? { borderColor } : {}) }), style]}>
       <View style={{ padding: 16 }}>
         {children}
       </View>
-    </LiveGlass>
+    </View>
   );
 }
 
 export function SectionTitle({ children, right, eyebrow }) {
   const tokens = useThemeStore((s) => s.tokens);
-  const accent = tokens.isDark ? tokens.cyan : tokens.amber;
+  const silver = tokens.isDark ? GAME_DAY_SILVER : tokens.muted;
   return (
     <View style={{ marginBottom: 16 }}>
       {eyebrow ? (
         <Text style={{
-          color: accent,
-          fontSize: 9,
+          color: silver,
+          fontSize: 11,
           fontWeight: '900',
-          letterSpacing: 3,
+          letterSpacing: 2,
           marginBottom: 4,
+          textTransform: 'uppercase',
         }}
         >
           {eyebrow}
@@ -193,12 +210,7 @@ export function SectionTitle({ children, right, eyebrow }) {
         </Text>
         {right}
       </View>
-      <LinearGradient
-        colors={tokens.isDark ? [tokens.cyan, tokens.amber, 'transparent'] : [tokens.amber, hexToRgba(tokens.amber, 0.25), 'transparent']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={{ height: 2, width: 72, borderRadius: 2, marginTop: 8 }}
-      />
+      <View style={{ height: 1, width: 72, marginTop: 8, backgroundColor: tokens.isDark ? TILE_BORDER : tokens.hairline }} />
     </View>
   );
 }
@@ -285,32 +297,12 @@ export function DashboardGamerStatCard({ label, value, sub, accent = 'cyan', ico
   const tokens = useThemeStore((s) => s.tokens);
   const a = useAccent(accent);
   return (
-    <LiveGlass
-      intensity={36}
-      style={{
-        flex: 1,
-        minHeight: 118,
-        borderRadius: DASHBOARD_CARD_RADIUS,
-        borderWidth: 1.5,
-        borderColor: a.border,
-        shadowColor: a.glow,
-        shadowOpacity: tokens.isDark ? 0.4 : 0.12,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 6 },
-        elevation: 8,
-      }}
-    >
-      <LinearGradient
-        colors={a.colors}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+    <View style={tileChrome(tokens, { flex: 1, minHeight: 118 })}>
       <View style={{ flex: 1, padding: 13, minHeight: 118, justifyContent: 'flex-start' }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          {icon ? <Ionicons name={icon} size={15} color={a.tint} /> : <View />}
+          {icon ? <Ionicons name={icon} size={15} color={tokens.isDark ? GAME_DAY_SILVER : a.tint} /> : <View />}
           <View style={{
-            width: 6, height: 6, borderRadius: 3, backgroundColor: a.tint, opacity: 0.9,
+            width: 6, height: 6, borderRadius: CARD_RADIUS, backgroundColor: tokens.isDark ? GAME_DAY_SILVER : a.tint, opacity: 0.7,
           }}
           />
         </View>
@@ -337,7 +329,7 @@ export function DashboardGamerStatCard({ label, value, sub, accent = 'cyan', ico
           </Text>
         ) : null}
       </View>
-    </LiveGlass>
+    </View>
   );
 }
 
@@ -353,7 +345,7 @@ export function DashboardQuickGlance({ glance, onOpen }) {
     { id: 'stc', label: 'STC', value: formatNumber(glance.stc), icon: 'flash', href: '/apps/store', accent: 'gold' },
     { id: 'credits', label: 'Credits', value: formatNumber(glance.credits), icon: 'sparkles', href: '/apps/store', accent: 'cyan' },
     { id: 'inbox', label: 'Inbox', value: glance.unreadInbox || 0, icon: 'mail', href: '/apps/inbox', accent: 'cyan', hot: (glance.unreadInbox || 0) > 0 },
-    { id: 'alerts', label: 'Alerts', value: unreadTotal, icon: 'notifications', href: '/apps/notifications', accent: 'rose', hot: unreadTotal > 0 },
+    { id: 'alerts', label: 'Alerts', value: unreadTotal, icon: 'notifications', href: '/apps/inbox', accent: 'rose', hot: unreadTotal > 0 },
   ];
   return (
     <View style={{ gap: 10 }}>
@@ -368,36 +360,21 @@ export function DashboardQuickGlance({ glance, onOpen }) {
                 activeOpacity={0.88}
                 style={{ flex: 1 }}
               >
-                <LiveGlass
-                  intensity={36}
-                  style={{
+                <View
+                  style={tileChrome(tokens, {
                     flex: 1,
                     minHeight: 72,
-                    borderRadius: DASHBOARD_CARD_RADIUS,
-                    borderWidth: 1.5,
-                    borderColor: t.hot ? a.border : tokens.hairline,
-                    shadowColor: t.hot ? a.glow : tokens.cyan,
-                    shadowOpacity: t.hot ? 0.45 : (tokens.live ? 0.28 : 0.12),
-                    shadowRadius: 12,
-                    shadowOffset: { width: 0, height: 6 },
-                    elevation: 7,
-                  }}
+                    ...(t.hot ? { borderColor: TILE_BORDER_HOT } : {}),
+                  })}
                 >
-                  <LinearGradient
-                    colors={t.hot ? a.colors : (tokens.live
-                      ? ['rgba(16,24,40,0.55)', 'rgba(8,12,22,0.48)']
-                      : tokens.isDark ? ['rgba(16,24,40,0.95)', 'rgba(8,12,22,0.98)'] : [tokens.cardSolid, tokens.cardSolid])}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={StyleSheet.absoluteFill}
-                  />
                   <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 11, padding: 13, minHeight: 72 }}>
                     <View style={{
-                      width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center',
-                      backgroundColor: tokens.inputFill, borderWidth: 1, borderColor: a.border,
+                      width: 42, height: 42, borderRadius: CARD_RADIUS, alignItems: 'center', justifyContent: 'center',
+                      backgroundColor: tokens.live ? TILE_FILL_LIVE_INNER : (tokens.isDark ? TILE_FILL_INNER : tokens.inputFill),
+                      borderWidth: 1, borderColor: t.hot ? TILE_BORDER_HOT : TILE_BORDER,
                     }}
                     >
-                      <Ionicons name={t.icon} size={18} color={a.tint} />
+                      <Ionicons name={t.icon} size={18} color={t.hot ? a.tint : (tokens.isDark ? GAME_DAY_SILVER : a.tint)} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={{ color: tokens.muted, fontSize: 9, fontWeight: '900', letterSpacing: 1.5 }}>
@@ -408,7 +385,7 @@ export function DashboardQuickGlance({ glance, onOpen }) {
                       </Text>
                     </View>
                   </View>
-                </LiveGlass>
+                </View>
               </TouchableOpacity>
             );
           })}
@@ -465,9 +442,8 @@ export function DashboardFormStrip({ label, mode = 'outcome', items = [], emptyL
             const s = ratingStyle(item, tokens);
             return (
               <View key={`${item}-${i}`} style={{
-                width: 38, height: 38, borderRadius: 11, borderWidth: 1.5, borderColor: s.border,
+                width: 38, height: 38, borderRadius: CARD_RADIUS, borderWidth: 1, borderColor: s.border,
                 backgroundColor: s.bg, alignItems: 'center', justifyContent: 'center',
-                shadowColor: s.border, shadowOpacity: 0.45, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
               }}
               >
                 <Text style={{ color: s.color, fontWeight: '900', fontSize: 11 }}>{Number(item).toFixed(1)}</Text>
@@ -477,7 +453,7 @@ export function DashboardFormStrip({ label, mode = 'outcome', items = [], emptyL
           const o = outcomeStyle(item, tokens);
           return (
             <View key={`${item}-${i}`} style={{
-              width: 38, height: 38, borderRadius: 11, borderWidth: 1.5, borderColor: o.border,
+              width: 38, height: 38, borderRadius: CARD_RADIUS, borderWidth: 1, borderColor: o.border,
               backgroundColor: o.bg, alignItems: 'center', justifyContent: 'center',
             }}
             >
@@ -497,11 +473,10 @@ export function MiniBarChart({ data = [], valueKey = 'matches', color = FUT.cyan
   }
   const max = Math.max(1, ...data.map((d) => Number(d[valueKey] || 0)));
   return (
-    <View style={{
+    <View style={innerTileChrome(tokens, {
       flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 100,
-      borderRadius: DASHBOARD_CARD_RADIUS, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
-      backgroundColor: 'rgba(0,0,0,0.28)', paddingHorizontal: 8, paddingTop: 10, paddingBottom: 6,
-    }}
+      paddingHorizontal: 8, paddingTop: 10, paddingBottom: 6,
+    })}
     >
       {data.map((d, i) => {
         const v = Number(d[valueKey] || 0);
@@ -511,8 +486,7 @@ export function MiniBarChart({ data = [], valueKey = 'matches', color = FUT.cyan
             <LinearGradient
               colors={[color, 'rgba(255,255,255,0.08)']}
               style={{
-                width: '72%', height: h, borderRadius: 7,
-                shadowColor: color, shadowOpacity: 0.5, shadowRadius: 8, shadowOffset: { width: 0, height: 0 },
+                width: '72%', height: h, borderRadius: CARD_RADIUS,
               }}
             />
             <Text style={{ color: tokens.faint, fontSize: 8, marginTop: 5, fontWeight: '700' }} numberOfLines={1}>
@@ -579,12 +553,9 @@ export function ObjectivesWidget({ playerId }) {
         const claimable = !done && (item.completed || progress >= target);
         const pct = Math.min(100, Math.round((progress / target) * 100));
         return (
-          <LinearGradient
+          <View
             key={item.id}
-            colors={['rgba(0,232,255,0.08)', 'rgba(0,0,0,0.35)']}
-            style={{
-              borderRadius: DASHBOARD_CARD_RADIUS, borderWidth: 1, borderColor: 'rgba(0,232,255,0.22)', padding: 12,
-            }}
+            style={innerTileChrome(tokens, { padding: 12 })}
           >
             <Text style={{ color: tokens.text, fontWeight: '800', fontSize: 13 }}>{title}</Text>
             <Text style={{ color: tokens.muted, fontSize: 11, marginTop: 3 }}>
@@ -606,8 +577,8 @@ export function ObjectivesWidget({ playerId }) {
                 onPress={() => claim(item.id)}
                 disabled={claimingId === item.id}
                 style={{
-                  marginTop: 11, minHeight: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
-                  backgroundColor: 'rgba(255,210,74,0.16)', borderWidth: 1, borderColor: 'rgba(255,210,74,0.45)',
+                  marginTop: 11, minHeight: 40, borderRadius: CARD_RADIUS, alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: 'rgba(255,210,74,0.16)', borderWidth: 1, borderColor: TILE_BORDER_HOT,
                 }}
               >
                 {claimingId === item.id
@@ -615,7 +586,7 @@ export function ObjectivesWidget({ playerId }) {
                   : <Text style={{ color: FUT.gold, fontWeight: '900', fontSize: 12, letterSpacing: 1 }}>CLAIM REWARD</Text>}
               </TouchableOpacity>
             ) : null}
-          </LinearGradient>
+          </View>
         );
       })}
     </View>
@@ -658,19 +629,15 @@ export function EafcClubPanel({ player, eafcSummary, onRefresh }) {
   return (
     <View style={{ gap: 10 }}>
       {eafcSummary?.clubName ? (
-        <LinearGradient
-          colors={['rgba(255,210,74,0.2)', 'rgba(0,0,0,0.35)']}
-          style={{
-            borderRadius: 14, borderWidth: 1.5, borderColor: 'rgba(255,210,74,0.4)', padding: 14,
-            overflow: 'hidden',
-          }}
+        <View
+          style={innerTileChrome(tokens, { padding: 14 })}
         >
           <Text style={{ color: FUT.gold, fontSize: 10, fontWeight: '900', letterSpacing: 2 }}>LINKED PRO CLUB</Text>
           <Text style={{ color: tokens.text, fontWeight: '900', fontSize: 18, marginTop: 6, textTransform: 'uppercase' }}>
             {eafcSummary.clubName}
           </Text>
           <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 4 }}>ID {eafcSummary.clubId}</Text>
-        </LinearGradient>
+        </View>
       ) : (
         <Text style={{ color: tokens.muted, fontSize: 12 }}>Link your EA FC Pro Club to show club form here.</Text>
       )}
@@ -730,10 +697,10 @@ const styles = {
     marginBottom: 8,
   },
   input: {
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: 'rgba(0,232,255,0.22)',
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: CARD_RADIUS,
+    borderWidth: 1,
+    borderColor: TILE_BORDER,
+    backgroundColor: TILE_FILL_INNER,
     color: '#fff',
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -742,8 +709,8 @@ const styles = {
   },
   btn: {
     minHeight: 46,
-    borderRadius: 12,
-    borderWidth: 1.5,
+    borderRadius: CARD_RADIUS,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 14,

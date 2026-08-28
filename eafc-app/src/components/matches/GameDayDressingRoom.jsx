@@ -6,7 +6,7 @@ import { CYAN } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT } from '@/components/dashboard/CommandCenterUI';
 import { parseIdList, sameId } from '@/lib/gameDayOps';
 
-export default function GameDayDressingRoom({ game, myClub, myPlayer }) {
+export default function GameDayDressingRoom({ game, myClub, myPlayer, embedded = false, onSeatChange }) {
   const [players, setPlayers] = useState([]);
   const [availableIds, setAvailableIds] = useState(new Set());
   const [seated, setSeated] = useState([]);
@@ -88,8 +88,9 @@ export default function GameDayDressingRoom({ game, myClub, myPlayer }) {
           club_id: myClub.id,
           seated_players: next,
         });
-        setRoomId(created.id);
+        setRoomId(created?.id || created?.data?.id || roomId);
       }
+      onSeatChange?.({ clubId: myClub.id, seatedPlayers: next });
     } catch (err) {
       setSeated(prev);
       setError(err?.message || 'Could not update seat');
@@ -103,10 +104,12 @@ export default function GameDayDressingRoom({ game, myClub, myPlayer }) {
 
   return (
     <View style={card}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={title}>DRESSING ROOM</Text>
-        <Text style={{ color: CYAN, fontSize: 11, fontWeight: '800' }}>{seated.length}/{players.length} seated</Text>
-      </View>
+      {!embedded ? (
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={title}>DRESSING ROOM</Text>
+          <Text style={{ color: CYAN, fontSize: 11, fontWeight: '800' }}>{seated.length}/{players.length} seated</Text>
+        </View>
+      ) : null}
       {locked ? (
         <Text style={hint}>Locked — match has started.</Text>
       ) : (
@@ -116,11 +119,11 @@ export default function GameDayDressingRoom({ game, myClub, myPlayer }) {
       {myPlayer && !locked ? (
         <TouchableOpacity onPress={takeSeat} disabled={saving} style={seatBtn}>
           {saving
-            ? <ActivityIndicator color="#041018" />
+            ? <ActivityIndicator color="#111827" />
             : (
               <>
-                <Ionicons name={iAmSeated ? 'checkmark-circle' : 'person-add'} size={16} color="#041018" />
-                <Text style={{ color: '#041018', fontWeight: '900' }}>{iAmSeated ? 'Leave seat' : 'Take my seat'}</Text>
+                <Ionicons name={iAmSeated ? 'checkmark-circle' : 'person-add'} size={16} color="#111827" />
+                <Text style={{ color: '#111827', fontWeight: '900' }}>{iAmSeated ? 'Leave seat' : 'Take my seat'}</Text>
               </>
             )}
         </TouchableOpacity>
@@ -143,18 +146,14 @@ export default function GameDayDressingRoom({ game, myClub, myPlayer }) {
 }
 
 const card = {
-  backgroundColor: 'rgba(255,255,255,0.04)',
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.1)',
-  borderRadius: 2,
-  padding: 14,
+  backgroundColor: 'transparent',
+  padding: 0,
   gap: 8,
 };
 const title = { color: '#fff', fontSize: 12, fontWeight: '900', letterSpacing: 0.8 };
 const hint = { color: 'rgba(255,255,255,0.45)', fontSize: 11, lineHeight: 16 };
 const seatBtn = {
-  backgroundColor: CYAN,
-  borderRadius: 12,
+  backgroundColor: '#EEF3FB',
   paddingVertical: 11,
   flexDirection: 'row',
   justifyContent: 'center',

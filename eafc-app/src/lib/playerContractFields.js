@@ -1,13 +1,18 @@
 /** Stage player_contracts use team_id (+ user_id as the player id). */
 
+import {
+  FOUNDER_CONTRACT_LABEL,
+  FOUNDER_PLAYER_CONTRACT_LABEL,
+} from './founderDisplay';
+
 const TYPE_LABELS = {
   trial: 'Trial',
   academy: 'Academy',
   squad: 'Squad',
   important: 'Important',
   star: 'Star',
-  founder_player: 'Founder Player',
-  founder: 'Founder',
+  founder_player: FOUNDER_PLAYER_CONTRACT_LABEL,
+  founder: FOUNDER_CONTRACT_LABEL,
   ownership: 'Club President',
 };
 

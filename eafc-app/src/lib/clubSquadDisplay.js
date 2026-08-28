@@ -1,5 +1,6 @@
 import { getContractTargetPlayerId, getContractType, normalizePlayerContracts } from '@/lib/playerContractFields';
 import { getPrimaryClubRole, normalizeClubRole } from '@/lib/clubStaffRoles';
+import { displayNamedFounder, isNamedFounder } from '@/lib/founderDisplay';
 
 const CLUB_ROLE_FALLBACK_LABELS = {
   president: 'President',
@@ -15,6 +16,7 @@ const CONTRACT_EXPIRING_SOON_MS = 14 * 24 * 60 * 60 * 1000;
 
 export function clubRoleLabel(role) {
   const normalized = normalizeClubRole(role) || 'member';
+  if (isNamedFounder(normalized)) return displayNamedFounder();
   return CLUB_ROLE_FALLBACK_LABELS[normalized] || normalized.replace(/_/g, ' ');
 }
 

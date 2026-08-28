@@ -1,7 +1,7 @@
-export const GOLD = '#f5c542';
-export const GOLD_LIGHT = '#ffe27a';
-export const GOLD_DARK = '#c9a227';
-export const CYAN = '#00e5ff';
-export const LIME = '#7cff6b';
-export const HUB_INK = '#071018';
-export const HUB_SURFACE = '#05080f';
+import { GAME_DAY_SILVER, TILE_BORDER } from '@/components/dashboard/CommandCenterUI';
+
+export const SILVER = GAME_DAY_SILVER;
+export const TILE_HAIRLINE = TILE_BORDER;
+export const FRAME_FOCUSED = ['#F4F7FC', '#C9D2DE', '#8E98A8'];
+export const FRAME_IDLE = ['rgba(238,243,251,0.45)', 'rgba(238,243,251,0.16)', 'rgba(238,243,251,0.08)'];
+export const OVR_BADGE = ['#F4F7FC', '#D5DCE6', '#A8B2C0'];

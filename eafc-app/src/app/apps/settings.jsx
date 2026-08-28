@@ -427,6 +427,23 @@ export default function SettingsScreen() {
 
           <AccountRoleUpgradeSection t={t} />
 
+          <SettingsSection title="Store & wallet" description="STAGE Plus, credit packs, and your STC balance." icon="bag-outline">
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity
+                onPress={() => router.push('/apps/store')}
+                style={{ flex: 1, backgroundColor: CYAN, borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}
+              >
+                <Text style={{ color: '#041018', fontWeight: '900' }}>Store</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => router.push('/apps/wallet')}
+                style={{ flex: 1, borderWidth: 1, borderColor: 'rgba(0,240,255,0.35)', borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}
+              >
+                <Text style={{ color: CYAN, fontWeight: '900' }}>Wallet</Text>
+              </TouchableOpacity>
+            </View>
+          </SettingsSection>
+
           <SettingsSection
             title="How STAGE works"
             description="Replay the onboarding tutorial. Same modal as desktop."

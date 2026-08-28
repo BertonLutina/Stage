@@ -10,12 +10,12 @@ export function isOneSignalConfigured() {
 
 export function pathFromNotificationData(data = {}) {
   const link = String(data.link || data.url || '').trim();
-  if (!link) return '/apps/notifications';
+  if (!link) return '/apps/inbox';
   if (/inbox/i.test(link)) {
     const id = String(data.related_id || data.relatedId || '').trim();
     return id ? { pathname: '/apps/inbox/[id]', params: { id } } : '/apps/inbox';
   }
-  if (/notification/i.test(link)) return '/apps/notifications';
+  if (/notification/i.test(link)) return '/apps/inbox';
   if (/game-?day|match/i.test(link)) {
     const matchId = String(data.match_id || data.matchId || data.related_id || '').trim();
     return matchId
@@ -23,7 +23,7 @@ export function pathFromNotificationData(data = {}) {
       : '/(tabs)/matches';
   }
   if (link.startsWith('/apps/')) return link;
-  return '/apps/notifications';
+  return '/apps/inbox';
 }
 
 export function getOneSignalNative() {

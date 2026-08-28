@@ -53,10 +53,9 @@ const styles = StyleSheet.create({
   wrap: {
     marginTop: 10,
     padding: 10,
-    borderRadius: 10,
-    backgroundColor: 'rgba(95,227,232,0.08)',
+    backgroundColor: 'rgba(238,243,251,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(95,227,232,0.22)',
+    borderColor: 'rgba(238,243,251,0.22)',
   },
   wrapCompact: {
     marginTop: 8,
@@ -64,7 +63,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   label: {
-    color: '#5FE3E8',
+    color: '#EEF3FB',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1.5,

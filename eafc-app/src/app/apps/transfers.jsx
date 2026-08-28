@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GamerProfileShell, GlassIconButton } from '@/components/profile/gamer/GamerProfileUI';
 import { headingStyleLg, headingStyleSm } from '@/lib/fonts';
+import PageTile from '@/components/theme/PageTile';
 import { useTransferWindowStatus } from '@/hooks/useTransferWindowStatus';
 import {
   filterTransferEntries,
@@ -25,13 +26,13 @@ import TransferFilters from '@/components/transfer/TransferFilters';
 import TransferPlayerCarousel from '@/components/transfer/TransferPlayerCarousel';
 import TransferPlayerList from '@/components/transfer/TransferPlayerList';
 import TransferWindowBanner from '@/components/transfer/TransferWindowBanner';
-import { CYAN, GOLD, GOLD_LIGHT, LIME } from '@/components/transfer/transferHubTheme';
+import { SILVER } from '@/components/transfer/transferHubTheme';
 
-function HubToggle({ label, icon, active, gold, badge, onPress }) {
+function HubToggle({ label, icon, active, badge, onPress }) {
   return (
     <TouchableOpacity
       onPress={onPress}
-      activeOpacity={0.88}
+      activeOpacity={0.85}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -39,33 +40,18 @@ function HubToggle({ label, icon, active, gold, badge, onPress }) {
         minHeight: 36,
         paddingHorizontal: 12,
         borderWidth: 1,
-        borderColor: active
-          ? 'transparent'
-          : (gold ? 'rgba(245,197,66,0.4)' : 'rgba(0,229,255,0.4)'),
-        backgroundColor: active ? GOLD_LIGHT : 'rgba(0,0,0,0.4)',
+        borderColor: active ? 'rgba(248,251,255,0.55)' : 'rgba(255,255,255,0.12)',
+        backgroundColor: active ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.35)',
       }}
     >
-      <Ionicons name={icon} size={14} color={active ? '#000' : (gold ? GOLD : CYAN)} />
-      <Text style={[headingStyleSm, { fontSize: 11, letterSpacing: 1.6, color: active ? '#000' : (gold ? GOLD : CYAN) }]}>
+      <Ionicons name={icon} size={14} color={active ? SILVER : 'rgba(255,255,255,0.5)'} />
+      <Text style={[headingStyleSm, { fontSize: 11, letterSpacing: 1.6, color: active ? SILVER : 'rgba(255,255,255,0.5)' }]}>
         {label}
       </Text>
       {badge > 0 ? (
-        <View
-          style={{
-            position: 'absolute',
-            right: -6,
-            top: -6,
-            minWidth: 16,
-            height: 16,
-            borderRadius: 8,
-            backgroundColor: CYAN,
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingHorizontal: 4,
-          }}
-        >
-          <Text style={{ color: '#000', fontSize: 9, fontWeight: '900' }}>{badge}</Text>
-        </View>
+        <Text style={{ color: active ? SILVER : 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '800' }}>
+          {badge}
+        </Text>
       ) : null}
     </TouchableOpacity>
   );
@@ -136,89 +122,83 @@ export default function TransfersScreen() {
     <GamerProfileShell>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-        <View
-          style={{
-            paddingHorizontal: 16,
-            paddingTop: 8,
-            paddingBottom: 12,
-            borderBottomWidth: 1,
-            borderBottomColor: 'rgba(245,197,66,0.2)',
-            backgroundColor: 'rgba(7,16,24,0.72)',
-            gap: 12,
-          }}
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 }}>
+          <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
+        </View>
+
+        <PageTile
+          tileKey="transfers"
+          eyebrow="TRANSFER HUB"
+          subtitle={`${rows.length} player${rows.length === 1 ? '' : 's'} · ${freeCount} free · ${expiringCount} expiring`}
+          style={{ flex: 1, marginHorizontal: 12, marginBottom: 12 }}
+          contentStyle={{ flex: 1, paddingHorizontal: 12, gap: 12 }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-            <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={{ color: CYAN, fontSize: 10, fontWeight: '700', letterSpacing: 3.2 }}>
-                TRANSFER HUB
-              </Text>
-              <Text style={[headingStyleLg, { color: '#fff', fontSize: 34, marginTop: 2, letterSpacing: 1 }]}>
-                TRANSFERS
-              </Text>
-              <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 6 }}>
-                {rows.length} player{rows.length === 1 ? '' : 's'} found
-                <Text style={{ color: 'rgba(255,255,255,0.2)' }}>  •  </Text>
-                <Text style={{ color: LIME }}>{freeCount} free</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.2)' }}>  •  </Text>
-                <Text style={{ color: GOLD }}>{expiringCount} expiring</Text>
-              </Text>
+          <View style={{ gap: 12 }}>
+            <Text style={[headingStyleLg, { color: '#fff', fontSize: 34, letterSpacing: 1 }]}>
+              TRANSFERS
+            </Text>
+            <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12 }}>
+              {rows.length} player{rows.length === 1 ? '' : 's'} found
+              <Text style={{ color: 'rgba(255,255,255,0.2)' }}>  •  </Text>
+              <Text style={{ color: SILVER }}>{freeCount} free</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.2)' }}>  •  </Text>
+              <Text style={{ color: SILVER }}>{expiringCount} expiring</Text>
+            </Text>
+
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <HubToggle
+                label="Carousel"
+                icon="images-outline"
+                active={viewMode === 'carousel'}
+                onPress={() => setViewMode('carousel')}
+              />
+              <HubToggle
+                label="List"
+                icon="list-outline"
+                active={viewMode === 'list'}
+                onPress={() => setViewMode('list')}
+              />
+              <HubToggle
+                label="Filters"
+                icon="options-outline"
+                badge={filterCount}
+                onPress={() => setFiltersOpen(true)}
+              />
             </View>
           </View>
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            <HubToggle
-              label="Carousel"
-              icon="images-outline"
-              gold
-              active={viewMode === 'carousel'}
-              onPress={() => setViewMode('carousel')}
-            />
-            <HubToggle
-              label="List"
-              icon="list-outline"
-              active={viewMode === 'list'}
-              onPress={() => setViewMode('list')}
-            />
-            <HubToggle
-              label="Filters"
-              icon="options-outline"
-              badge={filterCount}
-              onPress={() => setFiltersOpen(true)}
-            />
-          </View>
-        </View>
-
-        {loading ? (
-          <ActivityIndicator color={GOLD} style={{ marginTop: 48 }} />
-        ) : viewMode === 'list' ? (
-          <ScrollView
-            contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, paddingBottom: 120 }}
-            refreshControl={(
-              <RefreshControl refreshing={Boolean(refreshing)} onRefresh={() => { setRefreshing(true); load(); }} tintColor={GOLD} />
-            )}
-          >
-            <TransferPlayerList
-              players={rows}
+          {loading ? (
+            <ActivityIndicator color={SILVER} style={{ marginTop: 48 }} />
+          ) : viewMode === 'list' ? (
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{ paddingVertical: 12, paddingBottom: 40 }}
+              refreshControl={(
+                <RefreshControl refreshing={Boolean(refreshing)} onRefresh={() => { setRefreshing(true); load(); }} tintColor={SILVER} />
+              )}
+            >
+              <TransferPlayerList
+                players={rows}
+                selectedId={selected?.player?.id}
+                onSelect={selectEntry}
+              />
+            </ScrollView>
+          ) : (
+            <TransferPlayerCarousel
+              entries={rows}
               selectedId={selected?.player?.id}
               onSelect={selectEntry}
             />
-          </ScrollView>
-        ) : (
-          <TransferPlayerCarousel
-            entries={rows}
-            selectedId={selected?.player?.id}
-            onSelect={selectEntry}
-          />
-        )}
+          )}
+        </PageTile>
       </SafeAreaView>
 
       <Modal visible={filtersOpen} transparent animationType="slide" onRequestClose={() => setFiltersOpen(false)}>
         <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.62)' }}>
           <Pressable style={{ flex: 1 }} onPress={() => setFiltersOpen(false)} />
-          <View style={{ backgroundColor: '#071018', borderTopWidth: 1, borderColor: 'rgba(245,197,66,0.2)', maxHeight: '86%' }}>
+          <View style={{ backgroundColor: '#071018', borderTopWidth: 1, borderColor: 'rgba(238,243,251,0.22)', maxHeight: '86%' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 8 }}>
-              <Text style={[headingStyleSm, { color: CYAN, letterSpacing: 2.4 }]}>Filters</Text>
+              <Text style={[headingStyleSm, { color: SILVER, letterSpacing: 2.4 }]}>Filters</Text>
               <TouchableOpacity onPress={() => setFiltersOpen(false)} hitSlop={10}>
                 <Ionicons name="close" size={22} color="rgba(255,255,255,0.7)" />
               </TouchableOpacity>

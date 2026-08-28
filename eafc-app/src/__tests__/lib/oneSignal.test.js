@@ -27,12 +27,12 @@ describe('OneSignal mobile helpers', () => {
   });
 
   test('maps Stage links to native screens', () => {
-    expect(pathFromNotificationData({})).toBe('/apps/notifications');
+    expect(pathFromNotificationData({})).toBe('/apps/inbox');
     expect(pathFromNotificationData({ link: '/inbox?id=abc', related_id: 'abc' })).toEqual({
       pathname: '/apps/inbox/[id]',
       params: { id: 'abc' },
     });
-    expect(pathFromNotificationData({ link: '/notifications' })).toBe('/apps/notifications');
+    expect(pathFromNotificationData({ link: '/notifications' })).toBe('/apps/inbox');
     expect(pathFromNotificationData({ link: '/matches/game-day', match_id: 'm1' })).toEqual({
       pathname: '/(tabs)/matches/matchdetailscreen',
       params: { matchId: 'm1' },

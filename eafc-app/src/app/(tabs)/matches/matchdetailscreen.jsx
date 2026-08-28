@@ -29,16 +29,20 @@ import {
   minutesUntil,
   reloadMatch,
   resolveMatchSides,
+  sameId,
 } from '@/lib/gameDayOps';
 import { getKickoffControls, getResultSubmissionControls } from '@/lib/gameDayResultFlow';
 import GameDayWagerCard from '@/components/matches/GameDayWagerCard';
 import GameDayFixtureActions from '@/components/matches/GameDayFixtureActions';
-import GameDayDressingRoom from '@/components/matches/GameDayDressingRoom';
+import GameDayDressingRoomPanel from '@/components/matches/GameDayDressingRoomPanel';
 import GameDayResultSheet from '@/components/matches/GameDayResultSheet';
 import GameDayScoreReport from '@/components/matches/GameDayScoreReport';
 import GameDayStreamCard from '@/components/matches/GameDayStreamCard';
 import GameDayKickoffArena from '@/components/matches/GameDayKickoffArena';
+import GameDayTileBackgroundDialog from '@/components/matches/GameDayTileBackgroundDialog';
 import { resolveCrestUrl } from '@/lib/gameDayPresentation';
+import { getGameDayTileBackgroundConfig } from '@/lib/gameDayTileBackgrounds';
+import { hasStagePlus } from '@/lib/subscriptionUtils';
 import { useGameDayMatchRealtime } from '@/hooks/useGameDayMatchRealtime';
 
 export default function MatchDetailScreen() {
@@ -54,6 +58,7 @@ export default function MatchDetailScreen() {
   const [error, setError] = useState('');
   const [showResult, setShowResult] = useState(false);
   const [crests, setCrests] = useState({ home: null, away: null });
+  const [tileDialog, setTileDialog] = useState(null);
 
   const load = useCallback(async () => {
     if (!matchId) return;
@@ -236,6 +241,7 @@ export default function MatchDetailScreen() {
           contentContainerStyle={{ paddingBottom: 120 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={CYAN} />}
         >
+          <View style={{ marginHorizontal: 12, gap: 12 }}>
           <GameDayKickoffArena
             homeName={sides.homeName}
             awayName={sides.awayName}
@@ -246,45 +252,47 @@ export default function MatchDetailScreen() {
             date={game.scheduled_date}
             status={game.status}
             statusLabel={MATCH_STATUS_LABEL[game.status] || game.status}
-            competitionLabel={game.competition_context || (game.tournament_id === 'ranked' ? 'Ranked Match' : 'Fixture')}
+            competitionLabel={game.competition_context || (game.tournament_id === 'ranked' ? 'Ranked Match' : 'MATCH DETAILS')}
             homeScore={game.home_score}
             awayScore={game.away_score}
             wagerStc={game.wager_stc}
             wagerLocked={Boolean(game.wager_home_locked && game.wager_away_locked)}
+            backgroundConfig={getGameDayTileBackgroundConfig(myPlayer, 'match_details')}
+            onChangeBackground={myPlayer ? () => setTileDialog({ tileKey: 'match_details', title: 'Match Details' }) : undefined}
           >
             {kickoffControls.showHomeKickoff ? (
               <View style={{ gap: 8 }}>
                 {kickoffControls.tooEarly ? (
-                  <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12, textAlign: 'center' }}>
+                  <StatusBox icon="time-outline" iconColor="#F8FBFF">
                     Kickoff available 15 minutes before match time.
-                  </Text>
+                  </StatusBox>
                 ) : null}
                 {kickoffControls.dressingBlocked && !kickoffControls.tooEarly ? (
-                  <Text style={{ color: '#F5C542', fontSize: 12, textAlign: 'center' }}>
-                    Waiting for both dressing rooms
-                  </Text>
+                  <StatusBox icon="person" iconColor="#EEF3FB" title="Kickoff blocked — dressing rooms not ready">
+                    Both clubs need at least one player seated.
+                  </StatusBox>
                 ) : null}
                 <TouchableOpacity
                   onPress={onKickoff}
                   disabled={kickoffLoading || !kickoffControls.canPressKickoff}
                   style={{
-                    backgroundColor: kickoffControls.canPressKickoff ? '#F5C542' : '#2A2410',
+                    backgroundColor: kickoffControls.canPressKickoff ? '#EEF3FB' : '#1F2430',
                     borderWidth: 1,
-                    borderColor: kickoffControls.canPressKickoff ? '#F5C542' : '#8A7A40',
+                    borderColor: kickoffControls.canPressKickoff ? '#EEF3FB' : '#161B24',
                     paddingVertical: 16,
                     alignItems: 'center',
                     opacity: kickoffLoading ? 0.6 : 1,
-                    shadowColor: '#F5C542',
-                    shadowOpacity: kickoffControls.canPressKickoff ? 0.45 : 0,
+                    shadowColor: '#EEF3FB',
+                    shadowOpacity: kickoffControls.canPressKickoff ? 0.34 : 0,
                     shadowRadius: 18,
                     shadowOffset: { width: 0, height: 0 },
                   }}
                 >
                   {kickoffLoading
-                    ? <ActivityIndicator color="#041018" />
+                    ? <ActivityIndicator color="#111827" />
                     : (
                       <Text style={[headingStyle, {
-                        color: kickoffControls.canPressKickoff ? '#041018' : '#8A7A40',
+                        color: kickoffControls.canPressKickoff ? '#111827' : 'rgba(255,255,255,0.25)',
                         letterSpacing: 3,
                         fontSize: 18,
                       }]}
@@ -296,13 +304,40 @@ export default function MatchDetailScreen() {
               </View>
             ) : null}
             {kickoffControls.showAwayWaiting ? (
-              <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12, textAlign: 'center' }}>
-                Waiting for home team to kick off.
-              </Text>
+              <View style={{ gap: 8 }}>
+                <StatusBox icon="time-outline" iconColor={CYAN}>
+                  Waiting for home team to kick off.
+                </StatusBox>
+                {sides.isClubMatch && !roomsReady ? (
+                  <StatusBox icon="person" iconColor="#EEF3FB" title="Kickoff blocked — dressing rooms not ready">
+                    Take a seat in your dressing room. {sides.homeName} also needs at least one player seated.
+                  </StatusBox>
+                ) : null}
+              </View>
             ) : null}
           </GameDayKickoffArena>
 
-          <View style={{ paddingHorizontal: 16, gap: 12, marginTop: 12 }}>
+          {sides.isClubMatch && sides.isMyMatch && myClub && !isDisputed ? (
+            <GameDayDressingRoomPanel
+              game={game}
+              myClub={myClub}
+              myPlayer={myPlayer}
+              dressingCounts={dressingCounts}
+              backgroundConfig={getGameDayTileBackgroundConfig(myPlayer, 'dressing_room')}
+              onChangeBackground={myPlayer ? () => setTileDialog({ tileKey: 'dressing_room', title: 'Dressing Room' }) : undefined}
+              onSeatChange={({ clubId, seatedPlayers }) => {
+                const count = Array.isArray(seatedPlayers) ? seatedPlayers.length : 0;
+                setDressingCounts((prev) => {
+                  if (sameId(clubId, game.home_club_id)) return { ...prev, home: count };
+                  if (sameId(clubId, game.away_club_id)) return { ...prev, away: count };
+                  return prev;
+                });
+              }}
+            />
+          ) : null}
+          </View>
+
+          <View style={{ paddingHorizontal: 12, gap: 12, marginTop: 12 }}>
           {error ? (
             <SectionCard accent="rose">
               <Text style={{ color: FUT.rose, fontSize: 12 }}>{error}</Text>
@@ -331,10 +366,6 @@ export default function MatchDetailScreen() {
             isCompleted={isCompleted}
             onGameUpdate={setGame}
           />
-
-          {sides.isClubMatch && sides.isMyMatch ? (
-            <GameDayDressingRoom game={game} myClub={myClub} myPlayer={myPlayer} />
-          ) : null}
 
           {(isLive || isCompleted || isDisputed || resultControls.homeResultSubmitted || resultControls.awayResultSubmitted) ? (
             <GameDayScoreReport
@@ -379,6 +410,15 @@ export default function MatchDetailScreen() {
           isHomeTeam={sides.amIHomeTeam}
           onSubmitted={onResultSubmitted}
         />
+        <GameDayTileBackgroundDialog
+          visible={Boolean(tileDialog)}
+          onClose={() => setTileDialog(null)}
+          player={myPlayer}
+          tileKey={tileDialog?.tileKey}
+          tileTitle={tileDialog?.title}
+          canCustomize={hasStagePlus(myPlayer?.subscription)}
+          onPlayerChanged={(updated) => setMyPlayer((prev) => ({ ...(prev || {}), ...updated }))}
+        />
       </SafeAreaView>
     </GamerProfileShell>
   );
@@ -392,6 +432,32 @@ const secondaryBtn = {
   justifyContent: 'center',
   borderWidth: 1,
   borderColor: 'rgba(0,232,255,0.3)',
-  borderRadius: 12,
   paddingVertical: 12,
 };
+
+function StatusBox({ icon, iconColor, title, children }) {
+  return (
+    <View style={{
+      flexDirection: 'row',
+      alignItems: title ? 'flex-start' : 'center',
+      gap: 8,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.15)',
+      backgroundColor: 'rgba(0,0,0,0.65)',
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    }}
+    >
+      <Ionicons name={icon} size={14} color={iconColor} style={{ marginTop: title ? 2 : 0 }} />
+      <View style={{ flex: 1 }}>
+        {title ? (
+          <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>{title}</Text>
+        ) : null}
+        <Text style={{ color: title ? 'rgba(255,255,255,0.9)' : '#fff', fontSize: title ? 10 : 12 }}>
+          {children}
+        </Text>
+      </View>
+    </View>
+  );
+}
+

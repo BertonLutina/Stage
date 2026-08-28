@@ -194,6 +194,7 @@ export default function useMatchesHub() {
     reload: load,
     myClub,
     myPlayer,
+    setMyPlayer,
     events,
     leagueFilter,
     setLeagueFilter,

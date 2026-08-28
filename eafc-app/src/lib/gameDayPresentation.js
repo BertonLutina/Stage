@@ -51,6 +51,32 @@ export function isActiveGameDayMatch(match, now = Date.now()) {
   return true;
 }
 
+/** Scale Match Details crests/type to the panel width so phones do not overflow. */
+export function gameDayArenaLayout(panelWidth, { compact: forceCompact } = {}) {
+  const w = Math.max(240, Number(panelWidth) || 360);
+  const compact = forceCompact === true || (forceCompact !== false && w < 420);
+  const padH = compact ? 12 : 16;
+  const vsW = compact ? 52 : 68;
+  const vsH = compact ? 40 : 52;
+  const vsCol = vsW + 8;
+  const sideBudget = Math.max(64, Math.floor((w - padH * 2 - vsCol) / 2));
+  const crest = Math.min(compact ? 108 : 152, sideBudget);
+  return {
+    compact,
+    padH,
+    padTop: compact ? 14 : 20,
+    padBottom: compact ? 14 : 20,
+    crest,
+    vsW,
+    vsH,
+    nameSize: Math.max(12, Math.min(18, Math.round(crest * 0.125))),
+    clockSize: compact ? 26 : 34,
+    clockGap: compact ? 14 : 28,
+    circle: Math.min(200, Math.round(w * 0.46)),
+    matchupMt: compact ? 12 : 20,
+  };
+}
+
 export function resolveCrestUrl(game, side, myClub, myPlayer) {
   if (!game) return null;
   const isHome = side === 'home';

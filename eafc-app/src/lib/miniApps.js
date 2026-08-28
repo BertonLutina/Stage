@@ -1,6 +1,7 @@
 /**
- * Mini Apps catalog — mirrors Stage web MobileMoreSheet, minus native tabs.
- * Home, Matches, Tournaments, and Profile stay in the bottom nav only.
+ * Mobile Apps catalog — only destinations that belong on the phone.
+ * Game Day, Tournaments, Home, and Profile stay in the bottom tabs.
+ * GOST / regional leagues / register live on the Tournaments tab.
  */
 
 const NATIVE_TAB_HREFS = new Set([
@@ -19,7 +20,7 @@ function withoutNativeTabs(groups) {
     .filter((group) => group.items.length > 0);
 }
 
-const MARKET_ITEMS = [
+const DISCOVER_ITEMS = [
   {
     id: 'find-players',
     label: 'Find Players',
@@ -29,19 +30,11 @@ const MARKET_ITEMS = [
     ready: true,
   },
   {
-    id: 'find-presidents',
-    label: 'Find Presidents',
-    icon: 'star-outline',
-    keywords: ['owners', 'presidents', 'directory'],
-    href: '/apps/presidents',
-    ready: true,
-  },
-  {
-    id: 'scouting',
-    label: 'Scouting',
-    icon: 'eye-outline',
-    keywords: ['scout', 'report', 'scouting'],
-    href: '/apps/scouting',
+    id: 'find-clubs',
+    label: 'Find Clubs',
+    icon: 'shield-outline',
+    keywords: ['search clubs', 'directory', 'club'],
+    href: '/apps/find-clubs',
     ready: true,
   },
   {
@@ -52,12 +45,23 @@ const MARKET_ITEMS = [
     href: '/apps/transfers',
     ready: true,
   },
+];
+
+const ACCOUNT_ITEMS = [
   {
-    id: 'lifestyle',
-    label: 'Lifestyle',
-    icon: 'cafe-outline',
-    keywords: ['assets', 'off pitch'],
-    href: '/apps/lifestyle',
+    id: 'inbox',
+    label: 'Inbox',
+    icon: 'mail-outline',
+    keywords: ['messages', 'offers', 'contracts', 'notifications'],
+    href: '/apps/inbox',
+    ready: true,
+  },
+  {
+    id: 'store',
+    label: 'Store',
+    icon: 'bag-outline',
+    keywords: ['shop', 'stage plus', 'credits'],
+    href: '/apps/store',
     ready: true,
   },
   {
@@ -66,122 +70,6 @@ const MARKET_ITEMS = [
     icon: 'flash-outline',
     keywords: ['stc', 'money', 'coins'],
     href: '/apps/wallet',
-    ready: true,
-  },
-];
-
-const MATCH_ITEMS = [
-  {
-    id: 'schedule',
-    label: 'Schedule',
-    icon: 'calendar-outline',
-    keywords: ['calendar', 'fixtures', 'agenda'],
-    href: '/apps/schedule',
-    ready: true,
-  },
-  {
-    id: 'inbox',
-    label: 'Inbox',
-    icon: 'mail-outline',
-    keywords: ['messages', 'offers', 'contracts'],
-    href: '/apps/inbox',
-    ready: true,
-  },
-  {
-    id: 'notifications',
-    label: 'Notifications',
-    icon: 'notifications-outline',
-    keywords: ['alerts', 'bell'],
-    href: '/apps/notifications',
-    ready: true,
-  },
-  {
-    id: 'disputes',
-    label: 'Disputes',
-    icon: 'hammer-outline',
-    keywords: ['admin', 'litige', 'resolve', 'proof', 'screenshot'],
-    href: '/apps/disputes',
-    ready: true,
-  },
-];
-
-const COMPETE_ITEMS = [
-  {
-    id: 'international',
-    label: 'International',
-    icon: 'globe-outline',
-    keywords: ['nations', 'world'],
-    href: '/apps/international',
-    ready: true,
-  },
-  {
-    id: 'register',
-    label: 'Register',
-    icon: 'shield-checkmark-outline',
-    keywords: ['league', 'sign up'],
-    href: '/apps/register',
-    ready: true,
-  },
-  {
-    id: 'competitions',
-    label: 'Competitions',
-    icon: 'podium-outline',
-    keywords: ['league', 'season', 'table', 'supreme', 'elite'],
-    href: '/apps/competitions',
-    ready: true,
-  },
-  {
-    id: 'rankings',
-    label: 'Rankings',
-    icon: 'stats-chart-outline',
-    keywords: ['leaderboard', 'table'],
-    href: '/apps/rankings',
-    ready: true,
-  },
-];
-
-const COMMUNITY_ITEMS = [
-  {
-    id: 'feed',
-    label: 'Feed',
-    icon: 'newspaper-outline',
-    keywords: ['social', 'posts'],
-    href: '/social',
-    ready: true,
-  },
-  {
-    id: 'discord',
-    label: 'Discord',
-    icon: 'logo-discord',
-    keywords: ['community', 'chat'],
-    href: '/apps/discord',
-    ready: true,
-  },
-  {
-    id: 'follow-back',
-    label: 'Follow Back',
-    icon: 'heart-outline',
-    keywords: ['followers'],
-    href: '/apps/follow-back',
-    ready: true,
-  },
-  {
-    id: 'news',
-    label: 'News',
-    icon: 'document-text-outline',
-    keywords: ['updates'],
-    href: '/apps/news',
-    ready: true,
-  },
-];
-
-const ACCOUNT_ITEMS = [
-  {
-    id: 'store',
-    label: 'Store',
-    icon: 'bag-outline',
-    keywords: ['shop'],
-    href: '/apps/store',
     ready: true,
   },
   {
@@ -195,76 +83,11 @@ const ACCOUNT_ITEMS = [
 ];
 
 export const MINI_APP_GROUPS_PLAYER = [
-  { id: 'match', label: 'Match', items: MATCH_ITEMS },
-  { id: 'compete', label: 'Compete', items: COMPETE_ITEMS },
-  {
-    id: 'club',
-    label: 'Club',
-    items: [
-      {
-        id: 'club-players',
-        label: 'Players',
-        icon: 'shirt-outline',
-        keywords: ['squad', 'roster', 'club players'],
-        href: '/(tabs)/profile',
-        params: { tab: 'squad' },
-        keepOnNativeTab: true,
-        ready: true,
-      },
-      {
-        id: 'free-agents',
-        label: 'Free Agents',
-        icon: 'person-add-outline',
-        keywords: ['unsigned', 'available'],
-        href: '/apps/free-agents',
-        ready: true,
-      },
-    ],
-  },
-  { id: 'market', label: 'Market', items: MARKET_ITEMS },
-  { id: 'community', label: 'Community', items: COMMUNITY_ITEMS },
+  { id: 'discover', label: 'Discover', items: DISCOVER_ITEMS },
   { id: 'account', label: 'Account', items: ACCOUNT_ITEMS },
 ];
 
-export const MINI_APP_GROUPS_PRESIDENT = [
-  { id: 'match', label: 'Match', items: MATCH_ITEMS },
-  {
-    id: 'club',
-    label: 'Club',
-    items: [
-      {
-        id: 'club-players',
-        label: 'Players',
-        icon: 'shirt-outline',
-        keywords: ['squad', 'roster', 'club players'],
-        href: '/(tabs)/profile',
-        params: { tab: 'squad' },
-        keepOnNativeTab: true,
-        ready: true,
-      },
-      {
-        id: 'contracts',
-        label: 'Contracts',
-        icon: 'document-text-outline',
-        keywords: ['offers', 'wage'],
-        href: '/apps/contracts',
-        ready: true,
-      },
-      {
-        id: 'free-agents',
-        label: 'Free Agents',
-        icon: 'person-add-outline',
-        keywords: ['unsigned', 'available'],
-        href: '/apps/free-agents',
-        ready: true,
-      },
-    ],
-  },
-  { id: 'market', label: 'Market', items: MARKET_ITEMS },
-  { id: 'compete', label: 'Compete', items: COMPETE_ITEMS },
-  { id: 'community', label: 'Community', items: COMMUNITY_ITEMS },
-  { id: 'account', label: 'Account', items: ACCOUNT_ITEMS },
-];
+export const MINI_APP_GROUPS_PRESIDENT = MINI_APP_GROUPS_PLAYER;
 
 export function getMiniAppGroups(accountMode = 'player') {
   const groups = accountMode === 'club' ? MINI_APP_GROUPS_PRESIDENT : MINI_APP_GROUPS_PLAYER;

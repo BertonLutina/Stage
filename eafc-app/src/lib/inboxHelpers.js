@@ -51,7 +51,7 @@ export function resolveNotificationHref(link) {
     return id ? { pathname: '/apps/inbox/[id]', params: { id } } : { pathname: '/apps/inbox' };
   }
 
-  if (path.startsWith('/schedule')) return { pathname: '/apps/schedule' };
+  if (path.startsWith('/schedule') || path.startsWith('/game-day')) return { pathname: '/(tabs)/matches' };
   if (path.startsWith('/apps/')) {
     return { pathname: path.split('?')[0] };
   }

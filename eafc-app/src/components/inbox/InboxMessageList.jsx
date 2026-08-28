@@ -88,7 +88,7 @@ export default function InboxMessageList({ messages, onSelect, ListHeaderCompone
 
   if (!messages.length) {
     return (
-      <View style={styles.empty}>
+      <View style={[styles.empty, { flex: 1 }]}>
         <Ionicons name="mail-outline" size={40} color="rgba(255,255,255,0.2)" />
         <Text style={styles.emptyTitle}>Your inbox is empty</Text>
         <Text style={styles.emptyHint}>Contract offers, match proposals, and club messages land here.</Text>
@@ -98,6 +98,7 @@ export default function InboxMessageList({ messages, onSelect, ListHeaderCompone
 
   return (
     <SectionList
+      style={{ flex: 1 }}
       sections={sections}
       keyExtractor={(item) => String(item.id)}
       stickySectionHeadersEnabled={false}

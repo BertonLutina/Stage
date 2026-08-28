@@ -9,6 +9,9 @@ import { readAccountMode } from '@/lib/accountMode';
 import { getMiniAppGroups, filterMiniAppGroups } from '@/lib/miniApps';
 import { headingStyle, headingStyleSm } from '@/lib/fonts';
 import { GamerProfileShell, useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
+import { GAME_DAY_SILVER, TILE_BORDER } from '@/components/dashboard/CommandCenterUI';
+import PageTile from '@/components/theme/PageTile';
+import { CARD_RADIUS } from '@/lib/stageTheme';
 
 function AppTile({ item, onPress, theme }) {
   const ready = Boolean(item.ready);
@@ -21,9 +24,9 @@ function AppTile({ item, onPress, theme }) {
       style={{
         width: '31%',
         minHeight: 104,
-        borderRadius: 18,
+        borderRadius: CARD_RADIUS,
         borderWidth: 1,
-        borderColor: ready ? theme.tileBorder : 'rgba(127,127,127,0.18)',
+        borderColor: ready ? TILE_BORDER : 'rgba(127,127,127,0.18)',
         backgroundColor: ready ? theme.tileFill : theme.card,
         alignItems: 'center',
         justifyContent: 'center',
@@ -35,10 +38,10 @@ function AppTile({ item, onPress, theme }) {
       <View style={{
         width: 44,
         height: 44,
-        borderRadius: 14,
+        borderRadius: CARD_RADIUS,
         backgroundColor: theme.inputFill,
         borderWidth: 1,
-        borderColor: ready ? theme.tileBorder : 'rgba(127,127,127,0.16)',
+        borderColor: ready ? TILE_BORDER : 'rgba(127,127,127,0.16)',
         alignItems: 'center',
         justifyContent: 'center',
       }}
@@ -46,7 +49,7 @@ function AppTile({ item, onPress, theme }) {
         <Ionicons
           name={item.icon}
           size={22}
-          color={ready ? theme.primary : theme.muted}
+          color={ready ? GAME_DAY_SILVER : theme.muted}
         />
       </View>
       <Text
@@ -96,7 +99,7 @@ export default function SearchIndex() {
       <StatusBar barStyle={theme.barStyle} translucent backgroundColor="transparent" />
       <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 }}>
-          <Text style={[headingStyleSm, { color: theme.primary, fontSize: 10, letterSpacing: 2, opacity: 0.8 }]}>
+          <Text style={[headingStyleSm, { color: GAME_DAY_SILVER, fontSize: 10, letterSpacing: 2 }]}>
             STAGE
           </Text>
           <Text style={[headingStyle, { color: theme.text, marginTop: 2 }]}>
@@ -109,7 +112,7 @@ export default function SearchIndex() {
             lineHeight: 18,
           }}
           >
-            Find Transfers, Inbox, Wallet, and the rest of STAGE.
+            Find players, clubs, transfers, inbox, and settings.
           </Text>
 
           <View style={{
@@ -125,11 +128,11 @@ export default function SearchIndex() {
             paddingHorizontal: 14,
           }}
           >
-            <Ionicons name="search" size={20} color={theme.primary} />
+            <Ionicons name="search" size={20} color={GAME_DAY_SILVER} />
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder="Search apps — Transfer, Inbox…"
+              placeholder="Search — players, clubs, inbox…"
               placeholderTextColor={theme.muted}
               autoCorrect={false}
               autoCapitalize="none"
@@ -152,16 +155,20 @@ export default function SearchIndex() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, gap: 20 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
         >
+          <PageTile
+            tileKey="apps"
+            eyebrow="APPS"
+            subtitle="Find players, clubs, transfers"
+            contentStyle={{ paddingHorizontal: 12, gap: 16 }}
+          >
           {groups.length === 0 ? (
             <View style={{
               paddingVertical: 48,
               alignItems: 'center',
-              borderRadius: 2,
               borderWidth: 1,
-              borderColor: theme.tileBorder,
-              backgroundColor: theme.card,
+              borderColor: TILE_BORDER,
             }}
             >
               <Ionicons name="search-outline" size={36} color={theme.muted} />
@@ -173,13 +180,12 @@ export default function SearchIndex() {
             groups.map((group) => (
               <View key={group.id} style={{ gap: 10 }}>
                 <Text style={{
-                  color: theme.primary,
+                  color: GAME_DAY_SILVER,
                   fontSize: 11,
                   fontWeight: '800',
                   letterSpacing: 1.8,
                   textTransform: 'uppercase',
                   paddingHorizontal: 2,
-                  opacity: 0.7,
                 }}
                 >
                   {group.label}
@@ -197,6 +203,7 @@ export default function SearchIndex() {
               </View>
             ))
           )}
+          </PageTile>
         </ScrollView>
       </SafeAreaView>
     </GamerProfileShell>

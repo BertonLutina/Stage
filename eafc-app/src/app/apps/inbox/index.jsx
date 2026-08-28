@@ -12,9 +12,9 @@ import InboxMessageList from '@/components/inbox/InboxMessageList';
 import {
   GamerProfileShell,
   GlassIconButton,
-  CYAN,
 } from '@/components/profile/gamer/GamerProfileUI';
-import { headingStyle, headingStyleSm } from '@/lib/fonts';
+import { GAME_DAY_SILVER } from '@/components/dashboard/CommandCenterUI';
+import PageTile from '@/components/theme/PageTile';
 
 /**
  * Inbox — Outlook-style list (Stage theme). Deep-link: /apps/inbox?id=
@@ -117,7 +117,7 @@ export default function InboxScreen() {
     return (
       <GamerProfileShell>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={CYAN} size="large" />
+          <ActivityIndicator color={GAME_DAY_SILVER} size="large" />
         </View>
       </GamerProfileShell>
     );
@@ -139,56 +139,38 @@ export default function InboxScreen() {
         }}
         >
           <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
-          <View style={{ flex: 1 }}>
-            <Text style={[headingStyleSm, { color: CYAN, fontSize: 10, letterSpacing: 2 }]}>STAGE</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={[headingStyle, { color: '#fff' }]}>Inbox</Text>
-              {unreadCount > 0 ? (
-                <View style={{
-                  minWidth: 22,
-                  height: 22,
-                  borderRadius: 11,
-                  paddingHorizontal: 6,
-                  backgroundColor: CYAN,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-                >
-                  <Text style={{ color: '#031018', fontSize: 11, fontWeight: '900' }}>{unreadCount}</Text>
-                </View>
-              ) : null}
-            </View>
-          </View>
+          <View style={{ flex: 1 }} />
           {unreadCount > 0 ? (
             <TouchableOpacity onPress={onMarkAll} hitSlop={8} style={{ padding: 8 }}>
-              <Ionicons name="checkmark-done" size={20} color={CYAN} />
+              <Ionicons name="checkmark-done" size={20} color={GAME_DAY_SILVER} />
             </TouchableOpacity>
           ) : null}
-          <TouchableOpacity
-            onPress={() => router.push('/apps/notifications')}
-            hitSlop={8}
-            style={{ padding: 8 }}
-          >
-            <Ionicons name="notifications-outline" size={20} color="rgba(255,255,255,0.7)" />
-          </TouchableOpacity>
         </View>
 
         {error ? (
           <View style={{ padding: 16 }}>
             <Text style={{ color: '#FF4D6D', marginBottom: 8 }}>{error}</Text>
             <TouchableOpacity onPress={load}>
-              <Text style={{ color: CYAN, fontWeight: '800' }}>Retry</Text>
+              <Text style={{ color: GAME_DAY_SILVER, fontWeight: '800' }}>Retry</Text>
             </TouchableOpacity>
           </View>
         ) : null}
 
+        <PageTile
+          tileKey="inbox"
+          eyebrow="INBOX"
+          subtitle={unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
+          style={{ flex: 1, marginHorizontal: 12, marginBottom: 12 }}
+          contentStyle={{ flex: 1, paddingHorizontal: 0 }}
+        >
         <InboxMessageList
           messages={messages}
           onSelect={openMessage}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={CYAN} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={GAME_DAY_SILVER} />
           }
         />
+        </PageTile>
       </SafeAreaView>
     </GamerProfileShell>
   );

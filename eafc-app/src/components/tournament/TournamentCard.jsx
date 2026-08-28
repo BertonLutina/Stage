@@ -2,10 +2,7 @@ import React from 'react';
 import { View, Image, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import TournamentCountdown from './TournamentCountdown';
-import { CYAN, AMBER } from '@/components/profile/gamer/GamerProfileUI';
-import { FUT } from '@/components/dashboard/CommandCenterUI';
-import LiveGlass from '@/components/theme/LiveGlass';
-import useThemeStore from '@/store/themeStore';
+import { GAME_DAY_SILVER, TILE_BORDER, TILE_FILL } from '@/components/dashboard/CommandCenterUI';
 import { CARD_RADIUS } from '@/lib/stageTheme';
 
 const TYPE_LABEL = {
@@ -22,37 +19,26 @@ const TYPE_LABEL = {
   league_playoffs: 'League + PO',
 };
 
-const TYPE_COLOR = {
-  knockout: '#60A5FA',
-  league: FUT.lime,
-  group_stage: '#A78BFA',
-  double_elimination: '#F472B6',
-  swiss: AMBER,
-  swiss_ucl: AMBER,
-};
-
 function statusMeta(status) {
   if (status === 'registration') {
-    return { label: 'Open', bg: 'rgba(124,255,107,0.16)', color: FUT.lime, border: 'rgba(124,255,107,0.4)' };
+    return { label: 'Open' };
   }
   if (status === 'in_progress' || status === 'active') {
-    return { label: 'Live', bg: 'rgba(0,232,255,0.16)', color: FUT.cyan, border: 'rgba(0,232,255,0.4)' };
+    return { label: 'Live' };
   }
   if (status === 'completed') {
-    return { label: 'Done', bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.65)', border: 'rgba(255,255,255,0.14)' };
+    return { label: 'Done' };
   }
-  return { label: String(status || 'Draft'), bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)', border: 'rgba(255,255,255,0.14)' };
+  return { label: String(status || 'Draft') };
 }
 
 export default function TournamentCard({ tournament: t, trophyItems = [], onPress }) {
-  const tokens = useThemeStore((s) => s.tokens);
   const registered = t.registered_clubs?.length || t.teams?.length || t.registered_count || 0;
   const maxTeams = Math.max(Number(t.max_teams) || 8, 1);
   const fillPct = Math.min(100, Math.round((registered / maxTeams) * 100));
   const isFull = registered >= maxTeams;
   const typeKey = t.type || t.format;
   const typeLbl = TYPE_LABEL[typeKey] || String(typeKey || 'Tournament').toUpperCase();
-  const typeColor = TYPE_COLOR[typeKey] || CYAN;
   const status = statusMeta(t.status);
   const trophyUrl =
     t.trophy_url || trophyItems.find((i) => String(i.id) === String(t.trophy_item_id))?.image_url;
@@ -67,106 +53,79 @@ export default function TournamentCard({ tournament: t, trophyItems = [], onPres
     : null;
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.88} style={styles.cardShadow}>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.88}>
       <View style={styles.cardClip}>
-      <View style={[styles.banner, !t.banner_url && { backgroundColor: t.banner_color || '#0A1222' }]}>
-        {t.banner_url ? (
-          <Image source={{ uri: t.banner_url }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
-        ) : null}
-        <LinearGradient
-          colors={['rgba(3,6,13,0.2)', 'rgba(3,6,13,0.85)']}
-          style={StyleSheet.absoluteFillObject}
-        />
-
-        <View style={[styles.typeBadge, { borderColor: `${typeColor}88` }]}>
-          <Text style={[styles.typeText, { color: typeColor }]}>{typeLbl}</Text>
-        </View>
-
-        <View style={[
-          styles.statusBadge,
-          isFull
-            ? { backgroundColor: 'rgba(255,77,109,0.2)', borderColor: 'rgba(255,77,109,0.45)' }
-            : { backgroundColor: status.bg, borderColor: status.border },
-        ]}
-        >
-          <Text style={[styles.statusText, { color: isFull ? FUT.rose : status.color }]}>
-            {isFull ? 'Full' : status.label}
-          </Text>
-        </View>
-
-        <Text style={styles.participantHint}>
-          {t.participant_type === 'player' ? 'Players' : 'Clubs'}
-        </Text>
-
-        {trophyUrl ? (
-          <Image source={{ uri: trophyUrl }} style={styles.trophy} resizeMode="contain" />
-        ) : null}
-      </View>
-
-      <LiveGlass intensity={36}>
-      <LinearGradient
-        colors={tokens.live
-          ? ['rgba(12,20,36,0.55)', 'rgba(6,10,20,0.48)']
-          : ['rgba(12,20,36,0.98)', 'rgba(6,10,20,0.96)']}
-        style={styles.body}
-      >
-        <Text style={styles.name} numberOfLines={1}>
-          {t.name}
-        </Text>
-        {t.creator_gamertag ? (
-          <Text style={styles.creator} numberOfLines={1}>
-            By {t.creator_gamertag}
-          </Text>
-        ) : null}
-
-        <View style={styles.fillRow}>
-          <Text style={styles.fillMeta}>
-            {registered}/{maxTeams}
-            {dateLabel ? ` · ${dateLabel}` : ''}
-          </Text>
-        </View>
-        <View style={styles.progressTrack}>
+        <View style={[styles.banner, !t.banner_url && { backgroundColor: t.banner_color || '#0A1222' }]}>
+          {t.banner_url ? (
+            <Image source={{ uri: t.banner_url }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+          ) : null}
           <LinearGradient
-            colors={[CYAN, AMBER]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={[styles.progressFill, { width: `${fillPct}%` }]}
+            colors={['rgba(3,6,13,0.2)', 'rgba(3,6,13,0.85)']}
+            style={StyleSheet.absoluteFillObject}
           />
+
+          <View style={styles.typeBadge}>
+            <Text style={styles.typeText}>{typeLbl}</Text>
+          </View>
+
+          <View style={styles.statusBadge}>
+            <Text style={styles.statusText}>{isFull ? 'Full' : status.label}</Text>
+          </View>
+
+          <Text style={styles.participantHint}>
+            {t.participant_type === 'player' ? 'Players' : 'Clubs'}
+          </Text>
+
+          {trophyUrl ? (
+            <Image source={{ uri: trophyUrl }} style={styles.trophy} resizeMode="contain" />
+          ) : null}
         </View>
 
-        <View style={styles.feeRow}>
-          {hasFee ? (
-            <>
-              <Text style={styles.feeText}>Entry {Number(t.entry_fee_stc).toLocaleString()} STC</Text>
-              <Text style={styles.prizeText}>Prize {pool.toLocaleString()} STC</Text>
-            </>
-          ) : (
-            <Text style={styles.freeText}>FREE</Text>
-          )}
-        </View>
+        <View style={styles.body}>
+          <Text style={styles.name} numberOfLines={1}>
+            {t.name}
+          </Text>
+          {t.creator_gamertag ? (
+            <Text style={styles.creator} numberOfLines={1}>
+              By {t.creator_gamertag}
+            </Text>
+          ) : null}
 
-        {showCountdown ? <TournamentCountdown startDate={startDate} compact /> : null}
-      </LinearGradient>
-      </LiveGlass>
+          <View style={styles.fillRow}>
+            <Text style={styles.fillMeta}>
+              {registered}/{maxTeams}
+              {dateLabel ? ` · ${dateLabel}` : ''}
+            </Text>
+          </View>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${fillPct}%` }]} />
+          </View>
+
+          <View style={styles.feeRow}>
+            {hasFee ? (
+              <>
+                <Text style={styles.feeText}>Entry {Number(t.entry_fee_stc).toLocaleString()} STC</Text>
+                <Text style={styles.prizeText}>Prize {pool.toLocaleString()} STC</Text>
+              </>
+            ) : (
+              <Text style={styles.freeText}>FREE</Text>
+            )}
+          </View>
+
+          {showCountdown ? <TournamentCountdown startDate={startDate} compact /> : null}
+        </View>
       </View>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  cardShadow: {
-    borderRadius: CARD_RADIUS,
-    shadowColor: FUT.cyan,
-    shadowOpacity: 0.22,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 7,
-  },
   cardClip: {
-    borderWidth: 1.5,
-    borderColor: 'rgba(0,232,255,0.28)',
+    borderWidth: 1,
+    borderColor: TILE_BORDER,
     borderRadius: CARD_RADIUS,
     overflow: 'hidden',
+    backgroundColor: TILE_FILL,
   },
   banner: {
     height: 100,
@@ -178,8 +137,8 @@ const styles = StyleSheet.create({
     left: 10,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
     borderWidth: 1,
+    borderColor: TILE_BORDER,
     backgroundColor: 'rgba(3,6,13,0.65)',
   },
   typeText: {
@@ -187,6 +146,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
+    color: GAME_DAY_SILVER,
   },
   statusBadge: {
     position: 'absolute',
@@ -194,14 +154,16 @@ const styles = StyleSheet.create({
     right: 10,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
     borderWidth: 1,
+    borderColor: TILE_BORDER,
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   statusText: {
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
+    color: GAME_DAY_SILVER,
   },
   participantHint: {
     position: 'absolute',
@@ -247,13 +209,12 @@ const styles = StyleSheet.create({
   progressTrack: {
     marginTop: 6,
     height: 3,
-    borderRadius: 999,
     backgroundColor: 'rgba(255,255,255,0.1)',
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 999,
+    backgroundColor: GAME_DAY_SILVER,
   },
   feeRow: {
     marginTop: 10,
@@ -267,12 +228,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   prizeText: {
-    color: AMBER,
+    color: GAME_DAY_SILVER,
     fontSize: 11,
     fontWeight: '800',
   },
   freeText: {
-    color: FUT.lime,
+    color: GAME_DAY_SILVER,
     fontSize: 11,
     fontWeight: '900',
     letterSpacing: 1,

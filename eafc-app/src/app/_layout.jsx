@@ -58,7 +58,7 @@ export default function RootLayout() {
         router.replace(query ? `/auth/callback?${query}` : '/auth/callback');
         return;
       }
-      if (/apps\/store/i.test(url) || /store\/mobile-return/i.test(url)) {
+      if (/apps\/store/i.test(url) || /auth\/store-return/i.test(url) || /store\/mobile-return/i.test(url)) {
         router.replace(query ? `/apps/store?${query}` : '/apps/store');
       }
     };
@@ -93,7 +93,6 @@ export default function RootLayout() {
             <Stack.Screen name="auth" options={{ animation: 'none' }} />
             <Stack.Screen name="apps" />
             <Stack.Screen name="teams" />
-            <Stack.Screen name="social" />
           </Stack>
           <Toast visible={visible} message={message} onHide={hide} />
           {user ? <PageWalkthrough /> : null}

@@ -1,8 +1,17 @@
 import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
 import { stageClient } from '@/api/stageClient';
 import { getStageOrigin } from '@/utils/stageConfig';
 
 WebBrowser.maybeCompleteAuthSession?.();
+
+/** Matches app.json scheme so Custom Tabs / ASWebAuthenticationSession close into the app. */
+export function mobileStoreRedirectUri() {
+  return makeRedirectUri({
+    scheme: 'stage',
+    path: 'apps/store',
+  });
+}
 
 export function unwrapCheckoutResult(result) {
   if (!result || typeof result !== 'object') return {};
@@ -18,13 +27,20 @@ export function mobileStoreDeepLinkFromSearch(search = '') {
 
 export function isMobileStoreReturnUrl(url) {
   const value = String(url || '');
-  return /\/store\/mobile-return/i.test(value) || /^stage:\/\/apps\/store/i.test(value);
+  return (
+    /\/auth\/store-return/i.test(value) ||
+    /\/store\/mobile-return/i.test(value) ||
+    /\/apps\/store/i.test(value) ||
+    /^stage:\/\/apps\/store/i.test(value)
+  );
 }
 
 export function storeCheckoutUrls({ kind, extra = {} } = {}) {
   const origin = getStageOrigin().replace(/\/$/, '');
   const params = new URLSearchParams({ client: 'mobile', ...extra });
-  const returnBase = `${origin}/store/mobile-return`;
+  // Stripe only accepts https. /auth/* is served by Express (same as OAuth handoff).
+  // /store on the website SPA is for desktop checkout and must not be used here.
+  const returnBase = `${origin}/auth/store-return`;
   if (kind === 'subscription') {
     return {
       successUrl: `${returnBase}?sub=success&${params.toString()}&session_id={CHECKOUT_SESSION_ID}`,
@@ -59,8 +75,7 @@ export function parseCheckoutSessionId(url, fallbackId = null) {
 }
 
 async function openCheckout(checkoutUrl) {
-  const origin = getStageOrigin().replace(/\/$/, '');
-  return WebBrowser.openAuthSessionAsync(checkoutUrl, `${origin}/store/mobile-return`, {
+  return WebBrowser.openAuthSessionAsync(checkoutUrl, mobileStoreRedirectUri(), {
     preferEphemeralSession: false,
     showInRecents: false,
   });

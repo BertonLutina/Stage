@@ -3,7 +3,7 @@ import { Image, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { headingStyle } from '@/lib/fonts';
 import { playerAvatarInitials, resolvePlayerAvatarUrl } from '@/lib/playerAvatar';
-import { CYAN, GOLD, GOLD_DARK, GOLD_LIGHT } from './transferHubTheme';
+import { FRAME_FOCUSED, FRAME_IDLE, OVR_BADGE, SILVER } from './transferHubTheme';
 
 export default function TransferPlayerPhotoCard({
   player,
@@ -21,16 +21,14 @@ export default function TransferPlayerPhotoCard({
     : Math.round(Number(ovrRaw) * 10) / 10;
   const resolvedOverall = ovr === 0 ? '0.0' : (Number.isInteger(ovr) ? String(ovr) : ovr.toFixed(1));
   const position = player?.position || '—';
-  const frame = focused
-    ? [GOLD_LIGHT, GOLD, GOLD_DARK]
-    : ['rgba(0,229,255,0.55)', 'rgba(0,229,255,0.18)', 'rgba(0,229,255,0.08)'];
+  const frame = focused ? FRAME_FOCUSED : FRAME_IDLE;
 
   return (
     <View
       style={{
         width,
         height,
-        shadowColor: focused ? GOLD : CYAN,
+        shadowColor: SILVER,
         shadowOpacity: focused ? 0.55 : 0.18,
         shadowRadius: focused ? 22 : 10,
         shadowOffset: { width: 0, height: 8 },
@@ -74,7 +72,7 @@ export default function TransferPlayerPhotoCard({
           />
 
           <View style={{ position: 'absolute', top: 8, right: 8, minWidth: 42, borderRadius: 8, overflow: 'hidden' }}>
-            <LinearGradient colors={[GOLD_LIGHT, GOLD, GOLD_DARK]} style={{ paddingHorizontal: 8, paddingVertical: 5, alignItems: 'center' }}>
+            <LinearGradient colors={OVR_BADGE} style={{ paddingHorizontal: 8, paddingVertical: 5, alignItems: 'center' }}>
               <Text style={{ color: 'rgba(0,0,0,0.7)', fontSize: 8, fontWeight: '900', letterSpacing: 1 }}>OVR</Text>
               <Text style={[headingStyle, { color: '#000', fontSize: 18, letterSpacing: 0, lineHeight: 20 }]}>
                 {resolvedOverall}

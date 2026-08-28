@@ -23,4 +23,25 @@ describe('mobile transfer hub', () => {
     expect(page).toMatch(/TransferPlayerList/);
     expect(page).not.toMatch(/AppDirectoryScreen/);
   });
+
+  test('transfer hub chrome uses Game Day silver, not gold or cyan', () => {
+    const hubFiles = [
+      '../../app/apps/transfers.jsx',
+      '../../components/transfer/transferHubTheme.js',
+      '../../components/transfer/TransferPlayerCarousel.jsx',
+      '../../components/transfer/TransferPlayerPhotoCard.jsx',
+      '../../components/transfer/TransferPlayerList.jsx',
+      '../../components/transfer/TransferFilters.jsx',
+      '../../components/transfer/TransferBadge.jsx',
+      '../../components/transfer/TransferWindowBanner.jsx',
+      '../../components/transfer/TransferDetailSheet.jsx',
+    ].map(read).join('\n');
+    expect(hubFiles).toMatch(/SILVER/);
+    expect(hubFiles).not.toMatch(/#f5c542/i);
+    expect(hubFiles).not.toMatch(/#00e5ff/i);
+    expect(hubFiles).not.toMatch(/#7cff6b/i);
+    expect(hubFiles).not.toMatch(/rgba\(245,\s*197,\s*66/i);
+    expect(hubFiles).not.toMatch(/rgba\(0,\s*229,\s*255/i);
+    expect(hubFiles).not.toMatch(/rgba\(124,\s*255,\s*107/i);
+  });
 });

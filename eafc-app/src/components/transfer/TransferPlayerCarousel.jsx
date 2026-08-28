@@ -15,7 +15,7 @@ import { playerDisplayName } from '@/lib/stageDirectories';
 import { stepCarouselIndex, visibleCarouselSlots } from '@/lib/transferCarousel';
 import TransferBadge from './TransferBadge';
 import TransferPlayerPhotoCard from './TransferPlayerPhotoCard';
-import { GOLD } from './transferHubTheme';
+import { SILVER } from './transferHubTheme';
 
 function CarouselSlot({ offset, focused, cardWidth, xFar, xNear, name, children, onPress }) {
   const anim = useRef(new Animated.Value(offset)).current;
@@ -82,7 +82,7 @@ function CarouselSlot({ offset, focused, cardWidth, xFar, xNear, name, children,
             {
               marginTop: 12,
               maxWidth: cardWidth,
-              color: focused ? GOLD : 'rgba(255,255,255,0.5)',
+              color: focused ? SILVER : 'rgba(255,255,255,0.5)',
               fontSize: focused ? 16 : 11,
               textAlign: 'center',
             },
@@ -132,7 +132,7 @@ export default function TransferPlayerCarousel({ entries = [], selectedId, onSel
   if (entries.length === 0) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28 }}>
-        <Ionicons name="shield-outline" size={40} color="rgba(245,197,66,0.3)" />
+        <Ionicons name="shield-outline" size={40} color="rgba(238,243,251,0.28)" />
         <Text style={[headingStyleSm, { color: 'rgba(255,255,255,0.55)', marginTop: 12, textAlign: 'center' }]}>
           No players found
         </Text>
@@ -146,21 +146,21 @@ export default function TransferPlayerCarousel({ entries = [], selectedId, onSel
   return (
     <View style={{ flex: 1, overflow: 'hidden' }} {...pan.panHandlers}>
       <LinearGradient
-        colors={['rgba(245,197,66,0.28)', 'transparent']}
+        colors={['rgba(238,243,251,0.22)', 'transparent']}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 0.55 }}
         style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 220 }}
         pointerEvents="none"
       />
       <LinearGradient
-        colors={['rgba(0,229,255,0.16)', 'transparent']}
+        colors={['rgba(238,243,251,0.14)', 'transparent']}
         start={{ x: 0, y: 0.5 }}
         end={{ x: 0.45, y: 0.5 }}
         style={{ position: 'absolute', left: 0, top: 40, bottom: 40, width: 140 }}
         pointerEvents="none"
       />
       <LinearGradient
-        colors={['rgba(0,229,255,0.16)', 'transparent']}
+        colors={['rgba(238,243,251,0.14)', 'transparent']}
         start={{ x: 1, y: 0.5 }}
         end={{ x: 0.55, y: 0.5 }}
         style={{ position: 'absolute', right: 0, top: 40, bottom: 40, width: 140 }}
@@ -182,12 +182,12 @@ export default function TransferPlayerCarousel({ entries = [], selectedId, onSel
           alignItems: 'center',
           justifyContent: 'center',
           borderWidth: 1,
-          borderColor: 'rgba(245,197,66,0.4)',
+          borderColor: 'rgba(238,243,251,0.4)',
           backgroundColor: 'rgba(0,0,0,0.5)',
           opacity: entries.length < 2 ? 0.3 : 1,
         }}
       >
-        <Ionicons name="chevron-back" size={24} color={GOLD} />
+        <Ionicons name="chevron-back" size={24} color={SILVER} />
       </TouchableOpacity>
       <TouchableOpacity
         accessibilityRole="button"
@@ -204,12 +204,12 @@ export default function TransferPlayerCarousel({ entries = [], selectedId, onSel
           alignItems: 'center',
           justifyContent: 'center',
           borderWidth: 1,
-          borderColor: 'rgba(245,197,66,0.4)',
+          borderColor: 'rgba(238,243,251,0.4)',
           backgroundColor: 'rgba(0,0,0,0.5)',
           opacity: entries.length < 2 ? 0.3 : 1,
         }}
       >
-        <Ionicons name="chevron-forward" size={24} color={GOLD} />
+        <Ionicons name="chevron-forward" size={24} color={SILVER} />
       </TouchableOpacity>
 
       <View style={{ flex: 1, position: 'relative' }}>
@@ -243,7 +243,7 @@ export default function TransferPlayerCarousel({ entries = [], selectedId, onSel
         style={[
           headingStyleSm,
           {
-            color: GOLD,
+            color: SILVER,
             textAlign: 'center',
             paddingBottom: 18,
             letterSpacing: 4,

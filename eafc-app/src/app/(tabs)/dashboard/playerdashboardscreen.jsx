@@ -64,6 +64,13 @@ export default function PlayerDashboardScreen() {
     router.push(href);
   }, [router]);
 
+  const patchPlayer = useCallback((updated) => {
+    setData((prev) => {
+      if (!prev) return prev;
+      return { ...prev, player: { ...(prev.player || {}), ...updated } };
+    });
+  }, []);
+
   const vm = useMemo(() => {
     const {
       user, player, club, playerRank, clubRank, nextMatch, upcomingMatches,
@@ -90,8 +97,9 @@ export default function PlayerDashboardScreen() {
       opponentInfo: getMatchOpponent(nextMatch, player, club),
       gamertag: player?.gamertag || user?.email?.split('@')[0] || 'Guest',
       transferWindowOpen: windowOpen,
+      patchPlayer,
     };
-  }, [data, open, windowOpen]);
+  }, [data, open, windowOpen, patchPlayer]);
 
   if (loading && !data) {
     return (
@@ -110,7 +118,7 @@ export default function PlayerDashboardScreen() {
         <ScrollView
           key={layout}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 160, gap: 14 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 160, gap: 14 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={tokens.cyan} />}
         >
           {!vm.player?.id ? (

@@ -1,8 +1,10 @@
 import {
   canRenegotiateFounderPlayerContract,
+  getContractTypeLabel,
   isFounderPlayerContract,
   isLifecycleOwnedContract,
 } from '../../lib/playerContractFields';
+import { clubRoleLabel } from '../../lib/clubSquadDisplay';
 import {
   FOUNDER_PLAYER_WEEKLY_SALARY_MAX,
   FOUNDER_PLAYER_WEEKLY_SALARY_MIN,
@@ -40,5 +42,12 @@ describe('mobile founder contract helpers', () => {
     expect(isFounderPlayerWageAllowed(40000)).toBe(true);
     expect(isFounderPlayerWageAllowed(25000)).toBe(false);
     expect(isFounderPlayerWageAllowed(500001)).toBe(false);
+  });
+
+  it('keeps Founder on the contract and Player on public role chips', () => {
+    expect(getContractTypeLabel({ contract_type: 'founder' })).toBe('Founder');
+    expect(getContractTypeLabel({ contract_type: 'founder_player' })).toBe('Founder Player');
+    expect(clubRoleLabel('founder')).toBe('Player');
+    expect(clubRoleLabel('founder_player')).toBe('Player');
   });
 });

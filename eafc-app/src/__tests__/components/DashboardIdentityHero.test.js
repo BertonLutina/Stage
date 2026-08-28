@@ -8,6 +8,15 @@ function readRepoFile(path) {
 describe('Home identity plate', () => {
   const lab = readRepoFile('components/dashboard/DashboardLayoutLab.jsx');
 
+  test('Home has no Game Day page banner above the identity plate', () => {
+    const dash = readRepoFile('app/(tabs)/dashboard/playerdashboardscreen.jsx');
+    expect(dash).not.toMatch(/ActionTab/);
+    expect(dash).not.toMatch(/minHeight: 168/);
+    expect(dash).not.toMatch(/headingStyleSm/);
+    expect(dash).not.toMatch(/GAME DAY/);
+    expect(dash).not.toMatch(/settings-outline/);
+  });
+
   test('every layout opens with the player identity plate, then the next-match strip', () => {
     expect(lab).toMatch(/function PlayerIdentityHero/);
     expect(lab).toMatch(/<FutIdentityCard/);
@@ -29,6 +38,9 @@ describe('Home identity plate', () => {
     const ui = readRepoFile('components/dashboard/CommandCenterUI.jsx');
     expect(theme).toMatch(/export const CARD_RADIUS = 2/);
     expect(ui).toMatch(/export const DASHBOARD_CARD_RADIUS = CARD_RADIUS/);
+    expect(ui).toMatch(/export const TILE_BORDER = 'rgba\(238,243,251,0\.22\)'/);
+    expect(ui).toMatch(/export const TILE_FILL_LIVE = 'rgba\(0,0,0,0\.4\)'/);
+    expect(ui).toMatch(/function SectionCard[\s\S]*tileChrome\(/);
     expect(lab).toMatch(/function DashCard/);
     expect(lab).toMatch(/radius=\{DASHBOARD_CARD_RADIUS\}/);
     expect(lab).toMatch(/KickoffCard[\s\S]*borderRadius: DASHBOARD_CARD_RADIUS/);

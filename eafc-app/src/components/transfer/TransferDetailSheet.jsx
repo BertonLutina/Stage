@@ -5,7 +5,7 @@ import { headingStyle, headingStyleSm } from '@/lib/fonts';
 import { playerAvatarInitials, resolvePlayerAvatarUrl } from '@/lib/playerAvatar';
 import { playerDisplayName } from '@/lib/stageDirectories';
 import TransferBadge from './TransferBadge';
-import { GOLD, GOLD_DARK, GOLD_LIGHT, LIME } from './transferHubTheme';
+import { SILVER, TILE_HAIRLINE } from './transferHubTheme';
 
 function StatCell({ label, value }) {
   return (
@@ -24,12 +24,12 @@ export default function TransferDetailSheet({ visible, entry, onClose, onViewPro
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.62)' }}>
         <Pressable style={{ flex: 1 }} onPress={onClose} />
-        <View style={{ backgroundColor: '#05080f', borderTopWidth: 1, borderColor: 'rgba(245,197,66,0.2)', maxHeight: '78%' }}>
+        <View style={{ backgroundColor: '#05080f', borderTopWidth: 1, borderColor: TILE_HAIRLINE, maxHeight: '78%' }}>
           <View style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 6 }}>
             <View style={{ width: 42, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.18)' }} />
           </View>
           <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 28 }}>
-            <Text style={[headingStyleSm, { color: GOLD, letterSpacing: 2.4, fontSize: 11, marginBottom: 12 }]}>
+            <Text style={[headingStyleSm, { color: SILVER, letterSpacing: 2.4, fontSize: 11, marginBottom: 12 }]}>
               Player details
             </Text>
             {!player ? (
@@ -44,7 +44,7 @@ export default function TransferDetailSheet({ visible, entry, onClose, onViewPro
                       borderRadius: 28,
                       overflow: 'hidden',
                       borderWidth: 2,
-                      borderColor: GOLD,
+                      borderColor: SILVER,
                       backgroundColor: '#071018',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -53,7 +53,7 @@ export default function TransferDetailSheet({ visible, entry, onClose, onViewPro
                     {imageUrl ? (
                       <Image source={{ uri: imageUrl }} style={{ width: 56, height: 56 }} />
                     ) : (
-                      <Text style={{ color: GOLD, fontWeight: '900', fontSize: 20 }}>{playerAvatarInitials(player)}</Text>
+                      <Text style={{ color: SILVER, fontWeight: '900', fontSize: 20 }}>{playerAvatarInitials(player)}</Text>
                     )}
                   </View>
                   <View style={{ flex: 1 }}>
@@ -78,18 +78,18 @@ export default function TransferDetailSheet({ visible, entry, onClose, onViewPro
                     padding: 12,
                     marginBottom: 16,
                     borderWidth: 1,
-                    borderColor: entry.badgeType === 'free_agent' ? 'rgba(124,255,107,0.2)' : 'rgba(255,255,255,0.08)',
-                    backgroundColor: entry.badgeType === 'free_agent' ? 'rgba(124,255,107,0.1)' : 'rgba(255,255,255,0.05)',
+                    borderColor: TILE_HAIRLINE,
+                    backgroundColor: entry.badgeType === 'free_agent' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)',
                   }}
                 >
                   <Ionicons
                     name={entry.badgeType === 'free_agent' ? 'people' : 'shield'}
                     size={16}
-                    color={entry.badgeType === 'free_agent' ? LIME : 'rgba(255,255,255,0.5)'}
+                    color={entry.badgeType === 'free_agent' ? SILVER : 'rgba(255,255,255,0.5)'}
                   />
                   <View>
                     <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11 }}>Status</Text>
-                    <Text style={{ color: entry.badgeType === 'free_agent' ? LIME : '#fff', fontWeight: '700', marginTop: 2 }}>
+                    <Text style={{ color: entry.badgeType === 'free_agent' ? SILVER : '#fff', fontWeight: '700', marginTop: 2 }}>
                       {entry.badgeType === 'free_agent' ? 'Free agent — available' : 'Contract expiring'}
                     </Text>
                   </View>
@@ -104,8 +104,8 @@ export default function TransferDetailSheet({ visible, entry, onClose, onViewPro
                     justifyContent: 'center',
                     flexDirection: 'row',
                     gap: 8,
-                    backgroundColor: GOLD_LIGHT,
-                    borderColor: GOLD_DARK,
+                    backgroundColor: SILVER,
+                    borderColor: 'rgba(248,251,255,0.55)',
                     borderWidth: 1,
                   }}
                 >

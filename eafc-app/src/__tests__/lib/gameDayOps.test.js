@@ -17,6 +17,7 @@ import { absoluteProofUrl, isStageAdmin, parseSubmission } from '../../lib/admin
 import {
   clubInitials,
   formatBroadcastUnit,
+  gameDayArenaLayout,
   getKickoffCountdownParts,
   pad2,
 } from '../../lib/gameDayPresentation';
@@ -142,6 +143,15 @@ describe('gameDayOps', () => {
     const parts = getKickoffCountdownParts('2026-08-17T22:00:00.000Z', new Date('2026-08-14T21:00:00.000Z'));
     expect(parts.started).toBe(false);
     expect(parts.hours).toBe(73);
+  });
+
+  test('match details arena crests shrink on phone widths', () => {
+    const phone = gameDayArenaLayout(320);
+    expect(phone.compact).toBe(true);
+    expect(phone.crest * 2 + phone.vsW + 8 + phone.padH * 2).toBeLessThanOrEqual(320);
+    const tablet = gameDayArenaLayout(780, { compact: false });
+    expect(tablet.compact).toBe(false);
+    expect(tablet.crest).toBeGreaterThan(phone.crest);
   });
 });
 

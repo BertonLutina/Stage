@@ -16,7 +16,6 @@ import {
   GamerBanner,
   FutIdentityCard,
   GamerMetaPill,
-  GamerTabNav,
   GlassIconButton,
   GlassTextButton,
   EmptyTabPanel,
@@ -25,6 +24,7 @@ import {
   CYAN,
   AMBER,
 } from '@/components/profile/gamer/GamerProfileUI';
+import PageTile, { SilverPill } from '@/components/theme/PageTile';
 import { headingStyleLg } from '@/lib/fonts';
 import { formatPlatformLabel } from '@/lib/platformDisplay';
 import { getPlayerNationality } from '@/lib/countryDisplay';
@@ -36,6 +36,7 @@ import FollowToggleButton from '@/components/profile/FollowToggleButton';
 import { uploadLocalMedia } from '@/lib/uploadProfileMedia';
 import { getPrimaryClubRole } from '@/lib/clubStaffRoles';
 import { clubRoleLabel } from '@/lib/clubSquadDisplay';
+import { displayNamedFounder } from '@/lib/founderDisplay';
 import { isFounderPlayerContract } from '@/lib/playerContractFields';
 
 const PRIMARY_TABS = [
@@ -477,7 +478,7 @@ export default function ProfileScreen({
                 </View>
                 {(isFounder || isPresident) ? (
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                    {isFounder ? <RoleChip label="Founder" tone="gold" /> : null}
+                    {isFounder ? <RoleChip label={displayNamedFounder()} tone="gold" /> : null}
                     {isPresident ? <RoleChip label={clubRoleLabel('president')} tone="cyan" /> : null}
                   </View>
                 ) : null}
@@ -504,14 +505,26 @@ export default function ProfileScreen({
         </View>
       ) : null}
 
-      <View style={{ paddingHorizontal: 16, marginTop: tab === 'career' ? 8 : 16, gap: 14 }}>
-        <GamerTabNav
-          tabs={PRIMARY_TABS}
-          active={tab}
-          onChange={setTab}
-          accent="cyan"
-          shape="parallelogram"
-        />
+      <View style={{ paddingHorizontal: 16, marginTop: tab === 'career' ? 8 : 16 }}>
+        <PageTile
+          tileKey="profile"
+          eyebrow="PROFILE"
+          subtitle={displayName}
+          player={player}
+          onPlayerChanged={isOwn ? setPlayer : undefined}
+          showMenu={isOwn}
+          contentStyle={{ paddingHorizontal: 12, gap: 14 }}
+        >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+          {PRIMARY_TABS.map((item) => (
+            <SilverPill
+              key={item.id}
+              label={item.label}
+              active={tab === item.id}
+              onPress={() => setTab(item.id)}
+            />
+          ))}
+        </ScrollView>
 
         {tab === 'posts' && <ProfileFeedPanel player={player} isOwn={isOwn} />}
         {tab === 'showcase' && <PlayerShowcase player={player} canEdit={isOwn} />}
@@ -531,6 +544,7 @@ export default function ProfileScreen({
           />
         )}
         {tab === 'lifestyle' && renderLifestyle()}
+        </PageTile>
       </View>
     </ScrollView>
   );

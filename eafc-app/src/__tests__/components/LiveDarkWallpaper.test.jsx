@@ -37,6 +37,15 @@ describe('Live Dark wallpaper', () => {
     expect(getByText('Home')).toBeTruthy();
   });
 
+  test('Live Dark page chrome stays translucent so the photo shows through', () => {
+    const ui = require('fs').readFileSync(
+      require('path').resolve(__dirname, '../../components/dashboard/CommandCenterUI.jsx'),
+      'utf8',
+    );
+    expect(ui).toMatch(/TILE_FILL_LIVE = 'rgba\(0,0,0,0\.4\)'/);
+    expect(ui).toMatch(/tokens\?\.live === true/);
+  });
+
   test('does not plant the photo in Dark', () => {
     useThemeStore.getState().setStageTheme('theme-dark');
     const { queryByTestId } = render(<LiveDarkWallpaper />);

@@ -29,16 +29,14 @@ describe('mobile match / tournament / season parity wiring', () => {
   test('apps directory screens load Stage web data', () => {
     expect(read('../../app/apps/find-players.jsx')).toMatch(/loadPlayerDirectory/);
     expect(read('../../app/apps/find-clubs.jsx')).toMatch(/loadClubDirectory/);
-    expect(read('../../app/apps/presidents.jsx')).toMatch(/loadPresidentDirectory/);
     expect(read('../../app/apps/transfers.jsx')).toMatch(/loadTransferMarket/);
     expect(read('../../app/apps/wallet.jsx')).toMatch(/loadWallet/);
-    expect(read('../../app/apps/rankings.jsx')).toMatch(/loadRankings/);
-    expect(read('../../app/apps/rankings.jsx')).not.toMatch(/router\.replace\('\/apps\/competitions'\)/);
     expect(read('../../app/apps/store.jsx')).toMatch(/startStagePlusCheckout/);
     expect(read('../../app/apps/store.jsx')).toMatch(/startCreditPackCheckout/);
     expect(read('../../app/apps/store.jsx')).toMatch(/completeStoreCheckoutFromUrl/);
     expect(read('../../lib/stripeCheckout.js')).toMatch(/stripeSubscription/);
-    expect(read('../../lib/stripeCheckout.js')).toMatch(/store\/mobile-return/);
+    expect(read('../../lib/stripeCheckout.js')).toMatch(/auth\/store-return/);
+    expect(read('../../lib/stripeCheckout.js')).toMatch(/makeRedirectUri/);
     expect(read('../../app/_layout.jsx')).toMatch(/apps\\\/store/);
   });
 
@@ -58,10 +56,19 @@ describe('mobile match / tournament / season parity wiring', () => {
   test('match hub and tournament list use Game Day / Open Tournaments labels', () => {
     expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/KICKOFF/);
     expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/Game Day/);
+    expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/MATCH SCREENS/);
+    expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/MATCH DETAILS/);
     expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/GameDayKickoffArena/);
+    expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/GameDayDressingRoomPanel/);
+    expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/GameDayTileBackgroundDialog/);
+    expect(read('../../components/matches/GameDayKickoffArena.jsx')).toMatch(/onChangeBackground/);
+    expect(read('../../components/matches/GameDayTileBackgroundDialog.jsx')).toMatch(/game-day-tile-background/);
     expect(read('../../app/(tabs)/matches/index.jsx')).not.toMatch(/MATCH CENTER/);
     expect(read('../../app/(tabs)/_layout.jsx')).toMatch(/title: 'Game Day'/);
     expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).toMatch(/Open tournaments/);
+    expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).toMatch(/GOST/);
+    expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).toMatch(/\/apps\/register/);
+    expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).not.toMatch(/createtournamentscreen/);
     expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).not.toMatch(/Stage cups/);
   });
 

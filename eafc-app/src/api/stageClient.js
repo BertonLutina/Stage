@@ -485,13 +485,15 @@ const ENTITY_NAMES = [
   'CompetitionInstance', 'CompetitionParticipant', 'CompetitionScheduleProposal',
   'CompetitionResultSubmission', 'CompetitionPhaseState', 'CompetitionPayout',
   // New reward/achievement entities
-  'RewardConfig', 'ClubAchievement', 'PlayerAchievement',
+  'RewardConfig', 'ClubAchievement', 'PlayerAchievement', 'PlayerCardBackground',
   // Pre-login landing page config
   'LandingConfig', 'StoreConfig',
   // Legacy/compat entities used in some screens
   'RatingHistory', 'LiveMatchEvent', 'Challenge', 'LandingPageContent',
   // Post-login home page editor (separate from LandingPageContent)
   'HomePageContent',
+  // Admin-managed Game Day presentation settings.
+  'GameDayConfig',
   'FaqItem',
   // Global transfer windows (admin manages open/close periods).
   // Business actions (open/close/execute_pending) still go through the
