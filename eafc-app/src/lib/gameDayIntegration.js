@@ -18,6 +18,11 @@ export function buildMatchContext(fixture, fixtureType) {
   return `${fixture.competition_name || 'Competition'} · ${phaseFn(fixture.matchday)}`;
 }
 
+function allowPenaltiesForFixture(fixture) {
+  const phase = String(fixture?.phase || '').toLowerCase();
+  return /knockout|playoff/.test(phase) ? 1 : 0;
+}
+
 export async function createMatchFromFixture(fixture, fixtureType) {
   if (!fixture?.id) return null;
   const sourceType = fixtureType === 'regional_league' || fixtureType === 'regional_league_fixture'
@@ -84,6 +89,7 @@ export async function createMatchFromFixture(fixture, fixtureType) {
     stats_processed: 0,
     wager_stc: 0,
     wager_status: 'none',
+    allow_penalties: allowPenaltiesForFixture(fixture),
   });
   if (created?.id && fixtureEntity?.update) {
     await fixtureEntity.update(fixture.id, { match_id: created.id, status: fixture.status || 'scheduled' }).catch(() => {});
