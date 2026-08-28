@@ -3,6 +3,7 @@ import { resolveMyPlayerAndClub, stageClient } from '../api/stageClient';
 import { materializeConfirmedFixtures } from '../lib/gameDayIntegration';
 import { isActiveGameDayMatch } from '../lib/gameDayPresentation';
 import { isGameDayMatchSocketPayload, sameRecordId } from '../lib/gameDayRealtime';
+import { settleClubMatches } from '../lib/gameDayOps';
 
 function uniqById(rows = []) {
   const map = new Map();
@@ -102,6 +103,9 @@ export default function useMatchesHub() {
 
       const clubId = club?.id || player?.club_id;
       const playerId = player?.id;
+      if (clubId) {
+        await settleClubMatches(clubId).catch(() => null);
+      }
 
       const matchPromises = [];
       if (clubId) {

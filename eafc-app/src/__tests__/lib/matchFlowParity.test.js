@@ -89,7 +89,9 @@ describe('mobile match / tournament / season parity wiring', () => {
     expect(socket).toMatch(/SocketProvider/);
     expect(socket).toMatch(/['"]update['"]/);
     expect(read('../../app/_layout.jsx')).toMatch(/SocketProvider/);
-    expect(read('../../hooks/useMatchesHub.js')).toMatch(/entities\.Match\.subscribe/);
+    expect(read('../../app/_layout.jsx')).toMatch(/<Toast /);
+    expect(read('../../components/common/Toast.jsx')).toMatch(/FullWindowOverlay/);
+    expect(read('../../hooks/useMatchesHub.js')).toMatch(/settleClubMatches/);
     expect(read('../../hooks/useGameDayMatchRealtime.js')).toMatch(/entities\.Match\.subscribe/);
     expect(read('../../hooks/useGameDayMatchRealtime.js')).toMatch(/entities\.DressingRoom\.subscribe/);
     expect(read('../../app/(tabs)/matches/matchdetailscreen.jsx')).toMatch(/useGameDayMatchRealtime/);

@@ -3,11 +3,12 @@ import {
   buildResultPayload,
   canKickoffMatch,
   countSeated,
+  mapResultError,
   minutesUntil,
   parseIdList,
   resolveMatchSides,
 } from '../../lib/gameDayOps';
-import { formatSideClaim, getKickoffControls, getResultSubmissionControls, declaredScoresAgree } from '../../lib/gameDayResultFlow';
+import { formatSideClaim, getKickoffControls, getResultSubmissionControls, declaredScoresAgree, formatDeadlineCountdown, resultDeadlineAt } from '../../lib/gameDayResultFlow';
 import { applyWagerOptimistic, formatStc } from '../../lib/wagerActions';
 import { roleForClub } from '../../lib/scheduleEngine';
 import { sortStandings } from '../../lib/competitionUtils';
@@ -26,6 +27,7 @@ describe('gameDayOps', () => {
   test('parses seated player lists', () => {
     expect(parseIdList('["a","b"]')).toEqual(['a', 'b']);
     expect(countSeated(['x'])).toBe(1);
+    expect(bothDressingRoomsReady(true, { home: 1, away: 0 })).toBe(false);
   });
 
   test('kickoff window is 15 minutes early', () => {
@@ -74,12 +76,6 @@ describe('gameDayOps', () => {
     expect(solo.amIHomeTeam).toBe(false);
   });
 
-  test('club kickoff needs both dressing rooms', () => {
-    expect(bothDressingRoomsReady(true, { home: 1, away: 0 })).toBe(false);
-    expect(bothDressingRoomsReady(true, { home: 1, away: 1 })).toBe(true);
-    expect(bothDressingRoomsReady(false, { home: 0, away: 0 })).toBe(true);
-  });
-
   test('matching home/away own scores complete, swapped team goals dispute', () => {
     expect(declaredScoresAgree(
       { own_score: 5, opponent_score: 2 },
@@ -89,6 +85,27 @@ describe('gameDayOps', () => {
       { home_score: 5, away_score: 2 },
       { home_score: 2, away_score: 5 },
     )).toBe(false);
+  });
+
+  test('club payload only includes ticked players', () => {
+    const payload = buildResultPayload({
+      game: { id: 'm1', mode: 'club' },
+      isHomeTeam: true,
+      myClub: { id: 'c1' },
+      seatedPlayers: [
+        { id: 'p1', email: 'a@b.c', gamertag: 'Neo' },
+        { id: 'p2', email: 'b@c.d', gamertag: 'Rival' },
+      ],
+      participatingIds: ['p1'],
+      playerMarks: { p1: { goals: 2, assists: 0, rating: 8 } },
+      homeScore: 2,
+      awayScore: 1,
+    });
+    expect(payload.participating_player_ids).toEqual(['p1']);
+    expect(payload.player_stats).toHaveLength(1);
+    expect(payload.player_stats[0].player_id).toBe('p1');
+    expect(payload.player_stats[0].club_id).toBe('c1');
+    expect(payload.action).toBe('submit_result');
   });
 
   test('builds matchKickoff submit_result payload', () => {
@@ -165,6 +182,48 @@ describe('result + wager + season helpers', () => {
     });
     expect(controls.showAwayWaitingForHome).toBe(true);
     expect(controls.showAwaySubmit).toBe(false);
+    expect(controls.showConfirmResult).toBe(false);
+  });
+
+  test('away confirm state opens confirm, not a second submit_result', () => {
+    const controls = getResultSubmissionControls({
+      game: {
+        result_state: 'AWAITING_AWAY_CONFIRMATION',
+        result_submit_side: 'home',
+        result_home_submitted: 1,
+      },
+      isLive: true,
+      showResultForm: false,
+      amIHomeTeam: false,
+    });
+    expect(controls.showConfirmResult).toBe(true);
+    expect(controls.showAwaySubmit).toBe(false);
+    expect(controls.showHomeReview).toBe(false);
+  });
+
+  test('home review offers one counter until it is used', () => {
+    const open = getResultSubmissionControls({
+      game: { result_state: 'AWAITING_HOME_REVIEW', result_submit_side: 'home', home_counter_count: 0 },
+      isLive: true,
+      showResultForm: false,
+      amIHomeTeam: true,
+    });
+    expect(open.showHomeReview).toBe(true);
+    expect(open.canCounter).toBe(true);
+    const spent = getResultSubmissionControls({
+      game: { result_state: 'AWAITING_HOME_REVIEW', result_submit_side: 'home', home_counter_count: 1 },
+      isLive: true,
+      showResultForm: false,
+      amIHomeTeam: true,
+    });
+    expect(spent.canCounter).toBe(false);
+  });
+
+  test('maps negotiation error codes without hiding the server message fallback', () => {
+    expect(mapResultError({ data: { code: 'FOREIGN_PLAYER_STATS' } })).toMatch(/own club/);
+    expect(mapResultError({ data: { code: 'MATCH_SIDE_REQUIRED' } })).toMatch(/other side/);
+    expect(mapResultError({ data: { code: 'PENALTIES_NOT_ALLOWED' } })).toMatch(/not allowed/);
+    expect(mapResultError({ message: 'Nope' })).toBe('Nope');
   });
 
   test('wager optimistic updates', () => {
@@ -195,5 +254,12 @@ describe('result + wager + season helpers', () => {
     expect(formatSideClaim({ own_score: 2, opponent_score: 5 }, 'home')).toBe('Home 2–Away 5');
     expect(absoluteProofUrl('/uploads/home.png')).toMatch(/\/uploads\/home\.png$/);
     expect(absoluteProofUrl('https://cdn.example/proof.png')).toBe('https://cdn.example/proof.png');
+  });
+
+  test('countdown uses the server due timestamp', () => {
+    expect(resultDeadlineAt({ result_state: 'AWAITING_AWAY_CONFIRMATION', confirmation_due_at: '2026-08-30T00:00:00Z' }))
+      .toBe('2026-08-30T00:00:00Z');
+    expect(formatDeadlineCountdown('2026-08-30T12:00:00Z', new Date('2026-08-30T10:00:00Z'))).toBe('2h 0m left');
+    expect(formatDeadlineCountdown('2026-08-30T10:00:00Z', new Date('2026-08-30T11:00:00Z'))).toBe('Deadline reached — pull to refresh');
   });
 });

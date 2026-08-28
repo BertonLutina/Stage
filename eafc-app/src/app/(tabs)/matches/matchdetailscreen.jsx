@@ -22,7 +22,6 @@ import { headingStyle } from '@/lib/fonts';
 import {
   MATCH_STATUS_LABEL,
   afterMatchCompleted,
-  bothDressingRoomsReady,
   kickoffMatch,
   loadDressingCounts,
   mapKickoffError,
@@ -30,6 +29,8 @@ import {
   reloadMatch,
   resolveMatchSides,
   sameId,
+  settleClubMatches,
+  settleMatchDeadlines,
 } from '@/lib/gameDayOps';
 import { getKickoffControls, getResultSubmissionControls } from '@/lib/gameDayResultFlow';
 import GameDayWagerCard from '@/components/matches/GameDayWagerCard';
@@ -63,15 +64,13 @@ export default function MatchDetailScreen() {
     if (!matchId) return;
     setError('');
     try {
-      const [{ player, club }, match] = await Promise.all([
-        resolveMyPlayerAndClub(),
-        reloadMatch(matchId),
-      ]);
+      const { player, club } = await resolveMyPlayerAndClub();
       if (club?.id) {
-        stageClient.functions.invoke('matchKickoff', { action: 'settle_club_matches', club_id: club.id }).catch(() => {});
+        await settleClubMatches(club.id).catch(() => null);
       } else if (matchId) {
-        stageClient.functions.invoke('matchKickoff', { action: 'settle_deadlines', match_id: matchId }).catch(() => {});
+        await settleMatchDeadlines(matchId).catch(() => null);
       }
+      const match = await reloadMatch(matchId);
       setMyPlayer(player || null);
       setMyClub(club || null);
       setGame(match);
@@ -168,7 +167,6 @@ export default function MatchDetailScreen() {
     amIHomeTeam: sides.amIHomeTeam,
   });
   const mins = minutesUntil(game?.scheduled_date);
-  const roomsReady = bothDressingRoomsReady(sides.isClubMatch, dressingCounts);
   const kickoffControls = getKickoffControls({
     game,
     isMyMatch: sides.isMyMatch,
@@ -176,8 +174,6 @@ export default function MatchDetailScreen() {
     isLive,
     showResultForm: showResult,
     minutesUntilMatch: mins,
-    isClubMatch: sides.isClubMatch,
-    bothClubsReady: roomsReady,
   });
 
   const onKickoff = async () => {
@@ -192,7 +188,7 @@ export default function MatchDetailScreen() {
         if (fresh) setGame(fresh);
       }
     } catch (err) {
-      setError(mapKickoffError(err, sides.homeName, sides.awayName));
+      setError(mapKickoffError(err));
     } finally {
       setKickoffLoading(false);
     }
@@ -272,11 +268,6 @@ export default function MatchDetailScreen() {
                     Kickoff available 15 minutes before match time.
                   </StatusBox>
                 ) : null}
-                {kickoffControls.dressingBlocked && !kickoffControls.tooEarly ? (
-                  <StatusBox icon="person" iconColor="#EEF3FB" title="Kickoff blocked — dressing rooms not ready">
-                    Both clubs need at least one player seated.
-                  </StatusBox>
-                ) : null}
                 <TouchableOpacity
                   onPress={onKickoff}
                   disabled={kickoffLoading || !kickoffControls.canPressKickoff}
@@ -313,11 +304,6 @@ export default function MatchDetailScreen() {
                 <StatusBox icon="time-outline" iconColor={CYAN}>
                   Waiting for home team to kick off.
                 </StatusBox>
-                {sides.isClubMatch && !roomsReady ? (
-                  <StatusBox icon="person" iconColor="#EEF3FB" title="Kickoff blocked — dressing rooms not ready">
-                    Take a seat in your dressing room. {sides.homeName} also needs at least one player seated.
-                  </StatusBox>
-                ) : null}
               </View>
             ) : null}
           </GameDayKickoffArena>
@@ -372,7 +358,7 @@ export default function MatchDetailScreen() {
             onGameUpdate={setGame}
           />
 
-          {(isLive || isCompleted || isDisputed || resultControls.homeResultSubmitted || resultControls.awayResultSubmitted) ? (
+          {(isLive || isCompleted || isDisputed || resultControls.homeResultSubmitted || resultControls.awayResultSubmitted || resultControls.resultState) ? (
             <GameDayScoreReport
               game={game}
               homeName={sides.homeName}

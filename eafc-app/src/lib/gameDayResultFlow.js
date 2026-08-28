@@ -33,7 +33,6 @@ export function parseMatchSubmission(raw) {
 export function getResultSubmissionControls({ game, isLive, showResultForm, amIHomeTeam }) {
   const homeResultSubmitted = isSubmittedFlag(game?.result_home_submitted);
   const awayResultSubmitted = isSubmittedFlag(game?.result_away_submitted);
-  const canShowResultAction = Boolean(isLive && !showResultForm);
   const state = String(game?.result_state || '');
   const submitSide = String(game?.result_submit_side || 'home').toLowerCase() === 'away' ? 'away' : 'home';
   const awaitingResult = state === 'AWAITING_RESULT' || (!state && !homeResultSubmitted && !awayResultSubmitted);
@@ -41,16 +40,16 @@ export function getResultSubmissionControls({ game, isLive, showResultForm, amIH
     || (!state && homeResultSubmitted && !awayResultSubmitted);
   const awaitingReview = state === 'AWAITING_HOME_REVIEW';
   const iAmSubmitter = submitSide === 'home' ? Boolean(amIHomeTeam) : !amIHomeTeam;
+  const negotiationOpen = awaitingResult || awaitingConfirm || awaitingReview
+    || state === 'RESULT_OVERDUE' || state === 'ADMIN_REVIEW' || state === 'DISPUTED';
+  const canShowResultAction = Boolean((isLive || negotiationOpen) && !showResultForm);
 
   return {
     homeResultSubmitted,
     awayResultSubmitted,
     showHomeSubmit: canShowResultAction && awaitingResult && Boolean(amIHomeTeam) && submitSide === 'home',
     showAwayWaitingForHome: canShowResultAction && awaitingResult && !amIHomeTeam && submitSide === 'home',
-    showAwaySubmit: canShowResultAction && (
-      (awaitingConfirm && !amIHomeTeam && submitSide === 'home')
-      || (awaitingResult && !amIHomeTeam && submitSide === 'away')
-    ),
+    showAwaySubmit: canShowResultAction && awaitingResult && !amIHomeTeam && submitSide === 'away',
     showHomeWaitingForAway: canShowResultAction && awaitingConfirm && Boolean(amIHomeTeam) && submitSide === 'home',
     showAwaySubmittedWaitingForHome: canShowResultAction && (
       (awaitingConfirm && !amIHomeTeam && submitSide === 'away')
@@ -58,10 +57,36 @@ export function getResultSubmissionControls({ game, isLive, showResultForm, amIH
     ),
     showHomeReview: canShowResultAction && awaitingReview && iAmSubmitter,
     showConfirmResult: canShowResultAction && awaitingConfirm && !iAmSubmitter,
+    canCounter: awaitingReview && iAmSubmitter && Number(game?.home_counter_count || 0) < 1,
+    showOverdue: state === 'RESULT_OVERDUE',
+    showAdminReview: state === 'ADMIN_REVIEW' || state === 'DISPUTED',
+    showFinal: state === 'CONFIRMED' || state === 'AUTO_CONFIRMED_TIMEOUT' || state === 'VOIDED',
     resultState: state,
     submitSide,
     awaitingReview,
+    iAmSubmitter,
   };
+}
+
+export function resultDeadlineAt(game) {
+  const state = String(game?.result_state || '');
+  if (state === 'AWAITING_AWAY_CONFIRMATION') return game?.confirmation_due_at || null;
+  if (state === 'AWAITING_HOME_REVIEW') return game?.review_due_at || null;
+  if (state === 'AWAITING_RESULT' || !state) return game?.result_due_at || null;
+  return null;
+}
+
+export function formatDeadlineCountdown(dueAt, now = new Date()) {
+  if (!dueAt) return null;
+  const due = new Date(dueAt).getTime();
+  if (!Number.isFinite(due)) return null;
+  const remaining = due - now.getTime();
+  if (remaining <= 0) return 'Deadline reached — pull to refresh';
+  const hours = Math.floor(remaining / 3600000);
+  const mins = Math.floor((remaining % 3600000) / 60000);
+  if (hours >= 24) return `${Math.floor(hours / 24)}d ${hours % 24}h left`;
+  if (hours >= 1) return `${hours}h ${mins}m left`;
+  return `${Math.max(mins, 1)}m left`;
 }
 
 export function isValidAdminScore(value) {

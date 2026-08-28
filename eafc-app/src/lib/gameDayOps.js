@@ -101,16 +101,25 @@ export function buildResultPayload({
   ownScore,
   opponentScore,
   seatedPlayers = [],
+  participatingIds = null,
   ratings = {},
+  playerMarks = {},
   goalEvents = [],
   proofUrl,
   action = 'submit_result',
   decided_on_penalties = false,
   penalty_winner_side = null,
+  explanation = null,
 }) {
   const isClubMatch = isClubGameDayMatch(game);
+  const allowedIds = participatingIds == null
+    ? null
+    : new Set((participatingIds || []).map(String));
+  const playedPlayers = isClubMatch
+    ? seatedPlayers.filter((p) => (allowedIds ? allowedIds.has(String(p.id)) : true))
+    : [];
   const derived = {};
-  seatedPlayers.forEach((p) => { derived[p.id] = { goals: 0, assists: 0 }; });
+  playedPlayers.forEach((p) => { derived[p.id] = { goals: 0, assists: 0 }; });
   goalEvents.forEach((ev) => {
     if (ev.scorer_player_id && derived[ev.scorer_player_id]) derived[ev.scorer_player_id].goals += 1;
     if (ev.assist_player_id && derived[ev.assist_player_id]) derived[ev.assist_player_id].assists += 1;
@@ -118,15 +127,18 @@ export function buildResultPayload({
 
   let playerStats = [];
   if (isClubMatch) {
-    playerStats = seatedPlayers.map((p) => ({
-      player_id: p.id,
-      player_email: p.email,
-      player_gamertag: p.gamertag,
-      club_id: myClub?.id || null,
-      goals: derived[p.id]?.goals || 0,
-      assists: derived[p.id]?.assists || 0,
-      rating: Number(ratings[p.id] || 6),
-    }));
+    playerStats = playedPlayers.map((p) => {
+      const marks = playerMarks[p.id] || playerMarks[String(p.id)] || {};
+      return {
+        player_id: p.id,
+        player_email: p.email,
+        player_gamertag: p.gamertag,
+        club_id: myClub?.id || null,
+        goals: Number(marks.goals ?? derived[p.id]?.goals ?? 0) || 0,
+        assists: Number(marks.assists ?? derived[p.id]?.assists ?? 0) || 0,
+        rating: Number(marks.rating ?? ratings[p.id] ?? 6),
+      };
+    });
   } else if (myPlayer) {
     playerStats = [{
       player_id: myPlayer.id,
@@ -160,10 +172,11 @@ export function buildResultPayload({
       assist_gamertag: ev.assist_gamertag || null,
       is_penalty: !!ev.is_penalty,
     })),
-    participating_player_ids: seatedPlayers.map((p) => p.id),
+    participating_player_ids: playedPlayers.map((p) => p.id),
     decided_on_penalties: Number(scores.home_score) === Number(scores.away_score) ? Boolean(decided_on_penalties) : false,
     penalty_winner_side: penalty_winner_side || null,
     proof_url: proofUrl || null,
+    explanation: explanation || null,
   };
 }
 
@@ -181,22 +194,33 @@ export async function reloadMatch(matchId) {
   return fresh?.[0] || null;
 }
 
-export function mapKickoffError(err, homeName, awayName) {
-  const code = err?.data?.code || err?.code;
-  if (code === 'DRESSING_ROOM_NOT_READY' || err?.status === 409) {
-    return err?.message || `Both clubs need a seated player before kickoff (${homeName} / ${awayName}).`;
-  }
+export async function settleMatchDeadlines(matchId) {
+  if (!matchId) return null;
+  await stageClient.functions.invoke('matchKickoff', { action: 'settle_deadlines', match_id: matchId });
+  return reloadMatch(matchId);
+}
+
+export async function settleClubMatches(clubId) {
+  if (!clubId) return null;
+  return stageClient.functions.invoke('matchKickoff', { action: 'settle_club_matches', club_id: clubId });
+}
+
+export function mapKickoffError(err) {
   return err?.message || 'Kickoff failed';
 }
 
 export function mapResultError(err) {
   const code = err?.data?.code || err?.code;
-  if (code === 'PROOF_REQUIRED' || err?.status === 400) {
-    return 'Upload screenshot proof before submitting.';
-  }
-  if (code === 'AWAITING_HOME_SUBMISSION' || err?.status === 409) {
-    return 'Home has not submitted yet. Wait for their result first.';
-  }
+  if (code === 'PROOF_REQUIRED') return 'Upload screenshot proof before submitting.';
+  if (code === 'MATCH_SIDE_REQUIRED') return 'This action is for the other side of the match.';
+  if (code === 'FOREIGN_PLAYER_STATS') return 'You can only submit stats for your own club.';
+  if (code === 'PENALTIES_NOT_ALLOWED') return 'Penalties are not allowed for this fixture.';
+  if (code === 'INVALID_PENALTY_SIDE') return 'Pick home or away as the penalty winner.';
+  if (code === 'NOT_AWAITING_REVIEW') return 'This match is not waiting for a correction review.';
+  if (code === 'NOT_AWAITING_CONFIRMATION') return 'This match is not waiting for confirmation.';
+  if (code === 'CORRECTION_LIMIT') return 'A correction was already proposed. Dispute instead.';
+  if (code === 'COUNTER_LIMIT') return 'The one allowed counter has already been used.';
+  if (code === 'AWAITING_HOME_SUBMISSION') return 'Home has not submitted yet. Wait for their result first.';
   return err?.message || 'Could not submit result.';
 }
 

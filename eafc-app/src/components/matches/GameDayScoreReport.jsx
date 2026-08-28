@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
 import { FUT } from '@/components/dashboard/CommandCenterUI';
 import { parseSubmission, absoluteProofUrl } from '@/lib/adminDisputes';
 import {
-  declaredScoresAgree,
+  formatDeadlineCountdown,
   formatSideClaim,
   getResultSubmissionControls,
+  resultDeadlineAt,
 } from '@/lib/gameDayResultFlow';
 
 export default function GameDayScoreReport({
@@ -20,8 +21,6 @@ export default function GameDayScoreReport({
   showResultForm,
   onSubmitPress,
 }) {
-  if (!isMyMatch) return null;
-
   const homeSub = parseSubmission(game?.home_submission);
   const awaySub = parseSubmission(game?.away_submission);
   const controls = getResultSubmissionControls({
@@ -30,27 +29,55 @@ export default function GameDayScoreReport({
     showResultForm,
     amIHomeTeam,
   });
-  const agree = homeSub && awaySub ? declaredScoresAgree(homeSub, awaySub) : false;
+  const dueAt = resultDeadlineAt(game);
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    if (!dueAt) return undefined;
+    const id = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(id);
+  }, [dueAt]);
+
+  if (!isMyMatch) return null;
+
+  const countdown = formatDeadlineCountdown(dueAt, now);
+  const cta = controls.showHomeReview
+    ? 'REVIEW CORRECTION'
+    : controls.showConfirmResult
+      ? 'CONFIRM RESULT'
+      : controls.showHomeSubmit || controls.showAwaySubmit
+        ? (amIHomeTeam ? 'SUBMIT FULL TIME' : 'SUBMIT RESULT')
+        : null;
 
   return (
     <View style={card}>
       <Text style={title}>MATCH SCORE</Text>
       <Text style={hint}>
-        Both sides enter the score and a screenshot. Matching scores complete the match. A mismatch goes to admin with the proofs.
+        Home submits first. Away confirms or proposes one correction. Stats are only for your own club.
       </Text>
 
-      {isCompleted ? (
+      {countdown ? <Text style={wait}>{countdown}</Text> : null}
+
+      {isCompleted || controls.showFinal ? (
         <Text style={official}>
           Official {game.home_score ?? '?'}–{game.away_score ?? '?'}
+          {Number(game.decided_on_penalties) === 1 ? ' · pens' : ''}
         </Text>
       ) : null}
 
-      {isDisputed ? (
+      {controls.showOverdue ? (
         <View style={disputeBox}>
-          <Text style={{ color: FUT.rose, fontWeight: '900' }}>DISPUTED</Text>
-          <Text style={hint}>
-            Scores do not match. An admin will check both screenshots and pick the official result.
+          <Text style={{ color: FUT.gold, fontWeight: '900' }}>RESULT OVERDUE</Text>
+          <Text style={hint}>Waiting for an admin.</Text>
+        </View>
+      ) : null}
+
+      {controls.showAdminReview || isDisputed ? (
+        <View style={disputeBox}>
+          <Text style={{ color: FUT.rose, fontWeight: '900' }}>
+            {String(game?.result_state || '') === 'ADMIN_REVIEW' ? 'ADMIN REVIEW' : 'DISPUTED'}
           </Text>
+          <Text style={hint}>An admin is reviewing this.</Text>
         </View>
       ) : null}
 
@@ -67,26 +94,20 @@ export default function GameDayScoreReport({
         pending={!awaySub}
       />
 
-      {homeSub && awaySub && !isDisputed && agree ? (
-        <Text style={{ color: FUT.lime, fontSize: 12, fontWeight: '800' }}>Both sides reported the same score.</Text>
-      ) : null}
-
-      {controls.showHomeSubmit || controls.showAwaySubmit ? (
-        <TouchableOpacity onPress={onSubmitPress} style={cta}>
-          <Text style={{ color: '#041018', fontWeight: '900' }}>
-            {amIHomeTeam ? 'SUBMIT FULL TIME' : 'SUBMIT MY RESULT'}
-          </Text>
+      {cta ? (
+        <TouchableOpacity onPress={onSubmitPress} style={ctaStyle}>
+          <Text style={{ color: '#041018', fontWeight: '900' }}>{cta}</Text>
         </TouchableOpacity>
       ) : null}
 
       {controls.showAwayWaitingForHome ? (
-        <Text style={wait}>Home submits first. You confirm the score after they send it.</Text>
+        <Text style={wait}>Home submits first. You confirm after they send it.</Text>
       ) : null}
       {controls.showHomeWaitingForAway ? (
-        <Text style={wait}>Your result is in. Waiting for away to confirm with their screenshot.</Text>
+        <Text style={wait}>Your result is in. Waiting for the other side to confirm.</Text>
       ) : null}
       {controls.showAwaySubmittedWaitingForHome ? (
-        <Text style={wait}>Waiting for home to submit the result.</Text>
+        <Text style={wait}>Waiting for the original submitter to review the correction.</Text>
       ) : null}
     </View>
   );
@@ -138,7 +159,7 @@ const claimRow = {
   padding: 10,
 };
 const thumb = { width: 52, height: 52, borderRadius: 8, backgroundColor: '#0A1222' };
-const cta = {
+const ctaStyle = {
   backgroundColor: FUT.lime,
   borderRadius: 14,
   paddingVertical: 14,
