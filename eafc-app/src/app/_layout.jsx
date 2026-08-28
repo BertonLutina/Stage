@@ -14,7 +14,6 @@ import useNotificationsSocket from '../hooks/useNotificationsSocket';
 import { SocketProvider } from '@/lib/SocketContext';
 import useOneSignal from '../hooks/useOneSignal';
 import useThemeStore from '../store/themeStore';
-import useToastStore from '../store/toastStore';
 import GradientBackground from '../components/common/GradientBackground';
 import Toast from '../components/common/Toast';
 import PageWalkthrough from '../components/onboarding/PageWalkthrough';
@@ -67,7 +66,6 @@ export default function RootLayout() {
     Linking.getInitialURL().then(openIncomingUrl).catch(() => {});
     return () => sub.remove();
   }, [router]);
-  const { visible, message, hide } = useToastStore();
   useEffect(() => {
     initTheme();
   }, []);
@@ -94,7 +92,7 @@ export default function RootLayout() {
             <Stack.Screen name="apps" />
             <Stack.Screen name="teams" />
           </Stack>
-          <Toast visible={visible} message={message} onHide={hide} />
+          <Toast />
           {user ? <PageWalkthrough /> : null}
           <SplashOverlay visible={!bootReady} />
         </View>

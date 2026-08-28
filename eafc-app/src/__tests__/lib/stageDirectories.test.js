@@ -25,6 +25,13 @@ describe('stage directory helpers', () => {
       { platform: 'PlayStation' },
     ).map((p) => p.id)).toEqual(['3', '2']);
     expect(filterPlayerDirectory(players, { position: 'CAM' }).map((p) => p.id)).toEqual(['2']);
+    expect(filterPlayerDirectory(
+      [
+        { id: '1', gamertag: 'Neo', platform: 'PC', position: 'ST', overall_rating: 92 },
+        { id: '2', gamertag: 'Trinity', platform: 'PlayStation', position: 'CAM', overall_rating: 78 },
+      ],
+      { minOvr: '80' },
+    ).map((p) => p.id)).toEqual(['1']);
   });
 
   test('filters clubs by name, tag and region', () => {
@@ -34,6 +41,13 @@ describe('stage directory helpers', () => {
     ];
     expect(filterClubDirectory(clubs, { query: 'afc' }).map((c) => c.id)).toEqual(['c1']);
     expect(filterClubDirectory(clubs, { region: 'North America' }).map((c) => c.id)).toEqual(['c2']);
+    expect(filterClubDirectory(
+      [
+        { id: 'c1', name: 'Ajax', tag: 'AFC', region: 'Europe', platform: 'PlayStation', overall_rating: 88 },
+        { id: 'c2', name: 'Galaxy', tag: 'LAG', region: 'North America', platform: 'Xbox', overall_rating: 74 },
+      ],
+      { minOvr: '80' },
+    ).map((c) => c.id)).toEqual(['c1']);
   });
 
   test('filters transfer entries including expiring_soon under expiring', () => {

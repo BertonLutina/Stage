@@ -4,6 +4,8 @@ import { Tabs } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { pageBottomPad } from '@/lib/pageInsets';
 import useThemeStore from '../../store/themeStore';
 
 const SCREENS = [
@@ -39,6 +41,8 @@ const SCREENS = [
 
 export default function TabsLayout() {
   const tokens = useThemeStore((s) => s.tokens);
+  const insets = useSafeAreaInsets();
+  const tabBottom = pageBottomPad(insets.bottom);
   const C = {
     surface: tokens.isDark ? '#0A1F4A' : tokens.cardSolid,
     primary: tokens.cyan,
@@ -85,7 +89,7 @@ export default function TabsLayout() {
         tabBarItemStyle: { borderRadius: 999, margin: 6 },
         tabBarStyle: {
           position: 'absolute',
-          bottom: 34,
+          bottom: tabBottom,
           height: 64,
           backgroundColor: tokens.live ? 'transparent' : 'rgba(15,23,42,0.72)',
           paddingBottom: 8,

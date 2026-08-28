@@ -24,7 +24,7 @@ import {
   TILE_BORDER,
   FUT,
 } from '@/components/dashboard/CommandCenterUI';
-import PageTile, { SilverPill } from '@/components/theme/PageTile';
+import PageTile, { PageTitle, SilverPill } from '@/components/theme/PageTile';
 
 const COMMUNITY_TABS = [
   { id: 'open', label: 'Open' },
@@ -98,10 +98,14 @@ export default function TournamentListScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={GAME_DAY_SILVER} />
           }
         >
+          <PageTitle
+            title="TOURNAMENTS"
+            subtitle={`${stageTournaments.length} official · ${open.length + live.length} active`}
+            padded={false}
+          />
           <PageTile
             tileKey="tournaments"
-            eyebrow="TOURNAMENTS"
-            subtitle={`${stageTournaments.length} official · ${open.length + live.length} active`}
+            tileTitle="TOURNAMENTS"
             contentStyle={{ paddingHorizontal: 12, gap: 16 }}
           >
             <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, lineHeight: 18 }}>

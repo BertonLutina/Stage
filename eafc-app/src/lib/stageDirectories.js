@@ -15,6 +15,16 @@ import { matchesPlatformFilter } from '@/lib/platformDisplay';
 export const PLAYER_POSITIONS = ['All', 'GK', 'CB', 'LB', 'RB', 'CDM', 'CM', 'CAM', 'LM', 'RM', 'LW', 'RW', 'ST', 'CF'];
 export const PLATFORMS = ['All', 'PlayStation', 'Xbox', 'PC'];
 export const CLUB_REGIONS = ['All', 'Europe', 'North America', 'South America', 'Asia', 'Oceania', 'Middle East'];
+export const OVR_FLOOR_OPTIONS = [
+  { id: 'All', label: 'All' },
+  { id: '70', label: '70+' },
+  { id: '75', label: '75+' },
+  { id: '80', label: '80+' },
+  { id: '85', label: '85+' },
+  { id: '90', label: '90+' },
+  { id: '95', label: '95+' },
+];
+export const OVR_MAX_OPTIONS = OVR_FLOOR_OPTIONS;
 
 export const LIFESTYLE_CATEGORIES = [
   { id: 'houses', label: 'Houses & Apts', emoji: '🏠' },
@@ -101,7 +111,40 @@ export function mapClubsById(clubs) {
   return map;
 }
 
-export function filterPlayerDirectory(players, { query = '', platform = 'All', position = 'All' } = {}) {
+export function readFifaOvr(raw, empty = null) {
+  if (raw == null || raw === '') return empty;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0 || n > 99) return empty;
+  return n;
+}
+
+export function playerOverallRating(player) {
+  return readFifaOvr(
+    player?.overall_rating ?? player?.overallRating ?? player?.ovr,
+    70,
+  );
+}
+
+export function clubOverallRating(club) {
+  return readFifaOvr(club?.overall_rating ?? club?.ovr, null);
+}
+
+export function matchesOvrFloor(rating, minOvr = 'All') {
+  if (!minOvr || minOvr === 'All') return true;
+  const floor = Number(minOvr);
+  if (!Number.isFinite(floor)) return true;
+  if (rating == null || rating === '') return true;
+  const value = Number(rating);
+  if (!Number.isFinite(value)) return true;
+  return value >= floor;
+}
+
+export function filterPlayerDirectory(players, {
+  query = '',
+  platform = 'All',
+  position = 'All',
+  minOvr = 'All',
+} = {}) {
   const q = String(query || '').trim().toLowerCase();
   return asObjectArray(players)
     .filter((player) => {
@@ -109,12 +152,18 @@ export function filterPlayerDirectory(players, { query = '', platform = 'All', p
       if (q && !name.includes(q)) return false;
       if (platform !== 'All' && !matchesPlatformFilter(player.platform, platform)) return false;
       if (position !== 'All' && player.position !== position && player.secondary_position !== position) return false;
+      if (!matchesOvrFloor(playerOverallRating(player), minOvr)) return false;
       return true;
     })
     .sort((a, b) => playerDisplayName(a).localeCompare(playerDisplayName(b)));
 }
 
-export function filterClubDirectory(clubs, { query = '', platform = 'All', region = 'All' } = {}) {
+export function filterClubDirectory(clubs, {
+  query = '',
+  platform = 'All',
+  region = 'All',
+  minOvr = 'All',
+} = {}) {
   const q = String(query || '').trim().toLowerCase();
   return asObjectArray(clubs)
     .filter((club) => {
@@ -123,6 +172,7 @@ export function filterClubDirectory(clubs, { query = '', platform = 'All', regio
       if (q && !name.includes(q) && !tag.includes(q)) return false;
       if (platform !== 'All' && !matchesPlatformFilter(club.platform, platform)) return false;
       if (region !== 'All' && club.region !== region) return false;
+      if (!matchesOvrFloor(clubOverallRating(club), minOvr)) return false;
       return true;
     })
     .sort((a, b) => clubDisplayName(a).localeCompare(clubDisplayName(b)));

@@ -14,8 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GamerProfileShell, GlassIconButton } from '@/components/profile/gamer/GamerProfileUI';
-import { headingStyleLg, headingStyleSm } from '@/lib/fonts';
-import PageTile from '@/components/theme/PageTile';
+import { headingStyleSm } from '@/lib/fonts';
+import PageTile, { PageTitle } from '@/components/theme/PageTile';
 import { useTransferWindowStatus } from '@/hooks/useTransferWindowStatus';
 import {
   filterTransferEntries,
@@ -126,25 +126,19 @@ export default function TransfersScreen() {
           <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
         </View>
 
+        <PageTitle
+          eyebrow="TRANSFER HUB"
+          title="TRANSFERS"
+          subtitle={`${rows.length} player${rows.length === 1 ? '' : 's'} found  •  ${freeCount} free  •  ${expiringCount} expiring`}
+        />
+
         <PageTile
           tileKey="transfers"
-          eyebrow="TRANSFER HUB"
-          subtitle={`${rows.length} player${rows.length === 1 ? '' : 's'} · ${freeCount} free · ${expiringCount} expiring`}
+          tileTitle="TRANSFER HUB"
           style={{ flex: 1, marginHorizontal: 12, marginBottom: 12 }}
           contentStyle={{ flex: 1, paddingHorizontal: 12, gap: 12 }}
         >
           <View style={{ gap: 12 }}>
-            <Text style={[headingStyleLg, { color: '#fff', fontSize: 34, letterSpacing: 1 }]}>
-              TRANSFERS
-            </Text>
-            <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12 }}>
-              {rows.length} player{rows.length === 1 ? '' : 's'} found
-              <Text style={{ color: 'rgba(255,255,255,0.2)' }}>  •  </Text>
-              <Text style={{ color: SILVER }}>{freeCount} free</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.2)' }}>  •  </Text>
-              <Text style={{ color: SILVER }}>{expiringCount} expiring</Text>
-            </Text>
-
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               <HubToggle
                 label="Carousel"

@@ -28,7 +28,7 @@ import {
   GlassIconButton,
 } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT, GAME_DAY_SILVER, SectionCard } from '@/components/dashboard/CommandCenterUI';
-import PageTile from '@/components/theme/PageTile';
+import PageTile, { PageTitle } from '@/components/theme/PageTile';
 
 function parseList(value) {
   if (Array.isArray(value)) return value;
@@ -149,18 +149,20 @@ export default function TournamentDetailScreen() {
       <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 }}>
           <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
-          <Text style={{ color: '#fff', fontWeight: '900', marginLeft: 12, flex: 1 }} numberOfLines={1}>
-            {tournament.name}
-          </Text>
         </View>
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, gap: 12 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={GAME_DAY_SILVER} />}
         >
+          <PageTitle
+            eyebrow={(tournament.type || 'CUP').toUpperCase()}
+            title={tournament.name}
+            subtitle={`${tournament.status} · ${playerTournament ? `${players.length} players` : `${clubs.length} clubs`}`}
+            padded={false}
+          />
           <PageTile
             tileKey="tournaments"
-            eyebrow={(tournament.type || 'CUP').toUpperCase()}
-            subtitle={`${tournament.status} · ${playerTournament ? `${players.length} players` : `${clubs.length} clubs`}`}
+            tileTitle={(tournament.type || 'CUP').toUpperCase()}
             player={myPlayer}
             onPlayerChanged={setMyPlayer}
             contentStyle={{ paddingHorizontal: 12, gap: 12 }}

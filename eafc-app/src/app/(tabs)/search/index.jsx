@@ -7,10 +7,9 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { readAccountMode } from '@/lib/accountMode';
 import { getMiniAppGroups, filterMiniAppGroups } from '@/lib/miniApps';
-import { headingStyle, headingStyleSm } from '@/lib/fonts';
 import { GamerProfileShell, useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
 import { GAME_DAY_SILVER, TILE_BORDER } from '@/components/dashboard/CommandCenterUI';
-import PageTile from '@/components/theme/PageTile';
+import PageTile, { PageTitle } from '@/components/theme/PageTile';
 import { CARD_RADIUS } from '@/lib/stageTheme';
 
 function AppTile({ item, onPress, theme }) {
@@ -99,21 +98,12 @@ export default function SearchIndex() {
       <StatusBar barStyle={theme.barStyle} translucent backgroundColor="transparent" />
       <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 }}>
-          <Text style={[headingStyleSm, { color: GAME_DAY_SILVER, fontSize: 10, letterSpacing: 2 }]}>
-            STAGE
-          </Text>
-          <Text style={[headingStyle, { color: theme.text, marginTop: 2 }]}>
-            Apps
-          </Text>
-          <Text style={{
-            color: theme.muted,
-            fontSize: 13,
-            marginTop: 4,
-            lineHeight: 18,
-          }}
-          >
-            Find players, clubs, transfers, inbox, and settings.
-          </Text>
+          <PageTitle
+            eyebrow="STAGE"
+            title="APPS"
+            subtitle="Find players, clubs, transfers, inbox, and settings."
+            padded={false}
+          />
 
           <View style={{
             marginTop: 16,
@@ -159,8 +149,7 @@ export default function SearchIndex() {
         >
           <PageTile
             tileKey="apps"
-            eyebrow="APPS"
-            subtitle="Find players, clubs, transfers"
+            tileTitle="APPS"
             contentStyle={{ paddingHorizontal: 12, gap: 16 }}
           >
           {groups.length === 0 ? (

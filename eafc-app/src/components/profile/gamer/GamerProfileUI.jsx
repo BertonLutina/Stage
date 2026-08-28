@@ -4,8 +4,10 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import useThemeStore from '@/store/themeStore';
 import { CARD_RADIUS, hexToRgba } from '@/lib/stageTheme';
+import { pageBottomPad } from '@/lib/pageInsets';
 import LiveGlass from '@/components/theme/LiveGlass';
 import LiveDarkWallpaper from '@/components/theme/LiveDarkWallpaper';
 import TrapeziumPhotoCard from '@/components/profile/TrapeziumPhotoCard';
@@ -41,6 +43,7 @@ function GlassFill({ children, style, intensity = 22 }) {
 export function GamerProfileShell({ children, style }) {
   const tokens = useGamerTokens();
   const liveDark = useThemeStore((s) => s.liveDark);
+  const insets = useSafeAreaInsets();
   return (
     <View style={[{ flex: 1, backgroundColor: liveDark ? 'transparent' : tokens.bg }, style]}>
       {liveDark ? (
@@ -73,7 +76,9 @@ export function GamerProfileShell({ children, style }) {
           />
         ))}
       </View>
-      <View style={{ flex: 1, zIndex: 1 }}>{children}</View>
+      <View style={{ flex: 1, zIndex: 1, paddingBottom: pageBottomPad(insets.bottom) }}>
+        {children}
+      </View>
     </View>
   );
 }

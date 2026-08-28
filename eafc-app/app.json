@@ -33,7 +33,9 @@
       "appleTeamId": "SN94V6837Q",
       "deploymentTarget": "16.4",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSMinimumSystemVersion": "12.0",
+        "NSLocationWhenInUseUsageDescription": "Stage may use your location to send relevant club and match notifications while you use the app."
       }
     },
     "plugins": [
@@ -51,7 +53,8 @@
         "onesignal-expo-plugin",
         {
           "mode": "development",
-          "devTeam": "SN94V6837Q"
+          "devTeam": "SN94V6837Q",
+          "disableLocation": true
         }
       ],
       [

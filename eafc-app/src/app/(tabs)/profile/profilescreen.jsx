@@ -508,8 +508,7 @@ export default function ProfileScreen({
       <View style={{ paddingHorizontal: 16, marginTop: tab === 'career' ? 8 : 16 }}>
         <PageTile
           tileKey="profile"
-          eyebrow="PROFILE"
-          subtitle={displayName}
+          tileTitle="PROFILE"
           player={player}
           onPlayerChanged={isOwn ? setPlayer : undefined}
           showMenu={isOwn}

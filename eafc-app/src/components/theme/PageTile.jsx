@@ -9,12 +9,12 @@ import {
   TILE_FILL_LIVE,
   tileChrome,
 } from '@/components/dashboard/CommandCenterUI';
-import { headingStyleSm } from '@/lib/fonts';
+import { headingStyleLg, headingStyleSm } from '@/lib/fonts';
 import {
+  canUseTileBackgrounds,
   getGameDayTileBackgroundConfig,
   hasCustomGameDayTileBackground,
 } from '@/lib/gameDayTileBackgrounds';
-import { hasStagePlus } from '@/lib/subscriptionUtils';
 import { useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
 
 /**
@@ -25,6 +25,7 @@ export default function PageTile({
   tileKey,
   eyebrow,
   subtitle,
+  tileTitle,
   children,
   player: playerProp,
   onPlayerChanged,
@@ -60,9 +61,12 @@ export default function PageTile({
   };
 
   const config = getGameDayTileBackgroundConfig(player, tileKey);
-  const custom = hasCustomGameDayTileBackground(config);
+  const plus = canUseTileBackgrounds(player);
+  const custom = plus && hasCustomGameDayTileBackground(config);
   const live = tokens.live === true;
   const menuVisible = (showMenu ?? Boolean(player)) && Boolean(player);
+  const dialogTitle = tileTitle || eyebrow;
+  const showHeader = Boolean(eyebrow || subtitle || headerRight || menuVisible);
 
   return (
     <>
@@ -76,29 +80,31 @@ export default function PageTile({
           style,
         ]}
       >
-        <GameDayTileBackgroundLayers config={config} variant="panel" />
+        <GameDayTileBackgroundLayers config={plus ? config : undefined} variant="panel" />
         <View style={{ paddingVertical: 12, flex: style?.flex ? 1 : undefined }}>
-          {eyebrow ? (
+          {showHeader ? (
             <View style={{
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'flex-end',
               paddingHorizontal: 12,
-              marginBottom: 10,
+              marginBottom: eyebrow || subtitle ? 10 : 8,
               gap: 10,
             }}
             >
               <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={[headingStyleSm, { color: GAME_DAY_SILVER, fontSize: 11, letterSpacing: 2 }]}>
-                  {eyebrow}
-                </Text>
+                {eyebrow ? (
+                  <Text style={[headingStyleSm, { color: GAME_DAY_SILVER, fontSize: 11, letterSpacing: 2 }]}>
+                    {eyebrow}
+                  </Text>
+                ) : null}
                 {subtitle ? (
                   <Text
                     numberOfLines={1}
                     style={{
                       color: 'rgba(255,255,255,0.35)',
                       fontSize: 10,
-                      marginTop: 4,
+                      marginTop: eyebrow ? 4 : 0,
                       letterSpacing: 1.4,
                       textTransform: 'uppercase',
                     }}
@@ -112,7 +118,7 @@ export default function PageTile({
                 {menuVisible ? (
                   <GameDayTileMenuButton
                     onPress={() => setDialog(true)}
-                    accessibilityLabel={`Change ${eyebrow || 'tile'} background`}
+                    accessibilityLabel={`Change ${dialogTitle || 'tile'} background`}
                   />
                 ) : null}
               </View>
@@ -128,11 +134,34 @@ export default function PageTile({
         onClose={() => setDialog(false)}
         player={player}
         tileKey={tileKey}
-        tileTitle={eyebrow}
-        canCustomize={hasStagePlus(player?.subscription)}
+        tileTitle={dialogTitle}
+        canCustomize={plus}
         onPlayerChanged={patchPlayer}
       />
     </>
+  );
+}
+
+export function PageTitle({ eyebrow, title, subtitle, padded = true, style }) {
+  if (!eyebrow && !title && !subtitle) return null;
+  return (
+    <View style={[{ paddingBottom: 12, gap: 6 }, padded ? { paddingHorizontal: 16 } : null, style]}>
+      {eyebrow ? (
+        <Text style={[headingStyleSm, { color: GAME_DAY_SILVER, fontSize: 11, letterSpacing: 2 }]}>
+          {eyebrow}
+        </Text>
+      ) : null}
+      {title ? (
+        <Text style={[headingStyleLg, { color: '#fff', fontSize: 34, letterSpacing: 1 }]}>
+          {title}
+        </Text>
+      ) : null}
+      {subtitle ? (
+        <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12 }}>
+          {subtitle}
+        </Text>
+      ) : null}
+    </View>
   );
 }
 

@@ -15,7 +15,7 @@ import {
   GlassIconButton,
 } from '@/components/profile/gamer/GamerProfileUI';
 import { GAME_DAY_SILVER, SectionCard } from '@/components/dashboard/CommandCenterUI';
-import PageTile from '@/components/theme/PageTile';
+import PageTile, { PageTitle } from '@/components/theme/PageTile';
 import { loadCompetitionsHub, loadLeaguesHub } from '@/lib/competitionSeason';
 
 export default function CompetitionsScreen() {
@@ -44,7 +44,6 @@ export default function CompetitionsScreen() {
       <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 }}>
           <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
-          <Text style={{ color: '#fff', fontWeight: '900', marginLeft: 12, fontSize: 16 }}>GOST</Text>
           <TouchableOpacity onPress={() => router.push('/apps/register')} style={{ marginLeft: 'auto' }}>
             <Text style={{ color: GAME_DAY_SILVER, fontWeight: '800', fontSize: 12 }}>REGISTER</Text>
           </TouchableOpacity>
@@ -56,10 +55,14 @@ export default function CompetitionsScreen() {
             contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={GAME_DAY_SILVER} />}
           >
+            <PageTitle
+              title="GOST"
+              subtitle="Global Official STAGE Tournaments"
+              padded={false}
+            />
             <PageTile
               tileKey="competitions"
-              eyebrow="GOST"
-              subtitle="Global Official STAGE Tournaments"
+              tileTitle="GOST"
               contentStyle={{ paddingHorizontal: 12, gap: 12 }}
             >
               <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, lineHeight: 18 }}>

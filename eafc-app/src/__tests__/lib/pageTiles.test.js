@@ -7,7 +7,13 @@ function read(rel) {
 
 describe('page tiles', () => {
   test('dialog still patches the shared tile-background endpoint', () => {
-    expect(read('../../components/matches/GameDayTileBackgroundDialog.jsx')).toMatch(/game-day-tile-background/);
+    const dialog = read('../../components/matches/GameDayTileBackgroundDialog.jsx');
+    expect(dialog).toMatch(/game-day-tile-background/);
+    expect(dialog).toMatch(/title_key/);
+    expect(dialog).toMatch(/pageTileKeyFields/);
+    expect(dialog).toMatch(/STAGE_PLUS_TILE_BACKGROUND_ERROR/);
+    expect(dialog).toMatch(/canCustomize/);
+    expect(read('../../components/theme/PageTile.jsx')).toMatch(/canUseTileBackgrounds/);
     expect(read('../../components/theme/PageTile.jsx')).toMatch(/GameDayTileBackgroundDialog/);
     expect(read('../../components/theme/PageTile.jsx')).toMatch(/tileKey/);
   });
@@ -34,5 +40,37 @@ describe('page tiles', () => {
     expect(read('../../app/apps/competitions.jsx')).not.toMatch(/PitchAtmosphere/);
     expect(read('../../app/apps/transfers.jsx')).toMatch(/tileKey="transfers"/);
     expect(read('../../app/apps/transfers.jsx')).toMatch(/PageTile/);
+    expect(read('../../app/apps/find-players.jsx')).toMatch(/tileKey="find_players"/);
+    expect(read('../../app/apps/find-clubs.jsx')).toMatch(/tileKey="find_clubs"/);
+  });
+
+  test('page titles sit outside the tile background', () => {
+    const files = [
+      '../../components/theme/PageTile.jsx',
+      '../../app/apps/transfers.jsx',
+      '../../app/apps/inbox/index.jsx',
+      '../../app/apps/competitions.jsx',
+      '../../app/apps/register.jsx',
+      '../../app/(tabs)/search/index.jsx',
+      '../../app/(tabs)/tournaments/tournamentlistscreen.jsx',
+      '../../app/(tabs)/tournaments/tournamentdetailscreen.jsx',
+      '../../app/apps/find-players.jsx',
+      '../../app/apps/find-clubs.jsx',
+    ];
+    expect(read(files[0])).toMatch(/export function PageTitle/);
+    files.slice(1).forEach((rel) => {
+      const src = read(rel);
+      expect(src).toMatch(/<PageTitle/);
+      const open = src.match(/<PageTile\b[\s\S]*?>/);
+      expect(open).toBeTruthy();
+      expect(open[0]).not.toMatch(/\beyebrow=/);
+      expect(open[0]).toMatch(/tileTitle=/);
+    });
+    const home = read('../../components/dashboard/DashboardLayoutLab.jsx');
+    expect(home).toMatch(/<PageTile\b[\s\S]*?tileTitle="HOME"/);
+    expect(home).not.toMatch(/<PageTitle/);
+    const profile = read('../../app/(tabs)/profile/profilescreen.jsx');
+    expect(profile).toMatch(/tileTitle="PROFILE"/);
+    expect(profile).not.toMatch(/<PageTitle/);
   });
 });

@@ -14,7 +14,7 @@ import {
   GlassIconButton,
 } from '@/components/profile/gamer/GamerProfileUI';
 import { GAME_DAY_SILVER } from '@/components/dashboard/CommandCenterUI';
-import PageTile from '@/components/theme/PageTile';
+import PageTile, { PageTitle } from '@/components/theme/PageTile';
 
 /**
  * Inbox — Outlook-style list (Stage theme). Deep-link: /apps/inbox?id=
@@ -156,10 +156,14 @@ export default function InboxScreen() {
           </View>
         ) : null}
 
+        <PageTitle
+          title="INBOX"
+          subtitle={unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
+        />
+
         <PageTile
           tileKey="inbox"
-          eyebrow="INBOX"
-          subtitle={unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
+          tileTitle="INBOX"
           style={{ flex: 1, marginHorizontal: 12, marginBottom: 12 }}
           contentStyle={{ flex: 1, paddingHorizontal: 0 }}
         >

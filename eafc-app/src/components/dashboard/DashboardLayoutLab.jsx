@@ -37,8 +37,7 @@ function HomePageTile({ vm, children }) {
   return (
     <PageTile
       tileKey="home"
-      eyebrow="HOME"
-      subtitle={vm.gamertag}
+      tileTitle="HOME"
       player={vm.player}
       onPlayerChanged={vm.patchPlayer}
       contentStyle={{ paddingHorizontal: 12, gap: 14 }}

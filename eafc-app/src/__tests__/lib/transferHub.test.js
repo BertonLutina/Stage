@@ -22,6 +22,9 @@ describe('mobile transfer hub', () => {
     expect(page).toMatch(/TransferFilters/);
     expect(page).toMatch(/TransferPlayerList/);
     expect(page).not.toMatch(/AppDirectoryScreen/);
+    expect(page).toMatch(/<PageTitle/);
+    expect(page).toMatch(/tileTitle="TRANSFER HUB"/);
+    expect(page.match(/<PageTile\b[\s\S]*?>/)[0]).not.toMatch(/\beyebrow=/);
   });
 
   test('transfer hub chrome uses Game Day silver, not gold or cyan', () => {

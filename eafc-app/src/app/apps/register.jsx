@@ -17,7 +17,7 @@ import {
   GlassIconButton,
 } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT, GAME_DAY_SILVER, SectionCard } from '@/components/dashboard/CommandCenterUI';
-import PageTile from '@/components/theme/PageTile';
+import PageTile, { PageTitle } from '@/components/theme/PageTile';
 import { REGIONS } from '@/lib/qualificationConfig';
 import { applyForLeague, ACTIVE_STATUSES } from '@/lib/registrationEngine';
 import { loadSeasonRegistrations } from '@/lib/competitionSeason';
@@ -101,7 +101,6 @@ export default function SeasonRegisterScreen() {
       <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 }}>
           <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
-          <Text style={{ color: '#fff', fontWeight: '900', marginLeft: 12 }}>SEASON REGISTER</Text>
         </View>
         {loading ? (
           <ActivityIndicator color={GAME_DAY_SILVER} style={{ marginTop: 40 }} />
@@ -110,10 +109,14 @@ export default function SeasonRegisterScreen() {
             contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, gap: 10 }}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={GAME_DAY_SILVER} />}
           >
+            <PageTitle
+              title="REGISTER"
+              subtitle="Regional leagues"
+              padded={false}
+            />
             <PageTile
               tileKey="competitions"
-              eyebrow="REGISTER"
-              subtitle="Regional leagues"
+              tileTitle="REGISTER"
               contentStyle={{ paddingHorizontal: 12, gap: 10 }}
             >
             {!registrationClub ? (
