@@ -30,7 +30,7 @@ import {
 } from '@/components/profile/gamer/GamerProfileUI';
 import { SectionCard, SectionTitle, FUT } from '@/components/dashboard/CommandCenterUI';
 import { headingStyle, headingStyleSm } from '@/lib/fonts';
-import { MATCH_STATUS_LABEL, loadDressingCounts, reloadMatch, resolveMatchSides, sameId } from '@/lib/gameDayOps';
+import { MATCH_STATUS_LABEL, loadDressingCounts, pickMyClubForMatch, reloadMatch, resolveMatchSides, sameId, uniqueIdentityClubs } from '@/lib/gameDayOps';
 import { resolveCrestUrl } from '@/lib/gameDayPresentation';
 import { canUseTileBackgrounds, getGameDayTileBackgroundConfig, hasCustomGameDayTileBackground } from '@/lib/gameDayTileBackgrounds';
 
@@ -52,6 +52,7 @@ export default function MatchesIndex() {
     leagueFilter,
     setLeagueFilter,
     myClub,
+    presidentClub,
     myPlayer,
     setMyPlayer,
   } = useMatchesHub();
@@ -99,12 +100,14 @@ export default function MatchesIndex() {
 
   const featured = playable.find((e) => e.id === featuredId) || playable[0] || null;
   const featuredMatch = featured?.matchData;
-  const featuredSides = resolveMatchSides(featuredMatch, myClub, myPlayer);
+  const hubClubs = uniqueIdentityClubs(myClub, presidentClub);
+  const featuredClub = pickMyClubForMatch(featuredMatch, hubClubs);
+  const featuredSides = resolveMatchSides(featuredMatch, featuredClub, myPlayer);
   const showDressingRoom = Boolean(
     featuredMatch
     && featuredSides.isClubMatch
     && featuredSides.isMyMatch
-    && myClub
+    && featuredClub
     && featured.status !== 'disputed',
   );
   const canCustomizeTiles = canUseTileBackgrounds(myPlayer);
@@ -305,7 +308,7 @@ export default function MatchesIndex() {
                     key={event.id}
                     event={event}
                     selected={featured?.id === event.id}
-                    myClub={myClub}
+                    myClub={pickMyClubForMatch(event.matchData, hubClubs)}
                     onPress={() => setFeaturedId(event.id)}
                   />
                 ))}
@@ -318,8 +321,8 @@ export default function MatchesIndex() {
               <GameDayKickoffArena
                 homeName={featured.homeName}
                 awayName={featured.awayName}
-                homeLogo={resolveCrestUrl(featuredMatch, 'home', myClub, myPlayer)}
-                awayLogo={resolveCrestUrl(featuredMatch, 'away', myClub, myPlayer)}
+                homeLogo={resolveCrestUrl(featuredMatch, 'home', featuredClub, myPlayer)}
+                awayLogo={resolveCrestUrl(featuredMatch, 'away', featuredClub, myPlayer)}
                 homeYou={featured.isHome}
                 awayYou={!featured.isHome}
                 date={featured.date}
@@ -337,7 +340,7 @@ export default function MatchesIndex() {
               {showDressingRoom ? (
                 <GameDayDressingRoomPanel
                   game={featuredMatch}
-                  myClub={myClub}
+                  myClub={featuredClub}
                   myPlayer={myPlayer}
                   dressingCounts={dressingCounts}
                   backgroundConfig={dressingRoomBg}
@@ -400,7 +403,7 @@ export default function MatchesIndex() {
             setPresetKind(null);
           }}
           myPlayer={myPlayer}
-          myClub={myClub}
+          myClub={presidentClub || myClub}
           presetOpponent={presetOpponent}
           presetKind={presetKind}
           onSent={() => {

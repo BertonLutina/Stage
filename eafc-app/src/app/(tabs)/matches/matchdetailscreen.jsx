@@ -26,11 +26,13 @@ import {
   loadDressingCounts,
   mapKickoffError,
   minutesUntil,
+  pickMyClubForMatch,
   reloadMatch,
   resolveMatchSides,
   sameId,
   settleClubMatches,
   settleMatchDeadlines,
+  uniqueIdentityClubs,
 } from '@/lib/gameDayOps';
 import { getKickoffControls, getResultSubmissionControls } from '@/lib/gameDayResultFlow';
 import GameDayWagerCard from '@/components/matches/GameDayWagerCard';
@@ -64,15 +66,19 @@ export default function MatchDetailScreen() {
     if (!matchId) return;
     setError('');
     try {
-      const { player, club } = await resolveMyPlayerAndClub();
-      if (club?.id) {
-        await settleClubMatches(club.id).catch(() => null);
-      } else if (matchId) {
+      const { player, club, presidentClub } = await resolveMyPlayerAndClub();
+      const clubs = uniqueIdentityClubs(
+        player?.club_id ? { id: player.club_id } : null,
+        club,
+        presidentClub,
+      );
+      await Promise.all(clubs.map((row) => settleClubMatches(row.id).catch(() => null)));
+      if (!clubs.length && matchId) {
         await settleMatchDeadlines(matchId).catch(() => null);
       }
       const match = await reloadMatch(matchId);
       setMyPlayer(player || null);
-      setMyClub(club || null);
+      setMyClub(pickMyClubForMatch(match, clubs) || club || presidentClub || null);
       setGame(match);
       if (match) setDressingCounts(await loadDressingCounts(match));
     } catch (err) {

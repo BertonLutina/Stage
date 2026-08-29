@@ -114,6 +114,32 @@ describe('club profile data (web ClubDetail parity)', () => {
     expect(calls.some(([name]) => name === 'Post.filter')).toBe(true);
   });
 
+  test('loadClubProfile does not fall back to the leftover President entity', async () => {
+    const calls = [];
+    const client = {
+      entities: {
+        Club: { get: async (id) => ({ id, name: 'No Prez Id' }) },
+        Player: { get: async (id) => { calls.push(['Player.get', id]); return { id }; }, filter: async () => [] },
+        ClubStaffRole: { filter: async () => [] },
+        PlayerContract: { filter: async () => [] },
+        President: {
+          get: async (id) => { calls.push(['President.get', id]); return { id }; },
+          filter: async (q) => { calls.push(['President.filter', q]); return [{ id: 'legacy' }]; },
+        },
+        Post: { filter: async () => [] },
+        ClubAchievement: { filter: async () => [] },
+        ChatMessage: { filter: async () => [] },
+        CompetitionStanding: { filter: async () => [] },
+        RegionalLeagueStanding: { filter: async () => [] },
+      },
+      profileMatches: { list: async () => [] },
+    };
+
+    const bundle = await loadClubProfile('club-2', client);
+    expect(bundle.president).toBeNull();
+    expect(calls.some(([name]) => String(name).startsWith('President'))).toBe(false);
+  });
+
   test('stadium comes from club stadium fields, not a mock venue', () => {
     expect(mapStadiumFromClub({
       stadium_level: 2,

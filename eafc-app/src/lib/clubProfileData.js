@@ -204,19 +204,9 @@ function emptyBundle(club = null) {
 }
 
 async function loadPresident(club, client) {
-  if (club?.president_player_id) {
-    const presidentPlayer = asObject(await client.entities.Player.get(club.president_player_id).catch(() => null));
-    const mapped = mapPresidentFromPlayer(presidentPlayer, club);
-    if (mapped) return mapped;
-  }
-  if (club?.president_id) {
-    return asObject(await client.entities.President.get(club.president_id).catch(() => null));
-  }
-  if (club?.id) {
-    const byClub = await client.entities.President.filter({ club_id: club.id }, null, 1).catch(() => []);
-    return asObject(asObjectArray(byClub)[0]);
-  }
-  return null;
+  if (!club?.president_player_id) return null;
+  const presidentPlayer = asObject(await client.entities.Player.get(club.president_player_id).catch(() => null));
+  return mapPresidentFromPlayer(presidentPlayer, club);
 }
 
 async function enrichSquad(clubId, initialPlayerRows, staffRoleRows, activeContractRows, client) {

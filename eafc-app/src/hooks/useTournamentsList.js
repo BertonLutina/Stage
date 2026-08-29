@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { stageClient } from '../api/stageClient';
+import { resolveMyPlayerAndClub, stageClient } from '../api/stageClient';
+import { canCreateCommunityTournament } from '../lib/communityTournamentCreate';
 
 function isFuture(date) {
   if (!date) return false;
@@ -16,27 +17,32 @@ export default function useTournamentsList() {
   const [trophyItems, setTrophyItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [canCreate, setCanCreate] = useState(true);
+  const [canCreate, setCanCreate] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [rows, trophies] = await Promise.all([
+      const [rows, trophies, identity] = await Promise.all([
         stageClient.entities.Tournament.list('-created_date', 100).catch(() => []),
         stageClient.entities.TrophyItem
           ? stageClient.entities.TrophyItem.list('sort_order', 50).catch(() => [])
           : Promise.resolve([]),
+        resolveMyPlayerAndClub().catch(() => ({})),
       ]);
       const list = (Array.isArray(rows) ? rows : []).filter(
         (t) => t?.status !== 'cancelled' && t?.status !== 'archived'
       );
       setTournaments(list);
       setTrophyItems(Array.isArray(trophies) ? trophies : []);
-      setCanCreate(true);
+      setCanCreate(canCreateCommunityTournament({
+        user: identity?.user,
+        player: identity?.player,
+      }));
     } catch (err) {
       setTournaments([]);
       setError(err?.message || 'Failed to load tournaments');
+      setCanCreate(false);
     } finally {
       setLoading(false);
     }

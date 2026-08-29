@@ -3,7 +3,7 @@ import { resolveMyPlayerAndClub, stageClient } from '../api/stageClient';
 import { materializeConfirmedFixtures } from '../lib/gameDayIntegration';
 import { isActiveGameDayMatch } from '../lib/gameDayPresentation';
 import { isGameDayMatchSocketPayload, sameRecordId } from '../lib/gameDayRealtime';
-import { settleClubMatches } from '../lib/gameDayOps';
+import { pickMyClubForMatch, sameId, settleClubMatches, uniqueIdentityClubs } from '../lib/gameDayOps';
 
 function uniqById(rows = []) {
   const map = new Map();
@@ -25,14 +25,16 @@ function deriveCompetition(match, tournament) {
   return tournament.name || 'Tournament';
 }
 
+function matchIsHome(match, club, player) {
+  const isSolo = match.mode === 'solo' || (!match.home_club_id && !match.away_club_id);
+  if (isSolo) return sameId(match.home_player_id, player?.id);
+  if (club) return sameId(match.home_club_id, club.id);
+  return sameId(match.home_player_id, player?.id);
+}
+
 function getResult(match, club, player) {
   if (match.status !== 'completed' && match.status !== 'awaiting_confirmation') return null;
-  const isSolo = match.mode === 'solo' || (!match.home_club_id && !match.away_club_id);
-  const isHome = isSolo
-    ? match.home_player_id === player?.id
-    : club
-      ? match.home_club_id === club.id
-      : match.home_player_id === player?.id;
+  const isHome = matchIsHome(match, club, player);
   const myScore = isHome ? Number(match.home_score ?? 0) : Number(match.away_score ?? 0);
   const theirScore = isHome ? Number(match.away_score ?? 0) : Number(match.home_score ?? 0);
   let outcome = 'D';
@@ -46,14 +48,11 @@ function getResult(match, club, player) {
   };
 }
 
-function toEvent(match, { club, player, tournamentMap }) {
+function toEvent(match, { clubs, player, tournamentMap }) {
   const tournament = tournamentMap.get(match.tournament_id);
+  const club = pickMyClubForMatch(match, clubs);
   const isSolo = match.mode === 'solo' || (!match.home_club_id && !match.away_club_id);
-  const isHome = isSolo
-    ? match.home_player_id === player?.id
-    : club
-      ? match.home_club_id === club.id
-      : match.home_player_id === player?.id;
+  const isHome = matchIsHome(match, club, player);
 
   const homeName = isSolo ? match.home_player_name : match.home_club_name || match.home_player_name;
   const awayName = isSolo ? match.away_player_name : match.away_club_name || match.away_player_name;
@@ -73,9 +72,9 @@ function toEvent(match, { club, player, tournamentMap }) {
     status: match.status,
     matchData: match,
     isHome,
-    isMyClub:
-      Boolean(club) &&
-      (match.home_club_id === club.id || match.away_club_id === club.id),
+    isMyClub: Boolean(club) && (
+      sameId(match.home_club_id, club.id) || sameId(match.away_club_id, club.id)
+    ),
     hasStream: Boolean(match.home_stream_url || match.away_stream_url),
     videos: match.videos || [],
   };
@@ -90,6 +89,7 @@ export default function useMatchesHub() {
   const [error, setError] = useState(null);
   const [events, setEvents] = useState([]);
   const [myClub, setMyClub] = useState(null);
+  const [presidentClub, setPresidentClub] = useState(null);
   const [myPlayer, setMyPlayer] = useState(null);
   const [leagueFilter, setLeagueFilter] = useState('all');
 
@@ -97,25 +97,29 @@ export default function useMatchesHub() {
     if (!silent) setLoading(true);
     setError(null);
     try {
-      const { user, player, club } = await resolveMyPlayerAndClub();
-      setMyClub(club || null);
+      const { player, club, presidentClub: ownedClub } = await resolveMyPlayerAndClub();
+      const clubs = uniqueIdentityClubs(
+        player?.club_id ? { id: player.club_id } : null,
+        club,
+        ownedClub,
+      );
+      setMyClub(club || ownedClub || null);
+      setPresidentClub(ownedClub || null);
       setMyPlayer(player || null);
 
-      const clubId = club?.id || player?.club_id;
+      const clubIds = clubs.map((row) => row.id);
       const playerId = player?.id;
-      if (clubId) {
-        await settleClubMatches(clubId).catch(() => null);
-      }
+      await Promise.all(clubIds.map((id) => settleClubMatches(id).catch(() => null)));
 
       const matchPromises = [];
-      if (clubId) {
+      clubIds.forEach((clubId) => {
         matchPromises.push(
           stageClient.entities.Match.filter({ home_club_id: clubId }, '-scheduled_date', 50).catch(() => [])
         );
         matchPromises.push(
           stageClient.entities.Match.filter({ away_club_id: clubId }, '-scheduled_date', 50).catch(() => [])
         );
-      }
+      });
       if (playerId) {
         matchPromises.push(
           stageClient.entities.Match.filter({ home_player_id: playerId }, '-scheduled_date', 40).catch(() => [])
@@ -130,16 +134,18 @@ export default function useMatchesHub() {
         matchPromises.push(stageClient.entities.Match.list('-scheduled_date', 40).catch(() => []));
       }
 
-      const [tournaments, materialized, ...matchChunks] = await Promise.all([
+      const [tournaments, ...rest] = await Promise.all([
         stageClient.entities.Tournament.list('-created_date', 100).catch(() => []),
-        clubId ? materializeConfirmedFixtures(clubId).catch(() => []) : Promise.resolve([]),
+        ...clubIds.map((clubId) => materializeConfirmedFixtures(clubId).catch(() => [])),
         ...matchPromises,
       ]);
+      const materialized = rest.slice(0, clubIds.length).flat();
+      const matchChunks = rest.slice(clubIds.length);
 
       const tournamentMap = new Map((tournaments || []).map((t) => [t.id, t]));
       const matches = uniqById([...(materialized || []), ...matchChunks.flat()]);
       const mapped = matches
-        .map((m) => toEvent(m, { club, player, tournamentMap }))
+        .map((m) => toEvent(m, { clubs, player, tournamentMap }))
         .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
       setEvents(mapped);
@@ -197,6 +203,7 @@ export default function useMatchesHub() {
     error,
     reload: load,
     myClub,
+    presidentClub,
     myPlayer,
     setMyPlayer,
     events,

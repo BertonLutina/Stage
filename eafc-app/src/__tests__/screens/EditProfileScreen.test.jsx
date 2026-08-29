@@ -45,9 +45,6 @@ jest.mock('../../api/stageClient', () => ({
         update: jest.fn(async (_id, body) => ({ id: 'player-1', ...body })),
         create: jest.fn(),
       },
-      President: {
-        update: jest.fn(async (_id, body) => ({ id: 'prez-1', ...body })),
-      },
     },
     integrations: { Core: { UploadFile: jest.fn() } },
   },
@@ -59,7 +56,6 @@ describe('EditProfileScreen', () => {
     mockBack.mockClear();
     mockUpdateUser.mockClear();
     stageClient.entities.Player.update.mockClear();
-    stageClient.entities.President.update.mockClear();
     stageClient.integrations.Core.UploadFile.mockClear();
     resolveMyPlayerAndClub.mockResolvedValue({
       player: {
@@ -95,7 +91,7 @@ describe('EditProfileScreen', () => {
     expect(getByLabelText('Bio').props.value).toBe('Hello pitch');
   });
 
-  it('saves gamertag, bio and avatar metadata to Player and President', async () => {
+  it('saves gamertag, bio and avatar metadata to Player only', async () => {
     const { getByLabelText, getByText } = render(<EditProfileScreen />);
 
     await waitFor(() => {
@@ -121,14 +117,6 @@ describe('EditProfileScreen', () => {
       );
     });
 
-    expect(stageClient.entities.President.update).toHaveBeenCalledWith(
-      'prez-1',
-      expect.objectContaining({
-        display_name: 'Neo',
-        bio: 'Free agent',
-        avatar_url: 'https://cdn.example/a.png',
-      }),
-    );
     expect(mockUpdateUser).toHaveBeenCalled();
     expect(mockBack).toHaveBeenCalled();
   });

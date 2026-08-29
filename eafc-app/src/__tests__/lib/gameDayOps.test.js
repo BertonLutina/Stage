@@ -5,8 +5,10 @@ import {
   countSeated,
   mapResultError,
   minutesUntil,
-  parseIdList,
-  resolveMatchSides,
+    parseIdList,
+    pickMyClubForMatch,
+    resolveMatchSides,
+    uniqueIdentityClubs,
 } from '../../lib/gameDayOps';
 import { formatSideClaim, getKickoffControls, getResultSubmissionControls, declaredScoresAgree, formatDeadlineCountdown, resultDeadlineAt } from '../../lib/gameDayResultFlow';
 import { applyWagerOptimistic, formatStc } from '../../lib/wagerActions';
@@ -74,6 +76,24 @@ describe('gameDayOps', () => {
     );
     expect(solo.isMyMatch).toBe(true);
     expect(solo.amIHomeTeam).toBe(false);
+  });
+
+  test('picks the club that is actually in the fixture for dual accounts', () => {
+    const signed = { id: 'signed' };
+    const owned = { id: 'owned' };
+    expect(uniqueIdentityClubs(signed, owned, { id: 'signed' }).map((c) => c.id)).toEqual(['signed', 'owned']);
+    expect(pickMyClubForMatch(
+      { home_club_id: 'owned', away_club_id: 'other' },
+      [signed, owned],
+    )?.id).toBe('owned');
+    const dual = resolveMatchSides(
+      { mode: 'club', home_club_id: 'owned', away_club_id: 'other' },
+      [signed, owned],
+      { id: 'p1' },
+    );
+    expect(dual.isMyMatch).toBe(true);
+    expect(dual.amIHomeTeam).toBe(true);
+    expect(dual.myClub.id).toBe('owned');
   });
 
   test('matching home/away own scores complete, swapped team goals dispute', () => {

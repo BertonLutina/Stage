@@ -45,6 +45,7 @@ export default function TournamentListScreen() {
     done,
     trophyShowcase,
     trophyItems,
+    canCreate,
   } = useTournamentsList();
   const [tab, setTab] = useState('open');
   const [refreshing, setRefreshing] = useState(false);
@@ -121,6 +122,17 @@ export default function TournamentListScreen() {
                 label="Register"
                 onPress={() => router.push('/apps/register')}
               />
+              {canCreate ? (
+                <SilverPill
+                  label="Create cup"
+                  onPress={() => router.push('/(tabs)/tournaments/createtournamentscreen')}
+                />
+              ) : (
+                <SilverPill
+                  label="STAGE Plus to create"
+                  onPress={() => router.push('/apps/store')}
+                />
+              )}
             </View>
 
             {error ? (
@@ -219,8 +231,16 @@ export default function TournamentListScreen() {
                     {`No ${tab} tournaments`}
                   </Text>
                   <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, textAlign: 'center' }}>
-                    Check back soon for open cups.
+                    {canCreate
+                      ? 'Create a community cup, or check back for open ones.'
+                      : 'Check back soon for open cups, or unlock create with STAGE Plus.'}
                   </Text>
+                  {canCreate ? (
+                    <SilverPill
+                      label="Create cup"
+                      onPress={() => router.push('/(tabs)/tournaments/createtournamentscreen')}
+                    />
+                  ) : null}
                 </View>
               ) : (
                 <View style={{ gap: 10 }}>
