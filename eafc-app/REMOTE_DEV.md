@@ -1,7 +1,14 @@
 # Connect eafc-app → Stage League (Gandi production)
 
+Two clients, one API:
+
+| Client | Repo | Host |
+|---|---|---|
+| StageWebapp (desktop SPA + Express + MySQL) | https://github.com/Lengarose/stage | https://stageleagues.com |
+| eafc-app (this repo) | https://github.com/BertonLutina/Stage | Expo / EAS |
+
 Production host: **https://stageleagues.com**  
-(same `stage/server` codebase deployed on Gandi)
+Backend in `Lengarose/stage` (`server/`) is what Gandi runs. Web frontend is `Lengarose/stage` `src/`.
 
 | Env | Value |
 |---|---|
@@ -9,9 +16,11 @@ Production host: **https://stageleagues.com**
 | `EXPO_PUBLIC_API_URL` | `https://stageleagues.com/api/mobile` |
 | `EXPO_PUBLIC_SOCKET_URL` | `https://stage-7osn.onrender.com` |
 
-Login uses `stageClient` → `/api/stage/auth/login` (live on Gandi).
+Login uses `stageClient` → `/api/stage/auth/login`.
 
-Note: `/api/mobile/*` is **not** on production yet (404). Deploy the mobile compat routes from local `stage/server` if you need those flat paths.
+`/api/mobile/*` **is live** on production (compat layer mounted in `server/src/server.js` via `registerMobileCompatRoutes`). Probe: `GET /api/mobile/health` → `{ "service": "stage-mobile-compat" }`. StageWebapp itself talks only to `/api/stage`.
+
+Realtime sockets default to the Render host in both clients (`src/lib/resolveSocketUrl.js` on web, `utils/api.js` on mobile). HTTP and sockets are not the same origin.
 
 ```bash
 cd /Users/creaafde/Documents/eafc/eafc-app
