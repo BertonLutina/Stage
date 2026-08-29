@@ -31,6 +31,13 @@ describe('mobile stageClient parity wrappers', () => {
     expect(source).toMatch(/form\.append\('file', uploadFile, filename\)/);
   });
 
+  it('unwraps nested or top-level refresh tokens before writing both token stores', () => {
+    expect(source).toMatch(/import \{ unwrapAuthTokens \} from '@\/lib\/authTokens'/);
+    expect(source).toMatch(/unwrapAuthTokens\(payload\)/);
+    const api = fs.readFileSync(path.join(__dirname, '../../utils/api.js'), 'utf8');
+    expect(api).toMatch(/storeTokens\(\{ accessToken, refreshToken: nextRefresh \}\)/);
+  });
+
   it('documents legacy President as compatibility fallback only', () => {
     expect(source).toMatch(/player-president flows use clubs\.president_player_id as the public identity/);
     expect(source).toMatch(/legacy first-class President entity/i);

@@ -19,6 +19,7 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
   const [position, setPosition] = useState(initialPlayer?.position || 'ST');
   const [secondaryPosition, setSecondaryPosition] = useState(initialPlayer?.secondary_position || 'none');
   const [platform, setPlatform] = useState(normalizeConsoleChoice(initialPlayer?.platform) || 'PS5');
+  const [country, setCountry] = useState(initialPlayer?.country || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 

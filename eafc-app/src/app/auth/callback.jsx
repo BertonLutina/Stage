@@ -42,7 +42,9 @@ export default function AuthCallbackScreen() {
       const uid = user?.id || safeParams.userId;
       if (isNew && uid) markNeedsOnboarding(uid);
       setStatus('success');
-      router.replace('/auth/onboarding');
+      // Returning users must not be forced through onboarding; bootstrap still
+      // sends unfinished profiles there via shouldShowOnboarding.
+      router.replace(isNew ? '/auth/onboarding' : '/(tabs)/dashboard');
     }).catch(() => {
       setStatus('error');
       setTimeout(() => router.replace('/auth/loginscreen'), 2000);

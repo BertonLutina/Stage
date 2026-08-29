@@ -21,7 +21,7 @@ import PageTile, { PageTitle } from '@/components/theme/PageTile';
 import { REGIONS } from '@/lib/qualificationConfig';
 import { applyForLeague, ACTIVE_STATUSES } from '@/lib/registrationEngine';
 import { loadSeasonRegistrations } from '@/lib/competitionSeason';
-import { hasStagePlus } from '@/lib/subscriptionUtils';
+import { entityHasStagePlus } from '@/lib/subscriptionUtils';
 
 export default function SeasonRegisterScreen() {
   const router = useRouter();
@@ -64,7 +64,7 @@ export default function SeasonRegisterScreen() {
   });
 
   const registrationClub = presidentClub || null;
-  const plusOk = hasStagePlus(user?.subscription);
+  const plusOk = entityHasStagePlus(user);
   const isAdmin = user?.role === 'admin' || [0, 2].includes(Number(user?.role_id));
   const canApply = !!registrationClub && (plusOk || isAdmin);
 

@@ -1,4 +1,4 @@
-import { hasStagePlus } from './subscriptionUtils';
+import { entityHasStagePlus } from './subscriptionUtils';
 
 /** Keys stored on player.game_day_tile_backgrounds — Game Day plus the other app pages. */
 export const PAGE_TILE_KEYS = [
@@ -86,7 +86,7 @@ export const STAGE_PLUS_TILE_BACKGROUND_ERROR =
   'STAGE Plus is required to change this tile background.';
 
 export function canUseTileBackgrounds(player) {
-  return hasStagePlus(player?.subscription);
+  return entityHasStagePlus(player);
 }
 
 export function hasCustomGameDayTileBackground(config) {

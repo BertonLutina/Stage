@@ -54,7 +54,7 @@ export default function SocialAuthIconButtons({ providers, mode = 'signin' }) {
   const onPress = async (provider) => {
     const result = await openSocialAuth(provider);
     if (result?.success) {
-      if (result.isNewUser) router.replace('/auth/onboarding');
+      router.replace(result.isNewUser ? '/auth/onboarding' : '/(tabs)/dashboard');
       return;
     }
     if (result?.cancelled) return;

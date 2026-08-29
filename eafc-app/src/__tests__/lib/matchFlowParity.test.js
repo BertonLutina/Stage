@@ -74,7 +74,7 @@ describe('mobile match / tournament / season parity wiring', () => {
 
   test('season and competition screens exist', () => {
     expect(read('../../app/apps/register.jsx')).toMatch(/applyForLeague/);
-    expect(read('../../app/apps/register.jsx')).toMatch(/hasStagePlus/);
+    expect(read('../../app/apps/register.jsx')).toMatch(/entityHasStagePlus/);
     expect(read('../../app/apps/register.jsx')).toMatch(/presidentClub/);
     expect(read('../../app/apps/competitions.jsx')).toMatch(/loadCompetitionsHub/);
     expect(read('../../app/apps/competitions/[slug].jsx')).toMatch(/createMatchFromFixture/);

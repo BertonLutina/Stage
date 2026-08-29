@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getAccessToken, getRefreshToken, setTokens, clearTokens } from '../services/tokenService';
+import { getAccessToken, getRefreshToken, clearTokens } from '../services/tokenService';
 
 /**
  * Legacy feature-screen client.
@@ -59,10 +59,13 @@ api.interceptors.response.use(
           'https://stageleagues.com/api/stage'
         ).replace(/\/$/, '');
         const { data } = await axios.post(`${stageAuthBase}/auth/refresh`, { refreshToken }, { headers });
-        const accessToken = data?.data?.accessToken || data?.accessToken;
-        const nextRefresh = data?.data?.refreshToken || data?.refreshToken || refreshToken;
+        const { unwrapAuthTokens } = await import('../lib/authTokens');
+        const { accessToken, refreshToken: rotated } = unwrapAuthTokens(data);
+        const nextRefresh = rotated || refreshToken;
         if (!accessToken) throw new Error('No access token in refresh response');
-        await setTokens(accessToken, nextRefresh);
+        // Write both SecureStore (axios) and stage_* localStorage (stageClient / sockets).
+        const { storeTokens } = await import('../api/stageClient');
+        await storeTokens({ accessToken, refreshToken: nextRefresh });
         original.headers.Authorization = `Bearer ${accessToken}`;
         return api(original);
       } catch {

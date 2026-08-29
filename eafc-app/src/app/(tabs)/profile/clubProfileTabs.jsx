@@ -167,7 +167,7 @@ export default function ClubProfileTabs({
     if (!club?.id || tab !== 'stats') return undefined;
     let cancelled = false;
     (async () => {
-      const rows = await stageClient.entities.PlayerStat.filter({ club_id: club.id }, '-created_date', 500).catch(() => []);
+      const rows = await stageClient.entities.MatchPlayerStat.filter({ club_id: club.id }, '-created_date', 500).catch(() => []);
       if (!cancelled) setStatRows(asObjectArray(rows));
     })();
     return () => { cancelled = true; };

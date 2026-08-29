@@ -76,6 +76,10 @@ describe('Game Day tile backgrounds', () => {
     expect(canUseTileBackgrounds({ subscription: 'stage_plus' })).toBe(true);
     expect(canUseTileBackgrounds({ subscription: 'free' })).toBe(false);
     expect(canUseTileBackgrounds({})).toBe(false);
+    expect(canUseTileBackgrounds({
+      subscription: 'stage_plus',
+      subscription_expires_at: '2020-01-01T00:00:00.000Z',
+    })).toBe(false);
     expect(STAGE_PLUS_TILE_BACKGROUND_ERROR).toMatch(/STAGE Plus is required/);
   });
 });

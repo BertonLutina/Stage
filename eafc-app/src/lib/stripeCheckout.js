@@ -94,7 +94,10 @@ async function fulfilOrCancel({ sessionId, browser, fixName }) {
     return { status: 'pending' };
   } catch (err) {
     const message = String(err?.message || '');
-    if (/not complete yet|not a subscription|not a credit/i.test(message)) {
+    if (/not complete yet/i.test(message)) {
+      return { status: 'pending' };
+    }
+    if (/not a subscription|not a credit/i.test(message)) {
       return { status: 'cancelled' };
     }
     throw err;
@@ -160,7 +163,10 @@ export async function completeStoreCheckoutFromUrl(url) {
     return { status: 'pending' };
   } catch (err) {
     const message = String(err?.message || '');
-    if (/not complete yet|not a subscription|not a credit/i.test(message)) {
+    if (/not complete yet/i.test(message)) {
+      return { status: 'pending' };
+    }
+    if (/not a subscription|not a credit/i.test(message)) {
       return { status: 'cancelled' };
     }
     throw err;
