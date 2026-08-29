@@ -41,6 +41,15 @@ describe('mobile onboarding intent parity', () => {
     expect(source).not.toMatch(/u\?\.player_id \|\| pl\?\.id\) && !force && \(pl\?\.country \|\| pl\?\.gamertag\)/);
   });
 
+  it('keeps country as real PlayerSetup state so onboarding cannot crash', () => {
+    const setup = fs.readFileSync(
+      path.join(__dirname, '../../components/onboarding/PlayerSetup.jsx'),
+      'utf8',
+    );
+    expect(setup).toMatch(/const \[country, setCountry\] = useState/);
+    expect(setup).toMatch(/if \(!gamertag\.trim\(\) \|\| !country\)/);
+  });
+
   it('uses a phone-first shell instead of a centered web card', () => {
     expect(source).toMatch(/StepDots/);
     expect(source).toMatch(/KeyboardAvoidingView/);

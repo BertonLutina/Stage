@@ -20,6 +20,7 @@ import { FUT } from '@/components/dashboard/CommandCenterUI';
 import { buildResultPayload, mapResultError, submitMatchResult } from '@/lib/gameDayOps';
 import {
   evidenceRequired,
+  fixtureScoreFromSubmission,
   getResultSubmissionControls,
   parseMatchSubmission,
   penaltiesAllowed,
@@ -48,7 +49,9 @@ export default function GameDayResultSheet({
   const submittedScore = parseMatchSubmission(
     controls.submitSide === 'away' ? game?.away_submission : game?.home_submission,
   );
+  const submittedFixture = fixtureScoreFromSubmission(submittedScore, controls.submitSide);
   const correction = parseMatchSubmission(game?.away_submission);
+  const correctionFixture = fixtureScoreFromSubmission(correction, 'away');
   const allowPens = penaltiesAllowed(game);
 
   const [homeScore, setHomeScore] = useState('0');
@@ -73,11 +76,13 @@ export default function GameDayResultSheet({
 
   useEffect(() => {
     if (!visible) return;
-    const seed = submittedScore && (confirmMode || reviewMode)
-      ? submittedScore
+    const seed = (confirmMode || reviewMode)
+      ? (reviewMode ? correctionFixture : submittedFixture)
       : null;
-    setHomeScore(String(seed?.home_score ?? 0));
-    setAwayScore(String(seed?.away_score ?? 0));
+    const home = Number.isFinite(seed?.home) ? seed.home : 0;
+    const away = Number.isFinite(seed?.away) ? seed.away : 0;
+    setHomeScore(String(home));
+    setAwayScore(String(away));
     setProofUrl(null);
     setProofPreview(null);
     setError('');
@@ -85,7 +90,7 @@ export default function GameDayResultSheet({
     setCountering(false);
     setExplanation('');
     setPenaltyChoice('none');
-  }, [visible, game?.id, confirmMode, reviewMode, submittedScore?.home_score, submittedScore?.away_score]);
+  }, [visible, game?.id, confirmMode, reviewMode, submittedFixture.home, submittedFixture.away, correctionFixture.home, correctionFixture.away]);
 
   useEffect(() => {
     if (!visible || !isClubMatch || !myClub?.id) return undefined;
@@ -243,12 +248,12 @@ export default function GameDayResultSheet({
           >
             {confirmMode && submittedScore && !correcting ? (
               <Text style={hint}>
-                {homeName} submitted {submittedScore.home_score}–{submittedScore.away_score}. Is this result correct? Enter your own players below. You never submit the other club’s stats.
+                {controls.submitSide === 'away' ? awayName : homeName} submitted {submittedFixture.home}–{submittedFixture.away}. Is this result correct? Enter your own players below. You never submit the other club’s stats.
               </Text>
             ) : null}
             {reviewMode && correction && !countering ? (
               <Text style={[hint, { color: FUT.gold }]}>
-                Correction proposed: {correction.home_score}–{correction.away_score}. Accept it, counter once, or dispute with proof.
+                Correction proposed: {correctionFixture.home}–{correctionFixture.away}. Accept it, counter once, or dispute with proof.
               </Text>
             ) : null}
             {correcting ? (

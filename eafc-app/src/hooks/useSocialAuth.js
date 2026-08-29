@@ -25,13 +25,13 @@ export function getSocialAuthUrl(provider, redirectUri = getRedirectUrl()) {
   return `${base}/auth/${provider}?${q}`;
 }
 
-function parseOAuthCallbackUrl(url) {
+export function parseOAuthCallbackUrl(url) {
   if (!url) return null;
   try {
     const query = url.includes('?') ? url.slice(url.indexOf('?') + 1) : '';
     const params = new URLSearchParams(query);
-    const accessToken = params.get('accessToken');
-    const refreshToken = params.get('refreshToken');
+    const accessToken = params.get('accessToken') || params.get('access_token');
+    const refreshToken = params.get('refreshToken') || params.get('refresh_token');
     if (!accessToken || !refreshToken) return null;
 
     let user = null;

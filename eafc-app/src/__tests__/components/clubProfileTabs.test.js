@@ -31,4 +31,12 @@ describe('club profile web parity (mobile)', () => {
     expect(profile).toMatch(/RequestLoanDialog/);
     expect(profile).toMatch(/Request loan/);
   });
+
+  test('club stats load MatchPlayerStat, not a missing PlayerStat entity', () => {
+    expect(source).toMatch(/MatchPlayerStat\.filter/);
+    expect(source).not.toMatch(/entities\.PlayerStat/);
+    const panel = readFileSync(resolve(__dirname, '../../components/club/ClubStatsPanel.jsx'), 'utf8');
+    expect(panel).toMatch(/MatchPlayerStat\.filter/);
+    expect(panel).not.toMatch(/entities\.PlayerStat/);
+  });
 });

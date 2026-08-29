@@ -3,7 +3,7 @@ import { Alert, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AppDirectoryScreen, { DirectoryRow, FilterChips } from '@/components/apps/AppDirectoryScreen';
 import { CYAN } from '@/components/profile/gamer/GamerProfileUI';
-import { hasStagePlus } from '@/lib/subscriptionUtils';
+import { entityHasStagePlus } from '@/lib/subscriptionUtils';
 import {
   CREDIT_PACKS,
   STAGE_PLUS_MONTHLY_CREDITS,
@@ -78,7 +78,7 @@ export default function StoreScreen() {
 
   const config = store?.config || {};
   const player = store?.player || null;
-  const plusActive = hasStagePlus(player?.subscription);
+  const plusActive = entityHasStagePlus(player);
   const plusCancelling = Number(player?.subscription_cancel_at_period_end) === 1;
   const expiresLabel = player?.subscription_expires_at
     ? new Date(player.subscription_expires_at).toLocaleDateString('en-GB', {

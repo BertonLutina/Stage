@@ -93,6 +93,18 @@ describe('startStagePlusCheckout', () => {
     expect(outcome).toEqual({ status: 'activated', data: { success: true, tier: 'stage_plus' } });
   });
 
+  test('treats a paid-but-not-yet-fulfilled Stripe session as pending, not cancelled', async () => {
+    stageClient.functions.invoke
+      .mockResolvedValueOnce({ data: { success: true, url: 'https://checkout.stripe.com/c/cs_test', id: 'cs_test' } })
+      .mockRejectedValueOnce(new Error('Subscription not complete yet'));
+    WebBrowser.openAuthSessionAsync.mockResolvedValue({
+      type: 'success',
+      url: 'https://stageleagues.com/store?sub=success&session_id=cs_test',
+    });
+
+    await expect(startStagePlusCheckout()).resolves.toEqual({ status: 'pending' });
+  });
+
   test('returns cancelled when Stripe sends the user back to cancel', async () => {
     stageClient.functions.invoke.mockResolvedValueOnce({
       data: { success: true, url: 'https://checkout.stripe.com/c/cs_test', id: 'cs_test' },

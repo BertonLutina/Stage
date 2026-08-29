@@ -9,7 +9,7 @@ import {
   formatClubRating,
   getClubStatValue,
 } from '@/lib/clubPlayerStats';
-import { hasStagePlus } from '@/lib/subscriptionUtils';
+import { entityHasStagePlus } from '@/lib/subscriptionUtils';
 import { EmptyTabPanel } from '@/components/profile/gamer/GamerProfileUI';
 
 function LeaderboardCard({ title, label, rows, stat }) {
@@ -53,13 +53,13 @@ function LeaderboardCard({ title, label, rows, stat }) {
 export default function ClubStatsPanel({ clubId, players = [], myPlayer, canCustomize = false }) {
   const [statRows, setStatRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const canUseBackgrounds = hasStagePlus(myPlayer?.subscription);
+  const canUseBackgrounds = entityHasStagePlus(myPlayer);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const rows = await stageClient.entities.PlayerStat.filter({ club_id: clubId }, '-created_date', 500).catch(() => []);
+      const rows = await stageClient.entities.MatchPlayerStat.filter({ club_id: clubId }, '-created_date', 500).catch(() => []);
       if (!cancelled) {
         setStatRows(asObjectArray(rows));
         setLoading(false);

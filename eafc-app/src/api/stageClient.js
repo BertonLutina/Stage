@@ -10,6 +10,7 @@ import { getOwnedClubId, getPresidentClubId, getPresidentId } from '@/lib/userId
 import { clearAccountIntent } from '@/lib/accountIntent';
 import { clearAccountMode } from '@/lib/accountMode';
 import { asFormDataFile } from '@/lib/formDataFile';
+import { unwrapAuthTokens } from '@/lib/authTokens';
 
 function resolveApiBase() {
   const explicit = process.env.EXPO_PUBLIC_STAGE_API_URL || process.env.EXPO_PUBLIC_API_BASE;
@@ -241,7 +242,11 @@ async function apiFetch(path, opts = {}, _isRetry = false) {
         body: JSON.stringify({ refreshToken }),
       })
         .then(r => r.ok ? r.json() : Promise.reject())
-        .then(({ accessToken, refreshToken }) => storeTokens({ accessToken, refreshToken }))
+        .then((payload) => {
+          const { accessToken, refreshToken } = unwrapAuthTokens(payload);
+          if (!accessToken) return Promise.reject(new Error('No access token in refresh response'));
+          return storeTokens({ accessToken, refreshToken });
+        })
         .catch(() => clearTokens())
         .finally(() => { _refreshPromise = null; });
     }

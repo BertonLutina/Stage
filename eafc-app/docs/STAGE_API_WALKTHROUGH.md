@@ -1,6 +1,8 @@
 # Stage API walkthrough — eafc-app screens → Stage
 
-Primary sources: `eafc-app/src/**`, `stage/server/src/server/routes/registerMobileCompatRoutes.js`, `stage/server/src/server/mobile/*`, `stage/server/src/server/routes/registerStageRoutes.js`.
+**Two clients:** this mobile app (`eafc-app`) and StageWebapp at [`Lengarose/stage`](https://github.com/Lengarose/stage) (`src/` + `server/`). Same JWT, same MySQL, same `/api/stage`. Do not treat mobile in isolation.
+
+Primary sources: `eafc-app/src/**`, and in StageWebapp: `server/src/server/routes/registerMobileCompatRoutes.js`, `server/src/server/mobile/*`, `server/src/server/routes/registerStageRoutes.js`, `src/api/stageClient.js`.
 
 ## Destination
 

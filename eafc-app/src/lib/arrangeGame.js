@@ -117,7 +117,8 @@ export async function sendArrangeGameInvite({
 
   let recipientEmail = null;
   let opponentPresidentId = null;
-  let challengerPresidentId = myClub?.president_id || null;
+  // Founder identity is the player on clubs.president_player_id, not a leftover President row.
+  let challengerPresidentId = myClub?.president_player_id || null;
 
   if (recipientIsClub) {
     try {
@@ -150,11 +151,6 @@ export async function sendArrangeGameInvite({
         /* fall through */
       }
     }
-  }
-
-  if (senderIsClub && !challengerPresidentId && myClub?.id) {
-    const mine = await stageClient.entities.President.filter({ club_id: myClub.id }, null, 1).catch(() => []);
-    challengerPresidentId = mine?.[0]?.id || null;
   }
 
   if (!recipientEmail) {

@@ -66,7 +66,6 @@ export default function EditProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [player, setPlayer] = useState(null);
-  const [president, setPresident] = useState(null);
 
   const [firstName, setFirstName] = useState(user?.first_name || '');
   const [lastName, setLastName] = useState(user?.last_name || '');
@@ -97,22 +96,20 @@ export default function EditProfileScreen() {
         const resolved = await resolveMyPlayerAndClub();
         if (cancelled) return;
         const nextPlayer = resolved?.player || null;
-        const nextPresident = resolved?.president || null;
         setPlayer(nextPlayer);
-        setPresident(nextPresident);
 
-        const tag = nextPlayer?.gamertag || nextPresident?.display_name || user?.gamer_tag || user?.gamertag || '';
+        const tag = nextPlayer?.gamertag || user?.gamer_tag || user?.gamertag || '';
         const names = splitName(tag, user?.email);
         setGamertag(tag);
         setFirstName(user?.first_name || names.first_name);
         setLastName(user?.last_name || names.last_name);
-        setBio(nextPlayer?.bio || nextPresident?.bio || user?.bio || '');
+        setBio(nextPlayer?.bio || user?.bio || '');
         setPosition(nextPlayer?.position || 'ST');
         setSecondaryPosition(nextPlayer?.secondary_position || 'none');
         setPlatform(normalizeConsoleChoice(nextPlayer?.platform) || 'PS5');
         setCountry(matchCountry(nextPlayer) || matchCountry(user));
-        setAvatarUri(nextPlayer?.avatar_url || nextPresident?.avatar_url || user?.avatar || user?.avatar_url || null);
-        setBannerUri(nextPlayer?.banner_url || nextPresident?.banner_url || null);
+        setAvatarUri(nextPlayer?.avatar_url || user?.avatar || user?.avatar_url || null);
+        setBannerUri(nextPlayer?.banner_url || null);
       } catch {
         const tag = user?.gamer_tag || user?.gamertag || '';
         const names = splitName(tag, user?.email);
@@ -195,15 +192,6 @@ export default function EditProfileScreen() {
           ...playerPayload,
           user_id: user.id,
           email: user.email,
-        });
-      }
-
-      if (president?.id) {
-        await stageClient.entities.President.update(president.id, {
-          display_name: tag,
-          bio: bio.trim() || null,
-          ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
-          ...(bannerUrl ? { banner_url: bannerUrl } : {}),
         });
       }
 

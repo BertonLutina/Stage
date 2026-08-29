@@ -18,7 +18,6 @@ function mockStageClient({
   clubContact,
   playerContact,
   clubPlayers = [],
-  presidents = [],
 } = {}) {
   return {
     functions: {
@@ -32,9 +31,6 @@ function mockStageClient({
     entities: {
       Player: {
         filter: jest.fn(async () => clubPlayers),
-      },
-      President: {
-        filter: jest.fn(async () => presidents),
       },
     },
   };
@@ -121,7 +117,6 @@ describe('sendArrangeGameInvite', () => {
   test('resolves club president contact and sends club_vs_club', async () => {
     const stageClient = mockStageClient({
       clubContact: { recipient_email: 'pres@club.com', president_id: 'pres-2' },
-      presidents: [{ id: 'pres-1' }],
     });
 
     await sendArrangeGameInvite({
@@ -134,6 +129,7 @@ describe('sendArrangeGameInvite', () => {
         owner_email: 'owner@home.com',
         logo_url: 'logo.png',
         stc: 500000,
+        president_player_id: 'p1',
       },
       matchType: 'club',
       opponent: { id: 'c2', name: 'Away FC', tag: 'AFC' },
@@ -153,6 +149,7 @@ describe('sendArrangeGameInvite', () => {
       metadata: expect.objectContaining({
         invitation_type: 'club_vs_club',
         challenger_club_id: 'c1',
+        challenger_president_id: 'p1',
         opponent_club_id: 'c2',
         opponent_president_id: 'pres-2',
         wager_stc: 0,
@@ -221,9 +218,18 @@ describe('Matches hub arrange fixture wiring', () => {
     );
     expect(resultSheet).toMatch(/KeyboardAvoidingView/);
     expect(resultSheet).toMatch(/automaticallyAdjustKeyboardInsets/);
+    expect(resultSheet).toMatch(/fixtureScoreFromSubmission/);
     expect(source).toMatch(/GameDayWagerCard/);
     expect(source).toMatch(/GameDayDressingRoomPanel/);
     expect(source).not.toMatch(/getMockMatchById/);
     expect(source).not.toMatch(/api\.get\(`\/matches\//);
+    expect(fs.readFileSync(
+      path.join(__dirname, '../../app/(tabs)/matches/watchmatchscreen.jsx'),
+      'utf8',
+    )).not.toMatch(/getMockMatchById/);
+    expect(fs.readFileSync(
+      path.join(__dirname, '../../app/(tabs)/matches/watchmatchscreen.jsx'),
+      'utf8',
+    )).toMatch(/entities\.Match\.get/);
   });
 });

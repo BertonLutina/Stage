@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image } from 'react-native';
 import { render } from '@testing-library/react-native';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import { ClubBannerAvatar, ProfileBannerAvatar } from '../../components/profile/gamer/GamerProfileUI';
 
@@ -37,17 +37,17 @@ describe('profile banner avatars', () => {
 
   test('only the public club banner pins a corner avatar — card/crest surfaces do not', () => {
     const player = readRepoFile('app/(tabs)/profile/profilescreen.jsx');
-    const president = readRepoFile('app/(tabs)/profile/presidentprofilescreen.jsx');
     const clubTab = readRepoFile('app/(tabs)/profile/index.jsx');
     const publicClub = readRepoFile('app/apps/club/[id].jsx');
+    const teamClub = readRepoFile('app/teams/teamprofilescreen.jsx');
 
     expect(player).not.toMatch(/ProfileBannerAvatar/);
     expect(player).toMatch(/FutIdentityCard/);
     expect(readRepoFile('components/profile/gamer/GamerProfileUI.jsx')).toMatch(/TrapeziumPhotoCard/);
     expect(readRepoFile('components/profile/TrapeziumPhotoCard.jsx')).toMatch(/parallelogramPoints/);
 
-    expect(president).not.toMatch(/ProfileBannerAvatar/);
-    expect(president).toMatch(/FutIdentityCard/);
+    expect(existsSync(resolve(__dirname, '../../app/(tabs)/profile/presidentprofilescreen.jsx'))).toBe(false);
+    expect(clubTab).toMatch(/President is the founder player, not a separate profile/);
 
     expect(clubTab).not.toMatch(/ClubBannerAvatar/);
     expect(clubTab).not.toMatch(/ClubCrest/);
@@ -55,6 +55,8 @@ describe('profile banner avatars', () => {
     expect(publicClub).toMatch(/GamerBanner|ClubHero/);
     expect(publicClub).toMatch(/ClubProfileTabs/);
     expect(publicClub).toMatch(/ClubHero/);
+    expect(publicClub).toMatch(/playerRoute\(bundle\.president\?\.player_id/);
+    expect(teamClub).toMatch(/playerRoute\(president\?\.player_id/);
     expect(readRepoFile('components/club/ClubHero.jsx')).toMatch(/club\?\.logo_url/);
     expect(readRepoFile('components/club/ClubHero.jsx')).not.toMatch(/president\?\.avatar_url/);
   });

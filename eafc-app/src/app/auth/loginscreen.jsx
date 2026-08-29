@@ -94,8 +94,9 @@ export default function LoginScreen() {
       setBiometricError('Saved login expired. Sign in with your password.');
       return false;
     }
+    router.replace('/(tabs)/dashboard');
     return true;
-  }, [clearError, login]);
+  }, [clearError, login, router]);
 
   useEffect(() => {
     if (autoPrompted.current) return;
@@ -127,10 +128,13 @@ export default function LoginScreen() {
     }
 
     const ok = await login(identifier, password);
-    if (ok && biometricEnabled) {
+    if (!ok) return;
+    if (biometricEnabled) {
       await saveBiometricCredentials(identifier, password);
       setHasSavedLogin(true);
     }
+    // Bootstrap still redirects unfinished profiles to onboarding.
+    router.replace('/(tabs)/dashboard');
   };
 
   return (

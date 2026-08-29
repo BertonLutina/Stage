@@ -8,6 +8,8 @@ function read(rel) {
 describe('mobile match / tournament / season parity wiring', () => {
   test('hub materializes confirmed league fixtures', () => {
     const source = read('../../hooks/useMatchesHub.js');
+    expect(source).toMatch(/presidentClub/);
+    expect(source).toMatch(/uniqueIdentityClubs/);
     expect(source).toMatch(/materializeConfirmedFixtures/);
   });
 
@@ -68,14 +70,18 @@ describe('mobile match / tournament / season parity wiring', () => {
     expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).toMatch(/Open tournaments/);
     expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).toMatch(/GOST/);
     expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).toMatch(/\/apps\/register/);
-    expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).not.toMatch(/createtournamentscreen/);
+    expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).toMatch(/createtournamentscreen/);
+    expect(read('../../app/(tabs)/tournaments/createtournamentscreen.jsx')).toMatch(/buildCommunityTournamentPayload/);
+    expect(read('../../app/(tabs)/tournaments/createtournamentscreen.jsx')).toMatch(/TOURNAMENT_CREDIT_COST/);
     expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).not.toMatch(/Stage cups/);
   });
 
   test('season and competition screens exist', () => {
     expect(read('../../app/apps/register.jsx')).toMatch(/applyForLeague/);
-    expect(read('../../app/apps/register.jsx')).toMatch(/hasStagePlus/);
+    expect(read('../../app/apps/register.jsx')).toMatch(/entityHasStagePlus/);
     expect(read('../../app/apps/register.jsx')).toMatch(/presidentClub/);
+    expect(read('../../app/(tabs)/profile/editprofilescreen.jsx')).not.toMatch(/President\.update/);
+    expect(read('../../lib/clubProfileData.js')).not.toMatch(/entities\.President/);
     expect(read('../../app/apps/competitions.jsx')).toMatch(/loadCompetitionsHub/);
     expect(read('../../app/apps/competitions/[slug].jsx')).toMatch(/createMatchFromFixture/);
     expect(read('../../app/apps/leagues/[slug].jsx')).toMatch(/regional_league/);

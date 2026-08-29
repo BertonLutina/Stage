@@ -33,18 +33,34 @@ export function isClubGameDayMatch(game) {
   return Boolean(game?.home_club_id || game?.away_club_id);
 }
 
+export function uniqueIdentityClubs(...clubs) {
+  const map = new Map();
+  clubs.flat().forEach((club) => {
+    if (club?.id) map.set(String(club.id), club);
+  });
+  return Array.from(map.values());
+}
+
+export function pickMyClubForMatch(game, clubs) {
+  const list = uniqueIdentityClubs(clubs);
+  return list.find((club) => (
+    sameId(game?.home_club_id, club.id) || sameId(game?.away_club_id, club.id)
+  )) || list[0] || null;
+}
+
 export function resolveMatchSides(game, myClub, myPlayer) {
+  const club = Array.isArray(myClub) ? pickMyClubForMatch(game, myClub) : myClub;
   const isClubMatch = isClubGameDayMatch(game);
   const isSoloMatch = game?.mode === 'solo' || (!isClubMatch && Boolean(game?.home_player_id));
   const homeName = isClubMatch ? (game?.home_club_name || 'Home') : (game?.home_player_name || 'Home');
   const awayName = isClubMatch ? (game?.away_club_name || 'Away') : (game?.away_player_name || 'Away');
   const isMyMatch = isClubMatch
-    ? Boolean(myClub && (sameId(game?.home_club_id, myClub.id) || sameId(game?.away_club_id, myClub.id)))
+    ? Boolean(club && (sameId(game?.home_club_id, club.id) || sameId(game?.away_club_id, club.id)))
     : Boolean(myPlayer && (sameId(game?.home_player_id, myPlayer.id) || sameId(game?.away_player_id, myPlayer.id)));
   const amIHomeTeam = isClubMatch
-    ? Boolean(myClub && sameId(game?.home_club_id, myClub.id))
+    ? Boolean(club && sameId(game?.home_club_id, club.id))
     : Boolean(myPlayer && sameId(game?.home_player_id, myPlayer.id));
-  return { isClubMatch, isSoloMatch, homeName, awayName, isMyMatch, amIHomeTeam };
+  return { isClubMatch, isSoloMatch, homeName, awayName, isMyMatch, amIHomeTeam, myClub: club || null };
 }
 
 export function canKickoffMatch(game) {

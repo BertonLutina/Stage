@@ -20,7 +20,6 @@ import VideoPlayer from '../../../components/common/VideoPlayer';
 import STText from '../../../components/common/STText';
 import GradientBackground from '../../../components/common/GradientBackground';
 import useAuthStore from '../../../store/authStore';
-import { getMockMatchById } from '../../../utils/mockMatches';
 import ChatMessageBubble from '../../../components/chat/ChatMessageBubble';
 import ChatAttachmentMenu from '../../../components/chat/ChatAttachmentMenu';
 import ChatFilterChips from '../../../components/chat/ChatFilterChips';
@@ -66,6 +65,7 @@ export default function WatchMatchScreen() {
   const { user } = useAuthStore();
   const [match, setMatch] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(parseInt(videoIndexParam || '0', 10));
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState('');
@@ -86,11 +86,30 @@ export default function WatchMatchScreen() {
   }, [matchId, search, activeFilters]);
 
   useEffect(() => {
-    api
-      .get(`/matches/${matchId}`)
-      .then((r) => setMatch(r.data.data))
-      .catch(() => setMatch(getMockMatchById(matchId)))
-      .finally(() => setLoading(false));
+    if (!matchId) {
+      setMatch(null);
+      setLoadError('');
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    setLoadError('');
+    stageClient.entities.Match.get(matchId)
+      .then((row) => {
+        if (cancelled) return;
+        setMatch(row || null);
+        if (!row) setLoadError('Match not found');
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setMatch(null);
+        setLoadError(err?.message || 'Could not load this match');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [matchId]);
 
   useEffect(() => {
@@ -212,7 +231,9 @@ export default function WatchMatchScreen() {
       <GradientBackground>
         <SafeAreaView className="flex-1">
           <View className="flex-1 items-center justify-center px-6">
-            <STText className="text-white/60 text-center">Match not found</STText>
+            <STText className="text-white/60 text-center">
+              {loadError || 'Match not found'}
+            </STText>
             <View className="mt-4 items-center">
               <BackButton variant="light" />
             </View>
@@ -239,10 +260,12 @@ export default function WatchMatchScreen() {
         <ScrollView showsVerticalScrollIndicator={false}>
           {/* Match context */}
           <View className="px-4 pt-4 pb-2">
-            <STText className="text-white/60 text-xs text-center">{match.tournament_name}</STText>
+            <STText className="text-white/60 text-xs text-center">
+              {match.tournament_name || match.competition_context || 'Match'}
+            </STText>
             <View className="flex-row items-center justify-center mt-2 gap-3">
               <STText className="text-white font-bold text-base" numberOfLines={1}>
-                {match.home_team_name}
+                {match.home_club_name || match.home_player_name || match.home_team_name || 'Home'}
               </STText>
               <STText className="text-[#5FE3E8] font-black text-lg">
                 {match.status === 'completed'
@@ -250,7 +273,7 @@ export default function WatchMatchScreen() {
                   : 'vs'}
               </STText>
               <STText className="text-white font-bold text-base" numberOfLines={1}>
-                {match.away_team_name}
+                {match.away_club_name || match.away_player_name || match.away_team_name || 'Away'}
               </STText>
             </View>
           </View>
