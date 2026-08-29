@@ -8,7 +8,8 @@ import { GamerProfileShell } from '@/components/profile/gamer/GamerProfileUI';
 
 /**
  * Profile hub — player surface only.
- * Club is opened from the player page (club pill). President is a role on that page, not a tab.
+ * Club opens from the player page (club pill).
+ * President is the founder player, not a separate profile.
  */
 export default function ProfileIndex() {
   const router = useRouter();
