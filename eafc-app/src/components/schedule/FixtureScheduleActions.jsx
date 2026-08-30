@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { CYAN } from '@/components/profile/gamer/GamerProfileUI';
 import { isFixturePendingSchedule } from '@/lib/gameDayIntegration';
+import { toMysqlDateTime } from '@/lib/momentDate';
 import { acceptProposal, canAcceptProposal, proposeTime, roleForClub } from '@/lib/scheduleEngine';
 
 export default function FixtureScheduleActions({
@@ -35,7 +36,7 @@ export default function FixtureScheduleActions({
     fixture,
     fixtureType,
     role,
-    proposedDate: new Date(Date.now() + 86400000).toISOString(),
+    proposedDate: toMysqlDateTime(new Date(Date.now() + 86400000)),
     myClub,
     myEmail: userEmail,
     myGamertag: userGamertag || myClub?.name,

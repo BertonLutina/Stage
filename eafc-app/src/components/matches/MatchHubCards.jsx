@@ -7,11 +7,12 @@ import { FUT } from '@/components/dashboard/CommandCenterUI';
 import LiveGlass from '@/components/theme/LiveGlass';
 import useThemeStore from '@/store/themeStore';
 import { CARD_RADIUS } from '@/lib/stageTheme';
+import { parseKickoffDate } from '@/lib/momentDate';
 import GameDayCrest from './GameDayCrest';
 
 function parseDate(d) {
   if (!d) return null;
-  const date = new Date(d);
+  const date = parseKickoffDate(d);
   return Number.isNaN(date.getTime()) ? null : date;
 }
 

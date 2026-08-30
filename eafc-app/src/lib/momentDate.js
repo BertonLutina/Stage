@@ -31,6 +31,34 @@ export function asWallClockDateTimeString(value) {
   return s;
 }
 
+/**
+ * Kickoff instants. Naive MySQL DATETIME is the clock the user picked (Belgium),
+ * not UTC — `new Date("2026-08-30 17:20:00")` in React Native is UTC and shows 19:20 CEST.
+ */
+export function parseKickoffDate(value) {
+  if (value instanceof Date) return value;
+  if (value == null || value === '') return new Date('invalid');
+  const s = String(value).trim();
+  if (/[+-]\d{2}:\d{2}$/.test(s)) {
+    const parsed = new Date(s.replace(' ', 'T'));
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  const wall = asWallClockDateTimeString(s);
+  const parts = String(wall || '').match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (parts) {
+    return new Date(
+      Number(parts[1]),
+      Number(parts[2]) - 1,
+      Number(parts[3]),
+      Number(parts[4]),
+      Number(parts[5]),
+      Number(parts[6] || 0),
+    );
+  }
+  const parsed = new Date(s);
+  return Number.isNaN(parsed.getTime()) ? new Date('invalid') : parsed;
+}
+
 export function toMysqlDateTime(value) {
   if (value == null || value === '') return null;
   if (value instanceof Date) return formatLocalWallClockFromDate(value);
