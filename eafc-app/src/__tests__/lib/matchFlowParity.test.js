@@ -61,8 +61,11 @@ describe('mobile match / tournament / season parity wiring', () => {
     expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/MATCH SCREENS/);
     expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/MATCH DETAILS/);
     expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/GameDayKickoffArena/);
-    expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/GameDayDressingRoomPanel/);
+    expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/GameDayKickoffActions/);
+    expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/GameDayScoreReport/);
+    expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/GameDayResultSheet/);
     expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/GameDayTileBackgroundDialog/);
+    expect(read('../../app/(tabs)/matches/index.jsx')).not.toMatch(/GameDayDressingRoomPanel/);
     expect(read('../../components/matches/GameDayKickoffArena.jsx')).toMatch(/onChangeBackground/);
     expect(read('../../components/matches/GameDayTileBackgroundDialog.jsx')).toMatch(/game-day-tile-background/);
     expect(read('../../app/(tabs)/matches/index.jsx')).not.toMatch(/MATCH CENTER/);
@@ -98,9 +101,11 @@ describe('mobile match / tournament / season parity wiring', () => {
     expect(read('../../app/_layout.jsx')).toMatch(/<Toast /);
     expect(read('../../components/common/Toast.jsx')).toMatch(/FullWindowOverlay/);
     expect(read('../../hooks/useMatchesHub.js')).toMatch(/settleClubMatches/);
+    expect(read('../../hooks/useMatchesHub.js')).toMatch(/matchBelongsToIdentity/);
     expect(read('../../hooks/useGameDayMatchRealtime.js')).toMatch(/entities\.Match\.subscribe/);
-    expect(read('../../hooks/useGameDayMatchRealtime.js')).toMatch(/entities\.DressingRoom\.subscribe/);
+    expect(read('../../hooks/useGameDayMatchRealtime.js')).toMatch(/if \(!resolved\) return/);
+    expect(read('../../hooks/useGameDayMatchRealtime.js')).not.toMatch(/DressingRoom/);
     expect(read('../../app/(tabs)/matches/matchdetailscreen.jsx')).toMatch(/useGameDayMatchRealtime/);
-    expect(read('../../components/matches/GameDayDressingRoom.jsx')).toMatch(/entities\.DressingRoom\.subscribe/);
+    expect(read('../../app/(tabs)/matches/matchdetailscreen.jsx')).not.toMatch(/GameDayDressingRoomPanel/);
   });
 });

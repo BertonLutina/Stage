@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { stageClient } from '@/api/stageClient';
 import { CYAN } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT } from '@/components/dashboard/CommandCenterUI';
-import { buildResultPayload, mapResultError, submitMatchResult } from '@/lib/gameDayOps';
+import { buildResultPayload, isClubGameDayMatch, mapResultError, submitMatchResult } from '@/lib/gameDayOps';
 import {
   evidenceRequired,
   fixtureScoreFromSubmission,
@@ -35,7 +35,7 @@ export default function GameDayResultSheet({
   isHomeTeam,
   onSubmitted,
 }) {
-  const isClubMatch = game?.mode === 'club' || Boolean(game?.home_club_id);
+  const isClubMatch = isClubGameDayMatch(game);
   const homeName = game?.home_club_name || game?.home_player_name || 'Home';
   const awayName = game?.away_club_name || game?.away_player_name || 'Away';
   const controls = getResultSubmissionControls({

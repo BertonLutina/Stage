@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { resolveMyPlayerAndClub, stageClient } from '../api/stageClient';
 import { materializeConfirmedFixtures } from '../lib/gameDayIntegration';
 import { isActiveGameDayMatch } from '../lib/gameDayPresentation';
 import { isGameDayMatchSocketPayload, sameRecordId } from '../lib/gameDayRealtime';
-import { pickMyClubForMatch, sameId, settleClubMatches, uniqueIdentityClubs } from '../lib/gameDayOps';
+import { matchBelongsToIdentity, pickMyClubForMatch, sameId, settleClubMatches, uniqueIdentityClubs } from '../lib/gameDayOps';
 
 function uniqById(rows = []) {
   const map = new Map();
@@ -92,6 +92,8 @@ export default function useMatchesHub() {
   const [presidentClub, setPresidentClub] = useState(null);
   const [myPlayer, setMyPlayer] = useState(null);
   const [leagueFilter, setLeagueFilter] = useState('all');
+  const identityRef = useRef({ clubs: [], playerId: null });
+  const eventsRef = useRef([]);
 
   const load = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -103,6 +105,7 @@ export default function useMatchesHub() {
         club,
         ownedClub,
       );
+      identityRef.current = { clubs, playerId: player?.id || null };
       setMyClub(club || ownedClub || null);
       setPresidentClub(ownedClub || null);
       setMyPlayer(player || null);
@@ -148,6 +151,7 @@ export default function useMatchesHub() {
         .map((m) => toEvent(m, { clubs, player, tournamentMap }))
         .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
+      eventsRef.current = mapped;
       setEvents(mapped);
     } catch (err) {
       setEvents([]);
@@ -167,7 +171,10 @@ export default function useMatchesHub() {
         setEvents((prev) => prev.filter((row) => !sameRecordId(row.id, event.id)));
         return;
       }
-      if (!isGameDayMatchSocketPayload(event?.data)) return;
+      const data = event?.data;
+      if (!isGameDayMatchSocketPayload(data)) return;
+      const known = eventsRef.current.some((row) => sameRecordId(row.id, data.id));
+      if (!known && !matchBelongsToIdentity(data, identityRef.current)) return;
       load({ silent: true });
     });
     return () => {

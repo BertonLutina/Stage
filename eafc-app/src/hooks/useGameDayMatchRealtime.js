@@ -1,18 +1,15 @@
 import { useEffect, useRef } from 'react';
 import { stageClient } from '@/api/stageClient';
-import { resolveGameDayMatchEvent, sameRecordId } from '@/lib/gameDayRealtime';
+import { resolveGameDayMatchEvent } from '@/lib/gameDayRealtime';
 
 export function useGameDayMatchRealtime({
   matchId,
   reloadMatch,
   onMatch,
-  onDressing,
 }) {
   const onMatchRef = useRef(onMatch);
-  const onDressingRef = useRef(onDressing);
   const reloadRef = useRef(reloadMatch);
   onMatchRef.current = onMatch;
-  onDressingRef.current = onDressing;
   reloadRef.current = reloadMatch;
 
   useEffect(() => {
@@ -25,6 +22,8 @@ export function useGameDayMatchRealtime({
         onMatchRef.current?.({ deleted: true, id: matchId });
         return;
       }
+      // Match socket is global. Other people's fixtures must not refetch this one.
+      if (!resolved) return;
       const fresh = await reloadRef.current?.(matchId).catch(() => resolved?.match || null);
       if (cancelled || !fresh) return;
       onMatchRef.current?.(fresh);
@@ -34,17 +33,9 @@ export function useGameDayMatchRealtime({
       refreshMatch(event);
     }, { id: matchId });
 
-    const unsubRoom = stageClient.entities.DressingRoom.subscribe((event) => {
-      const data = event?.data;
-      if (event?.type !== 'delete' && !sameRecordId(data?.match_id, matchId)) return;
-      onDressingRef.current?.(data || event);
-      refreshMatch({ type: 'update', data: { id: matchId, status: 'scheduled' } });
-    }, { match_id: matchId });
-
     return () => {
       cancelled = true;
       if (typeof unsubMatch === 'function') unsubMatch();
-      if (typeof unsubRoom === 'function') unsubRoom();
     };
   }, [matchId]);
 }
