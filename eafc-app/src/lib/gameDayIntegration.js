@@ -78,6 +78,7 @@ export async function createMatchFromFixture(fixture, fixtureType) {
     mode: fixture.home_player_id || fixture.away_player_id ? 'solo' : 'club',
     status: 'scheduled',
     scheduled_date: scheduledDate,
+    timezone: fixture.timezone || null,
     tournament_id: sourceType === 'competition'
       ? (fixture.season_id || fixture.competition_id || null)
       : (fixture.league_id || null),

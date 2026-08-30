@@ -13,17 +13,20 @@ import {
 } from '@/lib/inboxHelpers';
 import { deleteInboxMessage, respondToInboxMessage } from '@/lib/inboxData';
 import DateTimeZoneFields from '@/components/matches/DateTimeZoneFields';
+import { parseKickoffDate } from '@/lib/momentDate';
+import { DEFAULT_TIMEZONE } from '@/lib/timezones';
 import { CYAN, AMBER } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT } from '@/components/dashboard/CommandCenterUI';
 import InboxLoanCard from '@/components/inbox/InboxLoanCard';
 
 const LOAN_TYPES = ['loan_proposal', 'loan_early_end', 'loan_purchase', 'loan_recalled', 'loan_terminated_early'];
 
-function formatFullDate(value) {
-  const d = value ? new Date(value) : null;
-  if (!d || Number.isNaN(d.getTime())) return '';
+function formatFullDate(value, timeZone = DEFAULT_TIMEZONE) {
+  const d = parseKickoffDate(value, timeZone);
+  if (!d) return '';
   return d.toLocaleString('en-GB', {
-    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    timeZone,
+    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
   });
 }
 
@@ -172,7 +175,7 @@ export default function InboxMessageDetail({
           ) : null}
           {message.message_type === 'league_schedule' && meta.proposed_date ? (
             <Text style={styles.metaLine}>
-              Proposed: {formatFullDate(meta.proposed_date)}
+              Proposed: {formatFullDate(meta.proposed_date, meta.timezone)}
               {meta.match_context ? `\n${meta.match_context}` : ''}
             </Text>
           ) : null}

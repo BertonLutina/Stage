@@ -285,6 +285,7 @@ function normalizeEntityFromApi(entityName, row) {
       group: row.group ?? row.group_number,
       scheduled_date: asWallClockDateTimeString(row.scheduled_date),
       first_submission_at: asWallClockDateTimeString(row.first_submission_at),
+      timezone: row.timezone || null,
     };
   }
   return row;

@@ -70,7 +70,25 @@ Browser `navigator.geolocation.getCurrentPosition` (8s timeout, coarse). `Intl.D
 
 After a successful `me()`, fire-and-forget `syncSessionLocation(stageClient.auth)` then refresh `me()` into `user`. Login, OAuth, and session restore already call `checkUserAuth`.
 
-Onboarding/Settings keep calling `updateTimezone(timezone)` without location — that must not null out `users.location`.
+Onboarding/Settings must **not** offer a timezone picker. Timezone comes from login GPS (`users.timezone`). Display it read-only.
+
+## Match hours (same deploy)
+
+When a connected user saves a match/fixture/invite time:
+
+1. Wall-clock digits they pick (`17:20`) are in **their** `users.timezone`. Never `toISOString()`. Never a client-picked zone.
+2. Persist `timezone` on the row: `matches.timezone`, `competition_fixtures.timezone`, `regional_league_fixtures.timezone` (`VARCHAR(80)`). Stamp from the authenticated user; ignore body.timezone from the client.
+3. When reading, `normalizeMatchForApi` emits `scheduled_date` as offset ISO in **that stored zone** (`2026-08-30T17:20:00+02:00` for Brussels in August) **and** returns `timezone`.
+4. Web FixtureSchedulerPanel / Arrange Game: remove timezone dropdowns. Label: “Kickoff in {users.timezone}”.
+5. `src/lib/momentDate.js` `toMysqlDateTime` keeps picker digits. Display with `Intl` `timeZone: viewer.timezone`, parse naive DATETIME with `row.timezone || Europe/Brussels`.
+
+```js
+await addCol('matches', 'timezone', "VARCHAR(80) NULL");
+await addCol('competition_fixtures', 'timezone', "VARCHAR(80) NULL");
+await addCol('regional_league_fixtures', 'timezone', "VARCHAR(80) NULL");
+```
+
+Do not convert DATETIME twice. Store naive wall clock + timezone column. Emit offset ISO on GET.
 
 ## Out of scope
 

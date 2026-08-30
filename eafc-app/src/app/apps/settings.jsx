@@ -12,6 +12,7 @@ import useAuthStore from '@/store/authStore';
 import { createTranslator } from '@/translations';
 import { DISPLAY_LANGUAGES } from '@/lib/languages';
 import { localStorage } from '@/lib/polyfillStorage';
+import { resolveUserTimezone, timezoneLabel } from '@/lib/timezones';
 import {
   NOTIFICATION_CHANNELS,
   TEST_TOAST_SAMPLES,
@@ -68,31 +69,10 @@ import useThemeStore from '@/store/themeStore';
 const THEME_KEY = 'stage-theme';
 const LANGUAGE_KEY = 'language';
 
-const TIMEZONES = [
-  { value: 'Europe/Brussels', label: 'Brussels, Belgium' },
-  { value: 'Europe/London', label: 'London, UK' },
-  { value: 'Europe/Paris', label: 'Paris, France' },
-  { value: 'Europe/Amsterdam', label: 'Amsterdam, Netherlands' },
-  { value: 'America/New_York', label: 'New York, USA' },
-  { value: 'America/Los_Angeles', label: 'Los Angeles, USA' },
-  { value: 'America/Toronto', label: 'Toronto, Canada' },
-  { value: 'Africa/Lagos', label: 'Lagos, Nigeria' },
-  { value: 'Africa/Johannesburg', label: 'Johannesburg, South Africa' },
-  { value: 'Asia/Dubai', label: 'Dubai, UAE' },
-];
-
 const THEMES = [
   { id: 'theme-dark', labelKey: 'stgThemeDark' },
   { id: 'theme-video', labelKey: 'stgThemeLiveDark' },
 ];
-
-function detectTimezone() {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Brussels';
-  } catch {
-    return 'Europe/Brussels';
-  }
-}
 
 function interpolate(value, vars) {
   if (!vars) return String(value ?? '');
@@ -172,7 +152,7 @@ export default function SettingsScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [timezone, setTimezone] = useState(detectTimezone);
+  const [timezone, setTimezone] = useState(() => resolveUserTimezone());
   const [theme, setTheme] = useState(() => normalizeThemeId(localStorage.getItem(THEME_KEY) || 'theme-dark'));
   const [customPrimaryColor, setCustomPrimaryColor] = useState('#00d4ff');
   const [customGradientColor, setCustomGradientColor] = useState('#0099ff');
@@ -227,7 +207,7 @@ export default function SettingsScreen() {
         ]);
         if (cancelled) return;
         if (me?.language) setLanguage(me.language);
-        setTimezone(me?.timezone || detectTimezone());
+        setTimezone(resolveUserTimezone(me));
         if (me?.customPrimaryColor) setCustomPrimaryColor(me.customPrimaryColor);
         if (me?.customGradientColor) setCustomGradientColor(me.customGradientColor);
         if (me?.customBackgroundColor) setCustomBackgroundColor(me.customBackgroundColor);
@@ -345,7 +325,6 @@ export default function SettingsScreen() {
         customSecondaryTextColor,
         backgroundImage,
       });
-      await stageClient.auth.updateTimezone(timezone);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
@@ -474,19 +453,11 @@ export default function SettingsScreen() {
               }))}
               onChange={(id) => setLanguage(id)}
             />
-            <SettingsListbox
-              label="Timezone"
-              value={timezone}
-              options={[
-                ...TIMEZONES.map((zone) => ({ id: zone.value, label: zone.label, description: zone.value })),
-                ...(!TIMEZONES.some((zone) => zone.value === timezone) && timezone
-                  ? [{ id: timezone, label: timezone }]
-                  : []),
-              ]}
-              onChange={(id) => setTimezone(id)}
-            />
-            <Text style={{ color: tokens.faint, fontSize: 11, marginTop: -4, lineHeight: 16 }}>
-              Match times use this timezone. Brussels automatically switches between CET and CEST.
+            <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>
+              Timezone · {timezoneLabel(timezone)}
+            </Text>
+            <Text style={{ color: tokens.faint, fontSize: 11, marginTop: 4, lineHeight: 16 }}>
+              Match times use the timezone of the country you connect from. It is set automatically on login.
             </Text>
           </SettingsSection>
 

@@ -25,7 +25,7 @@ import {
   validateArrangeWager,
 } from '@/lib/arrangeGame';
 import { readAccountMode } from '@/lib/accountMode';
-import { detectTimezone } from '@/lib/timezones';
+import { resolveUserTimezone } from '@/lib/timezones';
 
 export default function ArrangeGameModal({ visible, onClose, myPlayer, myClub, onSent, presetOpponent, presetKind }) {
   const isPresidentMode = readAccountMode() === 'club';
@@ -39,7 +39,7 @@ export default function ArrangeGameModal({ visible, onClose, myPlayer, myClub, o
   const [recipientKind, setRecipientKind] = useState(null);
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
-  const [timezone, setTimezone] = useState(detectTimezone);
+  const [timezone, setTimezone] = useState(() => resolveUserTimezone());
   const [wagerStc, setWagerStc] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -59,14 +59,14 @@ export default function ArrangeGameModal({ visible, onClose, myPlayer, myClub, o
     setRecipientKind(presetKind || (presetOpponent ? (forcedType) : null));
     setDate('');
     setTime('');
-    setTimezone(detectTimezone());
+    setTimezone(resolveUserTimezone());
     setWagerStc('');
     setSending(false);
     setSent(false);
     setError('');
     stageClient.auth.me()
       .then((me) => {
-        if (me?.timezone) setTimezone(me.timezone);
+        if (me?.timezone) setTimezone(resolveUserTimezone(me));
       })
       .catch(() => {});
   }, [visible, forcedType, presetOpponent, presetKind]);
@@ -290,7 +290,6 @@ export default function ArrangeGameModal({ visible, onClose, myPlayer, myClub, o
                   timezone={timezone}
                   onDateChange={setDate}
                   onTimeChange={setTime}
-                  onTimezoneChange={setTimezone}
                 />
                 <TextInput
                   value={wagerStc}

@@ -20,6 +20,7 @@ import { FUT, SectionCard } from '@/components/dashboard/CommandCenterUI';
 import { loadCompetitionDetail, groupFixturesByMatchday } from '@/lib/competitionSeason';
 import { parseForm } from '@/lib/competitionUtils';
 import { createMatchFromFixture } from '@/lib/gameDayIntegration';
+import { toMysqlDateTime } from '@/lib/momentDate';
 import { proposeTime, roleForClub } from '@/lib/scheduleEngine';
 
 export default function CompetitionDetailScreen() {
@@ -68,7 +69,9 @@ export default function CompetitionDetailScreen() {
   const propose = async (fixture) => {
     const role = roleForClub(fixture, myClub?.id);
     if (!role) return;
-    const date = fixture.home_proposed_date || fixture.away_proposed_date || new Date(Date.now() + 86400000).toISOString();
+    const date = toMysqlDateTime(
+      fixture.home_proposed_date || fixture.away_proposed_date || new Date(Date.now() + 86400000),
+    );
     try {
       await proposeTime({
         fixture,

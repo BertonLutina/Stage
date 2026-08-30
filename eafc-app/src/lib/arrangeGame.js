@@ -1,4 +1,4 @@
-import { resolveTimezone, timezoneLabel } from '@/lib/timezones';
+import { resolveUserTimezone, timezoneLabel } from '@/lib/timezones';
 
 export const ARRANGE_MIN_BET = 10_000;
 export const ARRANGE_MAX_BET = 2_000_000;
@@ -104,8 +104,9 @@ export async function sendArrangeGameInvite({
   if (!opponent || !date || !time) throw new Error('Choose an opponent, date, and time');
   if (!recipientKind) throw new Error('Please choose an opponent again.');
 
+  const me = await stageClient.auth.me?.().catch(() => null);
   const scheduledDate = combineDateTimeToMysql(date, time);
-  const kickoffTimezone = resolveTimezone(timezone);
+  const kickoffTimezone = resolveUserTimezone(me);
   const senderIsClub = matchType === 'club' && Boolean(myClub);
   const recipientIsClub = recipientKind === 'club';
   const senderName = senderIsClub

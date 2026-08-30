@@ -19,6 +19,7 @@ import {
 import { FUT, SectionCard } from '@/components/dashboard/CommandCenterUI';
 import { groupFixturesByMatchday, loadLeagueDetail } from '@/lib/competitionSeason';
 import { createMatchFromFixture } from '@/lib/gameDayIntegration';
+import { toMysqlDateTime } from '@/lib/momentDate';
 import { proposeTime, roleForClub } from '@/lib/scheduleEngine';
 
 export default function LeagueDetailScreen() {
@@ -67,7 +68,7 @@ export default function LeagueDetailScreen() {
         fixture,
         fixtureType: 'regional_league',
         role,
-        proposedDate: new Date(Date.now() + 86400000).toISOString(),
+        proposedDate: toMysqlDateTime(new Date(Date.now() + 86400000)),
         myClub,
         myEmail: user?.email,
         myGamertag: myClub?.name,

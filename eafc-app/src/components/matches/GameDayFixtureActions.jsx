@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { stageClient } from '@/api/stageClient';
 import { FUT } from '@/components/dashboard/CommandCenterUI';
+import { combineDateTimeToMysql } from '@/lib/arrangeGame';
+import { resolveUserTimezone } from '@/lib/timezones';
+import useAuthStore from '@/store/authStore';
 import {
   actorFromProfile,
   canConfirmMatchCancel,
@@ -73,7 +76,12 @@ export default function GameDayFixtureActions({ game, user, myPlayer, myClub, is
           <Action
             label={loading === 'request_reschedule' ? 'Sending…' : 'Send proposal'}
             loading={loading === 'request_reschedule'}
-            onPress={() => invoke('request_reschedule', { new_date: newDate, new_time: newTime })}
+            onPress={() => invoke('request_reschedule', {
+              new_date: newDate,
+              new_time: newTime,
+              timezone: resolveUserTimezone(useAuthStore.getState().user),
+              scheduled_date: combineDateTimeToMysql(newDate, newTime),
+            })}
             tone="warn"
           />
         </View>

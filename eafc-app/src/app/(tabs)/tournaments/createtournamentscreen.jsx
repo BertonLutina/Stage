@@ -260,7 +260,6 @@ export default function CreateTournamentScreen() {
                     <DateTimeZoneFields
                       date={startDate}
                       time={startTime}
-                      timezone="UTC"
                       showTimezone={false}
                       onDateChange={setStartDate}
                       onTimeChange={setStartTime}

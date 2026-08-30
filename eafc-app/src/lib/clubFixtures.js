@@ -1,4 +1,6 @@
 import { asObjectArray } from '@/lib/clubProfileData';
+import { formatKickoffInZone, parseKickoffDate } from '@/lib/momentDate';
+import { DEFAULT_TIMEZONE } from '@/lib/timezones';
 
 export const FIXTURE_AVAILABILITY_LABELS = {
   available: 'Available',
@@ -93,9 +95,10 @@ export function fixtureEventName(fixture, group) {
 export function fixtureDateLabel(fixture) {
   const raw = fixture.scheduled_date || fixture.match_date || fixture.created_date;
   if (!raw) return 'TBD';
-  const parsed = new Date(raw);
-  if (Number.isNaN(parsed.getTime())) return String(raw);
-  return parsed.toLocaleString();
+  const zone = fixture.timezone || DEFAULT_TIMEZONE;
+  const parsed = parseKickoffDate(raw, zone);
+  if (!parsed) return String(raw);
+  return formatKickoffInZone(raw, { sourceTimeZone: zone, displayTimeZone: zone });
 }
 
 export function buildAvailabilityByFixture(rows) {

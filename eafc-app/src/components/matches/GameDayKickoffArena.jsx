@@ -4,6 +4,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Polygon, Text as SvgText } from 'react-native-svg';
 import { headingStyle, headingStyleSm } from '@/lib/fonts';
+import { parseKickoffDate, formatKickoffClock } from '@/lib/momentDate';
+import { DEFAULT_TIMEZONE, resolveUserTimezone } from '@/lib/timezones';
+import useAuthStore from '@/store/authStore';
 import { formatBroadcastUnit, gameDayArenaLayout, getKickoffCountdownParts, pad2 } from '@/lib/gameDayPresentation';
 import { formatStc } from '@/lib/wagerActions';
 import GameDayCrest from './GameDayCrest';
@@ -24,6 +27,7 @@ export default function GameDayKickoffArena({
   homeLabel = 'Home',
   awayLabel = 'Away',
   date,
+  timezone,
   status,
   statusLabel,
   competitionLabel,
@@ -41,10 +45,12 @@ export default function GameDayKickoffArena({
   const [panelWidth, setPanelWidth] = useState(0);
   const layout = gameDayArenaLayout(panelWidth || windowWidth, { compact });
   const [now, setNow] = useState(() => new Date());
+  const viewerTimeZone = resolveUserTimezone(useAuthStore((s) => s.user));
+  const sourceTimeZone = timezone || DEFAULT_TIMEZONE;
   const isLive = status === 'in_progress';
   const isFinished = status === 'completed' || status === 'forfeit';
   const showScore = isLive || isFinished;
-  const countdown = !isLive && !isFinished ? getKickoffCountdownParts(date, now) : null;
+  const countdown = !isLive && !isFinished ? getKickoffCountdownParts(date, now, sourceTimeZone) : null;
 
   useEffect(() => {
     if (isLive || isFinished) return undefined;
@@ -52,8 +58,12 @@ export default function GameDayKickoffArena({
     return () => clearInterval(id);
   }, [isLive, isFinished]);
 
-  const kickoffDate = date ? new Date(date) : null;
-  const dateOk = kickoffDate && !Number.isNaN(kickoffDate.getTime());
+  const kickoffDate = parseKickoffDate(date, sourceTimeZone);
+  const dateOk = Boolean(kickoffDate);
+  const clockLabel = formatKickoffClock(date, {
+    sourceTimeZone,
+    displayTimeZone: viewerTimeZone,
+  });
   const { vsW, vsH } = layout;
   const hasCustomBg = hasCustomGameDayTileBackground(backgroundConfig);
 
@@ -114,9 +124,14 @@ export default function GameDayKickoffArena({
             </Text>
             {dateOk ? (
               <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, marginTop: 4, letterSpacing: 1.4, textTransform: 'uppercase' }} numberOfLines={1}>
-                {kickoffDate.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
+                {kickoffDate.toLocaleDateString('en-GB', {
+                  timeZone: viewerTimeZone,
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                })}
                 {' · '}
-                {kickoffDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                {clockLabel}
               </Text>
             ) : null}
           </View>

@@ -32,30 +32,10 @@ import { isDiscordConfigured } from '../../lib/discordConfig';
 import { markOnboardingComplete } from '../../services/onboardingService';
 import { isFinishedOnboardingProfile } from '../../lib/onboardingGate';
 import { localStorage } from '../../lib/polyfillStorage';
+import { resolveUserTimezone, timezoneLabel } from '@/lib/timezones';
 
 const BANNER = require('../../../assets/Banner.jpg');
 const LOGO = require('../../../assets/stadium-logo.png');
-
-const TIMEZONES = [
-  { value: 'Europe/Brussels', label: 'Brussels' },
-  { value: 'Europe/London', label: 'London' },
-  { value: 'Europe/Paris', label: 'Paris' },
-  { value: 'Europe/Amsterdam', label: 'Amsterdam' },
-  { value: 'America/New_York', label: 'New York' },
-  { value: 'America/Los_Angeles', label: 'Los Angeles' },
-  { value: 'America/Toronto', label: 'Toronto' },
-  { value: 'Africa/Lagos', label: 'Lagos' },
-  { value: 'Africa/Johannesburg', label: 'Johannesburg' },
-  { value: 'Asia/Dubai', label: 'Dubai' },
-];
-
-function detectTimezone() {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Brussels';
-  } catch {
-    return 'Europe/Brussels';
-  }
-}
 
 function getStepMeta(intent, step, phase) {
   const dual = intent === 'both';
@@ -71,10 +51,6 @@ function getStepMeta(intent, step, phase) {
     return { label: 'President contract', index: 6, total: 7 };
   }
   return { label: 'Choose role', index: 0, total: 2 };
-}
-
-function timezoneCity(value) {
-  return TIMEZONES.find((z) => z.value === value)?.label || String(value || '').split('/')[1] || value;
 }
 
 function StepDots({ index, total }) {
@@ -106,8 +82,7 @@ export default function OnboardingScreen() {
   const [founderPlayerTerms, setFounderPlayerTerms] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tutorialOpen, setTutorialOpen] = useState(false);
-  const [timezone, setTimezone] = useState(detectTimezone);
-  const [showTimezone, setShowTimezone] = useState(false);
+  const [timezone, setTimezone] = useState(() => resolveUserTimezone());
 
   const finish = async () => {
     if (user?.id) await markOnboardingComplete(user.id);
@@ -120,7 +95,7 @@ export default function OnboardingScreen() {
       try {
         const { user: u, player: pl } = await resolveMyPlayerAndClub();
         setUser(u);
-        const nextTz = u?.timezone || detectTimezone();
+        const nextTz = resolveUserTimezone(u);
         setTimezone(nextTz);
         if (!u?.timezone) stageClient.auth.updateTimezone(nextTz).catch(() => {});
         if (pl) setPlayer(pl);
@@ -164,7 +139,6 @@ export default function OnboardingScreen() {
   };
 
   const finishOnboarding = () => {
-    stageClient.auth.updateTimezone(timezone).catch(() => {});
     if (isDiscordConfigured()) setStep('discord');
     else setTutorialOpen(true);
   };
@@ -255,32 +229,10 @@ export default function OnboardingScreen() {
                   <STText style={s.roleDesc}>Play and run your own club from day one.</STText>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  onPress={() => setShowTimezone((open) => !open)}
-                  style={styles.tzToggle}
-                  accessibilityLabel="Change timezone"
-                >
+                <View style={styles.tzToggle}>
                   <Ionicons name="time-outline" size={16} color={ONB.muted} />
-                  <STText style={styles.tzText}>Match times · {timezoneCity(timezone)}</STText>
-                  <Ionicons name={showTimezone ? 'chevron-up' : 'chevron-down'} size={16} color={ONB.faint} />
-                </TouchableOpacity>
-                {showTimezone ? (
-                  <View style={s.chipRow}>
-                    {TIMEZONES.map((z) => (
-                      <TouchableOpacity
-                        key={z.value}
-                        onPress={() => {
-                          setTimezone(z.value);
-                          stageClient.auth.updateTimezone(z.value).catch(() => {});
-                          setShowTimezone(false);
-                        }}
-                        style={[s.chip, timezone === z.value && s.chipActive]}
-                      >
-                        <STText style={[s.chipText, timezone === z.value && s.chipTextActive]}>{z.label}</STText>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                ) : null}
+                  <STText style={styles.tzText}>Match times · {timezoneLabel(timezone)}</STText>
+                </View>
               </View>
             ) : null}
 

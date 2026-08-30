@@ -135,7 +135,7 @@ export default function MatchesIndex() {
     amIHomeTeam: featuredSides.amIHomeTeam,
     isLive: featuredLive,
     showResultForm: showResult,
-    minutesUntilMatch: minutesUntil(featuredMatch?.scheduled_date),
+    minutesUntilMatch: minutesUntil(featuredMatch?.scheduled_date, featuredMatch?.timezone),
   });
   const showFeaturedScore = Boolean(
     featuredSides.isMyMatch
@@ -358,6 +358,7 @@ export default function MatchesIndex() {
                 homeYou={featuredSides.isMyMatch && featuredSides.amIHomeTeam}
                 awayYou={featuredSides.isMyMatch && !featuredSides.amIHomeTeam}
                 date={featured.date}
+                timezone={featuredMatch?.timezone}
                 status={featured.status}
                 statusLabel={MATCH_STATUS_LABEL[featured.status] || featured.status}
                 competitionLabel={featured.competition || 'MATCH DETAILS'}

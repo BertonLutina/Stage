@@ -10,6 +10,8 @@ import { headingStyle } from '@/lib/fonts';
 import useThemeStore from '@/store/themeStore';
 import { CARD_RADIUS, hexToRgba } from '@/lib/stageTheme';
 import LiveGlass from '@/components/theme/LiveGlass';
+import { formatKickoffInZone } from '@/lib/momentDate';
+import { DEFAULT_TIMEZONE } from '@/lib/timezones';
 
 /** EA FC night palette */
 export const FUT = {
@@ -90,13 +92,13 @@ export function formatDays(days) {
   return remMonths > 0 ? `${years}y ${remMonths}mo` : `${years}y`;
 }
 
-export function formatWhen(dateStr) {
+export function formatWhen(dateStr, timeZone = DEFAULT_TIMEZONE) {
   if (!dateStr) return 'TBD';
-  const dt = new Date(dateStr);
-  return (
-    `${dt.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' })} · ${
-      dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
-  );
+  const formatted = formatKickoffInZone(dateStr, {
+    sourceTimeZone: timeZone,
+    displayTimeZone: timeZone,
+  });
+  return formatted || 'TBD';
 }
 
 export function PitchAtmosphere({ children, style }) {

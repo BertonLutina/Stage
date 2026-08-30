@@ -33,3 +33,19 @@ export function resolveTimezone(value) {
   const raw = String(value || '').trim();
   return raw || detectTimezone();
 }
+
+export function resolveUserTimezone(user) {
+  const fromUser = String(user?.timezone || '').trim();
+  if (fromUser) return fromUser;
+  return DEFAULT_TIMEZONE;
+}
+
+export function isValidTimeZone(value) {
+  if (!value || typeof value !== 'string' || value.length > 80) return false;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value }).format(new Date());
+    return true;
+  } catch {
+    return false;
+  }
+}
