@@ -58,7 +58,7 @@
     <key>NSFaceIDUsageDescription</key>
     <string>Allow Stage to use Face ID to sign in quickly and securely.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>Stage may use your location to send relevant club and match notifications while you use the app.</string>
+    <string>Stage uses your location to set your match timezone — the time zone of the country you are in.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your microphone</string>
     <key>NSPhotoLibraryUsageDescription</key>

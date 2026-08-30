@@ -98,6 +98,13 @@ jest.mock('react-native-onesignal', () => ({
   LogLevel: { Verbose: 6 },
 }));
 
+jest.mock('expo-location', () => ({
+  requestForegroundPermissionsAsync: jest.fn(async () => ({ status: 'denied' })),
+  getCurrentPositionAsync: jest.fn(),
+  reverseGeocodeAsync: jest.fn(),
+  Accuracy: { Balanced: 3 },
+}));
+
 jest.mock('socket.io-client', () => ({
   io: jest.fn(() => ({
     on: jest.fn(),

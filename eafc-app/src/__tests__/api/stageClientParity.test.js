@@ -38,6 +38,12 @@ describe('mobile stageClient parity wrappers', () => {
     expect(api).toMatch(/storeTokens\(\{ accessToken, refreshToken: nextRefresh \}\)/);
   });
 
+  it('PATCHes /auth/timezone with optional GPS location', () => {
+    expect(source).toMatch(/async updateTimezone\(timezone, location = null\)/);
+    expect(source).toMatch(/if \(location\) body\.location = location/);
+    expect(source).toMatch(/\/auth\/timezone/);
+  });
+
   it('documents legacy President as compatibility fallback only', () => {
     expect(source).toMatch(/player-president flows use clubs\.president_player_id as the public identity/);
     expect(source).toMatch(/legacy first-class President entity/i);
