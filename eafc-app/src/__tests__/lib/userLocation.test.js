@@ -50,4 +50,22 @@ describe('syncSessionLocation', () => {
     expect(saved.timezone).toEqual(expect.any(String));
     expect(saved.location).toBeNull();
   });
+
+  test('retries timezone-only if location PATCH is rejected', async () => {
+    const updateTimezone = jest.fn(async (timezone, location) => {
+      if (location) throw new Error('Unknown column location');
+      return { timezone, location: null };
+    });
+    const geo = jest.fn((ok) => ok({
+      coords: { latitude: 50.85, longitude: 4.35, accuracy: 10 },
+    }));
+    Object.defineProperty(global, 'navigator', {
+      value: { geolocation: { getCurrentPosition: geo } },
+      configurable: true,
+    });
+    const saved = await syncSessionLocation({ updateTimezone }, { force: true });
+    expect(updateTimezone).toHaveBeenCalledTimes(2);
+    expect(updateTimezone.mock.calls[1][1]).toBeNull();
+    expect(saved.timezone).toEqual(expect.any(String));
+  });
 });

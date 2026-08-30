@@ -144,7 +144,13 @@ export async function syncSessionLocation(auth = {}, { force = false } = {}) {
   inFlight = (async () => {
     try {
       const payload = await captureSessionLocation();
-      return await update(payload.timezone, payload.location);
+      try {
+        return await update(payload.timezone, payload.location);
+      } catch (err) {
+        // API without users.location yet: still persist timezone so clocks work.
+        if (payload.location) return await update(payload.timezone, null);
+        throw err;
+      }
     } catch {
       return null;
     } finally {
