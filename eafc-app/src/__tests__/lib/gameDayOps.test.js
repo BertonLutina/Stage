@@ -4,6 +4,7 @@ import {
   canKickoffMatch,
   countSeated,
   mapResultError,
+  matchBelongsToIdentity,
   minutesUntil,
     parseIdList,
     pickMyClubForMatch,
@@ -94,6 +95,18 @@ describe('gameDayOps', () => {
     expect(dual.isMyMatch).toBe(true);
     expect(dual.amIHomeTeam).toBe(true);
     expect(dual.myClub.id).toBe('owned');
+    expect(pickMyClubForMatch(
+      { home_club_id: 'other', away_club_id: 'else' },
+      [signed, owned],
+    )).toBeNull();
+    expect(matchBelongsToIdentity(
+      { home_club_id: 'owned', away_club_id: 'else' },
+      { clubs: [signed, owned], playerId: 'p1' },
+    )).toBe(true);
+    expect(matchBelongsToIdentity(
+      { home_club_id: 'x', away_club_id: 'y', home_player_id: 'p9' },
+      { clubs: [signed], playerId: 'p1' },
+    )).toBe(false);
   });
 
   test('matching home/away own scores complete, swapped team goals dispute', () => {
@@ -203,6 +216,21 @@ describe('result + wager + season helpers', () => {
     expect(controls.showAwayWaitingForHome).toBe(true);
     expect(controls.showAwaySubmit).toBe(false);
     expect(controls.showConfirmResult).toBe(false);
+  });
+
+  test('away confirm stays available after status leaves in_progress', () => {
+    const controls = getResultSubmissionControls({
+      game: {
+        result_state: 'AWAITING_AWAY_CONFIRMATION',
+        result_submit_side: 'home',
+        result_home_submitted: 1,
+      },
+      isLive: false,
+      showResultForm: false,
+      amIHomeTeam: false,
+    });
+    expect(controls.showConfirmResult).toBe(true);
+    expect(controls.showAwaySubmit).toBe(false);
   });
 
   test('away confirm state opens confirm, not a second submit_result', () => {

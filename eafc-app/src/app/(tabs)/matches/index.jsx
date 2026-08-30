@@ -18,11 +18,12 @@ import useMatchesHub from '../../../hooks/useMatchesHub';
 import { GameDayFixtureChip, ScheduleMatchRow } from '../../../components/matches/MatchHubCards';
 import ArrangeGameModal from '../../../components/matches/ArrangeGameModal';
 import GameDayKickoffArena from '../../../components/matches/GameDayKickoffArena';
-import GameDayDressingRoomPanel from '../../../components/matches/GameDayDressingRoomPanel';
+import GameDayKickoffActions from '../../../components/matches/GameDayKickoffActions';
+import GameDayScoreReport from '../../../components/matches/GameDayScoreReport';
+import GameDayResultSheet from '../../../components/matches/GameDayResultSheet';
 import GameDayTileBackgroundDialog from '../../../components/matches/GameDayTileBackgroundDialog';
 import GameDayTileBackgroundLayers from '../../../components/matches/GameDayTileBackgroundLayers';
 import GameDayTileMenuButton from '../../../components/matches/GameDayTileMenuButton';
-import { useGameDayMatchRealtime } from '@/hooks/useGameDayMatchRealtime';
 import {
   GamerProfileShell,
   CYAN,
@@ -30,7 +31,17 @@ import {
 } from '@/components/profile/gamer/GamerProfileUI';
 import { SectionCard, SectionTitle, FUT } from '@/components/dashboard/CommandCenterUI';
 import { headingStyle, headingStyleSm } from '@/lib/fonts';
-import { MATCH_STATUS_LABEL, loadDressingCounts, pickMyClubForMatch, reloadMatch, resolveMatchSides, sameId, uniqueIdentityClubs } from '@/lib/gameDayOps';
+import {
+  MATCH_STATUS_LABEL,
+  afterMatchCompleted,
+  kickoffMatch,
+  mapKickoffError,
+  minutesUntil,
+  pickMyClubForMatch,
+  resolveMatchSides,
+  uniqueIdentityClubs,
+} from '@/lib/gameDayOps';
+import { getKickoffControls, getResultSubmissionControls } from '@/lib/gameDayResultFlow';
 import { resolveCrestUrl } from '@/lib/gameDayPresentation';
 import { canUseTileBackgrounds, getGameDayTileBackgroundConfig, hasCustomGameDayTileBackground } from '@/lib/gameDayTileBackgrounds';
 
@@ -63,7 +74,9 @@ export default function MatchesIndex() {
   const [featuredId, setFeaturedId] = useState(null);
   const [bannerUrl, setBannerUrl] = useState(null);
   const [tileDialog, setTileDialog] = useState(null);
-  const [dressingCounts, setDressingCounts] = useState({ home: 0, away: 0 });
+  const [showResult, setShowResult] = useState(false);
+  const [kickoffLoading, setKickoffLoading] = useState(false);
+  const [kickoffError, setKickoffError] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -103,49 +116,68 @@ export default function MatchesIndex() {
   const hubClubs = uniqueIdentityClubs(myClub, presidentClub);
   const featuredClub = pickMyClubForMatch(featuredMatch, hubClubs);
   const featuredSides = resolveMatchSides(featuredMatch, featuredClub, myPlayer);
-  const showDressingRoom = Boolean(
-    featuredMatch
-    && featuredSides.isClubMatch
-    && featuredSides.isMyMatch
-    && featuredClub
-    && featured.status !== 'disputed',
-  );
   const canCustomizeTiles = canUseTileBackgrounds(myPlayer);
   const matchScreensBg = canCustomizeTiles ? getGameDayTileBackgroundConfig(myPlayer, 'match_screens') : null;
   const matchDetailsBg = canCustomizeTiles ? getGameDayTileBackgroundConfig(myPlayer, 'match_details') : null;
-  const dressingRoomBg = canCustomizeTiles ? getGameDayTileBackgroundConfig(myPlayer, 'dressing_room') : null;
   const hasMatchScreensBg = hasCustomGameDayTileBackground(matchScreensBg);
+  const featuredLive = featuredMatch?.status === 'in_progress';
+  const featuredCompleted = featuredMatch?.status === 'completed';
+  const featuredDisputed = featuredMatch?.status === 'disputed';
+  const featuredResultControls = getResultSubmissionControls({
+    game: featuredMatch,
+    isLive: featuredLive,
+    showResultForm: showResult,
+    amIHomeTeam: featuredSides.amIHomeTeam,
+  });
+  const featuredKickoffControls = getKickoffControls({
+    game: featuredMatch,
+    isMyMatch: featuredSides.isMyMatch,
+    amIHomeTeam: featuredSides.amIHomeTeam,
+    isLive: featuredLive,
+    showResultForm: showResult,
+    minutesUntilMatch: minutesUntil(featuredMatch?.scheduled_date),
+  });
+  const showFeaturedScore = Boolean(
+    featuredSides.isMyMatch
+    && featuredMatch
+    && (featuredLive || featuredCompleted || featuredDisputed
+      || featuredResultControls.homeResultSubmitted
+      || featuredResultControls.awayResultSubmitted
+      || featuredResultControls.resultState),
+  );
 
   useEffect(() => {
-    let cancelled = false;
-    if (!showDressingRoom || !featuredMatch?.id) {
-      setDressingCounts({ home: 0, away: 0 });
-      return undefined;
-    }
-    loadDressingCounts(featuredMatch).then((counts) => {
-      if (!cancelled) setDressingCounts(counts);
-    });
-    return () => { cancelled = true; };
-  }, [showDressingRoom, featuredMatch?.id]);
-
-  useGameDayMatchRealtime({
-    matchId: showDressingRoom ? featuredMatch?.id : null,
-    reloadMatch,
-    onMatch: async (fresh) => {
-      if (fresh?.deleted || !fresh?.id) return;
-      setDressingCounts(await loadDressingCounts(fresh));
-    },
-    onDressing: async () => {
-      if (!featuredMatch) return;
-      setDressingCounts(await loadDressingCounts(featuredMatch));
-    },
-  });
+    setShowResult(false);
+    setKickoffError('');
+  }, [featured?.id]);
 
   const openMatch = (event) => {
     router.push({
       pathname: '/(tabs)/matches/matchdetailscreen',
       params: { matchId: event.id },
     });
+  };
+
+  const onFeaturedKickoff = async () => {
+    if (!featuredMatch?.id) return;
+    setKickoffLoading(true);
+    setKickoffError('');
+    try {
+      await kickoffMatch(featuredMatch.id);
+      await reload();
+    } catch (err) {
+      setKickoffError(mapKickoffError(err));
+    } finally {
+      setKickoffLoading(false);
+    }
+  };
+
+  const onFeaturedResultSubmitted = async (status, homeScore, awayScore) => {
+    if (status === 'completed' && featuredMatch) {
+      afterMatchCompleted({ ...featuredMatch, home_score: homeScore, away_score: awayScore });
+    }
+    setShowResult(false);
+    await reload();
   };
 
   const onRefresh = async () => {
@@ -323,8 +355,8 @@ export default function MatchesIndex() {
                 awayName={featured.awayName}
                 homeLogo={resolveCrestUrl(featuredMatch, 'home', featuredClub, myPlayer)}
                 awayLogo={resolveCrestUrl(featuredMatch, 'away', featuredClub, myPlayer)}
-                homeYou={featured.isHome}
-                awayYou={!featured.isHome}
+                homeYou={featuredSides.isMyMatch && featuredSides.amIHomeTeam}
+                awayYou={featuredSides.isMyMatch && !featuredSides.amIHomeTeam}
                 date={featured.date}
                 status={featured.status}
                 statusLabel={MATCH_STATUS_LABEL[featured.status] || featured.status}
@@ -336,23 +368,30 @@ export default function MatchesIndex() {
                 backgroundConfig={matchDetailsBg}
                 onChangeBackground={myPlayer ? () => setTileDialog({ tileKey: 'match_details', title: 'Match Details' }) : undefined}
                 onPress={() => openMatch(featured)}
-              />
-              {showDressingRoom ? (
-                <GameDayDressingRoomPanel
+              >
+                <GameDayKickoffActions
+                  controls={featuredKickoffControls}
+                  loading={kickoffLoading}
+                  onKickoff={onFeaturedKickoff}
+                />
+              </GameDayKickoffArena>
+              {kickoffError ? (
+                <SectionCard accent="rose">
+                  <Text style={{ color: FUT.rose, fontSize: 12 }}>{kickoffError}</Text>
+                </SectionCard>
+              ) : null}
+              {showFeaturedScore ? (
+                <GameDayScoreReport
                   game={featuredMatch}
-                  myClub={featuredClub}
-                  myPlayer={myPlayer}
-                  dressingCounts={dressingCounts}
-                  backgroundConfig={dressingRoomBg}
-                  onChangeBackground={myPlayer ? () => setTileDialog({ tileKey: 'dressing_room', title: 'Dressing Room' }) : undefined}
-                  onSeatChange={({ clubId, seatedPlayers }) => {
-                    const count = Array.isArray(seatedPlayers) ? seatedPlayers.length : 0;
-                    setDressingCounts((prev) => {
-                      if (sameId(clubId, featuredMatch.home_club_id)) return { ...prev, home: count };
-                      if (sameId(clubId, featuredMatch.away_club_id)) return { ...prev, away: count };
-                      return prev;
-                    });
-                  }}
+                  homeName={featuredSides.homeName}
+                  awayName={featuredSides.awayName}
+                  isMyMatch={featuredSides.isMyMatch}
+                  amIHomeTeam={featuredSides.amIHomeTeam}
+                  isLive={featuredLive}
+                  isCompleted={featuredCompleted}
+                  isDisputed={featuredDisputed}
+                  showResultForm={showResult}
+                  onSubmitPress={() => setShowResult(true)}
                 />
               ) : null}
             </View>
@@ -412,6 +451,15 @@ export default function MatchesIndex() {
             setPresetKind(null);
             reload();
           }}
+        />
+        <GameDayResultSheet
+          visible={showResult && Boolean(featuredMatch)}
+          onClose={() => setShowResult(false)}
+          game={featuredMatch}
+          myClub={featuredClub}
+          myPlayer={myPlayer}
+          isHomeTeam={featuredSides.amIHomeTeam}
+          onSubmitted={onFeaturedResultSubmitted}
         />
         <GameDayTileBackgroundDialog
           visible={Boolean(tileDialog)}

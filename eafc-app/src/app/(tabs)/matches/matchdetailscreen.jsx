@@ -18,18 +18,15 @@ import {
   CYAN,
 } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT, SectionCard } from '@/components/dashboard/CommandCenterUI';
-import { headingStyle } from '@/lib/fonts';
 import {
   MATCH_STATUS_LABEL,
   afterMatchCompleted,
   kickoffMatch,
-  loadDressingCounts,
   mapKickoffError,
   minutesUntil,
   pickMyClubForMatch,
   reloadMatch,
   resolveMatchSides,
-  sameId,
   settleClubMatches,
   settleMatchDeadlines,
   uniqueIdentityClubs,
@@ -37,11 +34,11 @@ import {
 import { getKickoffControls, getResultSubmissionControls } from '@/lib/gameDayResultFlow';
 import GameDayWagerCard from '@/components/matches/GameDayWagerCard';
 import GameDayFixtureActions from '@/components/matches/GameDayFixtureActions';
-import GameDayDressingRoomPanel from '@/components/matches/GameDayDressingRoomPanel';
 import GameDayResultSheet from '@/components/matches/GameDayResultSheet';
 import GameDayScoreReport from '@/components/matches/GameDayScoreReport';
 import GameDayStreamCard from '@/components/matches/GameDayStreamCard';
 import GameDayKickoffArena from '@/components/matches/GameDayKickoffArena';
+import GameDayKickoffActions from '@/components/matches/GameDayKickoffActions';
 import GameDayTileBackgroundDialog from '@/components/matches/GameDayTileBackgroundDialog';
 import { resolveCrestUrl } from '@/lib/gameDayPresentation';
 import { canUseTileBackgrounds, getGameDayTileBackgroundConfig } from '@/lib/gameDayTileBackgrounds';
@@ -53,7 +50,6 @@ export default function MatchDetailScreen() {
   const [game, setGame] = useState(null);
   const [myClub, setMyClub] = useState(null);
   const [myPlayer, setMyPlayer] = useState(null);
-  const [dressingCounts, setDressingCounts] = useState({ home: 0, away: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [kickoffLoading, setKickoffLoading] = useState(false);
@@ -78,9 +74,8 @@ export default function MatchDetailScreen() {
       }
       const match = await reloadMatch(matchId);
       setMyPlayer(player || null);
-      setMyClub(pickMyClubForMatch(match, clubs) || club || presidentClub || null);
+      setMyClub(pickMyClubForMatch(match, clubs));
       setGame(match);
-      if (match) setDressingCounts(await loadDressingCounts(match));
     } catch (err) {
       setError(err?.message || 'Failed to load match');
     } finally {
@@ -97,13 +92,6 @@ export default function MatchDetailScreen() {
     onMatch: async (fresh) => {
       if (fresh?.deleted) return;
       setGame(fresh);
-      setDressingCounts(await loadDressingCounts(fresh));
-    },
-    onDressing: async () => {
-      const fresh = await reloadMatch(matchId).catch(() => null);
-      if (!fresh) return;
-      setGame(fresh);
-      setDressingCounts(await loadDressingCounts(fresh));
     },
   });
 
@@ -267,71 +255,12 @@ export default function MatchDetailScreen() {
             backgroundConfig={canCustomizeTiles ? getGameDayTileBackgroundConfig(myPlayer, 'match_details') : undefined}
             onChangeBackground={myPlayer ? () => setTileDialog({ tileKey: 'match_details', title: 'Match Details' }) : undefined}
           >
-            {kickoffControls.showHomeKickoff ? (
-              <View style={{ gap: 8 }}>
-                {kickoffControls.tooEarly ? (
-                  <StatusBox icon="time-outline" iconColor="#F8FBFF">
-                    Kickoff available 15 minutes before match time.
-                  </StatusBox>
-                ) : null}
-                <TouchableOpacity
-                  onPress={onKickoff}
-                  disabled={kickoffLoading || !kickoffControls.canPressKickoff}
-                  style={{
-                    backgroundColor: kickoffControls.canPressKickoff ? '#EEF3FB' : '#1F2430',
-                    borderWidth: 1,
-                    borderColor: kickoffControls.canPressKickoff ? '#EEF3FB' : '#161B24',
-                    paddingVertical: 16,
-                    alignItems: 'center',
-                    opacity: kickoffLoading ? 0.6 : 1,
-                    shadowColor: '#EEF3FB',
-                    shadowOpacity: kickoffControls.canPressKickoff ? 0.34 : 0,
-                    shadowRadius: 18,
-                    shadowOffset: { width: 0, height: 0 },
-                  }}
-                >
-                  {kickoffLoading
-                    ? <ActivityIndicator color="#111827" />
-                    : (
-                      <Text style={[headingStyle, {
-                        color: kickoffControls.canPressKickoff ? '#111827' : 'rgba(255,255,255,0.25)',
-                        letterSpacing: 3,
-                        fontSize: 18,
-                      }]}
-                      >
-                        KICK OFF
-                      </Text>
-                    )}
-                </TouchableOpacity>
-              </View>
-            ) : null}
-            {kickoffControls.showAwayWaiting ? (
-              <View style={{ gap: 8 }}>
-                <StatusBox icon="time-outline" iconColor={CYAN}>
-                  Waiting for home team to kick off.
-                </StatusBox>
-              </View>
-            ) : null}
-          </GameDayKickoffArena>
-
-          {sides.isClubMatch && sides.isMyMatch && myClub && !isDisputed ? (
-            <GameDayDressingRoomPanel
-              game={game}
-              myClub={myClub}
-              myPlayer={myPlayer}
-              dressingCounts={dressingCounts}
-              backgroundConfig={canCustomizeTiles ? getGameDayTileBackgroundConfig(myPlayer, 'dressing_room') : undefined}
-              onChangeBackground={myPlayer ? () => setTileDialog({ tileKey: 'dressing_room', title: 'Dressing Room' }) : undefined}
-              onSeatChange={({ clubId, seatedPlayers }) => {
-                const count = Array.isArray(seatedPlayers) ? seatedPlayers.length : 0;
-                setDressingCounts((prev) => {
-                  if (sameId(clubId, game.home_club_id)) return { ...prev, home: count };
-                  if (sameId(clubId, game.away_club_id)) return { ...prev, away: count };
-                  return prev;
-                });
-              }}
+            <GameDayKickoffActions
+              controls={kickoffControls}
+              loading={kickoffLoading}
+              onKickoff={onKickoff}
             />
-          ) : null}
+          </GameDayKickoffArena>
           </View>
 
           <View style={{ paddingHorizontal: 12, gap: 12, marginTop: 12 }}>
@@ -431,30 +360,4 @@ const secondaryBtn = {
   borderColor: 'rgba(0,232,255,0.3)',
   paddingVertical: 12,
 };
-
-function StatusBox({ icon, iconColor, title, children }) {
-  return (
-    <View style={{
-      flexDirection: 'row',
-      alignItems: title ? 'flex-start' : 'center',
-      gap: 8,
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.15)',
-      backgroundColor: 'rgba(0,0,0,0.65)',
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-    }}
-    >
-      <Ionicons name={icon} size={14} color={iconColor} style={{ marginTop: title ? 2 : 0 }} />
-      <View style={{ flex: 1 }}>
-        {title ? (
-          <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>{title}</Text>
-        ) : null}
-        <Text style={{ color: title ? 'rgba(255,255,255,0.9)' : '#fff', fontSize: title ? 10 : 12 }}>
-          {children}
-        </Text>
-      </View>
-    </View>
-  );
-}
 

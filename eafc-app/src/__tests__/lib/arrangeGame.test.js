@@ -209,7 +209,11 @@ describe('Matches hub arrange fixture wiring', () => {
     expect(source).toMatch(/kickoffMatch/);
     expect(source).toMatch(/getKickoffControls/);
     expect(source).toMatch(/GameDayKickoffArena/);
-    expect(source).toMatch(/KICK OFF/);
+    expect(source).toMatch(/GameDayKickoffActions/);
+    expect(fs.readFileSync(
+      path.join(__dirname, '../../components/matches/GameDayKickoffActions.jsx'),
+      'utf8',
+    )).toMatch(/KICK OFF/);
     expect(source).toMatch(/GameDayScoreReport/);
     expect(source).toMatch(/GameDayResultSheet/);
     const resultSheet = fs.readFileSync(
@@ -220,7 +224,8 @@ describe('Matches hub arrange fixture wiring', () => {
     expect(resultSheet).toMatch(/automaticallyAdjustKeyboardInsets/);
     expect(resultSheet).toMatch(/fixtureScoreFromSubmission/);
     expect(source).toMatch(/GameDayWagerCard/);
-    expect(source).toMatch(/GameDayDressingRoomPanel/);
+    expect(source).toMatch(/GameDayKickoffActions/);
+    expect(source).not.toMatch(/GameDayDressingRoomPanel/);
     expect(source).not.toMatch(/getMockMatchById/);
     expect(source).not.toMatch(/api\.get\(`\/matches\//);
     expect(fs.readFileSync(

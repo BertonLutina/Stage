@@ -45,7 +45,17 @@ export function pickMyClubForMatch(game, clubs) {
   const list = uniqueIdentityClubs(clubs);
   return list.find((club) => (
     sameId(game?.home_club_id, club.id) || sameId(game?.away_club_id, club.id)
-  )) || list[0] || null;
+  )) || null;
+}
+
+export function matchBelongsToIdentity(match, { clubs = [], playerId } = {}) {
+  if (!match) return false;
+  if (playerId && (sameId(match.home_player_id, playerId) || sameId(match.away_player_id, playerId))) {
+    return true;
+  }
+  return uniqueIdentityClubs(clubs).some((club) => (
+    sameId(match.home_club_id, club.id) || sameId(match.away_club_id, club.id)
+  ));
 }
 
 export function resolveMatchSides(game, myClub, myPlayer) {
@@ -206,8 +216,8 @@ export async function afterMatchCompleted(match) {
 }
 
 export async function reloadMatch(matchId) {
-  const fresh = await stageClient.entities.Match.filter({ id: matchId }, null, 1).catch(() => []);
-  return fresh?.[0] || null;
+  if (!matchId) return null;
+  return stageClient.entities.Match.get(matchId).catch(() => null);
 }
 
 export async function settleMatchDeadlines(matchId) {
