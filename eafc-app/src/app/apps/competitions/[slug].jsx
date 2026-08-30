@@ -19,9 +19,9 @@ import {
 import { FUT, SectionCard } from '@/components/dashboard/CommandCenterUI';
 import { loadCompetitionDetail, groupFixturesByMatchday } from '@/lib/competitionSeason';
 import { parseForm } from '@/lib/competitionUtils';
-import { createMatchFromFixture } from '@/lib/gameDayIntegration';
+import FixtureScheduleActions from '@/components/schedule/FixtureScheduleActions';
+import { canOpenGameDayFromFixture, createMatchFromFixture } from '@/lib/gameDayIntegration';
 import { pickMyClubForMatch, uniqueIdentityClubs } from '@/lib/gameDayOps';
-import { proposeTime, roleForClub } from '@/lib/scheduleEngine';
 
 export default function CompetitionDetailScreen() {
   const { slug } = useLocalSearchParams();
@@ -56,40 +56,18 @@ export default function CompetitionDetailScreen() {
 
   const openFixture = async (fixture) => {
     setError('');
+    if (!canOpenGameDayFromFixture(fixture)) return;
     try {
-      if (fixture.match_id) {
-        router.push({ pathname: '/(tabs)/matches/matchdetailscreen', params: { matchId: fixture.match_id } });
-        return;
-      }
-      if (fixture.scheduling_status === 'confirmed' || fixture.status === 'scheduled') {
+      let matchId = fixture.match_id;
+      if (!matchId) {
         const match = await createMatchFromFixture(fixture, 'competition');
-        if (match?.id) {
-          router.push({ pathname: '/(tabs)/matches/matchdetailscreen', params: { matchId: match.id } });
-        }
+        matchId = match?.id;
+      }
+      if (matchId) {
+        router.push({ pathname: '/(tabs)/matches/matchdetailscreen', params: { matchId } });
       }
     } catch (err) {
       setError(err?.message || 'Could not open fixture');
-    }
-  };
-
-  const propose = async (fixture) => {
-    const sideClub = clubForFixture(fixture);
-    const role = roleForClub(fixture, sideClub?.id);
-    if (!role || !sideClub) return;
-    const date = fixture.home_proposed_date || fixture.away_proposed_date || new Date(Date.now() + 86400000).toISOString();
-    try {
-      await proposeTime({
-        fixture,
-        fixtureType: 'competition',
-        role,
-        proposedDate: date,
-        myClub: sideClub,
-        myEmail: user?.email,
-        myGamertag: sideClub?.name,
-      });
-      await load();
-    } catch (err) {
-      setError(err?.message || 'Could not propose time');
     }
   };
 
@@ -161,11 +139,6 @@ export default function CompetitionDetailScreen() {
               <Text style={{ color: CYAN, fontSize: 11, fontWeight: '900', marginBottom: 6 }}>MATCHDAY {day.matchday}</Text>
               {day.rows.map((f) => {
                 const sideClub = clubForFixture(f);
-                const canPropose = Boolean(
-                  sideClub
-                  && roleForClub(f, sideClub.id)
-                  && ['open', 'home_proposed', 'away_proposed'].includes(f.scheduling_status)
-                );
                 return (
                 <View key={f.id} style={{ paddingVertical: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' }}>
                   <TouchableOpacity onPress={() => openFixture(f)}>
@@ -177,11 +150,15 @@ export default function CompetitionDetailScreen() {
                       {f.confirmed_date ? ` · ${String(f.confirmed_date).slice(0, 16)}` : ''}
                     </Text>
                   </TouchableOpacity>
-                  {canPropose ? (
-                    <TouchableOpacity onPress={() => propose(f)} style={{ marginTop: 6 }}>
-                      <Text style={{ color: CYAN, fontSize: 11, fontWeight: '800' }}>Propose / counter time</Text>
-                    </TouchableOpacity>
-                  ) : null}
+                  <FixtureScheduleActions
+                    fixture={f}
+                    fixtureType="competition"
+                    myClub={sideClub}
+                    userEmail={user?.email}
+                    userGamertag={sideClub?.name}
+                    onDone={load}
+                    onError={setError}
+                  />
                 </View>
                 );
               })}

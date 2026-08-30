@@ -37,5 +37,7 @@ describe('OneSignal mobile helpers', () => {
       pathname: '/(tabs)/matches/matchdetailscreen',
       params: { matchId: 'm1' },
     });
+    expect(pathFromNotificationData({ link: '/schedule' })).toBe('/(tabs)/matches');
+    expect(pathFromNotificationData({ link: '/game-day' })).toBe('/(tabs)/matches');
   });
 });

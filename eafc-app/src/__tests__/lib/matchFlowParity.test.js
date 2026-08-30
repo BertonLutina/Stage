@@ -11,6 +11,9 @@ describe('mobile match / tournament / season parity wiring', () => {
     expect(source).toMatch(/presidentClub/);
     expect(source).toMatch(/uniqueIdentityClubs/);
     expect(source).toMatch(/materializeConfirmedFixtures/);
+    expect(source).toMatch(/loadPendingCompetitionFixtures/);
+    expect(source).toMatch(/useFocusEffect/);
+    expect(source).toMatch(/isKickoffEligibleMatch/);
   });
 
   test('inbox league_schedule uses scheduleEngine accept/propose', () => {
@@ -18,6 +21,8 @@ describe('mobile match / tournament / season parity wiring', () => {
     expect(source).toMatch(/league_schedule/);
     expect(source).toMatch(/acceptProposal/);
     expect(source).toMatch(/proposeTime/);
+    expect(source).toMatch(/uniqueIdentityClubs/);
+    expect(source).toMatch(/presidentClub/);
   });
 
   test('search Challenge opens Arrange VS', () => {
@@ -65,6 +70,8 @@ describe('mobile match / tournament / season parity wiring', () => {
     expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/GameDayScoreReport/);
     expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/GameDayResultSheet/);
     expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/GameDayTileBackgroundDialog/);
+    expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/Pending GOST/);
+    expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/FixtureScheduleActions/);
     expect(read('../../app/(tabs)/matches/index.jsx')).not.toMatch(/GameDayDressingRoomPanel/);
     expect(read('../../components/matches/GameDayKickoffArena.jsx')).toMatch(/onChangeBackground/);
     expect(read('../../components/matches/GameDayTileBackgroundDialog.jsx')).toMatch(/game-day-tile-background/);
@@ -87,7 +94,15 @@ describe('mobile match / tournament / season parity wiring', () => {
     expect(read('../../lib/clubProfileData.js')).not.toMatch(/entities\.President/);
     expect(read('../../app/apps/competitions.jsx')).toMatch(/loadCompetitionsHub/);
     expect(read('../../app/apps/competitions/[slug].jsx')).toMatch(/createMatchFromFixture/);
+    expect(read('../../app/apps/competitions/[slug].jsx')).toMatch(/canOpenGameDayFromFixture/);
+    expect(read('../../app/apps/competitions/[slug].jsx')).not.toMatch(/status === 'scheduled'/);
     expect(read('../../app/apps/leagues/[slug].jsx')).toMatch(/regional_league/);
+    expect(read('../../app/apps/leagues/[slug].jsx')).toMatch(/uniqueIdentityClubs/);
+    expect(read('../../app/apps/leagues/[slug].jsx')).toMatch(/canOpenGameDayFromFixture/);
+    expect(read('../../app/apps/leagues/[slug].jsx')).toMatch(/presidentClub/);
+    expect(read('../../lib/gameDayIntegration.js')).toMatch(/scheduling_status \|\| ''\)\.toLowerCase\(\) !== 'confirmed'/);
+    expect(read('../../lib/scheduleEngine.js')).toMatch(/scheduling_status: 'confirmed'/);
+    expect(read('../../lib/scheduleEngine.js')).toMatch(/scheduled_date: confirmedDate/);
   });
 
   test('mobile socket joins STAGE rooms and Game Day pages subscribe', () => {
