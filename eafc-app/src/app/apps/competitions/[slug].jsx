@@ -20,13 +20,14 @@ import { FUT, SectionCard } from '@/components/dashboard/CommandCenterUI';
 import { loadCompetitionDetail, groupFixturesByMatchday } from '@/lib/competitionSeason';
 import { parseForm } from '@/lib/competitionUtils';
 import { createMatchFromFixture } from '@/lib/gameDayIntegration';
+import { pickMyClubForMatch, uniqueIdentityClubs } from '@/lib/gameDayOps';
 import { proposeTime, roleForClub } from '@/lib/scheduleEngine';
 
 export default function CompetitionDetailScreen() {
   const { slug } = useLocalSearchParams();
   const router = useRouter();
   const [data, setData] = useState(null);
-  const [myClub, setMyClub] = useState(null);
+  const [identityClubs, setIdentityClubs] = useState([]);
   const [user, setUser] = useState(null);
   const [tab, setTab] = useState('table');
   const [loading, setLoading] = useState(true);
@@ -34,18 +35,24 @@ export default function CompetitionDetailScreen() {
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
-    const [{ user: u, club }, detail] = await Promise.all([
+    const [{ user: u, player, club, presidentClub }, detail] = await Promise.all([
       resolveMyPlayerAndClub(),
       loadCompetitionDetail(slug),
     ]);
     setUser(u);
-    setMyClub(club || null);
+    setIdentityClubs(uniqueIdentityClubs(
+      player?.club_id ? { id: player.club_id } : null,
+      club,
+      presidentClub,
+    ));
     setData(detail);
     setLoading(false);
     setRefreshing(false);
   }, [slug]);
 
   useEffect(() => { load(); }, [load]);
+
+  const clubForFixture = (fixture) => pickMyClubForMatch(fixture, identityClubs);
 
   const openFixture = async (fixture) => {
     setError('');
@@ -66,8 +73,9 @@ export default function CompetitionDetailScreen() {
   };
 
   const propose = async (fixture) => {
-    const role = roleForClub(fixture, myClub?.id);
-    if (!role) return;
+    const sideClub = clubForFixture(fixture);
+    const role = roleForClub(fixture, sideClub?.id);
+    if (!role || !sideClub) return;
     const date = fixture.home_proposed_date || fixture.away_proposed_date || new Date(Date.now() + 86400000).toISOString();
     try {
       await proposeTime({
@@ -75,9 +83,9 @@ export default function CompetitionDetailScreen() {
         fixtureType: 'competition',
         role,
         proposedDate: date,
-        myClub,
+        myClub: sideClub,
         myEmail: user?.email,
-        myGamertag: myClub?.name,
+        myGamertag: sideClub?.name,
       });
       await load();
     } catch (err) {
@@ -151,7 +159,14 @@ export default function CompetitionDetailScreen() {
           ) : days.map((day) => (
             <SectionCard key={day.matchday}>
               <Text style={{ color: CYAN, fontSize: 11, fontWeight: '900', marginBottom: 6 }}>MATCHDAY {day.matchday}</Text>
-              {day.rows.map((f) => (
+              {day.rows.map((f) => {
+                const sideClub = clubForFixture(f);
+                const canPropose = Boolean(
+                  sideClub
+                  && roleForClub(f, sideClub.id)
+                  && ['open', 'home_proposed', 'away_proposed'].includes(f.scheduling_status)
+                );
+                return (
                 <View key={f.id} style={{ paddingVertical: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' }}>
                   <TouchableOpacity onPress={() => openFixture(f)}>
                     <Text style={{ color: '#fff', fontWeight: '700' }}>
@@ -162,13 +177,14 @@ export default function CompetitionDetailScreen() {
                       {f.confirmed_date ? ` · ${String(f.confirmed_date).slice(0, 16)}` : ''}
                     </Text>
                   </TouchableOpacity>
-                  {myClub && roleForClub(f, myClub.id) && ['open', 'home_proposed', 'away_proposed'].includes(f.scheduling_status) ? (
+                  {canPropose ? (
                     <TouchableOpacity onPress={() => propose(f)} style={{ marginTop: 6 }}>
                       <Text style={{ color: CYAN, fontSize: 11, fontWeight: '800' }}>Propose / counter time</Text>
                     </TouchableOpacity>
                   ) : null}
                 </View>
-              ))}
+                );
+              })}
             </SectionCard>
           ))}
         </ScrollView>

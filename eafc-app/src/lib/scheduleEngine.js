@@ -1,5 +1,6 @@
 import { stageClient } from '@/api/stageClient';
 import { createMatchFromFixture } from '@/lib/gameDayIntegration';
+import { sameId } from '@/lib/gameDayOps';
 
 function fixtureEntity(fixtureType) {
   return fixtureType === 'regional_league'
@@ -137,8 +138,8 @@ export async function loadFixtureForInbox(meta = {}) {
 }
 
 export function roleForClub(fixture, clubId) {
-  if (!fixture || !clubId) return null;
-  if (fixture.home_club_id === clubId) return 'home';
-  if (fixture.away_club_id === clubId) return 'away';
+  if (!fixture || clubId == null || clubId === '') return null;
+  if (sameId(fixture.home_club_id, clubId)) return 'home';
+  if (sameId(fixture.away_club_id, clubId)) return 'away';
   return null;
 }
