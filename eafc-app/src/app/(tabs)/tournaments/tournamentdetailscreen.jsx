@@ -29,6 +29,7 @@ import {
 } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT, GAME_DAY_SILVER, SectionCard } from '@/components/dashboard/CommandCenterUI';
 import PageTile, { PageTitle } from '@/components/theme/PageTile';
+import { canOpenTournamentGameDay, tournamentGameDayMobileRoute } from '@/lib/tournamentGameDay';
 
 function parseList(value) {
   if (Array.isArray(value)) return value;
@@ -263,22 +264,29 @@ export default function TournamentDetailScreen() {
 
           <SectionCard>
             <Text style={{ color: '#fff', fontWeight: '900', marginBottom: 10 }}>FIXTURES</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, lineHeight: 16, marginBottom: 8 }}>
+              Finish cup matches on Game Day — same engine as GOST and league. There is no score form on this page.
+            </Text>
             {matches.length === 0 ? (
               <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>No matches yet.</Text>
-            ) : matches.slice(0, 20).map((m) => (
-              <TouchableOpacity
-                key={m.id}
-                onPress={() => router.push({ pathname: '/(tabs)/matches/matchdetailscreen', params: { matchId: m.id } })}
-                style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)' }}
-              >
-                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>
-                  {m.home_club_name || m.home_player_name || 'TBD'} vs {m.away_club_name || m.away_player_name || 'TBD'}
-                </Text>
-                <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 2 }}>
-                  {m.status}{m.home_score != null ? ` · ${m.home_score}–${m.away_score}` : ''}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            ) : matches.slice(0, 20).map((m) => {
+              const playable = canOpenTournamentGameDay(m);
+              return (
+                <TouchableOpacity
+                  key={m.id}
+                  onPress={() => router.push(tournamentGameDayMobileRoute(m.id))}
+                  style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)' }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>
+                    {m.home_club_name || m.home_player_name || 'TBD'} vs {m.away_club_name || m.away_player_name || 'TBD'}
+                  </Text>
+                  <Text style={{ color: playable ? GAME_DAY_SILVER : 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 2 }}>
+                    {m.status}{m.home_score != null ? ` · ${m.home_score}–${m.away_score}` : ''}
+                    {playable ? ' · Open Game Day' : ''}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </SectionCard>
 
           <View style={{ flexDirection: 'row', gap: 8 }}>
