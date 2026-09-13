@@ -34,7 +34,15 @@ export function getEffectiveInboxActionType(message = {}) {
   if (type === 'loan_early_end') return 'loan_early_end_response';
   if (type === 'loan_purchase') return 'loan_purchase_response';
   if (type === 'league_schedule') return 'schedule_accept_propose';
-  if (type === 'gameday_result' || type === 'match_result_action') return 'open_match';
+  if (type === 'tournament_schedule') return 'accept_decline';
+  if (
+    type === 'match_result'
+    || type === 'match_dispute'
+    || type === 'gameday_result'
+    || type === 'match_result_action'
+  ) {
+    return 'open_match';
+  }
   return 'none';
 }
 
@@ -73,12 +81,13 @@ function matchIdFromLink(path = '') {
   try {
     const url = path.includes('://') ? new URL(path) : new URL(path, 'https://stage.local');
     return (
-      url.searchParams.get('matchId')
+      url.searchParams.get('match')
+      || url.searchParams.get('matchId')
       || url.searchParams.get('match_id')
       || null
     );
   } catch {
-    const m = String(path).match(/matchId=([^&]+)/i) || String(path).match(/match_id=([^&]+)/i);
+    const m = String(path).match(/[?&]match(?:Id|_id)?=([^&]+)/i);
     return m?.[1] ? decodeURIComponent(m[1]) : null;
   }
 }
@@ -94,6 +103,18 @@ function normalizeNotificationPath(link) {
   }
   if (!path.startsWith('/')) path = `/${path}`;
   return path.replace(/^\/messages(?=\?|\/|$)/, '/inbox');
+}
+
+/** Resolve Game Day match id from result / dispute mail. */
+export function matchIdFromInboxMessage(message = {}) {
+  const meta = parseInboxMetadata(message);
+  return (
+    meta.match_id
+    || meta.matchId
+    || (message.related_entity_type === 'match' ? message.related_entity_id : null)
+    || matchIdFromLink(meta.link || '')
+    || null
+  );
 }
 
 /** Map a Stage web or app link onto a rebuilt Expo route. Unknown links return null. */
@@ -190,6 +211,9 @@ const TYPE_LABELS = {
   loan_terminated_early: 'Loan ended',
   gameday_result: 'Game Day',
   match_result_action: 'Game Day',
+  match_result: 'Game Day',
+  match_dispute: 'Game Day',
+  tournament_schedule: 'Tournament',
   general: 'Message',
 };
 

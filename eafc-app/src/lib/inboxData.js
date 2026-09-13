@@ -1,6 +1,6 @@
 import { resolveMyPlayerAndClub, stageClient } from '@/api/stageClient';
 import { parseInboxMetadata, sortInboxByActivity } from '@/lib/inboxHelpers';
-import { acceptProposal, loadFixtureForInbox, proposeTime, roleForClub } from '@/lib/scheduleEngine';
+import { acceptProposal, declineProposal, loadFixtureForInbox, proposeTime, roleForClub } from '@/lib/scheduleEngine';
 
 export async function loadInboxMessages() {
   const { user, player, club } = await resolveMyPlayerAndClub();
@@ -37,21 +37,13 @@ export async function deleteInboxMessage(id) {
 }
 
 export async function respondToInboxMessage(message, action, { newDate = null, newTime = null } = {}) {
-  if (message.message_type === 'match_invite') {
-    await stageClient.functions.invoke('respondInboxMessage', {
-      message_id: message.id,
-      action,
-      new_date: newDate,
-      new_time: newTime,
-    });
-    return action;
-  }
-
+  // Temporary league_schedule exception until Stage folds it into respondInboxMessage.
   if (message.message_type === 'league_schedule') {
     const meta = parseInboxMetadata(message);
     const { user, club, player } = await resolveMyPlayerAndClub();
     const { fixture, fixtureType } = await loadFixtureForInbox(meta);
     const role = roleForClub(fixture, club?.id) || (meta.proposed_by_role === 'home' ? 'away' : 'home');
+
     if (action === 'accepted' || action === 'confirmed') {
       if (!fixture) throw new Error('Fixture not found for this schedule invite');
       await acceptProposal({
@@ -61,9 +53,22 @@ export async function respondToInboxMessage(message, action, { newDate = null, n
         myClub: club,
         myEmail: user?.email,
       });
-      await stageClient.entities.InboxMessage.update(message.id, { status: 'accepted', is_read: true }).catch(() => {});
       return 'accepted';
     }
+
+    if (action === 'declined') {
+      if (!fixture) throw new Error('Fixture not found for this schedule invite');
+      await declineProposal({
+        fixture,
+        fixtureType,
+        role,
+        myClub: club,
+        myEmail: user?.email,
+        myGamertag: player?.gamertag,
+      });
+      return 'declined';
+    }
+
     if (action === 'date_change_requested' || action === 'propose') {
       if (!fixture) throw new Error('Fixture not found');
       const proposedDate = newDate && newTime ? `${newDate} ${newTime}` : (newDate || meta.proposed_date);
@@ -76,31 +81,16 @@ export async function respondToInboxMessage(message, action, { newDate = null, n
         myEmail: user?.email,
         myGamertag: player?.gamertag,
       });
-      await stageClient.entities.InboxMessage.update(message.id, { status: 'date_change_requested', is_read: true }).catch(() => {});
       return 'date_change_requested';
     }
-    await stageClient.entities.InboxMessage.update(message.id, { status: action, is_read: true });
-    return action;
   }
 
-  if (message.message_type === 'contract_offer' && (action === 'accepted' || action === 'declined')) {
-    const meta = typeof message.metadata === 'object'
-      ? message.metadata
-      : (() => { try { return JSON.parse(message.metadata || '{}'); } catch { return {}; } })();
-    const contractId = meta.contract_id || message.related_entity_id;
-    if (contractId) {
-      await stageClient.functions.invoke('contractManagement', {
-        action: action === 'accepted' ? 'accept' : 'reject',
-        contract_id: contractId,
-      }).catch(async () => {
-        await stageClient.entities.InboxMessage.update(message.id, { status: action, is_read: true });
-      });
-    }
-    await stageClient.entities.InboxMessage.update(message.id, { status: action, is_read: true }).catch(() => {});
-    return action;
-  }
-
-  await stageClient.entities.InboxMessage.update(message.id, { status: action, is_read: true });
+  await stageClient.functions.invoke('respondInboxMessage', {
+    message_id: message.id,
+    action,
+    new_date: newDate,
+    new_time: newTime,
+  });
   return action;
 }
 

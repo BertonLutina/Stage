@@ -1,5 +1,6 @@
 import { stageClient } from '@/api/stageClient';
 import { createMatchFromFixture } from '@/lib/gameDayIntegration';
+import { createInboxEventId } from '@/lib/inboxEventId';
 
 function fixtureEntity(fixtureType) {
   return fixtureType === 'regional_league'
@@ -55,6 +56,7 @@ export async function proposeTime({
 
   const proposerName = myClub?.name || myGamertag || 'Your opponent';
   const fixtureName = `${fixture.home_club_name} vs ${fixture.away_club_name}`;
+  const event_id = createInboxEventId();
   await stageClient.functions.invoke('sendInboxMessage', {
     recipient_email: recipientEmail,
     sender_email: myEmail,
@@ -65,13 +67,12 @@ export async function proposeTime({
     body: `${proposerName} proposed a time for ${fixtureName}.\n\nProposed: ${proposedDate}\n\nAccept or propose another time.`,
     message_type: 'league_schedule',
     action_type: 'schedule_accept_propose',
-    related_entity_id: `${fixture.id}_${Date.now()}`,
+    event_id,
+    related_entity_id: fixture.id,
     related_entity_type: fixtureType === 'regional_league' ? 'league_fixture' : 'competition_fixture',
     status: 'pending',
     is_read: false,
-    force_new: true,
     metadata: {
-      event_key: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       fixture_id: fixture.id,
       fixture_type: fixtureType,
       proposed_date: proposedDate,
@@ -106,9 +107,10 @@ export async function acceptProposal({ fixture, fixtureType, role, myClub, myEma
     ...(fixtureType === 'competition' ? { scheduled_date: confirmedDate } : {}),
   });
 
-  await createMatchFromFixture({ ...fixture, confirmed_date: confirmedDate, status: 'scheduled' }, fixtureType);
+  await createMatchFromFixture({ ...fixture, confirmed_date: confirmedDate, status: 'scheduled', scheduling_status: 'confirmed' }, fixtureType);
 
   if (proposerEmail) {
+    const event_id = createInboxEventId();
     await stageClient.functions.invoke('sendInboxMessage', {
       recipient_email: proposerEmail,
       sender_email: myEmail,
@@ -118,14 +120,64 @@ export async function acceptProposal({ fixture, fixtureType, role, myClub, myEma
       body: `${accepterName} accepted your time.\n\nMatch: ${fixtureName}\nDate: ${confirmedDate}`,
       message_type: 'league_schedule',
       action_type: 'none',
+      event_id,
+      related_entity_id: fixture.id,
+      related_entity_type: fixtureType === 'regional_league' ? 'league_fixture' : 'competition_fixture',
       status: 'confirmed',
       is_read: false,
-    force_new: true,
       metadata: {
-      event_key: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         fixture_id: fixture.id,
         fixture_type: fixtureType,
         confirmed_date: confirmedDate,
+      },
+      send_notification: true,
+    });
+  }
+}
+
+/**
+ * Decline a proposed fixture time (mirrors Stage web scheduleEngine.declineProposal).
+ * Never decline by patching InboxMessage.status alone.
+ */
+export async function declineProposal({ fixture, fixtureType, role, myClub, myEmail, myGamertag }) {
+  if (!fixture?.id) throw new Error('Fixture not found for this schedule invite');
+
+  const isHome = role === 'home';
+  const declinedDate = isHome ? fixture.away_proposed_date : fixture.home_proposed_date;
+  const proposerClubId = isHome ? fixture.away_club_id : fixture.home_club_id;
+  const proposerEmail = await getClubManagerEmail(proposerClubId);
+  const declinerName = myClub?.name || myGamertag || 'Your opponent';
+  const fixtureName = `${fixture.home_club_name} vs ${fixture.away_club_name}`;
+
+  const updates = {
+    scheduling_status: 'awaiting',
+    last_proposed_by: null,
+  };
+  if (isHome) updates.away_proposed_date = null;
+  else updates.home_proposed_date = null;
+  await fixtureEntity(fixtureType).update(fixture.id, updates);
+
+  if (proposerEmail) {
+    const event_id = createInboxEventId();
+    await stageClient.functions.invoke('sendInboxMessage', {
+      recipient_email: proposerEmail,
+      sender_email: myEmail,
+      sender_gamertag: declinerName,
+      sender_club_name: myClub?.name || null,
+      subject: `Time Declined: ${fixtureName}`,
+      body: `${declinerName} declined the proposed time${declinedDate ? ` (${declinedDate})` : ''}.\n\nPropose another time.`,
+      message_type: 'league_schedule',
+      action_type: 'none',
+      event_id,
+      related_entity_id: fixture.id,
+      related_entity_type: fixtureType === 'regional_league' ? 'league_fixture' : 'competition_fixture',
+      status: 'declined',
+      is_read: false,
+      metadata: {
+        fixture_id: fixture.id,
+        fixture_type: fixtureType,
+        declined_date: declinedDate,
+        declined_by_role: role,
       },
       send_notification: true,
     });
