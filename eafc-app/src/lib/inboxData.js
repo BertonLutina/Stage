@@ -1,5 +1,5 @@
 import { resolveMyPlayerAndClub, stageClient } from '@/api/stageClient';
-import { parseInboxMetadata, sortInboxByActivity } from '@/lib/inboxHelpers';
+import { hasInboxContent, parseInboxMetadata, sortInboxByCreatedDate } from '@/lib/inboxHelpers';
 import { acceptProposal, declineProposal, loadFixtureForInbox, proposeTime, roleForClub } from '@/lib/scheduleEngine';
 
 export async function loadInboxMessages() {
@@ -16,7 +16,7 @@ export async function loadInboxMessages() {
     player,
     club,
     email,
-    messages: sortInboxByActivity(messages || []),
+    messages: sortInboxByCreatedDate((messages || []).filter(hasInboxContent)),
   };
 }
 

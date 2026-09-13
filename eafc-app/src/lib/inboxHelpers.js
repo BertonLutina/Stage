@@ -1,10 +1,10 @@
 /**
  * Inbox action helpers — port of web `inboxActionTypes.js`.
  *
- * Real-inbox rules:
- * - Sort / group by latest activity (updated_date → created_date), not create-only.
- * - Socket create + update both bump the row to the top of the list.
- * - New match / Game Day events should arrive as distinct mails (see force_new on senders).
+ * Mailbox rules:
+ * - New event = new id → prepend. Same id update → replace in place (no reorder).
+ * - List order is created_date desc. Do not sort by updated_date.
+ * - Empty subject+body stubs are filtered out (hasInboxContent).
  */
 
 export function parseInboxMetadata(message = {}) {
@@ -54,27 +54,33 @@ export function inboxMessageIsActioned(message = {}) {
   return getEffectiveInboxActionType(message) !== 'none' && (message.status || 'pending') !== 'pending';
 }
 
-/** Latest activity timestamp (ms) for sorting / sectioning. */
-export function inboxActivityAt(message = {}) {
-  const candidates = [
-    message.updated_date,
-    message.updated_at,
-    message.last_activity_at,
-    message.bumped_at,
-    message.created_date,
-    message.created_at,
-  ];
-  let best = 0;
-  candidates.forEach((value) => {
-    if (!value) return;
-    const ms = new Date(value).getTime();
-    if (!Number.isNaN(ms) && ms > best) best = ms;
-  });
-  return best;
+/** created_date timestamp (ms) for list order / sectioning. */
+export function inboxCreatedAt(message = {}) {
+  const value = message.created_date || message.created_at;
+  if (!value) return 0;
+  const ms = new Date(value).getTime();
+  return Number.isNaN(ms) ? 0 : ms;
 }
 
+/** @deprecated Prefer inboxCreatedAt — mailbox sorts by create, not bump. */
+export function inboxActivityAt(message = {}) {
+  return inboxCreatedAt(message);
+}
+
+export function sortInboxByCreatedDate(messages = []) {
+  return [...messages].sort((a, b) => inboxCreatedAt(b) - inboxCreatedAt(a));
+}
+
+/** @deprecated Prefer sortInboxByCreatedDate. */
 export function sortInboxByActivity(messages = []) {
-  return [...messages].sort((a, b) => inboxActivityAt(b) - inboxActivityAt(a));
+  return sortInboxByCreatedDate(messages);
+}
+
+/** Drop zombie stubs with neither subject nor body (mirrors Stage web). */
+export function hasInboxContent(message = {}) {
+  const subject = String(message.subject || '').trim();
+  const body = String(message.body || '').trim();
+  return Boolean(subject || body);
 }
 
 function matchIdFromLink(path = '') {
@@ -216,8 +222,8 @@ export function formatRelativeInboxTime(dateValue, now = new Date()) {
 }
 
 /**
- * Outlook-style section groups by latest activity.
- * Within each section, newest activity first.
+ * Outlook-style section groups by created_date.
+ * Within each section, newest create first.
  */
 export function groupInboxMessages(messages = [], now = new Date()) {
   const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -233,8 +239,8 @@ export function groupInboxMessages(messages = [], now = new Date()) {
     older: [],
   };
 
-  sortInboxByActivity(messages).forEach((msg) => {
-    const ms = inboxActivityAt(msg);
+  sortInboxByCreatedDate(messages.filter(hasInboxContent)).forEach((msg) => {
+    const ms = inboxCreatedAt(msg);
     const d = ms ? new Date(ms) : null;
     if (!d || Number.isNaN(d.getTime())) {
       buckets.older.push(msg);
@@ -255,8 +261,8 @@ export function groupInboxMessages(messages = [], now = new Date()) {
 }
 
 /**
- * Insert or refresh a message and always bump it to the top.
- * Updates must not stay buried at their old index.
+ * Create: prepend unknown id.
+ * Update: replace same id in place — do not jump above newer mails.
  */
 export function upsertInboxMessage(list = [], event) {
   if (!event) return list;
@@ -265,10 +271,13 @@ export function upsertInboxMessage(list = [], event) {
   }
   const data = event.data;
   if (!data?.id) return list;
-  const without = list.filter((m) => m.id !== data.id);
-  const stamped = {
-    ...data,
-    updated_date: data.updated_date || data.last_activity_at || new Date().toISOString(),
-  };
-  return [stamped, ...without];
+
+  const existingIndex = list.findIndex((m) => m.id === data.id);
+  if (existingIndex === -1) {
+    return [data, ...list];
+  }
+
+  const next = list.slice();
+  next[existingIndex] = { ...list[existingIndex], ...data };
+  return next;
 }

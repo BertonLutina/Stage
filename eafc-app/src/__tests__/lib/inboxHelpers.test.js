@@ -101,10 +101,10 @@ describe('groupInboxMessages', () => {
   test('buckets messages into Outlook-style sections', () => {
     const now = new Date('2026-08-10T15:00:00');
     const sections = groupInboxMessages([
-      { id: '1', created_date: '2026-08-10T10:00:00' },
-      { id: '2', created_date: '2026-08-09T10:00:00' },
-      { id: '3', created_date: '2026-08-05T10:00:00' },
-      { id: '4', created_date: '2026-07-01T10:00:00' },
+      { id: '1', created_date: '2026-08-10T10:00:00', subject: 'Today' },
+      { id: '2', created_date: '2026-08-09T10:00:00', subject: 'Yesterday' },
+      { id: '3', created_date: '2026-08-05T10:00:00', subject: 'Week' },
+      { id: '4', created_date: '2026-07-01T10:00:00', subject: 'Older' },
     ], now);
 
     expect(sections.map((s) => s.id)).toEqual(['today', 'yesterday', 'week', 'older']);
@@ -113,33 +113,36 @@ describe('groupInboxMessages', () => {
 });
 
 describe('upsertInboxMessage', () => {
-  test('prepends create and replaces update by id', () => {
-    const a = { id: '1', subject: 'A' };
-    const updated = { id: '1', subject: 'A2' };
-    const b = { id: '2', subject: 'B' };
-    expect(upsertInboxMessage([a], { type: 'create', id: '2', data: b })[0].id).toBe('2');
-    expect(upsertInboxMessage([a], { type: 'update', id: '1', data: updated })[0].subject).toBe('A2');
-  });
-
-  test('bumps update to the top of the list', () => {
-    const older = { id: '1', subject: 'Old', created_date: '2026-01-01T10:00:00' };
-    const newer = { id: '2', subject: 'New', created_date: '2026-08-10T10:00:00' };
-    const bumped = { id: '1', subject: 'Bumped', created_date: '2026-01-01T10:00:00', updated_date: '2026-08-10T18:00:00' };
-    const next = upsertInboxMessage([newer, older], { type: 'update', id: '1', data: bumped });
-    expect(next.map((m) => m.id)).toEqual(['1', '2']);
-    expect(next[0].subject).toBe('Bumped');
+  test('upsert prepends a new id and does not reorder on update', () => {
+    const newer = { id: 'new', created_date: '2026-09-13', subject: 'New' };
+    const older = { id: 'old', created_date: '2026-01-01', subject: 'A' };
+    expect(upsertInboxMessage([older], { type: 'create', id: 'new', data: newer })[0].id).toBe('new');
+    const updated = { ...older, subject: 'A2' };
+    const next = upsertInboxMessage([newer, older], { type: 'update', id: 'old', data: updated });
+    expect(next.map((m) => m.id)).toEqual(['new', 'old']);
+    expect(next[1].subject).toBe('A2');
   });
 });
 
-describe('groupInboxMessages activity', () => {
-  test('uses updated_date so refreshed mails enter Today and stay first', () => {
+describe('groupInboxMessages create order', () => {
+  test('sections by created_date, not updated_date bumps', () => {
     const now = new Date('2026-08-10T20:00:00');
     const sections = groupInboxMessages([
-      { id: 'old', created_date: '2026-07-01T10:00:00', updated_date: '2026-08-10T19:00:00' },
-      { id: 'fresh', created_date: '2026-08-10T09:00:00' },
+      { id: 'old', created_date: '2026-07-01T10:00:00', updated_date: '2026-08-10T19:00:00', subject: 'Old' },
+      { id: 'fresh', created_date: '2026-08-10T09:00:00', subject: 'Fresh' },
     ], now);
     expect(sections[0].id).toBe('today');
-    expect(sections[0].messages.map((m) => m.id)).toEqual(['old', 'fresh']);
+    expect(sections[0].messages.map((m) => m.id)).toEqual(['fresh']);
+    expect(sections.find((s) => s.id === 'older')?.messages.map((m) => m.id)).toEqual(['old']);
+  });
+
+  test('filters empty subject and body stubs', () => {
+    const now = new Date('2026-08-10T20:00:00');
+    const sections = groupInboxMessages([
+      { id: 'real', created_date: '2026-08-10T09:00:00', subject: 'Hello' },
+      { id: 'zombie', created_date: '2026-08-10T10:00:00', subject: '', body: '' },
+    ], now);
+    expect(sections[0].messages.map((m) => m.id)).toEqual(['real']);
   });
 });
 
