@@ -1,6 +1,22 @@
 /**
  * Inbox action helpers — port of web `inboxActionTypes.js`.
+ *
+ * Real-inbox rules:
+ * - Sort / group by latest activity (updated_date → created_date), not create-only.
+ * - Socket create + update both bump the row to the top of the list.
+ * - New match / Game Day events should arrive as distinct mails (see force_new on senders).
  */
+
+export function parseInboxMetadata(message = {}) {
+  const raw = message?.metadata;
+  if (!raw) return {};
+  if (typeof raw === 'object') return raw;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
 
 export function isMatchCancelRequest(message = {}) {
   return Boolean(parseInboxMetadata(message).cancel_request);
@@ -9,13 +25,16 @@ export function isMatchCancelRequest(message = {}) {
 export function getEffectiveInboxActionType(message = {}) {
   if (isMatchCancelRequest(message)) return 'accept_decline';
   if (message.action_type && message.action_type !== 'none') return message.action_type;
-  if (message.message_type === 'match_invite') return 'accept_decline_date';
-  if (message.message_type === 'contract_offer') return 'contract_negotiation';
-  if (message.message_type === 'trial_request') return 'trial_response';
-  if (message.message_type === 'loan_proposal') return 'loan_parent_response';
-  if (message.message_type === 'loan_early_end') return 'loan_early_end_response';
-  if (message.message_type === 'loan_purchase') return 'loan_purchase_response';
-  if (message.message_type === 'league_schedule') return 'schedule_accept_propose';
+
+  const type = String(message.message_type || '');
+  if (type === 'match_invite' || type === 'match_invitation') return 'accept_decline_date';
+  if (type === 'contract_offer') return 'contract_negotiation';
+  if (type === 'trial_request') return 'trial_response';
+  if (type === 'loan_proposal') return 'loan_parent_response';
+  if (type === 'loan_early_end') return 'loan_early_end_response';
+  if (type === 'loan_purchase') return 'loan_purchase_response';
+  if (type === 'league_schedule') return 'schedule_accept_propose';
+  if (type === 'gameday_result' || type === 'match_result_action') return 'open_match';
   return 'none';
 }
 
@@ -27,14 +46,40 @@ export function inboxMessageIsActioned(message = {}) {
   return getEffectiveInboxActionType(message) !== 'none' && (message.status || 'pending') !== 'pending';
 }
 
-export function parseInboxMetadata(message = {}) {
-  const raw = message.metadata;
-  if (!raw) return {};
-  if (typeof raw === 'object') return raw;
+/** Latest activity timestamp (ms) for sorting / sectioning. */
+export function inboxActivityAt(message = {}) {
+  const candidates = [
+    message.updated_date,
+    message.updated_at,
+    message.last_activity_at,
+    message.bumped_at,
+    message.created_date,
+    message.created_at,
+  ];
+  let best = 0;
+  candidates.forEach((value) => {
+    if (!value) return;
+    const ms = new Date(value).getTime();
+    if (!Number.isNaN(ms) && ms > best) best = ms;
+  });
+  return best;
+}
+
+export function sortInboxByActivity(messages = []) {
+  return [...messages].sort((a, b) => inboxActivityAt(b) - inboxActivityAt(a));
+}
+
+function matchIdFromLink(path = '') {
   try {
-    return JSON.parse(raw);
+    const url = path.includes('://') ? new URL(path) : new URL(path, 'https://stage.local');
+    return (
+      url.searchParams.get('matchId')
+      || url.searchParams.get('match_id')
+      || null
+    );
   } catch {
-    return {};
+    const m = String(path).match(/matchId=([^&]+)/i) || String(path).match(/match_id=([^&]+)/i);
+    return m?.[1] ? decodeURIComponent(m[1]) : null;
   }
 }
 
@@ -51,12 +96,17 @@ export function resolveNotificationHref(link) {
     return id ? { pathname: '/apps/inbox/[id]', params: { id } } : { pathname: '/apps/inbox' };
   }
 
-  if (path.startsWith('/schedule') || path.startsWith('/game-day')) return { pathname: '/(tabs)/matches' };
+  if (path.startsWith('/schedule') || path.startsWith('/game-day') || /matchdetailscreen/i.test(path)) {
+    const matchId = matchIdFromLink(path);
+    if (matchId) {
+      return { pathname: '/(tabs)/matches/matchdetailscreen', params: { matchId } };
+    }
+    return { pathname: '/(tabs)/matches' };
+  }
   if (path.startsWith('/apps/')) {
     return { pathname: path.split('?')[0] };
   }
 
-  // Fallback: try inbox if link contains inbox message id query
   try {
     const url = path.includes('://') ? new URL(path) : new URL(path, 'https://stage.local');
     if (url.pathname.includes('inbox')) {
@@ -92,6 +142,7 @@ export function applyNotificationRead(notif = {}, read = true) {
 
 const TYPE_LABELS = {
   match_invite: 'Match invite',
+  match_invitation: 'Match invite',
   contract_offer: 'Contract',
   club_invite: 'Club invite',
   challenge: 'Challenge',
@@ -103,6 +154,8 @@ const TYPE_LABELS = {
   loan_purchase: 'Loan buy',
   loan_recalled: 'Loan recall',
   loan_terminated_early: 'Loan ended',
+  gameday_result: 'Game Day',
+  match_result_action: 'Game Day',
   general: 'Message',
 };
 
@@ -139,7 +192,8 @@ export function formatRelativeInboxTime(dateValue, now = new Date()) {
 }
 
 /**
- * Outlook-style section groups: Today / Yesterday / Earlier this week / Older.
+ * Outlook-style section groups by latest activity.
+ * Within each section, newest activity first.
  */
 export function groupInboxMessages(messages = [], now = new Date()) {
   const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -155,8 +209,9 @@ export function groupInboxMessages(messages = [], now = new Date()) {
     older: [],
   };
 
-  messages.forEach((msg) => {
-    const d = msg?.created_date ? new Date(msg.created_date) : null;
+  sortInboxByActivity(messages).forEach((msg) => {
+    const ms = inboxActivityAt(msg);
+    const d = ms ? new Date(ms) : null;
     if (!d || Number.isNaN(d.getTime())) {
       buckets.older.push(msg);
       return;
@@ -175,6 +230,10 @@ export function groupInboxMessages(messages = [], now = new Date()) {
   return sections;
 }
 
+/**
+ * Insert or refresh a message and always bump it to the top.
+ * Updates must not stay buried at their old index.
+ */
 export function upsertInboxMessage(list = [], event) {
   if (!event) return list;
   if (event.type === 'delete') {
@@ -182,11 +241,10 @@ export function upsertInboxMessage(list = [], event) {
   }
   const data = event.data;
   if (!data?.id) return list;
-  const idx = list.findIndex((m) => m.id === data.id);
-  if (idx >= 0) {
-    const next = list.slice();
-    next[idx] = data;
-    return next;
-  }
-  return [data, ...list];
+  const without = list.filter((m) => m.id !== data.id);
+  const stamped = {
+    ...data,
+    updated_date: data.updated_date || data.last_activity_at || new Date().toISOString(),
+  };
+  return [stamped, ...without];
 }

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
   View, Text, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator,
 } from 'react-native';
@@ -33,6 +34,7 @@ export default function InboxMessageDetail({
   onStatusChanged,
   onBack,
 }) {
+  const router = useRouter();
   const [loading, setLoading] = useState(null);
   const [error, setError] = useState('');
   const [showReschedule, setShowReschedule] = useState(false);
@@ -161,6 +163,20 @@ export default function InboxMessageDetail({
 
         <View style={styles.bodyCard}>
           <Text style={styles.body}>{message.body || ''}</Text>
+
+        {(message.message_type === 'gameday_result' || message.message_type === 'match_result_action' || meta.match_id) ? (
+          <TouchableOpacity
+            style={styles.openMatchBtn}
+            onPress={() => {
+              const matchId = meta.match_id || message.related_entity_id;
+              if (!matchId) return;
+              router.push({ pathname: '/(tabs)/matches/matchdetailscreen', params: { matchId: String(matchId).split('_')[0] } });
+            }}
+          >
+            <Text style={styles.openMatchText}>Open Game Day</Text>
+          </TouchableOpacity>
+        ) : null}
+
           {showLoanCard ? (
             <InboxLoanCard
               message={message}

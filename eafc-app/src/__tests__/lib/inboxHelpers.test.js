@@ -77,6 +77,27 @@ describe('upsertInboxMessage', () => {
     expect(upsertInboxMessage([a], { type: 'create', id: '2', data: b })[0].id).toBe('2');
     expect(upsertInboxMessage([a], { type: 'update', id: '1', data: updated })[0].subject).toBe('A2');
   });
+
+  test('bumps update to the top of the list', () => {
+    const older = { id: '1', subject: 'Old', created_date: '2026-01-01T10:00:00' };
+    const newer = { id: '2', subject: 'New', created_date: '2026-08-10T10:00:00' };
+    const bumped = { id: '1', subject: 'Bumped', created_date: '2026-01-01T10:00:00', updated_date: '2026-08-10T18:00:00' };
+    const next = upsertInboxMessage([newer, older], { type: 'update', id: '1', data: bumped });
+    expect(next.map((m) => m.id)).toEqual(['1', '2']);
+    expect(next[0].subject).toBe('Bumped');
+  });
+});
+
+describe('groupInboxMessages activity', () => {
+  test('uses updated_date so refreshed mails enter Today and stay first', () => {
+    const now = new Date('2026-08-10T20:00:00');
+    const sections = groupInboxMessages([
+      { id: 'old', created_date: '2026-07-01T10:00:00', updated_date: '2026-08-10T19:00:00' },
+      { id: 'fresh', created_date: '2026-08-10T09:00:00' },
+    ], now);
+    expect(sections[0].id).toBe('today');
+    expect(sections[0].messages.map((m) => m.id)).toEqual(['old', 'fresh']);
+  });
 });
 
 describe('isNotificationUnread', () => {
