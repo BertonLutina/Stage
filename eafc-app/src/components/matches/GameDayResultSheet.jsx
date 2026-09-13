@@ -19,6 +19,7 @@ import { Button, IconButton } from '@/components/ui';
 import { MIN_TOUCH } from '@/components/ui/metrics';
 import { sectionLabelStyle } from '@/components/dashboard/CommandCenterUI';
 import { buildResultPayload, isClubGameDayMatch, mapResultError, submitMatchResult } from '@/lib/gameDayOps';
+import { notifyGameDayInbox } from '@/lib/inboxGameDay';
 import {
   evidenceRequired,
   fixtureScoreFromSubmission,
@@ -251,6 +252,15 @@ export default function GameDayResultSheet({
         explanation,
       });
       const res = await submitMatchResult(payload);
+      void notifyGameDayInbox({
+        game,
+        action,
+        payload,
+        myClub,
+        myPlayer,
+        isHomeTeam,
+        myEmail: myPlayer?.email || myClub?.owner_email,
+      });
       onSubmitted?.(res?.data?.status || res?.status || 'waiting', Number(payload.home_score), Number(payload.away_score));
       onClose?.();
     } catch (err) {

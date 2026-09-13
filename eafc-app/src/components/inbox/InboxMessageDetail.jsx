@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
-  View, Text, ScrollView, Alert,
+  View, Text, ScrollView, Alert, TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import useThemeStore from '@/store/themeStore';
@@ -36,6 +37,7 @@ export default function InboxMessageDetail({
   onBack,
 }) {
   const tokens = useThemeStore((st) => st.tokens);
+  const router = useRouter();
   const [loading, setLoading] = useState(null);
   const [error, setError] = useState('');
   const [showReschedule, setShowReschedule] = useState(false);
@@ -244,6 +246,28 @@ export default function InboxMessageDetail({
 
         <Card>
           <Text style={{ color: tokens.textSoft, fontSize: 15, lineHeight: 23 }}>{message.body || ''}</Text>
+
+          {(message.message_type === 'gameday_result' || message.message_type === 'match_result_action' || meta.match_id) ? (
+            <TouchableOpacity
+              style={{
+                marginTop: 16,
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                borderRadius: 8,
+                backgroundColor: tokens.cyan,
+                alignItems: 'center',
+              }}
+              onPress={() => {
+                const matchId = meta.match_id || message.related_entity_id;
+                if (!matchId) return;
+                router.push({ pathname: '/(tabs)/matches/matchdetailscreen', params: { matchId: String(matchId).split('_')[0] } });
+              }}
+            >
+              <Text style={{ color: tokens.background, fontSize: 14, fontWeight: '700', textTransform: 'uppercase' }}>
+                Open Game Day
+              </Text>
+            </TouchableOpacity>
+          ) : null}
           {showLoanCard ? (
             <InboxLoanCard
               message={message}
