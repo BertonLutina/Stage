@@ -11,6 +11,7 @@ import {
   senderInitials,
   parseInboxMetadata,
   isMatchCancelRequest,
+  matchIdFromInboxMessage,
 } from '@/lib/inboxHelpers';
 import { deleteInboxMessage, respondToInboxMessage } from '@/lib/inboxData';
 import DateTimeZoneFields from '@/components/matches/DateTimeZoneFields';
@@ -55,12 +56,26 @@ export default function InboxMessageDetail({
   const isActioned = inboxMessageIsActioned(message);
   const meta = parseInboxMetadata(message);
   const isCancelRequest = isMatchCancelRequest(message);
+  const showOpenMatchAction = hasAction && effectiveActionType === 'open_match';
   const showGenericActions = hasAction
+    && !showOpenMatchAction
     && !['contract_offer', 'trial_request', 'league_schedule', ...LOAN_TYPES].includes(message.message_type);
   const showLoanCard = LOAN_TYPES.includes(message.message_type);
   const showContractActions = hasAction && message.message_type === 'contract_offer';
   const showScheduleActions = hasAction && message.message_type === 'league_schedule';
   const showTrialActions = hasAction && message.message_type === 'trial_request';
+
+  const openGameDay = () => {
+    const matchId = matchIdFromInboxMessage(message);
+    if (!matchId) {
+      setError('Match link missing on this mail.');
+      return;
+    }
+    router.push({
+      pathname: '/(tabs)/matches/matchdetailscreen',
+      params: { matchId: String(matchId) },
+    });
+  };
 
   const runAction = async (action) => {
     if (action === 'date_change_requested' && !showReschedule) {
@@ -164,19 +179,6 @@ export default function InboxMessageDetail({
         <View style={styles.bodyCard}>
           <Text style={styles.body}>{message.body || ''}</Text>
 
-        {(message.message_type === 'gameday_result' || message.message_type === 'match_result_action' || meta.match_id) ? (
-          <TouchableOpacity
-            style={styles.openMatchBtn}
-            onPress={() => {
-              const matchId = meta.match_id || message.related_entity_id;
-              if (!matchId) return;
-              router.push({ pathname: '/(tabs)/matches/matchdetailscreen', params: { matchId: String(matchId).split('_')[0] } });
-            }}
-          >
-            <Text style={styles.openMatchText}>Open Game Day</Text>
-          </TouchableOpacity>
-        ) : null}
-
           {showLoanCard ? (
             <InboxLoanCard
               message={message}
@@ -195,8 +197,17 @@ export default function InboxMessageDetail({
         </View>
       </ScrollView>
 
-      {(showGenericActions || showContractActions || showScheduleActions || showTrialActions) ? (
+      {(showGenericActions || showContractActions || showScheduleActions || showTrialActions || showOpenMatchAction) ? (
         <View style={styles.actionBar}>
+          {showOpenMatchAction && !showReschedule ? (
+            <ActionBtn
+              label="Open Game Day"
+              tone="good"
+              loading={false}
+              onPress={openGameDay}
+            />
+          ) : null}
+
           {showReschedule ? (
             <View style={{ gap: 8, marginBottom: 10 }}>
               <DateTimeZoneFields

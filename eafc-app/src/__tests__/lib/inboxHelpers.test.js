@@ -3,6 +3,7 @@ import {
   inboxMessageNeedsAction,
   isMatchCancelRequest,
   resolveNotificationHref,
+  matchIdFromInboxMessage,
   groupInboxMessages,
   upsertInboxMessage,
   isNotificationUnread,
@@ -23,6 +24,28 @@ describe('inbox action types', () => {
   test('needs action only while pending', () => {
     expect(inboxMessageNeedsAction({ message_type: 'contract_offer', status: 'pending' })).toBe(true);
     expect(inboxMessageNeedsAction({ message_type: 'contract_offer', status: 'accepted' })).toBe(false);
+  });
+
+  test('result and dispute mails need Open Game Day while pending', () => {
+    expect(getEffectiveInboxActionType({
+      message_type: 'match_result',
+      action_type: 'open_match',
+    })).toBe('open_match');
+    expect(getEffectiveInboxActionType({ message_type: 'match_dispute' })).toBe('open_match');
+    expect(inboxMessageNeedsAction({
+      message_type: 'match_result',
+      action_type: 'open_match',
+      status: 'pending',
+    })).toBe(true);
+    expect(inboxMessageNeedsAction({
+      message_type: 'match_result',
+      action_type: 'open_match',
+      status: 'accepted',
+    })).toBe(false);
+  });
+
+  test('tournament_schedule defaults to accept_decline', () => {
+    expect(getEffectiveInboxActionType({ message_type: 'tournament_schedule' })).toBe('accept_decline');
   });
 
   test('maps loan inbox types to the same action types as web', () => {
@@ -51,6 +74,26 @@ describe('resolveNotificationHref', () => {
       pathname: '/apps/inbox/[id]',
       params: { id: 'abc' },
     });
+  });
+
+  test('maps /game-day?match= to match detail', () => {
+    expect(resolveNotificationHref('/game-day?match=abc')).toEqual({
+      pathname: '/(tabs)/matches/matchdetailscreen',
+      params: { matchId: 'abc' },
+    });
+  });
+});
+
+describe('matchIdFromInboxMessage', () => {
+  test('reads match_id, related_entity_id, or link query', () => {
+    expect(matchIdFromInboxMessage({ metadata: { match_id: 'm1' } })).toBe('m1');
+    expect(matchIdFromInboxMessage({
+      related_entity_type: 'match',
+      related_entity_id: 'm2',
+    })).toBe('m2');
+    expect(matchIdFromInboxMessage({
+      metadata: { link: '/game-day?match=m3' },
+    })).toBe('m3');
   });
 });
 
