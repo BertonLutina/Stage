@@ -1,3 +1,4 @@
+import { createInboxEventId } from '@/lib/inboxEventId';
 import { resolveTimezone, timezoneLabel } from '@/lib/timezones';
 
 export const ARRANGE_MIN_BET = 10_000;
@@ -172,6 +173,9 @@ export async function sendArrangeGameInvite({
     ? `\n\nSTC Wager: ${wagerAmount.toLocaleString()} STC each side (pot: ${(wagerAmount * 2).toLocaleString()} STC). Funds are locked from both balances when this invite is accepted.`
     : '';
 
+  // One event_id per invite call — retries reuse it; a second Arrange vs same opponent gets a new mail.
+  const event_id = createInboxEventId();
+
   await stageClient.functions.invoke('sendInboxMessage', {
     recipient_email: recipientEmail,
     sender_email: senderIsClub
@@ -184,11 +188,13 @@ export async function sendArrangeGameInvite({
     body: `You have received a match invitation from ${senderName}.\n\nProposed date: ${date} at ${time} (${timezoneLabel(kickoffTimezone)})${wagerLine}\n\nPlease accept, decline, or request a different date.`,
     message_type: 'match_invite',
     action_type: 'accept_decline_date',
+    event_id,
     related_entity_id: opponent.id,
     related_entity_type: recipientIsClub ? 'club' : 'player',
     status: 'pending',
     is_read: false,
     metadata: {
+      opponent_entity_id: opponent.id,
       invitation_type: invitationType,
       scheduled_date: scheduledDate,
       timezone: kickoffTimezone,
