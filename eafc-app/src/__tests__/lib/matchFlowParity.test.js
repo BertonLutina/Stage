@@ -47,12 +47,18 @@ describe('mobile match / tournament / season parity wiring', () => {
     expect(source).toMatch(/registerTournamentClub/);
     expect(source).toMatch(/initializeTournamentDraw/);
     expect(source).toMatch(/advanceTournamentRound/);
-    expect(source).toMatch(/matchdetailscreen/);
+    expect(source).toMatch(/tournamentGameDayMobileRoute/);
+    expect(source).toMatch(/canOpenTournamentGameDay/);
+    expect(source).toMatch(/Open Game Day/);
     expect(source).toMatch(/isPlayerTournament/);
     expect(source).toMatch(/eaClubName/);
     expect(source).toMatch(/presidentClub/);
     expect(source).not.toMatch(/api\.get\(`\/tournaments\//);
     expect(source).not.toMatch(/tournament\.mode !== 'club'/);
+    expect(source).not.toMatch(/TournamentResultDialog/);
+    expect(source).not.toMatch(/handleAgreement/);
+    expect(source).not.toMatch(/handleFirstSubmission/);
+    expect(source).not.toMatch(/savePlayerStats/);
   });
 
   test('match hub and tournament list use Game Day / Open Tournaments labels', () => {
