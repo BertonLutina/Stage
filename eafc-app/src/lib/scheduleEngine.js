@@ -1,5 +1,7 @@
 import { stageClient } from '@/api/stageClient';
 import { createMatchFromFixture } from '@/lib/gameDayIntegration';
+import { toMysqlDateTime } from '@/lib/momentDate';
+import { resolveUserTimezone } from '@/lib/timezones';
 
 function fixtureEntity(fixtureType) {
   return fixtureType === 'regional_league'
@@ -41,15 +43,19 @@ export async function proposeTime({
   myGamertag,
 }) {
   const isHome = role === 'home';
+  const me = await stageClient.auth.me?.().catch(() => null);
+  const timezone = resolveUserTimezone(me);
+  const proposedMysql = toMysqlDateTime(proposedDate);
   const recipientClubId = isHome ? fixture.away_club_id : fixture.home_club_id;
   const recipientEmail = await getClubManagerEmail(recipientClubId);
   const updates = {
     scheduling_status: isHome ? 'home_proposed' : 'away_proposed',
     last_proposed_by: role,
     proposal_count: (fixture.proposal_count || 0) + 1,
+    timezone,
   };
-  if (isHome) updates.home_proposed_date = proposedDate;
-  else updates.away_proposed_date = proposedDate;
+  if (isHome) updates.home_proposed_date = proposedMysql;
+  else updates.away_proposed_date = proposedMysql;
   await fixtureEntity(fixtureType).update(fixture.id, updates);
   if (!recipientEmail) return;
 
@@ -62,7 +68,7 @@ export async function proposeTime({
     sender_club_name: myClub?.name || null,
     sender_avatar_url: myClub?.logo_url || null,
     subject: `Match Time Proposed: ${fixtureName}`,
-    body: `${proposerName} proposed a time for ${fixtureName}.\n\nProposed: ${proposedDate}\n\nAccept or propose another time.`,
+    body: `${proposerName} proposed a time for ${fixtureName}.\n\nProposed: ${proposedMysql}\n\nAccept or propose another time.`,
     message_type: 'league_schedule',
     action_type: 'schedule_accept_propose',
     related_entity_id: fixture.id,
@@ -72,7 +78,8 @@ export async function proposeTime({
     metadata: {
       fixture_id: fixture.id,
       fixture_type: fixtureType,
-      proposed_date: proposedDate,
+      proposed_date: proposedMysql,
+      timezone,
       proposed_by_role: role,
       proposer_club_id: myClub?.id || null,
       proposer_email: myEmail,

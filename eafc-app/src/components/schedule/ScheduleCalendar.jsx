@@ -11,6 +11,8 @@ import {
 import { CYAN, AMBER } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT, SectionCard } from '@/components/dashboard/CommandCenterUI';
 import { headingStyleSm } from '@/lib/fonts';
+import { parseKickoffDate, formatKickoffClock } from '@/lib/momentDate';
+import { DEFAULT_TIMEZONE } from '@/lib/timezones';
 
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -34,10 +36,10 @@ function dayHeading(d) {
   return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
-function fmtTime(value) {
-  const d = value ? new Date(value) : null;
-  if (!d || Number.isNaN(d.getTime())) return null;
-  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+function fmtTime(value, timeZone = DEFAULT_TIMEZONE) {
+  const d = parseKickoffDate(value, timeZone);
+  if (!d) return null;
+  return formatKickoffClock(value, { sourceTimeZone: timeZone, displayTimeZone: timeZone });
 }
 
 function DayEventRow({ event, onPress }) {

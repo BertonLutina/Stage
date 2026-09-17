@@ -285,6 +285,7 @@ function normalizeEntityFromApi(entityName, row) {
       group: row.group ?? row.group_number,
       scheduled_date: asWallClockDateTimeString(row.scheduled_date),
       first_submission_at: asWallClockDateTimeString(row.first_submission_at),
+      timezone: row.timezone || null,
     };
   }
   return row;
@@ -698,9 +699,11 @@ const auth = {
     return apiFetch(`/players/${playerId}`, { method: 'PATCH', body: JSON.stringify(data) });
   },
 
-  async updateTimezone(timezone) {
+  async updateTimezone(timezone, location = null) {
     if (!localStorage.getItem(ACCESS_KEY)) throw { status: 401, message: 'Not authenticated' };
-    return apiFetch('/auth/timezone', { method: 'PATCH', body: JSON.stringify({ timezone }) });
+    const body = { timezone };
+    if (location) body.location = location;
+    return apiFetch('/auth/timezone', { method: 'PATCH', body: JSON.stringify(body) });
   },
 
   hasToken() {

@@ -4,23 +4,28 @@ import { Ionicons } from '@expo/vector-icons';
 import { CYAN, AMBER } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT, SectionCard } from '@/components/dashboard/CommandCenterUI';
 import { fixturesListEvents } from '@/lib/scheduleEvents';
+import { parseKickoffDate, formatKickoffClock } from '@/lib/momentDate';
+import { DEFAULT_TIMEZONE } from '@/lib/timezones';
 
-function fmtMonth(date) {
-  const d = date ? new Date(date) : null;
-  if (!d || Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('en-GB', { month: 'short' }).toUpperCase();
+function sourceZone(event) {
+  return event?.matchData?.timezone || event?.timezone || DEFAULT_TIMEZONE;
 }
 
-function fmtDay(date) {
-  const d = date ? new Date(date) : null;
-  if (!d || Number.isNaN(d.getTime())) return '—';
-  return String(d.getDate()).padStart(2, '0');
+function fmtMonth(date, timeZone) {
+  const d = parseKickoffDate(date, timeZone);
+  if (!d) return '—';
+  return d.toLocaleDateString('en-GB', { timeZone, month: 'short' }).toUpperCase();
 }
 
-function fmtTime(date) {
-  const d = date ? new Date(date) : null;
-  if (!d || Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+function fmtDay(date, timeZone) {
+  const d = parseKickoffDate(date, timeZone);
+  if (!d) return '—';
+  return d.toLocaleDateString('en-GB', { timeZone, day: '2-digit' });
+}
+
+function fmtTime(date, timeZone) {
+  if (!parseKickoffDate(date, timeZone)) return '—';
+  return formatKickoffClock(date, { sourceTimeZone: timeZone, displayTimeZone: timeZone });
 }
 
 function MatchRow({ event, onPress }) {
@@ -35,9 +40,9 @@ function MatchRow({ event, onPress }) {
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.row}>
       <View style={styles.dateBlock}>
-        <Text style={styles.month}>{fmtMonth(event.date)}</Text>
-        <Text style={styles.day}>{fmtDay(event.date)}</Text>
-        <Text style={styles.time}>{fmtTime(event.date)}</Text>
+        <Text style={styles.month}>{fmtMonth(event.date, sourceZone(event))}</Text>
+        <Text style={styles.day}>{fmtDay(event.date, sourceZone(event))}</Text>
+        <Text style={styles.time}>{fmtTime(event.date, sourceZone(event))}</Text>
       </View>
       <View style={styles.divider} />
       <View style={{ flex: 1, minWidth: 0 }}>

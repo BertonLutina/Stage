@@ -9,7 +9,7 @@ import {
   formatTimeHm,
   parseArrangeDateTime,
 } from '@/lib/arrangeGame';
-import { TIMEZONES, timezoneLabel } from '@/lib/timezones';
+import { timezoneLabel } from '@/lib/timezones';
 
 export default function DateTimeZoneFields({
   date,
@@ -22,7 +22,6 @@ export default function DateTimeZoneFields({
 }) {
   const [openPicker, setOpenPicker] = useState(null);
   const pickerValue = parseArrangeDateTime(date, time || '21:00');
-  const knownZone = TIMEZONES.some((zone) => zone.value === timezone);
 
   const closePicker = () => setOpenPicker(null);
 
@@ -80,53 +79,12 @@ export default function DateTimeZoneFields({
       ) : null}
 
       {showTimezone ? (
-        <View style={{ gap: 8 }}>
+        <View style={{ gap: 4 }}>
           <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: '700' }}>
             Timezone · {timezoneLabel(timezone)}
           </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {TIMEZONES.map((zone) => {
-              const selected = timezone === zone.value;
-              return (
-                <TouchableOpacity
-                  key={zone.value}
-                  onPress={() => onTimezoneChange?.(zone.value)}
-                  style={{
-                    borderRadius: 999,
-                    borderWidth: 1,
-                    borderColor: selected ? CYAN : 'rgba(255,255,255,0.14)',
-                    backgroundColor: selected ? 'rgba(0,240,255,0.12)' : 'rgba(255,255,255,0.04)',
-                    paddingHorizontal: 10,
-                    paddingVertical: 7,
-                  }}
-                >
-                  <Text style={{
-                    color: selected ? CYAN : 'rgba(255,255,255,0.7)',
-                    fontWeight: '800',
-                    fontSize: 11,
-                  }}
-                  >
-                    {zone.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-            {!knownZone && timezone ? (
-              <View style={{
-                borderRadius: 999,
-                borderWidth: 1,
-                borderColor: CYAN,
-                backgroundColor: 'rgba(0,240,255,0.12)',
-                paddingHorizontal: 10,
-                paddingVertical: 7,
-              }}
-              >
-                <Text style={{ color: CYAN, fontWeight: '800', fontSize: 11 }}>{timezone}</Text>
-              </View>
-            ) : null}
-          </View>
           <Text style={{ color: 'rgba(255,255,255,0.38)', fontSize: 11, lineHeight: 15 }}>
-            Kickoff is this wall-clock time in the selected zone. Brussels switches CET/CEST automatically.
+            Kickoff is this wall-clock time in your login location. It updates when you connect from another country.
           </Text>
         </View>
       ) : null}

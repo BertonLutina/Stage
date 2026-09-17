@@ -215,7 +215,7 @@ function KickoffCard({ vm }) {
             </Text>
             <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
               {nextMatch
-                ? `${formatWhen(nextMatch.scheduled_date)}${nextMatch.competition ? ` · ${nextMatch.competition}` : ''}`
+                ? `${formatWhen(nextMatch.scheduled_date, nextMatch.timezone)}${nextMatch.competition ? ` · ${nextMatch.competition}` : ''}`
                 : 'Open Game Day to find a match'}
             </Text>
           </View>
@@ -333,7 +333,7 @@ function UpcomingBlock({ vm }) {
             style={innerTileChrome(tokens, { padding: 14, minHeight: 44 })}
           >
             <Text style={{ color: CYAN, fontSize: 10, fontWeight: '900', letterSpacing: 1 }}>
-              {String(m.status).toLowerCase() === 'live' ? 'LIVE' : formatWhen(m.scheduled_date)}
+              {String(m.status).toLowerCase() === 'live' ? 'LIVE' : formatWhen(m.scheduled_date, m.timezone)}
             </Text>
             <Text style={{ color: tokens.text, fontWeight: '800', marginTop: 4 }} numberOfLines={1}>
               {opp.home} <Text style={{ color: tokens.faint, fontWeight: '500' }}>vs</Text> {opp.away}

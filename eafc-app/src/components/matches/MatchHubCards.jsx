@@ -8,11 +8,34 @@ import LiveGlass from '@/components/theme/LiveGlass';
 import useThemeStore from '@/store/themeStore';
 import { CARD_RADIUS } from '@/lib/stageTheme';
 import GameDayCrest from './GameDayCrest';
+import { parseKickoffDate, formatKickoffClock } from '@/lib/momentDate';
+import { DEFAULT_TIMEZONE, resolveUserTimezone } from '@/lib/timezones';
+import useAuthStore from '@/store/authStore';
 
-function parseDate(d) {
-  if (!d) return null;
-  const date = new Date(d);
-  return Number.isNaN(date.getTime()) ? null : date;
+function sourceZone(event) {
+  return event?.matchData?.timezone || event?.timezone || DEFAULT_TIMEZONE;
+}
+
+function KickoffStamp({ value, sourceTimeZone, style, dateStyle = 'short' }) {
+  const viewerTimeZone = resolveUserTimezone(useAuthStore((s) => s.user));
+  const date = parseKickoffDate(value, sourceTimeZone);
+  if (!date) return null;
+  const clock = formatKickoffClock(value, { sourceTimeZone, displayTimeZone: viewerTimeZone });
+  if (dateStyle === 'clock') {
+    return <Text style={style}>{clock}</Text>;
+  }
+  const day = date.toLocaleDateString('en-GB', {
+    timeZone: viewerTimeZone,
+    weekday: 'short',
+    day: dateStyle === 'long' ? 'numeric' : undefined,
+    month: dateStyle === 'long' ? 'short' : undefined,
+    year: dateStyle === 'long' ? 'numeric' : undefined,
+  });
+  return (
+    <Text style={style}>
+      {dateStyle === 'long' ? `${day} · ${clock}` : `${day} ${clock}`}
+    </Text>
+  );
 }
 
 function statusMeta(status) {
@@ -27,7 +50,6 @@ function statusMeta(status) {
 
 /** Compact fixture chip for the Game Day ticker — matches web GameDayCard */
 export function GameDayFixtureChip({ event, selected, onPress, myClub }) {
-  const date = parseDate(event.date);
   const status = statusMeta(event.status);
   const live = event.status === 'in_progress';
   const homeLogo = myClub && event.matchData?.home_club_id === myClub.id ? myClub.logo_url : null;
@@ -61,9 +83,12 @@ export function GameDayFixtureChip({ event, selected, onPress, myClub }) {
           {event.homeName} <Text style={{ color: '#F8FBFF' }}>vs</Text> {event.awayName}
         </Text>
         <Text numberOfLines={1} style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10, marginTop: 2, letterSpacing: 0.8, textTransform: 'uppercase' }}>
-          {date
-            ? `${date.toLocaleDateString(undefined, { weekday: 'short' })} ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })} · `
-            : ''}
+          {event.date ? (
+            <>
+              <KickoffStamp value={event.date} sourceTimeZone={sourceZone(event)} />
+              {' · '}
+            </>
+          ) : null}
           {status.label}
         </Text>
       </View>
@@ -84,7 +109,6 @@ export function GameDayFixtureChip({ event, selected, onPress, myClub }) {
 }
 export function GameDayMatchCard({ event, onPress }) {
   const tokens = useThemeStore((s) => s.tokens);
-  const date = parseDate(event.date);
   const status = statusMeta(event.status);
   const m = event.matchData || {};
   const hasScore = m.home_score != null && m.away_score != null && event.status !== 'scheduled';
@@ -105,17 +129,13 @@ export function GameDayMatchCard({ event, onPress }) {
       >
         <View style={styles.gameTop}>
           <View style={{ flex: 1 }}>
-            {date ? (
-              <Text style={styles.dateLine}>
-                {date.toLocaleDateString(undefined, {
-                  weekday: 'short',
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}
-                {' '}
-                · {date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-              </Text>
+            {event.date ? (
+              <KickoffStamp
+                value={event.date}
+                sourceTimeZone={sourceZone(event)}
+                dateStyle="long"
+                style={styles.dateLine}
+              />
             ) : null}
             <View style={styles.matchupRow}>
               <Ionicons name="shield-outline" size={16} color={CYAN} />
@@ -166,7 +186,8 @@ export function GameDayMatchCard({ event, onPress }) {
 
 /** Schedule-style row — Results / archive */
 export function ScheduleMatchRow({ event, onPress }) {
-  const date = parseDate(event.date);
+  const viewerTimeZone = resolveUserTimezone(useAuthStore((s) => s.user));
+  const date = parseKickoffDate(event.date, sourceZone(event));
   const status = statusMeta(event.status);
   const resultColor =
     event.result?.outcome === 'W'
@@ -181,12 +202,12 @@ export function ScheduleMatchRow({ event, onPress }) {
     <TouchableOpacity onPress={onPress} activeOpacity={0.88} style={styles.scheduleRow}>
       <View style={styles.dateBlock}>
         <Text style={styles.month}>
-          {date ? date.toLocaleDateString(undefined, { month: 'short' }).toUpperCase() : '—'}
+          {date ? date.toLocaleDateString('en-GB', { timeZone: viewerTimeZone, month: 'short' }).toUpperCase() : '—'}
         </Text>
-        <Text style={styles.day}>{date ? String(date.getDate()).padStart(2, '0') : '—'}</Text>
+        <Text style={styles.day}>{date ? String(date.toLocaleDateString('en-GB', { timeZone: viewerTimeZone, day: '2-digit' })).padStart(2, '0') : '—'}</Text>
         <Text style={styles.time}>
           {date
-            ? date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+            ? formatKickoffClock(event.date, { sourceTimeZone: sourceZone(event), displayTimeZone: viewerTimeZone })
             : '—'}
         </Text>
       </View>

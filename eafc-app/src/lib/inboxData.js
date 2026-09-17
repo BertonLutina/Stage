@@ -1,5 +1,6 @@
 import { resolveMyPlayerAndClub, stageClient } from '@/api/stageClient';
 import { parseInboxMetadata } from '@/lib/inboxHelpers';
+import { combineDateTimeToMysql } from '@/lib/arrangeGame';
 import { acceptProposal, loadFixtureForInbox, proposeTime, roleForClub } from '@/lib/scheduleEngine';
 
 export async function loadInboxMessages() {
@@ -66,7 +67,9 @@ export async function respondToInboxMessage(message, action, { newDate = null, n
     }
     if (action === 'date_change_requested' || action === 'propose') {
       if (!fixture) throw new Error('Fixture not found');
-      const proposedDate = newDate && newTime ? `${newDate} ${newTime}` : (newDate || meta.proposed_date);
+      const proposedDate = newDate && newTime
+        ? combineDateTimeToMysql(newDate, newTime)
+        : (newDate || meta.proposed_date);
       await proposeTime({
         fixture,
         fixtureType,

@@ -160,7 +160,7 @@ export default function MatchDetailScreen() {
     showResultForm: showResult,
     amIHomeTeam: sides.amIHomeTeam,
   });
-  const mins = minutesUntil(game?.scheduled_date);
+  const mins = minutesUntil(game?.scheduled_date, game?.timezone);
   const kickoffControls = getKickoffControls({
     game,
     isMyMatch: sides.isMyMatch,
@@ -245,6 +245,7 @@ export default function MatchDetailScreen() {
             homeYou={sides.isMyMatch && sides.amIHomeTeam}
             awayYou={sides.isMyMatch && !sides.amIHomeTeam}
             date={game.scheduled_date}
+            timezone={game.timezone}
             status={game.status}
             statusLabel={MATCH_STATUS_LABEL[game.status] || game.status}
             competitionLabel={game.competition_context || (game.tournament_id === 'ranked' ? 'Ranked Match' : 'MATCH DETAILS')}

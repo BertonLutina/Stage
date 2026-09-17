@@ -11,14 +11,17 @@ import {
 } from '@/components/profile/gamer/GamerProfileUI';
 import PlayerCareerSummary from '@/components/profile/PlayerCareerSummary';
 import PlayerTransferHistory from '@/components/profile/PlayerTransferHistory';
+import { parseKickoffDate, formatKickoffClock } from '@/lib/momentDate';
+import { DEFAULT_TIMEZONE } from '@/lib/timezones';
 
 function formatFixtureWhen(match) {
   const raw = match?.scheduled_date || match?.match_date;
-  const date = raw ? new Date(raw) : null;
-  if (!date || Number.isNaN(date.getTime())) return '';
-  const day = date.toLocaleDateString('en-GB');
-  const time = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  return `${day} ${time}`;
+  const zone = match?.timezone || DEFAULT_TIMEZONE;
+  const date = parseKickoffDate(raw, zone);
+  if (!date) return '';
+  const day = date.toLocaleDateString('en-GB', { timeZone: zone });
+  const time = formatKickoffClock(raw, { sourceTimeZone: zone, displayTimeZone: zone });
+  return `${day} · ${time}`;
 }
 
 function NextFixturesCard({ player, club }) {

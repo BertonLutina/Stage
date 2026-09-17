@@ -28,6 +28,9 @@ function mockStageClient({
         throw new Error(`unexpected function ${name}`);
       }),
     },
+    auth: {
+      me: jest.fn(async () => ({ timezone: 'Europe/Brussels' })),
+    },
     entities: {
       Player: {
         filter: jest.fn(async () => clubPlayers),
@@ -170,6 +173,25 @@ describe('sendArrangeGameInvite', () => {
       time: '21:00',
     })).rejects.toThrow(/Could not reach this player/);
   });
+
+  test('ignores a picked timezone and uses the signed-in user zone', async () => {
+    const stageClient = mockStageClient();
+    stageClient.auth.me.mockResolvedValueOnce({ timezone: 'Europe/Brussels' });
+    await sendArrangeGameInvite({
+      stageClient,
+      myPlayer: { id: 'p1', gamertag: 'Me', email: 'me@stage.com', stc: 100000 },
+      myClub: null,
+      matchType: 'player',
+      opponent: { id: 'p2', gamertag: 'Rival', email: 'opp@stage.com' },
+      recipientKind: 'player',
+      date: '2026-08-20',
+      time: '21:00',
+      timezone: 'America/New_York',
+    });
+    expect(stageClient.functions.invoke).toHaveBeenCalledWith('sendInboxMessage', expect.objectContaining({
+      metadata: expect.objectContaining({ timezone: 'Europe/Brussels' }),
+    }));
+  });
 });
 
 describe('Matches hub arrange fixture wiring', () => {
@@ -184,7 +206,7 @@ describe('Matches hub arrange fixture wiring', () => {
     expect(source).toMatch(/onSent/);
   });
 
-  test('Arrange VS details uses date picker, time picker, and timezone', () => {
+  test('Arrange VS details uses date picker and time picker, timezone is login location', () => {
     const modal = fs.readFileSync(
       path.join(__dirname, '../../components/matches/ArrangeGameModal.jsx'),
       'utf8',
@@ -195,10 +217,12 @@ describe('Matches hub arrange fixture wiring', () => {
     );
     expect(modal).toMatch(/DateTimeZoneFields/);
     expect(modal).not.toMatch(/Date YYYY-MM-DD/);
+    expect(modal).not.toMatch(/onTimezoneChange/);
     expect(fields).toMatch(/DateTimePicker/);
     expect(fields).toMatch(/mode="date"/);
     expect(fields).toMatch(/mode="time"/);
-    expect(fields).toMatch(/TIMEZONES/);
+    expect(fields).toMatch(/login location/);
+    expect(fields).not.toMatch(/TIMEZONES\.map/);
   });
 
   test('match detail is Stage Game Day ops, not legacy mock fallback', () => {

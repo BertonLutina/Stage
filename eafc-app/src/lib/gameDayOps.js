@@ -1,4 +1,5 @@
 import { stageClient } from '@/api/stageClient';
+import { parseKickoffDate } from '@/lib/momentDate';
 
 export function parseIdList(value) {
   if (!value) return [];
@@ -15,10 +16,10 @@ export function countSeated(raw) {
   return parseIdList(raw).length;
 }
 
-export function minutesUntil(dateValue) {
+export function minutesUntil(dateValue, timeZone) {
   if (!dateValue) return null;
-  const date = new Date(dateValue);
-  if (Number.isNaN(date.getTime())) return null;
+  const date = parseKickoffDate(dateValue, timeZone);
+  if (!date) return null;
   return Math.round((date.getTime() - Date.now()) / 60000);
 }
 
@@ -75,12 +76,12 @@ export function resolveMatchSides(game, myClub, myPlayer) {
 
 export function canKickoffMatch(game) {
   if (game?.status !== 'scheduled') return false;
-  const mins = minutesUntil(game.scheduled_date);
+  const mins = minutesUntil(game.scheduled_date, game.timezone);
   return mins == null ? true : mins <= 15;
 }
 
 export function canAccessPressRoom(game) {
-  const mins = minutesUntil(game?.scheduled_date);
+  const mins = minutesUntil(game?.scheduled_date, game?.timezone);
   return (game?.status === 'scheduled' && mins != null && mins <= 120)
     || game?.status === 'in_progress';
 }

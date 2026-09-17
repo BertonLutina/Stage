@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { stageClient, storeTokens as stageStoreTokens } from '../api/stageClient';
 import { hydrateStageStorage } from '../lib/polyfillStorage';
 import { setTokens, clearTokens, getAccessToken } from '../services/tokenService';
+import { syncSessionLocation } from '../lib/userLocation';
 
 function mapStageUser(me) {
   if (!me) return null;
@@ -20,6 +21,20 @@ function mapStageUser(me) {
     team_id: me.club_id || me.owned_club_id || me.president_club_id || null,
     player_id: me.player_id || null,
   };
+}
+
+function refreshLocationInBackground() {
+  syncSessionLocation(stageClient.auth)
+    .then(async (saved) => {
+      if (!saved) return;
+      try {
+        const me = await stageClient.auth.me();
+        useAuthStore.setState({ user: mapStageUser(me) });
+      } catch {
+        /* ignore */
+      }
+    })
+    .catch(() => {});
 }
 
 function loginErrorMessage(err) {
@@ -52,6 +67,7 @@ const useAuthStore = create((set) => ({
       if (!token && !stageTok) return;
       const me = await stageClient.auth.me();
       set({ user: mapStageUser(me) });
+      refreshLocationInBackground();
     } catch (err) {
       const status = err?.status || err?.response?.status;
       if (status === 401 || status === 403) {
@@ -74,6 +90,7 @@ const useAuthStore = create((set) => ({
       await stageClient.auth.loginViaEmailPassword(id, password);
       const me = await stageClient.auth.me();
       set({ user: mapStageUser(me), loading: false, error: null });
+      refreshLocationInBackground();
       return true;
     } catch (err) {
       set({ error: loginErrorMessage(err), loading: false });
@@ -112,6 +129,7 @@ const useAuthStore = create((set) => ({
       }
       const me = await stageClient.auth.me();
       set({ user: mapStageUser(me), loading: false, error: null });
+      refreshLocationInBackground();
       return true;
     } catch (err) {
       set({
@@ -136,11 +154,13 @@ const useAuthStore = create((set) => ({
     await setTokens(accessToken, refreshToken);
     if (user) {
       set({ user: mapStageUser(user), error: null });
+      refreshLocationInBackground();
       return true;
     }
     try {
       const me = await stageClient.auth.me();
       set({ user: mapStageUser(me), error: null });
+      refreshLocationInBackground();
       return true;
     } catch {
       set({ user: user || null });

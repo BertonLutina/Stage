@@ -4,6 +4,7 @@ import { materializeConfirmedFixtures } from '../lib/gameDayIntegration';
 import { isActiveGameDayMatch } from '../lib/gameDayPresentation';
 import { isGameDayMatchSocketPayload, sameRecordId } from '../lib/gameDayRealtime';
 import { matchBelongsToIdentity, pickMyClubForMatch, sameId, settleClubMatches, uniqueIdentityClubs } from '../lib/gameDayOps';
+import { kickoffMs } from '../lib/momentDate';
 
 function uniqById(rows = []) {
   const map = new Map();
@@ -149,7 +150,7 @@ export default function useMatchesHub() {
       const matches = uniqById([...(materialized || []), ...matchChunks.flat()]);
       const mapped = matches
         .map((m) => toEvent(m, { clubs, player, tournamentMap }))
-        .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+        .sort((a, b) => kickoffMs(b.date, b.matchData?.timezone) - kickoffMs(a.date, a.matchData?.timezone));
 
       eventsRef.current = mapped;
       setEvents(mapped);
