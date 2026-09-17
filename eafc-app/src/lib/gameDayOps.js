@@ -1,4 +1,5 @@
 import { stageClient } from '@/api/stageClient';
+import { parseKickoffDate } from '@/lib/momentDate';
 
 export function parseIdList(value) {
   if (!value) return [];
@@ -17,7 +18,7 @@ export function countSeated(raw) {
 
 export function minutesUntil(dateValue) {
   if (!dateValue) return null;
-  const date = new Date(dateValue);
+  const date = parseKickoffDate(dateValue);
   if (Number.isNaN(date.getTime())) return null;
   return Math.round((date.getTime() - Date.now()) / 60000);
 }

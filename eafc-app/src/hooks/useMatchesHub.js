@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { resolveMyPlayerAndClub, stageClient } from '../api/stageClient';
-import { materializeConfirmedFixtures } from '../lib/gameDayIntegration';
+import {
+  isKickoffEligibleMatch,
+  loadPendingCompetitionFixtures,
+  materializeConfirmedFixtures,
+} from '../lib/gameDayIntegration';
 import { isActiveGameDayMatch } from '../lib/gameDayPresentation';
 import { isGameDayMatchSocketPayload, sameRecordId } from '../lib/gameDayRealtime';
 import { matchBelongsToIdentity, pickMyClubForMatch, sameId, settleClubMatches, uniqueIdentityClubs } from '../lib/gameDayOps';
@@ -88,24 +93,28 @@ export default function useMatchesHub() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [events, setEvents] = useState([]);
+  const [pendingGostFixtures, setPendingGostFixtures] = useState([]);
+  const [user, setUser] = useState(null);
   const [myClub, setMyClub] = useState(null);
   const [presidentClub, setPresidentClub] = useState(null);
   const [myPlayer, setMyPlayer] = useState(null);
   const [leagueFilter, setLeagueFilter] = useState('all');
   const identityRef = useRef({ clubs: [], playerId: null });
   const eventsRef = useRef([]);
+  const hasLoadedRef = useRef(false);
 
   const load = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
     setError(null);
     try {
-      const { player, club, presidentClub: ownedClub } = await resolveMyPlayerAndClub();
+      const { user: signedUser, player, club, presidentClub: ownedClub } = await resolveMyPlayerAndClub();
       const clubs = uniqueIdentityClubs(
         player?.club_id ? { id: player.club_id } : null,
         club,
         ownedClub,
       );
       identityRef.current = { clubs, playerId: player?.id || null };
+      setUser(signedUser || null);
       setMyClub(club || ownedClub || null);
       setPresidentClub(ownedClub || null);
       setMyPlayer(player || null);
@@ -137,13 +146,15 @@ export default function useMatchesHub() {
         matchPromises.push(stageClient.entities.Match.list('-scheduled_date', 40).catch(() => []));
       }
 
-      const [tournaments, ...rest] = await Promise.all([
+      const [tournaments, pendingGost, ...rest] = await Promise.all([
         stageClient.entities.Tournament.list('-created_date', 100).catch(() => []),
+        loadPendingCompetitionFixtures(clubIds).catch(() => []),
         ...clubIds.map((clubId) => materializeConfirmedFixtures(clubId).catch(() => [])),
         ...matchPromises,
       ]);
       const materialized = rest.slice(0, clubIds.length).flat();
       const matchChunks = rest.slice(clubIds.length);
+      setPendingGostFixtures(pendingGost || []);
 
       const tournamentMap = new Map((tournaments || []).map((t) => [t.id, t]));
       const matches = uniqById([...(materialized || []), ...matchChunks.flat()]);
@@ -155,14 +166,23 @@ export default function useMatchesHub() {
       setEvents(mapped);
     } catch (err) {
       setEvents([]);
+      setPendingGostFixtures([]);
       setError(err?.message || 'Failed to load matches');
     } finally {
+      hasLoadedRef.current = true;
       setLoading(false);
     }
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      load({ silent: hasLoadedRef.current });
+    }, [load]),
+  );
+
   useEffect(() => {
-    load();
+    const id = setInterval(() => load({ silent: true }), 25000);
+    return () => clearInterval(id);
   }, [load]);
 
   useEffect(() => {
@@ -184,9 +204,16 @@ export default function useMatchesHub() {
 
   const buckets = useMemo(() => {
     const live = events.filter((e) => e.status === 'in_progress' || e.status === 'awaiting_confirmation');
-    const upcoming = events.filter((e) => e.status === 'scheduled' && isActiveGameDay(e.matchData));
+    const upcoming = events.filter((e) => (
+      e.status === 'scheduled'
+      && isActiveGameDay(e.matchData)
+      && isKickoffEligibleMatch(e.matchData)
+    ));
     const results = events.filter((e) => e.status === 'completed' || e.status === 'forfeit');
-    const gameDay = events.filter((e) => isActiveGameDay(e.matchData));
+    const gameDay = events.filter((e) => (
+      isActiveGameDay(e.matchData)
+      && (e.status !== 'scheduled' || isKickoffEligibleMatch(e.matchData))
+    ));
 
     const competitions = new Map();
     gameDay.forEach((e) => {
@@ -209,9 +236,11 @@ export default function useMatchesHub() {
     loading,
     error,
     reload: load,
+    user,
     myClub,
     presidentClub,
     myPlayer,
+    pendingGostFixtures,
     setMyPlayer,
     events,
     leagueFilter,

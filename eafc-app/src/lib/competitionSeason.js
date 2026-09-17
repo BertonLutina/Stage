@@ -2,17 +2,32 @@ import { stageClient } from '@/api/stageClient';
 import { COMPETITIONS, getCompetitionMeta, sortStandings } from '@/lib/competitionUtils';
 import { REGIONS } from '@/lib/qualificationConfig';
 
+const TERMINAL_SEASON_STATUS = new Set(['archived', 'cancelled', 'canceled']);
+
+export function competitionSeasonSlug(season) {
+  return String(season?.competition_slug || season?.slug || '').trim().toLowerCase();
+}
+
+/** Exact slug only — never match on competition name substrings. */
+export function pickCompetitionSeason(seasons, metaOrSlug) {
+  const slug = String(typeof metaOrSlug === 'string' ? metaOrSlug : metaOrSlug?.slug || '')
+    .trim()
+    .toLowerCase();
+  if (!slug) return null;
+  const matches = (seasons || []).filter((season) => competitionSeasonSlug(season) === slug);
+  if (!matches.length) return null;
+  const live = matches.filter((season) => !TERMINAL_SEASON_STATUS.has(String(season.status || '').toLowerCase()));
+  const pool = live.length ? live : matches;
+  return [...pool].sort((a, b) => Number(b.season_number || 0) - Number(a.season_number || 0))[0] || null;
+}
+
 export async function loadCompetitionsHub() {
   const [seasons, standings] = await Promise.all([
     stageClient.entities.CompetitionSeason.list('-season_number', 40).catch(() => []),
     stageClient.entities.CompetitionStanding.list(null, 400).catch(() => []),
   ]);
-  const active = (seasons || []).filter((s) => !['archived'].includes(String(s.status || '').toLowerCase()));
   return COMPETITIONS.map((meta) => {
-    const season = active.find((s) =>
-      String(s.competition_slug || s.slug || '').toLowerCase() === meta.slug
-      || String(s.competition_name || '').toLowerCase().includes(meta.name.toLowerCase().replace('STAGE ', ''))
-    ) || active.find((s) => String(s.competition_id || s.slug || '') === meta.slug);
+    const season = pickCompetitionSeason(seasons, meta);
     const table = sortStandings((standings || []).filter((row) => row.season_id && season && row.season_id === season.id));
     return { meta, season, standings: table };
   });
@@ -20,17 +35,16 @@ export async function loadCompetitionsHub() {
 
 export async function loadCompetitionDetail(slug) {
   const meta = getCompetitionMeta(slug);
-  const seasons = await stageClient.entities.CompetitionSeason.filter(
+  let seasons = await stageClient.entities.CompetitionSeason.filter(
     { competition_slug: slug },
     '-season_number',
     20,
-  ).catch(async () => {
+  ).catch(() => []);
+  if (!seasons?.length) {
     const all = await stageClient.entities.CompetitionSeason.list('-season_number', 40).catch(() => []);
-    return (all || []).filter((s) =>
-      String(s.competition_slug || s.slug || '').toLowerCase() === String(slug).toLowerCase()
-    );
-  });
-  const season = (seasons || []).find((s) => s.status !== 'archived') || seasons?.[0] || null;
+    seasons = (all || []).filter((s) => competitionSeasonSlug(s) === String(slug || '').toLowerCase());
+  }
+  const season = pickCompetitionSeason(seasons, slug);
   if (!season) return { meta, season: null, standings: [], fixtures: [], qualifications: [] };
 
   const [standings, fixtures, qualifications] = await Promise.all([

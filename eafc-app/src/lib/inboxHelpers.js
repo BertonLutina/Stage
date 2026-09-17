@@ -51,7 +51,23 @@ export function resolveNotificationHref(link) {
     return id ? { pathname: '/apps/inbox/[id]', params: { id } } : { pathname: '/apps/inbox' };
   }
 
-  if (path.startsWith('/schedule') || path.startsWith('/game-day')) return { pathname: '/(tabs)/matches' };
+  if (
+    path.startsWith('/schedule')
+    || path.startsWith('/game-day')
+    || path.startsWith('/gameday')
+    || /\/matches\/game-?day/i.test(path)
+  ) {
+    try {
+      const url = path.includes('://') ? new URL(path) : new URL(path, 'https://stage.local');
+      const matchId = url.searchParams.get('matchId') || url.searchParams.get('match_id');
+      if (matchId) {
+        return { pathname: '/(tabs)/matches/matchdetailscreen', params: { matchId } };
+      }
+    } catch {
+      /* ignore */
+    }
+    return { pathname: '/(tabs)/matches' };
+  }
   if (path.startsWith('/apps/')) {
     return { pathname: path.split('?')[0] };
   }

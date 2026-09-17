@@ -1,5 +1,6 @@
 import { stageClient } from '@/api/stageClient';
 import { createMatchFromFixture } from '@/lib/gameDayIntegration';
+import { sameId } from '@/lib/gameDayOps';
 
 function fixtureEntity(fixtureType) {
   return fixtureType === 'regional_league'
@@ -100,11 +101,17 @@ export async function acceptProposal({ fixture, fixtureType, role, myClub, myEma
   await fixtureEntity(fixtureType).update(fixture.id, {
     scheduling_status: 'confirmed',
     confirmed_date: confirmedDate,
+    scheduled_date: confirmedDate,
     status: 'scheduled',
-    ...(fixtureType === 'competition' ? { scheduled_date: confirmedDate } : {}),
   });
 
-  await createMatchFromFixture({ ...fixture, confirmed_date: confirmedDate, status: 'scheduled' }, fixtureType);
+  await createMatchFromFixture({
+    ...fixture,
+    scheduling_status: 'confirmed',
+    confirmed_date: confirmedDate,
+    scheduled_date: confirmedDate,
+    status: 'scheduled',
+  }, fixtureType);
 
   if (proposerEmail) {
     await stageClient.functions.invoke('sendInboxMessage', {
@@ -137,8 +144,16 @@ export async function loadFixtureForInbox(meta = {}) {
 }
 
 export function roleForClub(fixture, clubId) {
-  if (!fixture || !clubId) return null;
-  if (fixture.home_club_id === clubId) return 'home';
-  if (fixture.away_club_id === clubId) return 'away';
+  if (!fixture || clubId == null || clubId === '') return null;
+  if (sameId(fixture.home_club_id, clubId)) return 'home';
+  if (sameId(fixture.away_club_id, clubId)) return 'away';
   return null;
+}
+
+export function canAcceptProposal(fixture, role) {
+  if (!fixture || !role) return false;
+  const status = String(fixture.scheduling_status || '').toLowerCase();
+  if (role === 'home') return status === 'away_proposed' && Boolean(fixture.away_proposed_date);
+  if (role === 'away') return status === 'home_proposed' && Boolean(fixture.home_proposed_date);
+  return false;
 }

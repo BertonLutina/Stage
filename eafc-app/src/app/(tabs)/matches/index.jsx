@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { stageClient } from '@/api/stageClient';
 import useMatchesHub from '../../../hooks/useMatchesHub';
 import { GameDayFixtureChip, ScheduleMatchRow } from '../../../components/matches/MatchHubCards';
+import FixtureScheduleActions from '../../../components/schedule/FixtureScheduleActions';
 import ArrangeGameModal from '../../../components/matches/ArrangeGameModal';
 import GameDayKickoffArena from '../../../components/matches/GameDayKickoffArena';
 import GameDayKickoffActions from '../../../components/matches/GameDayKickoffActions';
@@ -62,10 +63,12 @@ export default function MatchesIndex() {
     leagueGroups,
     leagueFilter,
     setLeagueFilter,
+    user,
     myClub,
     presidentClub,
     myPlayer,
     setMyPlayer,
+    pendingGostFixtures,
   } = useMatchesHub();
   const [refreshing, setRefreshing] = useState(false);
   const [arrangeOpen, setArrangeOpen] = useState(false);
@@ -414,6 +417,43 @@ export default function MatchesIndex() {
               </Text>
             </View>
           )}
+
+          {pendingGostFixtures.length > 0 ? (
+            <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+              <SectionCard>
+                <SectionTitle eyebrow="SCHEDULE">Pending GOST</SectionTitle>
+                {pendingGostFixtures.map((fixture) => {
+                  const sideClub = pickMyClubForMatch(fixture, hubClubs);
+                  const proposed = fixture.home_proposed_date || fixture.away_proposed_date;
+                  return (
+                    <View
+                      key={fixture.id}
+                      style={{ paddingVertical: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' }}
+                    >
+                      <Text style={{ color: '#fff', fontWeight: '700' }}>
+                        {fixture.home_club_name} vs {fixture.away_club_name}
+                      </Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
+                        {fixture.competition_name || fixture.competition_slug || 'Competition'}
+                        {' · '}
+                        {fixture.scheduling_status}
+                        {proposed ? ` · ${String(proposed).slice(0, 16)}` : ''}
+                      </Text>
+                      <FixtureScheduleActions
+                        fixture={fixture}
+                        fixtureType="competition"
+                        myClub={sideClub}
+                        userEmail={user?.email}
+                        userGamertag={sideClub?.name}
+                        onDone={reload}
+                        onError={setKickoffError}
+                      />
+                    </View>
+                  );
+                })}
+              </SectionCard>
+            </View>
+          ) : null}
 
           {results.length > 0 ? (
             <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
