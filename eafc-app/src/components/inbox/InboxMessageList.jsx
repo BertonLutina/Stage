@@ -9,6 +9,7 @@ import {
   senderInitials,
   previewSnippet,
   formatRelativeInboxTime,
+  inboxActivityAt,
 } from '@/lib/inboxHelpers';
 import { CYAN, AMBER } from '@/components/profile/gamer/GamerProfileUI';
 
@@ -40,7 +41,7 @@ function StatusChip({ message }) {
 function MessageRow({ message, onPress }) {
   const unread = !message.is_read;
   const color = avatarColor(message.sender_gamertag || message.sender_email || message.id);
-  const time = formatRelativeInboxTime(message.created_date);
+  const time = formatRelativeInboxTime(inboxActivityAt(message) || message.created_date);
   const sender = message.is_system ? 'STAGE' : (message.sender_gamertag || 'Unknown');
 
   return (
