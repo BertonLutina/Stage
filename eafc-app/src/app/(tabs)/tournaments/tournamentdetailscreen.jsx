@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   RefreshControl,
   ScrollView,
   StatusBar,
@@ -29,6 +30,7 @@ import {
 } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT, GAME_DAY_SILVER, SectionCard } from '@/components/dashboard/CommandCenterUI';
 import PageTile, { PageTitle } from '@/components/theme/PageTile';
+import { readAppLanguage, resolveTournamentRules } from '@/lib/tournamentRuleTemplates';
 
 function parseList(value) {
   if (Array.isArray(value)) return value;
@@ -55,6 +57,7 @@ export default function TournamentDetailScreen() {
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [rulesAccepted, setRulesAccepted] = useState(false);
 
   const load = useCallback(async () => {
     if (!tournamentId) return;
@@ -79,6 +82,10 @@ export default function TournamentDetailScreen() {
   }, [tournamentId]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    setRulesAccepted(false);
+  }, [tournament?.id, tournament?.rules_template_id, tournament?.custom_rules]);
 
   const clubs = parseList(tournament?.registered_clubs);
   const players = parseList(tournament?.registered_players);
@@ -106,6 +113,9 @@ export default function TournamentDetailScreen() {
   const canStart = isOwner && (tournament?.status === 'registration' || tournament?.status === 'draft');
   const playerTournament = isPlayerTournament(tournament);
   const canSubmitClub = canRegister && !playerTournament && registrationClub && !clubEntered && !clubPending;
+  const canSubmitPlayer = canRegister && playerTournament && myPlayer && !playerEntered;
+  const rules = resolveTournamentRules(tournament, readAppLanguage());
+  const registrationOptions = { rulesAccepted: true, tournament };
 
   const run = async (key, fn) => {
     setBusy(key);
@@ -182,6 +192,12 @@ export default function TournamentDetailScreen() {
               </Text>
             </SectionCard>
           ) : null}
+          <RulesConsent
+            rules={rules}
+            checked={rulesAccepted}
+            showCheckbox={canSubmitClub || canSubmitPlayer}
+            onToggle={() => setRulesAccepted((value) => !value)}
+          />
           {canSubmitClub ? (
             <SectionCard>
               <Text style={{ color: '#fff', fontWeight: '800' }}>Register {registrationClub.name}</Text>
@@ -207,10 +223,15 @@ export default function TournamentDetailScreen() {
                 <Primary
                   label="Register my club"
                   busy={busy === 'regClub'}
+                  disabled={!rulesAccepted}
                   onPress={() => run('regClub', async () => {
                     const name = eaClubName.trim();
+                    if (!rulesAccepted) throw new Error('Accept the tournament rules before registering.');
                     if (!name) throw new Error('Enter your EA FC Pro Clubs name so admins can verify your club.');
-                    await registerTournamentClub(tournament.id, registrationClub.id, { eaClubName: name });
+                    await registerTournamentClub(tournament.id, registrationClub.id, {
+                      eaClubName: name,
+                      ...registrationOptions,
+                    });
                     setEaClubName('');
                   })}
                 />
@@ -225,11 +246,15 @@ export default function TournamentDetailScreen() {
               </Text>
             </SectionCard>
           ) : null}
-          {canRegister && playerTournament && myPlayer && !playerEntered ? (
+          {canSubmitPlayer ? (
             <Primary
               label="Register as player"
               busy={busy === 'regPlayer'}
-              onPress={() => run('regPlayer', () => registerTournamentPlayer(tournament.id, myPlayer.id))}
+              disabled={!rulesAccepted}
+              onPress={() => run('regPlayer', () => {
+                if (!rulesAccepted) throw new Error('Accept the tournament rules before registering.');
+                return registerTournamentPlayer(tournament.id, myPlayer.id, null, registrationOptions);
+              })}
             />
           ) : null}
           {canRegister && !playerTournament && clubEntered ? (
@@ -298,17 +323,58 @@ export default function TournamentDetailScreen() {
   );
 }
 
-function Primary({ label, onPress, busy }) {
+function RulesConsent({ rules, checked, showCheckbox, onToggle }) {
+  if (!rules?.body) return null;
+  return (
+    <SectionCard>
+      <Text style={{ color: '#fff', fontWeight: '800' }}>{rules.title}</Text>
+      <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 13, lineHeight: 20, marginTop: 8 }}>
+        {rules.body}
+      </Text>
+      {rules.rulesFileUrl ? (
+        <TouchableOpacity onPress={() => Linking.openURL(rules.rulesFileUrl)} style={{ marginTop: 10 }}>
+          <Text style={{ color: GAME_DAY_SILVER, fontSize: 12, fontWeight: '800' }}>{rules.fileLabel}</Text>
+        </TouchableOpacity>
+      ) : null}
+      {showCheckbox ? (
+        <TouchableOpacity
+          onPress={onToggle}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked }}
+          style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 14 }}
+        >
+          <View style={{
+            width: 22,
+            height: 22,
+            borderWidth: 1,
+            borderColor: checked ? GAME_DAY_SILVER : 'rgba(255,255,255,0.35)',
+            backgroundColor: checked ? 'rgba(0,232,255,0.18)' : 'transparent',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          >
+            {checked ? <Text style={{ color: GAME_DAY_SILVER, fontWeight: '900' }}>✓</Text> : null}
+          </View>
+          <Text style={{ color: '#fff', flex: 1, fontSize: 13, lineHeight: 18 }}>{rules.acceptanceLabel}</Text>
+        </TouchableOpacity>
+      ) : null}
+    </SectionCard>
+  );
+}
+
+function Primary({ label, onPress, busy, disabled }) {
+  const off = !!busy || !!disabled;
   return (
     <TouchableOpacity
       onPress={onPress}
-      disabled={!!busy}
+      disabled={off}
       style={{
         backgroundColor: 'rgba(255,255,255,0.12)',
         borderWidth: 1,
         borderColor: 'rgba(248,251,255,0.55)',
         paddingVertical: 13,
         alignItems: 'center',
+        opacity: disabled ? 0.45 : 1,
       }}
     >
       {busy ? <ActivityIndicator color={GAME_DAY_SILVER} /> : <Text style={{ color: GAME_DAY_SILVER, fontWeight: '900' }}>{label}</Text>}

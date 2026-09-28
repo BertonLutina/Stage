@@ -78,6 +78,25 @@ describe('community tournament create payload', () => {
       start_date: '2026-09-01 21:00:00',
       status: 'registration',
       registered_clubs: [],
+      rules_template_id: 'standard_cup',
+      custom_rules: 'rules_template:standard_cup',
     }));
+  });
+
+  test('stores the chosen rules template id instead of a frozen copy of the text', () => {
+    const payload = buildCommunityTournamentPayload({
+      form: {
+        name: 'Tournoi Test',
+        type: 'knockout',
+        max_teams: '8',
+        rules_template_id: 'prize',
+        custom_rules: 'this free text must not be kept',
+      },
+      user: { email: 'me@stage.com' },
+      player: { id: 'p1', gamertag: 'Neo' },
+    });
+    expect(payload.rules_template_id).toBe('prize');
+    expect(payload.custom_rules).toBe('rules_template:prize');
+    expect(payload.name).toBe('Tournoi Test');
   });
 });

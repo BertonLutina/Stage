@@ -39,6 +39,13 @@ import {
   getTournamentMaxTeamOptions,
   TOURNAMENT_CREDIT_COST,
 } from '@/lib/tournamentRules';
+import {
+  isTournamentRuleTemplate,
+  listTournamentRuleTemplates,
+  readAppLanguage,
+  renderTournamentRules,
+} from '@/lib/tournamentRuleTemplates';
+import { isStageAdmin } from '@/lib/adminDisputes';
 
 function OptionRow({ label, active, onPress, sub }) {
   return (
@@ -79,6 +86,26 @@ export default function CreateTournamentScreen() {
     const codes = COUNTRY_REGIONS[form.region] || [];
     return COUNTRIES.filter((country) => codes.includes(country.code));
   }, [form.region]);
+  const ruleLanguage = readAppLanguage();
+  const ruleTemplates = listTournamentRuleTemplates(ruleLanguage);
+  const rulesPreview = useMemo(() => {
+    const previewName = isStageAdmin(user)
+      ? `By STAGE · ${form.name || ''}`.trim()
+      : (form.name || '');
+    return renderTournamentRules(form.rules_template_id, {
+      ...form,
+      name: previewName,
+      start_date: combineDateTimeToMysql(startDate, startTime) || form.start_date,
+      entry_credits: TOURNAMENT_CREDIT_COST,
+      entry_fee_stc: prizeBreakdown.entryFee,
+      prize_pool_stc: prizeBreakdown.pool,
+      prize_winner_stc: prizeBreakdown.winner,
+      prize_runner_up_stc: prizeBreakdown.runnerUp,
+      prize_semi_final_stc: prizeBreakdown.thirdPlace,
+      organizer_email: user?.email,
+      creator_gamertag: isStageAdmin(user) ? null : player?.gamertag,
+    }, ruleLanguage);
+  }, [form, player, prizeBreakdown, ruleLanguage, startDate, startTime, user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,6 +135,10 @@ export default function CreateTournamentScreen() {
     }
     if (!start_date) {
       setError('Pick a start date and time.');
+      return;
+    }
+    if (!isTournamentRuleTemplate(form.rules_template_id)) {
+      setError('Choose a rules template.');
       return;
     }
     setCreating(true);
@@ -331,15 +362,32 @@ export default function CreateTournamentScreen() {
                     <Row label="Prize pool" value={`${prizeBreakdown.pool.toLocaleString()} STC`} emphasize />
                   </View>
 
-                  <Field label="Custom rules">
-                    <TextInput
-                      value={form.custom_rules}
-                      onChangeText={(value) => setField('custom_rules', value)}
-                      placeholder="Optional house rules"
-                      placeholderTextColor="rgba(255,255,255,0.35)"
-                      multiline
-                      style={[inputStyle, { minHeight: 72, textAlignVertical: 'top' }]}
-                    />
+                  <Field label="Rules template">
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                      {ruleTemplates.map((template) => (
+                        <SilverPill
+                          key={template.id}
+                          label={template.title}
+                          active={form.rules_template_id === template.id}
+                          onPress={() => setField('rules_template_id', template.id)}
+                        />
+                      ))}
+                    </View>
+                    <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, lineHeight: 16 }}>
+                      {ruleTemplates.find((template) => template.id === form.rules_template_id)?.summary}
+                    </Text>
+                    <View style={{
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.12)',
+                      backgroundColor: 'rgba(255,255,255,0.04)',
+                      padding: 12,
+                    }}
+                    >
+                      <Text style={{ color: '#fff', fontWeight: '800', marginBottom: 8 }}>{rulesPreview.title}</Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 12, lineHeight: 18 }}>
+                        {rulesPreview.body}
+                      </Text>
+                    </View>
                   </Field>
 
                   {error ? <Text style={{ color: FUT.rose, fontSize: 12 }}>{error}</Text> : null}

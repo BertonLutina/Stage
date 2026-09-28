@@ -6,6 +6,7 @@ import {
   calculateTournamentPrizeBreakdown,
   normalizeTournamentMaxTeams,
 } from '@/lib/tournamentRules';
+import { encodeRulesTemplate, isTournamentRuleTemplate } from '@/lib/tournamentRuleTemplates';
 
 export const TOURNAMENT_REGION_OPTIONS = [
   'Global',
@@ -34,6 +35,7 @@ export const DEFAULT_TOURNAMENT_FORM = {
   banner_color: '#0d1830',
   banner_position: '50% 50%',
   participant_type: 'club',
+  rules_template_id: 'standard_cup',
   custom_rules: '',
   rules_file_url: '',
   trophy_item_id: '',
@@ -59,9 +61,17 @@ export function buildCommunityTournamentPayload({
   const prizes = calculateTournamentPrizeBreakdown(form?.entry_fee_stc, maxTeams);
   const selectedTrophy = (trophyItems || []).find((item) => String(item.id) === String(form?.trophy_item_id));
   const admin = isStageAdmin(user);
+  const rulesTemplateId = isTournamentRuleTemplate(form?.rules_template_id)
+    ? form.rules_template_id
+    : 'standard_cup';
+  // The template id is the only rules content we store. custom_rules keeps a
+  // marker so the choice survives until the API has a rules_template_id column.
+  // The legal text is rendered later from the live tournament fields.
   return {
     ...(form || {}),
     name: admin ? `By STAGE · ${form?.name || ''}`.trim() : (form?.name || ''),
+    rules_template_id: rulesTemplateId,
+    custom_rules: encodeRulesTemplate(rulesTemplateId),
     max_teams: maxTeams,
     entry_credits: TOURNAMENT_CREDIT_COST,
     entry_fee_stc: prizes.entryFee,

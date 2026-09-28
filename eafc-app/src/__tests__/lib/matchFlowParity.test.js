@@ -51,6 +51,8 @@ describe('mobile match / tournament / season parity wiring', () => {
     expect(source).toMatch(/isPlayerTournament/);
     expect(source).toMatch(/eaClubName/);
     expect(source).toMatch(/presidentClub/);
+    expect(source).toMatch(/rulesAccepted/);
+    expect(source).toMatch(/resolveTournamentRules/);
     expect(source).not.toMatch(/api\.get\(`\/tournaments\//);
     expect(source).not.toMatch(/tournament\.mode !== 'club'/);
   });
@@ -76,6 +78,8 @@ describe('mobile match / tournament / season parity wiring', () => {
     expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).toMatch(/createtournamentscreen/);
     expect(read('../../app/(tabs)/tournaments/createtournamentscreen.jsx')).toMatch(/buildCommunityTournamentPayload/);
     expect(read('../../app/(tabs)/tournaments/createtournamentscreen.jsx')).toMatch(/TOURNAMENT_CREDIT_COST/);
+    expect(read('../../app/(tabs)/tournaments/createtournamentscreen.jsx')).toMatch(/rules_template_id/);
+    expect(read('../../app/(tabs)/tournaments/createtournamentscreen.jsx')).not.toMatch(/Optional house rules/);
     expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).not.toMatch(/Stage cups/);
   });
 

@@ -1,4 +1,5 @@
 import { stageClient } from "@/api/stageClient";
+import { assertRulesAcceptance } from "@/lib/tournamentRuleTemplates";
 import {
   generateKnockoutRound1,
   generateLeagueMatches,
@@ -107,12 +108,13 @@ export async function fetchTournamentPublic(tournamentId) {
 }
 
 export async function registerTournamentClub(tournamentId, clubId, options = {}) {
-  const payload = typeof options === "string"
-    ? { registration_proof_url: options, ea_club_name: null }
-    : {
-        registration_proof_url: options.registrationProofUrl || options.registration_proof_url || null,
-        ea_club_name: options.eaClubName || options.ea_club_name || null,
-      };
+  const source = typeof options === "string" ? { registration_proof_url: options } : (options || {});
+  const rules = assertRulesAcceptance(source);
+  const payload = {
+    registration_proof_url: source.registrationProofUrl || source.registration_proof_url || null,
+    ea_club_name: source.eaClubName || source.ea_club_name || null,
+    ...rules,
+  };
   const result = await stageClient.functions.invoke("tournamentRegistration", {
     tournament_id: tournamentId,
     club_id: clubId,
@@ -121,11 +123,16 @@ export async function registerTournamentClub(tournamentId, clubId, options = {})
   return unwrapFunctionResult(result, "Club registration failed");
 }
 
-export async function registerTournamentPlayer(tournamentId, playerId, registrationProofUrl = null) {
+export async function registerTournamentPlayer(tournamentId, playerId, registrationProofUrl = null, extra = {}) {
+  const source = registrationProofUrl && typeof registrationProofUrl === "object"
+    ? registrationProofUrl
+    : { registrationProofUrl, ...extra };
+  const rules = assertRulesAcceptance(source);
   const result = await stageClient.functions.invoke("tournamentRegistration", {
     tournament_id: tournamentId,
     player_id: playerId,
-    registration_proof_url: registrationProofUrl,
+    registration_proof_url: source.registrationProofUrl || source.registration_proof_url || null,
+    ...rules,
   });
   return unwrapFunctionResult(result, "Player registration failed");
 }

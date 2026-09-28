@@ -25,20 +25,33 @@ describe('registerTournamentClub', () => {
 
   test('sends the EA FC Pro Clubs name the server requires', async () => {
     stageClient.functions.invoke.mockResolvedValue({ data: { success: true, pending_review: true } });
-    await registerTournamentClub('t1', 'c1', { eaClubName: 'The Hooded F.C.' });
+    await registerTournamentClub('t1', 'c1', {
+      eaClubName: 'The Hooded F.C.',
+      rulesAccepted: true,
+      tournament: { rules_template_id: 'pro_clubs' },
+    });
     expect(stageClient.functions.invoke).toHaveBeenCalledWith('tournamentRegistration', {
       tournament_id: 't1',
       club_id: 'c1',
       registration_proof_url: null,
       ea_club_name: 'The Hooded F.C.',
+      rules_accepted: true,
+      rules_template_id: 'pro_clubs',
     });
+  });
+
+  test('refuses registration until the rules checkbox is accepted', async () => {
+    await expect(registerTournamentClub('t1', 'c1', { eaClubName: 'The Hooded F.C.' })).rejects.toThrow(
+      /Accept the tournament rules/,
+    );
+    expect(stageClient.functions.invoke).not.toHaveBeenCalled();
   });
 
   test('surfaces a rejected club registration instead of pretending it worked', async () => {
     stageClient.functions.invoke.mockResolvedValue({
       data: { success: false, error: 'EA FC Pro Clubs name is required for club registration' },
     });
-    await expect(registerTournamentClub('t1', 'c1')).rejects.toThrow(
+    await expect(registerTournamentClub('t1', 'c1', { rulesAccepted: true })).rejects.toThrow(
       'EA FC Pro Clubs name is required for club registration',
     );
   });
