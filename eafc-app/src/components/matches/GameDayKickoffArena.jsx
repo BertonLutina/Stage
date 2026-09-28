@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Polygon, Text as SvgText } from 'react-native-svg';
 import { headingStyle, headingStyleSm } from '@/lib/fonts';
 import { formatBroadcastUnit, gameDayArenaLayout, getKickoffCountdownParts, pad2 } from '@/lib/gameDayPresentation';
+import { parseKickoffDate } from '@/lib/momentDate';
 import { formatStc } from '@/lib/wagerActions';
 import GameDayCrest from './GameDayCrest';
 import GameDayTileBackgroundLayers from './GameDayTileBackgroundLayers';
@@ -52,7 +53,7 @@ export default function GameDayKickoffArena({
     return () => clearInterval(id);
   }, [isLive, isFinished]);
 
-  const kickoffDate = date ? new Date(date) : null;
+  const kickoffDate = date ? parseKickoffDate(date) : null;
   const dateOk = kickoffDate && !Number.isNaN(kickoffDate.getTime());
   const { vsW, vsH } = layout;
   const hasCustomBg = hasCustomGameDayTileBackground(backgroundConfig);

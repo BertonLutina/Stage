@@ -16,7 +16,7 @@ export function pathFromNotificationData(data = {}) {
     return id ? { pathname: '/apps/inbox/[id]', params: { id } } : '/apps/inbox';
   }
   if (/notification/i.test(link)) return '/apps/inbox';
-  if (/game-?day|match/i.test(link)) {
+  if (/game-?day|schedule|(^|\/)matches(\/|$)/i.test(link)) {
     const matchId = String(data.match_id || data.matchId || data.related_id || '').trim();
     return matchId
       ? { pathname: '/(tabs)/matches/matchdetailscreen', params: { matchId } }

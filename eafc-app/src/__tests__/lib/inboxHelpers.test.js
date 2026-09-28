@@ -46,10 +46,13 @@ describe('resolveNotificationHref', () => {
     });
   });
 
-  test('maps legacy /messages links to inbox', () => {
-    expect(resolveNotificationHref('/messages?id=abc')).toEqual({
-      pathname: '/apps/inbox/[id]',
-      params: { id: 'abc' },
+  test('maps /schedule and /game-day to Game Day hub', () => {
+    expect(resolveNotificationHref('/schedule')).toEqual({ pathname: '/(tabs)/matches' });
+    expect(resolveNotificationHref('/game-day')).toEqual({ pathname: '/(tabs)/matches' });
+    expect(resolveNotificationHref('/gameday')).toEqual({ pathname: '/(tabs)/matches' });
+    expect(resolveNotificationHref('/matches/game-day?match_id=m9')).toEqual({
+      pathname: '/(tabs)/matches/matchdetailscreen',
+      params: { matchId: 'm9' },
     });
   });
 });

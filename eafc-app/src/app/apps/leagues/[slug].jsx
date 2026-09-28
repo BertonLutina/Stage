@@ -17,15 +17,16 @@ import {
   CYAN,
 } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT, SectionCard } from '@/components/dashboard/CommandCenterUI';
+import FixtureScheduleActions from '@/components/schedule/FixtureScheduleActions';
 import { groupFixturesByMatchday, loadLeagueDetail } from '@/lib/competitionSeason';
-import { createMatchFromFixture } from '@/lib/gameDayIntegration';
-import { proposeTime, roleForClub } from '@/lib/scheduleEngine';
+import { canOpenGameDayFromFixture, createMatchFromFixture } from '@/lib/gameDayIntegration';
+import { pickMyClubForMatch, uniqueIdentityClubs } from '@/lib/gameDayOps';
 
 export default function LeagueDetailScreen() {
   const { slug } = useLocalSearchParams();
   const router = useRouter();
   const [data, setData] = useState(null);
-  const [myClub, setMyClub] = useState(null);
+  const [identityClubs, setIdentityClubs] = useState([]);
   const [user, setUser] = useState(null);
   const [tab, setTab] = useState('table');
   const [loading, setLoading] = useState(true);
@@ -33,12 +34,16 @@ export default function LeagueDetailScreen() {
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
-    const [{ user: u, club }, detail] = await Promise.all([
+    const [{ user: u, player, club, presidentClub }, detail] = await Promise.all([
       resolveMyPlayerAndClub(),
       loadLeagueDetail(slug),
     ]);
     setUser(u);
-    setMyClub(club || null);
+    setIdentityClubs(uniqueIdentityClubs(
+      player?.club_id ? { id: player.club_id } : null,
+      club,
+      presidentClub,
+    ));
     setData(detail);
     setLoading(false);
     setRefreshing(false);
@@ -46,35 +51,22 @@ export default function LeagueDetailScreen() {
 
   useEffect(() => { load(); }, [load]);
 
+  const clubForFixture = (fixture) => pickMyClubForMatch(fixture, identityClubs);
+
   const openFixture = async (fixture) => {
+    setError('');
+    if (!canOpenGameDayFromFixture(fixture)) return;
     try {
-      if (fixture.match_id) {
-        router.push({ pathname: '/(tabs)/matches/matchdetailscreen', params: { matchId: fixture.match_id } });
-        return;
+      let matchId = fixture.match_id;
+      if (!matchId) {
+        const match = await createMatchFromFixture(fixture, 'regional_league');
+        matchId = match?.id;
       }
-      const match = await createMatchFromFixture(fixture, 'regional_league');
-      if (match?.id) router.push({ pathname: '/(tabs)/matches/matchdetailscreen', params: { matchId: match.id } });
+      if (matchId) {
+        router.push({ pathname: '/(tabs)/matches/matchdetailscreen', params: { matchId } });
+      }
     } catch (err) {
       setError(err?.message || 'Could not open fixture');
-    }
-  };
-
-  const propose = async (fixture) => {
-    const role = roleForClub(fixture, myClub?.id);
-    if (!role) return;
-    try {
-      await proposeTime({
-        fixture,
-        fixtureType: 'regional_league',
-        role,
-        proposedDate: new Date(Date.now() + 86400000).toISOString(),
-        myClub,
-        myEmail: user?.email,
-        myGamertag: myClub?.name,
-      });
-      await load();
-    } catch (err) {
-      setError(err?.message || 'Could not propose time');
     }
   };
 
@@ -138,19 +130,26 @@ export default function LeagueDetailScreen() {
           ) : days.map((day) => (
             <SectionCard key={day.matchday}>
               <Text style={{ color: CYAN, fontSize: 11, fontWeight: '900', marginBottom: 6 }}>MATCHDAY {day.matchday}</Text>
-              {day.rows.map((f) => (
-                <View key={f.id} style={{ paddingVertical: 8 }}>
-                  <TouchableOpacity onPress={() => openFixture(f)}>
-                    <Text style={{ color: '#fff', fontWeight: '700' }}>{f.home_club_name} vs {f.away_club_name}</Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{f.scheduling_status || f.status}</Text>
-                  </TouchableOpacity>
-                  {myClub && roleForClub(f, myClub.id) && ['open', 'home_proposed', 'away_proposed'].includes(f.scheduling_status) ? (
-                    <TouchableOpacity onPress={() => propose(f)}>
-                      <Text style={{ color: CYAN, fontSize: 11, fontWeight: '800' }}>Propose time</Text>
+              {day.rows.map((f) => {
+                const sideClub = clubForFixture(f);
+                return (
+                  <View key={f.id} style={{ paddingVertical: 8 }}>
+                    <TouchableOpacity onPress={() => openFixture(f)}>
+                      <Text style={{ color: '#fff', fontWeight: '700' }}>{f.home_club_name} vs {f.away_club_name}</Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{f.scheduling_status || f.status}</Text>
                     </TouchableOpacity>
-                  ) : null}
-                </View>
-              ))}
+                    <FixtureScheduleActions
+                      fixture={f}
+                      fixtureType="regional_league"
+                      myClub={sideClub}
+                      userEmail={user?.email}
+                      userGamertag={sideClub?.name}
+                      onDone={load}
+                      onError={setError}
+                    />
+                  </View>
+                );
+              })}
             </SectionCard>
           ))}
         </ScrollView>

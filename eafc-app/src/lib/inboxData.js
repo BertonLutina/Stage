@@ -1,5 +1,6 @@
 import { resolveMyPlayerAndClub, stageClient } from '@/api/stageClient';
 import { parseInboxMetadata } from '@/lib/inboxHelpers';
+import { pickMyClubForMatch, uniqueIdentityClubs } from '@/lib/gameDayOps';
 import { acceptProposal, loadFixtureForInbox, proposeTime, roleForClub } from '@/lib/scheduleEngine';
 
 export async function loadInboxMessages() {
@@ -49,16 +50,22 @@ export async function respondToInboxMessage(message, action, { newDate = null, n
 
   if (message.message_type === 'league_schedule') {
     const meta = parseInboxMetadata(message);
-    const { user, club, player } = await resolveMyPlayerAndClub();
+    const { user, club, player, presidentClub } = await resolveMyPlayerAndClub();
     const { fixture, fixtureType } = await loadFixtureForInbox(meta);
-    const role = roleForClub(fixture, club?.id) || (meta.proposed_by_role === 'home' ? 'away' : 'home');
+    const identityClubs = uniqueIdentityClubs(
+      player?.club_id ? { id: player.club_id } : null,
+      club,
+      presidentClub,
+    );
+    const myClub = pickMyClubForMatch(fixture, identityClubs) || club || presidentClub;
+    const role = roleForClub(fixture, myClub?.id) || (meta.proposed_by_role === 'home' ? 'away' : 'home');
     if (action === 'accepted' || action === 'confirmed') {
       if (!fixture) throw new Error('Fixture not found for this schedule invite');
       await acceptProposal({
         fixture,
         fixtureType,
         role,
-        myClub: club,
+        myClub,
         myEmail: user?.email,
       });
       await stageClient.entities.InboxMessage.update(message.id, { status: 'accepted', is_read: true }).catch(() => {});
@@ -72,7 +79,7 @@ export async function respondToInboxMessage(message, action, { newDate = null, n
         fixtureType,
         role,
         proposedDate,
-        myClub: club,
+        myClub,
         myEmail: user?.email,
         myGamertag: player?.gamertag,
       });

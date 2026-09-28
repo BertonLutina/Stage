@@ -10,6 +10,32 @@ const PHASE_LABEL = {
   knockout_final: () => 'Final',
 };
 
+export const PENDING_SCHEDULE_STATUSES = ['open', 'home_proposed', 'away_proposed'];
+
+export function isFixtureConfirmed(fixture) {
+  return String(fixture?.scheduling_status || '').toLowerCase() === 'confirmed';
+}
+
+export function isFixturePendingSchedule(fixture) {
+  return PENDING_SCHEDULE_STATUSES.includes(String(fixture?.scheduling_status || '').toLowerCase());
+}
+
+/** Kickoff list: confirmed fixtures, or Matches with no schedule gate (Arrange / ranked). */
+export function isKickoffEligibleMatch(match) {
+  if (!match) return false;
+  const status = String(match.status || '').toLowerCase();
+  if (['in_progress', 'awaiting_confirmation', 'completed', 'disputed', 'forfeit'].includes(status)) {
+    return true;
+  }
+  const sched = String(match.scheduling_status || '').toLowerCase();
+  if (sched && sched !== 'confirmed') return false;
+  return true;
+}
+
+export function canOpenGameDayFromFixture(fixture) {
+  return isFixtureConfirmed(fixture);
+}
+
 export function buildMatchContext(fixture, fixtureType) {
   if (fixtureType === 'regional_league') {
     return `${fixture.league_name || 'Regional League'} · Division ${fixture.division || 1} · Matchday ${fixture.matchday || ''}`.trim();
@@ -25,6 +51,7 @@ function allowPenaltiesForFixture(fixture) {
 
 export async function createMatchFromFixture(fixture, fixtureType) {
   if (!fixture?.id) return null;
+  if (String(fixture.scheduling_status || '').toLowerCase() !== 'confirmed') return null;
   const sourceType = fixtureType === 'regional_league' || fixtureType === 'regional_league_fixture'
     ? 'regional_league'
     : 'competition';
@@ -115,12 +142,33 @@ export async function materializeConfirmedFixtures(clubId) {
   ];
   for (const { fixture, type } of typed) {
     if (!fixture?.id || seen.has(fixture.id)) continue;
-    if (!(fixture.scheduling_status === 'confirmed' || fixture.status === 'scheduled')) continue;
+    if (String(fixture.scheduling_status || '').toLowerCase() !== 'confirmed') continue;
     seen.add(fixture.id);
     const match = await createMatchFromFixture(fixture, type).catch(() => null);
     if (match?.id && isActiveGameDayMatch(match)) created.push(match);
   }
   return created;
+}
+
+export async function loadPendingCompetitionFixtures(clubIds = []) {
+  const ids = [...new Set((clubIds || []).filter((id) => id != null && id !== ''))];
+  if (!ids.length) return [];
+  const packs = await Promise.all(ids.flatMap((clubId) => [
+    stageClient.entities.CompetitionFixture.filter({ home_club_id: clubId }, '-updated_date', 80).catch(() => []),
+    stageClient.entities.CompetitionFixture.filter({ away_club_id: clubId }, '-updated_date', 80).catch(() => []),
+  ]));
+  const seen = new Set();
+  const out = [];
+  for (const row of packs.flat()) {
+    if (!row?.id || seen.has(String(row.id))) continue;
+    if (!isFixturePendingSchedule(row)) continue;
+    seen.add(String(row.id));
+    out.push({ ...row, fixtureType: 'competition' });
+  }
+  return out.sort((a, b) => (
+    String(a.window_end || a.scheduled_date || a.home_proposed_date || a.away_proposed_date || '')
+      .localeCompare(String(b.window_end || b.scheduled_date || b.home_proposed_date || b.away_proposed_date || ''))
+  ));
 }
 
 export async function syncFixtureAfterMatch(match) {

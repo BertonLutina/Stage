@@ -1,3 +1,5 @@
+import { parseKickoffDate } from '@/lib/momentDate';
+
 export function clubInitials(name, fallback = '?') {
   const trimmed = String(name || '').trim();
   if (!trimmed) return fallback;
@@ -15,7 +17,7 @@ export function pad2(value) {
 
 export function getKickoffCountdownParts(scheduledDate, now = new Date()) {
   if (!scheduledDate) return null;
-  const date = scheduledDate instanceof Date ? scheduledDate : new Date(scheduledDate);
+  const date = scheduledDate instanceof Date ? scheduledDate : parseKickoffDate(scheduledDate);
   if (Number.isNaN(date.getTime())) return null;
   const ms = date.getTime() - now.getTime();
   if (ms <= 0) {
