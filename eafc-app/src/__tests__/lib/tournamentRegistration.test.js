@@ -1,4 +1,4 @@
-import { isPlayerTournament, registerTournamentClub } from '../../api/tournamentActions';
+import { acceptTournamentRules, isPlayerTournament, registerTournamentClub } from '../../api/tournamentActions';
 import { stageClient } from '../../api/stageClient';
 
 jest.mock('../../api/stageClient', () => ({
@@ -54,5 +54,36 @@ describe('registerTournamentClub', () => {
     await expect(registerTournamentClub('t1', 'c1', { rulesAccepted: true })).rejects.toThrow(
       'EA FC Pro Clubs name is required for club registration',
     );
+  });
+});
+
+describe('acceptTournamentRules', () => {
+  beforeEach(() => {
+    stageClient.functions.invoke.mockReset();
+  });
+
+  test('persists player rules acceptance without registering', async () => {
+    stageClient.functions.invoke.mockResolvedValue({
+      data: {
+        success: true,
+        registration_proofs: {
+          player: { 'p1': { rules_accepted_at: '2026-10-24T12:00:00.000Z' } },
+          club: {},
+        },
+      },
+    });
+    const result = await acceptTournamentRules('t1', {
+      playerId: 'p1',
+      rulesAccepted: true,
+      tournament: { participant_type: 'player', rules_template_id: 'standard_cup' },
+    });
+    expect(stageClient.functions.invoke).toHaveBeenCalledWith('tournamentRulesAccept', {
+      tournament_id: 't1',
+      player_id: 'p1',
+      club_id: null,
+      rules_accepted: true,
+      rules_template_id: 'standard_cup',
+    });
+    expect(result.data.registration_proofs.player.p1.rules_accepted_at).toBeTruthy();
   });
 });

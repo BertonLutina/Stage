@@ -27,6 +27,21 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
     () => COUNTRIES.map((item) => ({ id: item.name, label: item.name })),
     [],
   );
+  const positionOptions = useMemo(
+    () => POSITIONS.map((item) => ({ id: item, label: item })),
+    [],
+  );
+  const secondaryOptions = useMemo(
+    () => [
+      { id: 'none', label: 'None' },
+      ...POSITIONS.filter((item) => item !== position).map((item) => ({ id: item, label: item })),
+    ],
+    [position],
+  );
+  const consoleOptions = useMemo(
+    () => CONSOLE_OPTIONS.map((item) => ({ id: item, label: item })),
+    [],
+  );
 
   const handleSave = async () => {
     if (!gamertag.trim() || !country) {
@@ -89,53 +104,35 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
         autoCorrect={false}
       />
 
-      <STText style={s.label}>Main position</STText>
-      <View style={s.tileGrid}>
-        {POSITIONS.map((p) => (
-          <TouchableOpacity
-            key={p}
-            onPress={() => {
-              setPosition(p);
-              if (secondaryPosition === p) setSecondaryPosition('none');
-            }}
-            style={[s.tile, position === p && s.chipActive]}
-          >
-            <STText style={[s.chipText, position === p && s.chipTextActive]}>{p}</STText>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <SettingsListbox
+        label="Main position"
+        value={position}
+        placeholder="Select position"
+        title="Main position"
+        options={positionOptions}
+        onChange={(id) => {
+          setPosition(id);
+          if (secondaryPosition === id) setSecondaryPosition('none');
+        }}
+      />
 
-      <STText style={s.label}>Second position</STText>
-      <View style={s.tileGrid}>
-        <TouchableOpacity
-          onPress={() => setSecondaryPosition('none')}
-          style={[s.tile, { width: '31%' }, secondaryPosition === 'none' && s.chipActive]}
-        >
-          <STText style={[s.chipText, secondaryPosition === 'none' && s.chipTextActive]}>None</STText>
-        </TouchableOpacity>
-        {POSITIONS.filter((p) => p !== position).map((p) => (
-          <TouchableOpacity
-            key={p}
-            onPress={() => setSecondaryPosition(p)}
-            style={[s.tile, secondaryPosition === p && s.chipActive]}
-          >
-            <STText style={[s.chipText, secondaryPosition === p && s.chipTextActive]}>{p}</STText>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <SettingsListbox
+        label="Second position"
+        value={secondaryPosition}
+        placeholder="Select position"
+        title="Second position"
+        options={secondaryOptions}
+        onChange={(id) => setSecondaryPosition(id)}
+      />
 
-      <STText style={s.label}>Console</STText>
-      <View style={s.tileGrid}>
-        {CONSOLE_OPTIONS.map((p) => (
-          <TouchableOpacity
-            key={p}
-            onPress={() => setPlatform(p)}
-            style={[s.tile, platform === p && s.chipActive]}
-          >
-            <STText style={[s.chipText, platform === p && s.chipTextActive]}>{p}</STText>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <SettingsListbox
+        label="Console"
+        value={platform}
+        placeholder="Select console"
+        title="Console"
+        options={consoleOptions}
+        onChange={(id) => setPlatform(id)}
+      />
 
       <SettingsListbox
         label="Country"

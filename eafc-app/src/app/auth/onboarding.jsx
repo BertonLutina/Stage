@@ -22,6 +22,7 @@ import DiscordJoinStep from '../../components/onboarding/DiscordJoinStep';
 import PresidentContractSetup from '../../components/onboarding/PresidentContractSetup';
 import TutorialPopup from '../../components/onboarding/TutorialPopup';
 import { ONB, onboardingStyles as s } from '../../components/onboarding/onboardingStyles';
+import { SettingsListbox } from '../../components/settings/SettingsListbox';
 import {
   resolveMyPlayerAndClub,
   stageClient,
@@ -73,10 +74,6 @@ function getStepMeta(intent, step, phase) {
   return { label: 'Choose role', index: 0, total: 2 };
 }
 
-function timezoneCity(value) {
-  return TIMEZONES.find((z) => z.value === value)?.label || String(value || '').split('/')[1] || value;
-}
-
 function StepDots({ index, total }) {
   return (
     <View style={styles.dots} accessibilityRole="progressbar">
@@ -107,7 +104,6 @@ export default function OnboardingScreen() {
   const [loading, setLoading] = useState(true);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [timezone, setTimezone] = useState(detectTimezone);
-  const [showTimezone, setShowTimezone] = useState(false);
 
   const finish = async () => {
     if (user?.id) await markOnboardingComplete(user.id);
@@ -255,32 +251,18 @@ export default function OnboardingScreen() {
                   <STText style={s.roleDesc}>Play and run your own club from day one.</STText>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  onPress={() => setShowTimezone((open) => !open)}
-                  style={styles.tzToggle}
-                  accessibilityLabel="Change timezone"
-                >
-                  <Ionicons name="time-outline" size={16} color={ONB.muted} />
-                  <STText style={styles.tzText}>Match times · {timezoneCity(timezone)}</STText>
-                  <Ionicons name={showTimezone ? 'chevron-up' : 'chevron-down'} size={16} color={ONB.faint} />
-                </TouchableOpacity>
-                {showTimezone ? (
-                  <View style={s.chipRow}>
-                    {TIMEZONES.map((z) => (
-                      <TouchableOpacity
-                        key={z.value}
-                        onPress={() => {
-                          setTimezone(z.value);
-                          stageClient.auth.updateTimezone(z.value).catch(() => {});
-                          setShowTimezone(false);
-                        }}
-                        style={[s.chip, timezone === z.value && s.chipActive]}
-                      >
-                        <STText style={[s.chipText, timezone === z.value && s.chipTextActive]}>{z.label}</STText>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                ) : null}
+                <SettingsListbox
+                  label="Match times timezone"
+                  value={timezone}
+                  placeholder="Select timezone"
+                  title="Timezone"
+                  searchPlaceholder="Search…"
+                  options={TIMEZONES.map((z) => ({ id: z.value, label: z.label }))}
+                  onChange={(id) => {
+                    setTimezone(id);
+                    stageClient.auth.updateTimezone(id).catch(() => {});
+                  }}
+                />
               </View>
             ) : null}
 
@@ -436,18 +418,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 14,
-  },
-  tzToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    minHeight: 44,
-    marginTop: 8,
-  },
-  tzText: {
-    flex: 1,
-    color: ONB.muted,
-    fontSize: 14,
-    fontWeight: '600',
   },
 });

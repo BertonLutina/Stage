@@ -51,12 +51,27 @@ describe('tournament rule templates', () => {
 
   test('prefers rules text already rendered by the server', () => {
     const resolved = resolveTournamentRules({
-      name: 'Tournoi Test',
+      name: 'Open Cup',
       rules_template_id: 'prize',
-      rules_rendered: 'SERVER TEXT for Tournoi Test',
+      rules_rendered: 'SERVER TEXT for Open Cup',
     }, 'en');
     expect(resolved.source).toBe('server');
-    expect(resolved.body).toBe('SERVER TEXT for Tournoi Test');
+    expect(resolved.body).toBe('SERVER TEXT for Open Cup');
+  });
+
+  test('private/test tournaments append a confidentiality clause', () => {
+    const french = renderTournamentRules('standard_cup', {
+      name: 'FC27 SEPTEMBER TOURNAMENT 26',
+      description: 'THE FIRST TESTING OF THE STAGE LEAGUES APPLICATION.',
+    }, 'fr');
+    expect(french.body).toContain('cercle privé');
+    expect(french.body).toContain('ne dois pas en parler');
+
+    const english = renderTournamentRules('standard_cup', {
+      name: 'Open Cup',
+      description: 'Public launch event',
+    }, 'en');
+    expect(english.body).not.toContain('private-circle test');
   });
 
   test('blocks registration without acceptance and when the template changed', () => {

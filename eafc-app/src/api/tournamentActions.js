@@ -1,5 +1,5 @@
 import { stageClient } from "@/api/stageClient";
-import { assertRulesAcceptance } from "@/lib/tournamentRuleTemplates";
+import { assertRulesAcceptance, mergeLocalRulesAcceptance } from "@/lib/tournamentRuleTemplates";
 import {
   generateKnockoutRound1,
   generateLeagueMatches,
@@ -104,6 +104,36 @@ export async function fetchTournamentPublic(tournamentId) {
   } catch (error) {
     const rows = await stageClient.entities.Tournament.filter({ id: tournamentId }, null, 1);
     return normalizeTournament(rows[0] || null);
+  }
+}
+
+export async function acceptTournamentRules(tournamentId, options = {}) {
+  const source = options || {};
+  const rules = assertRulesAcceptance(source);
+  const payload = {
+    tournament_id: tournamentId,
+    player_id: source.playerId || source.player_id || null,
+    club_id: source.clubId || source.club_id || null,
+    ...rules,
+  };
+  try {
+    const result = await stageClient.functions.invoke("tournamentRulesAccept", payload);
+    return unwrapFunctionResult(result, "Could not save rules acceptance");
+  } catch (error) {
+    const message = String(error?.message || error?.error || error?.data?.error || "");
+    if (!message.includes("Function 'tournamentRulesAccept' not found") && !isMissingFunctionError(error, "tournamentRulesAccept")) {
+      throw error;
+    }
+    return {
+      data: {
+        success: true,
+        persisted: false,
+        registration_proofs: mergeLocalRulesAcceptance(source.tournament, {
+          playerId: payload.player_id,
+          clubId: payload.club_id,
+        }),
+      },
+    };
   }
 }
 

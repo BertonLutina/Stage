@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import STText from '../common/STText';
 import { stageClient } from '../../api/stageClient';
+import { SettingsListbox } from '../settings/SettingsListbox';
 import { onboardingStyles as s } from './onboardingStyles';
 
 const PLATFORMS = ['PlayStation', 'Xbox', 'PC', 'EA', 'Discord'];
@@ -20,6 +21,11 @@ export default function IdentityClaimSetup({ player, onComplete }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  const platformOptions = useMemo(
+    () => PLATFORMS.map((item) => ({ id: item, label: item })),
+    [],
+  );
 
   const clampOvr = (value) => {
     const n = Number(value);
@@ -130,18 +136,14 @@ export default function IdentityClaimSetup({ player, onComplete }) {
         Link the handle you play with. Skip if you want to do this later.
       </STText>
 
-      <STText style={s.label}>Platform</STText>
-      <View style={s.chipRow}>
-        {PLATFORMS.map((p) => (
-          <TouchableOpacity
-            key={p}
-            onPress={() => setPlatform(p)}
-            style={[s.tileWide, platform === p && s.chipActive]}
-          >
-            <STText style={[s.chipText, platform === p && s.chipTextActive]}>{p}</STText>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <SettingsListbox
+        label="Platform"
+        value={platform}
+        placeholder="Select platform"
+        title="Platform"
+        options={platformOptions}
+        onChange={(id) => setPlatform(id)}
+      />
 
       <STText style={s.label}>Online ID</STText>
       <TextInput

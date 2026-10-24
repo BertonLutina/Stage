@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { resolveMyPlayerAndClub } from '@/api/stageClient';
 import {
+  acceptTournamentRules,
   advanceTournamentRound,
   fetchTournamentMatches,
   fetchTournamentPublic,
@@ -57,7 +58,8 @@ export default function TournamentDetailScreen() {
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [rulesAccepted, setRulesAccepted] = useState(false);
+  const [rulesChecked, setRulesChecked] = useState(false);
+  const [rulesExpanded, setRulesExpanded] = useState(false);
 
   const load = useCallback(async () => {
     if (!tournamentId) return;
@@ -84,7 +86,8 @@ export default function TournamentDetailScreen() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    setRulesAccepted(false);
+    setRulesChecked(false);
+    setRulesExpanded(false);
   }, [tournament?.id, tournament?.rules_template_id, tournament?.custom_rules]);
 
   const clubs = parseList(tournament?.registered_clubs);
@@ -103,6 +106,9 @@ export default function TournamentDetailScreen() {
   const clubProof = registrationClub
     ? tournament?.registration_proofs?.club?.[String(registrationClub.id)]
     : null;
+  const playerProof = myPlayer
+    ? tournament?.registration_proofs?.player?.[String(myPlayer.id)]
+    : null;
   const clubPending = String(clubProof?.status || '').toLowerCase() === 'pending';
   const isOwner = user && (
     tournament?.created_by === user.email
@@ -114,8 +120,23 @@ export default function TournamentDetailScreen() {
   const playerTournament = isPlayerTournament(tournament);
   const canSubmitClub = canRegister && !playerTournament && registrationClub && !clubEntered && !clubPending;
   const canSubmitPlayer = canRegister && playerTournament && myPlayer && !playerEntered;
+  const hasSavedRulesAcceptance = Boolean(
+    playerTournament
+      ? playerProof?.rules_accepted_at
+      : clubProof?.rules_accepted_at
+  );
+  const showRulesConsentPanel = (canSubmitClub || canSubmitPlayer) && !hasSavedRulesAcceptance;
   const rules = resolveTournamentRules(tournament, readAppLanguage());
   const registrationOptions = { rulesAccepted: true, tournament };
+  const entryCreditsNeeded = tournament?.entry_credits ?? 50;
+  const entryStcNeeded = Number(tournament?.entry_fee_stc || 0);
+  const userCredits = user?.credits ?? 0;
+  const playerStc = myPlayer?.stc ?? 0;
+  const clubStc = registrationClub?.stc ?? 0;
+  const canAffordPlayerEntry = userCredits >= entryCreditsNeeded
+    && (entryStcNeeded <= 0 || playerStc >= entryStcNeeded);
+  const canAffordClubEntry = userCredits >= entryCreditsNeeded
+    && (entryStcNeeded <= 0 || clubStc >= entryStcNeeded);
 
   const run = async (key, fn) => {
     setBusy(key);
@@ -183,6 +204,29 @@ export default function TournamentDetailScreen() {
             </SectionCard>
           ) : null}
 
+          {(canSubmitPlayer || canSubmitClub) ? (
+            <SectionCard>
+              <Text style={{ color: '#fff', fontWeight: '800', marginBottom: 8 }}>Your balance</Text>
+              <Text style={{
+                color: userCredits < entryCreditsNeeded ? FUT.rose : 'rgba(255,255,255,0.75)',
+                fontSize: 13,
+              }}
+              >
+                Credits: {userCredits.toLocaleString()} / {entryCreditsNeeded}
+              </Text>
+              {entryStcNeeded > 0 ? (
+                <Text style={{
+                  color: (playerTournament ? playerStc : clubStc) < entryStcNeeded ? FUT.rose : 'rgba(255,255,255,0.75)',
+                  fontSize: 13,
+                  marginTop: 4,
+                }}
+                >
+                  STC: {(playerTournament ? playerStc : clubStc).toLocaleString()} / {entryStcNeeded.toLocaleString()}
+                </Text>
+              ) : null}
+            </SectionCard>
+          ) : null}
+
           {canRegister && !playerTournament && !registrationClub ? (
             <SectionCard>
               <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }}>
@@ -192,12 +236,62 @@ export default function TournamentDetailScreen() {
               </Text>
             </SectionCard>
           ) : null}
-          <RulesConsent
-            rules={rules}
-            checked={rulesAccepted}
-            showCheckbox={canSubmitClub || canSubmitPlayer}
-            onToggle={() => setRulesAccepted((value) => !value)}
-          />
+
+          {showRulesConsentPanel ? (
+            <RulesConsent
+              rules={rules}
+              checked={rulesChecked}
+              showCheckbox
+              onToggle={() => setRulesChecked((value) => !value)}
+              saveBusy={busy === 'saveRules'}
+              onSave={() => run('saveRules', async () => {
+                if (!rulesChecked) throw new Error('Accept the tournament rules before saving.');
+                const result = await acceptTournamentRules(tournament.id, {
+                  rulesAccepted: true,
+                  tournament,
+                  rulesTemplateId: tournament.rules_template_id || rules?.templateId || null,
+                  ...(playerTournament
+                    ? { playerId: myPlayer.id }
+                    : { clubId: registrationClub.id }),
+                });
+                const proofs = result?.data?.registration_proofs;
+                if (proofs) {
+                  setTournament((prev) => ({ ...(prev || {}), registration_proofs: proofs }));
+                }
+                setRulesChecked(true);
+              })}
+            />
+          ) : null}
+
+          {hasSavedRulesAcceptance && (canSubmitClub || canSubmitPlayer) ? (
+            <SectionCard>
+              <Text style={{ color: GAME_DAY_SILVER, fontWeight: '800' }}>Rules accepted</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 6 }}>
+                You can still open the book to review the rules.
+              </Text>
+            </SectionCard>
+          ) : null}
+
+          {rules?.body ? (
+            <Ghost
+              label={rulesExpanded ? 'Hide rules' : 'View rules'}
+              onPress={() => setRulesExpanded((value) => !value)}
+            />
+          ) : null}
+          {rulesExpanded && rules?.body ? (
+            <SectionCard>
+              <Text style={{ color: '#fff', fontWeight: '800' }}>{rules.title}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 13, lineHeight: 20, marginTop: 8 }}>
+                {rules.body}
+              </Text>
+              {rules.rulesFileUrl ? (
+                <TouchableOpacity onPress={() => Linking.openURL(rules.rulesFileUrl)} style={{ marginTop: 10 }}>
+                  <Text style={{ color: GAME_DAY_SILVER, fontSize: 12, fontWeight: '800' }}>{rules.fileLabel}</Text>
+                </TouchableOpacity>
+              ) : null}
+            </SectionCard>
+          ) : null}
+
           {canSubmitClub ? (
             <SectionCard>
               <Text style={{ color: '#fff', fontWeight: '800' }}>Register {registrationClub.name}</Text>
@@ -221,12 +315,13 @@ export default function TournamentDetailScreen() {
               />
               <View style={{ marginTop: 12 }}>
                 <Primary
-                  label="Register my club"
+                  label={`Register my club (${entryCreditsNeeded}✧${entryStcNeeded > 0 ? ` + ${entryStcNeeded.toLocaleString()} STC` : ''})`}
                   busy={busy === 'regClub'}
-                  disabled={!rulesAccepted}
+                  disabled={!hasSavedRulesAcceptance || !canAffordClubEntry}
                   onPress={() => run('regClub', async () => {
                     const name = eaClubName.trim();
-                    if (!rulesAccepted) throw new Error('Accept the tournament rules before registering.');
+                    if (!hasSavedRulesAcceptance) throw new Error('Save your rules acceptance before registering.');
+                    if (!canAffordClubEntry) throw new Error('Not enough credits or STC for this tournament.');
                     if (!name) throw new Error('Enter your EA FC Pro Clubs name so admins can verify your club.');
                     await registerTournamentClub(tournament.id, registrationClub.id, {
                       eaClubName: name,
@@ -248,11 +343,12 @@ export default function TournamentDetailScreen() {
           ) : null}
           {canSubmitPlayer ? (
             <Primary
-              label="Register as player"
+              label={`Register as player (${entryCreditsNeeded}✧${entryStcNeeded > 0 ? ` + ${entryStcNeeded.toLocaleString()} STC` : ''})`}
               busy={busy === 'regPlayer'}
-              disabled={!rulesAccepted}
+              disabled={!hasSavedRulesAcceptance || !canAffordPlayerEntry}
               onPress={() => run('regPlayer', () => {
-                if (!rulesAccepted) throw new Error('Accept the tournament rules before registering.');
+                if (!hasSavedRulesAcceptance) throw new Error('Save your rules acceptance before registering.');
+                if (!canAffordPlayerEntry) throw new Error('Not enough credits or STC for this tournament.');
                 return registerTournamentPlayer(tournament.id, myPlayer.id, null, registrationOptions);
               })}
             />
@@ -323,7 +419,7 @@ export default function TournamentDetailScreen() {
   );
 }
 
-function RulesConsent({ rules, checked, showCheckbox, onToggle }) {
+function RulesConsent({ rules, checked, showCheckbox, onToggle, onSave, saveBusy }) {
   if (!rules?.body) return null;
   return (
     <SectionCard>
@@ -357,6 +453,16 @@ function RulesConsent({ rules, checked, showCheckbox, onToggle }) {
           </View>
           <Text style={{ color: '#fff', flex: 1, fontSize: 13, lineHeight: 18 }}>{rules.acceptanceLabel}</Text>
         </TouchableOpacity>
+      ) : null}
+      {showCheckbox ? (
+        <View style={{ marginTop: 12 }}>
+          <Primary
+            label={saveBusy ? 'Saving...' : 'Save'}
+            busy={saveBusy}
+            disabled={!checked}
+            onPress={onSave}
+          />
+        </View>
       ) : null}
     </SectionCard>
   );

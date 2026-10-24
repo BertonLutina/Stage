@@ -274,6 +274,42 @@ function fillTemplate(body, values, locale) {
   });
 }
 
+function acceptanceLabel(name, locale) {
+  const lang = normalizeRuleLocale(locale);
+  const label = name || (lang === 'fr' ? 'ce tournoi' : 'this tournament');
+  return lang === 'fr'
+    ? `J'ai lu et j'accepte le règlement de ${label}.`
+    : `I have read and accept the rules of ${label}.`;
+}
+
+const PRIVATE_TEST_CONFIDENTIALITY = {
+  fr: `Confidentialité (tournoi test / cercle privé)
+Ce tournoi est un test en cercle privé. Tu ne dois pas en parler à des personnes extérieures. Il se joue uniquement entre les participants invités. Toute divulgation hors de ce cercle est interdite.`,
+  en: `Confidentiality (private test tournament)
+This tournament is a closed private-circle test. Do not tell people outside the invited group. It is played only among yourselves. Sharing it outside this circle is forbidden.`,
+};
+
+export function isPrivateTestTournament(tournament) {
+  if (!tournament || typeof tournament !== 'object') return false;
+  if (tournament.is_test === true || tournament.is_private === true) return true;
+  const visibility = String(tournament.visibility || '').trim().toLowerCase();
+  if (visibility === 'private' || visibility === 'test') return true;
+  const hay = `${tournament.name || ''} ${tournament.description || ''}`.toLowerCase();
+  return /\b(test|testing|beta|privé|prive|private|cercle)\b/.test(hay);
+}
+
+function privateTestConfidentiality(locale) {
+  return PRIVATE_TEST_CONFIDENTIALITY[normalizeRuleLocale(locale)];
+}
+
+function withPrivateTestConfidentiality(body, tournament, locale) {
+  const text = String(body || '').trim();
+  if (!text || !isPrivateTestTournament(tournament)) return text;
+  const clause = privateTestConfidentiality(locale);
+  if (text.includes(clause.split('\n')[0])) return text;
+  return `${text}\n\n${clause}`;
+}
+
 export function renderTournamentRules(templateId, tournament = {}, locale = readAppLanguage()) {
   const lang = normalizeRuleLocale(locale);
   const id = isTournamentRuleTemplate(templateId) ? templateId : 'standard_cup';
@@ -282,17 +318,13 @@ export function renderTournamentRules(templateId, tournament = {}, locale = read
   return {
     templateId: id,
     title: template.title[lang],
-    body: fillTemplate(template.body[lang], values, lang),
+    body: withPrivateTestConfidentiality(
+      fillTemplate(template.body[lang], values, lang),
+      tournament,
+      lang,
+    ),
     acceptanceLabel: acceptanceLabel(values.tournament_name, lang),
   };
-}
-
-function acceptanceLabel(name, locale) {
-  const lang = normalizeRuleLocale(locale);
-  const label = name || (lang === 'fr' ? 'ce tournoi' : 'this tournament');
-  return lang === 'fr'
-    ? `J'ai lu et j'accepte le règlement de ${label}.`
-    : `I have read and accept the rules of ${label}.`;
 }
 
 export function resolveTournamentRules(tournament, locale = readAppLanguage()) {
@@ -306,7 +338,7 @@ export function resolveTournamentRules(tournament, locale = readAppLanguage()) {
       templateId: storedId,
       source: 'server',
       title,
-      body: serverText,
+      body: withPrivateTestConfidentiality(serverText, tournament, lang),
       rulesFileUrl,
       fileLabel: lang === 'fr' ? 'Fichier de règlement' : 'Rules file',
       acceptanceLabel: acceptanceLabel(String(tournament?.name || '').trim(), lang),
@@ -318,7 +350,7 @@ export function resolveTournamentRules(tournament, locale = readAppLanguage()) {
       templateId: null,
       source: 'custom',
       title: lang === 'fr' ? 'Règlement' : 'Rules',
-      body: custom,
+      body: withPrivateTestConfidentiality(custom, tournament, lang),
       rulesFileUrl,
       fileLabel: lang === 'fr' ? 'Fichier de règlement' : 'Rules file',
       acceptanceLabel: acceptanceLabel(String(tournament?.name || '').trim(), lang),
@@ -331,6 +363,37 @@ export function resolveTournamentRules(tournament, locale = readAppLanguage()) {
     rulesFileUrl,
     fileLabel: lang === 'fr' ? 'Fichier de règlement' : 'Rules file',
   };
+}
+
+export function mergeLocalRulesAcceptance(tournament, { playerId, clubId } = {}) {
+  const existing = tournament?.registration_proofs;
+  let proofs = { club: {}, player: {} };
+  if (existing && typeof existing === 'object' && !Array.isArray(existing)) {
+    proofs = {
+      club: existing.club && typeof existing.club === 'object' ? { ...existing.club } : {},
+      player: existing.player && typeof existing.player === 'object' ? { ...existing.player } : {},
+    };
+  }
+  const now = new Date().toISOString();
+  const isPlayer = String(tournament?.participant_type || '').toLowerCase() === 'player';
+  if (isPlayer && playerId) {
+    const key = String(playerId);
+    proofs.player[key] = {
+      ...(proofs.player[key] || {}),
+      participant_id: key,
+      proof_type: proofs.player[key]?.proof_type || 'rules_acceptance',
+      rules_accepted_at: now,
+    };
+  } else if (clubId) {
+    const key = String(clubId);
+    proofs.club[key] = {
+      ...(proofs.club[key] || {}),
+      participant_id: key,
+      proof_type: proofs.club[key]?.proof_type || 'rules_acceptance',
+      rules_accepted_at: now,
+    };
+  }
+  return proofs;
 }
 
 export function assertRulesAcceptance({

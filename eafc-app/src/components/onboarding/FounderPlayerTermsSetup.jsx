@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, TextInput, TouchableOpacity } from 'react-native';
 import STText from '../common/STText';
 import {
@@ -8,6 +8,7 @@ import {
   isFounderPlayerWageAllowed,
   normalizeFounderPlayerTerms,
 } from '../../lib/founderPlayerTerms';
+import { SettingsListbox } from '../settings/SettingsListbox';
 import { onboardingStyles as s } from './onboardingStyles';
 
 const TARGET_TYPES = [
@@ -35,6 +36,14 @@ export default function FounderPlayerTermsSetup({ initialTerms = null, onComplet
   };
 
   const wageOk = isFounderPlayerWageAllowed(weeklySalary);
+  const statOptions = useMemo(
+    () => FOUNDER_TARGET_STATS.map((stat) => ({ id: stat.value, label: stat.label })),
+    [],
+  );
+  const typeOptions = useMemo(
+    () => TARGET_TYPES.map((type) => ({ id: type.value, label: type.label })),
+    [],
+  );
 
   const handleContinue = () => {
     if (!wageOk) return;
@@ -88,28 +97,22 @@ export default function FounderPlayerTermsSetup({ initialTerms = null, onComplet
             marginBottom: 10,
           }}
         >
-          <View style={s.chipRow}>
-            {FOUNDER_TARGET_STATS.map((stat) => (
-              <TouchableOpacity
-                key={stat.value}
-                onPress={() => updateTarget(idx, 'stat', stat.value)}
-                style={[s.chip, target.stat === stat.value && s.chipActive]}
-              >
-                <STText style={[s.chipText, target.stat === stat.value && s.chipTextActive]}>{stat.label}</STText>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <View style={s.chipRow}>
-            {TARGET_TYPES.map((type) => (
-              <TouchableOpacity
-                key={type.value}
-                onPress={() => updateTarget(idx, 'type', type.value)}
-                style={[s.chip, target.type === type.value && s.chipActive]}
-              >
-                <STText style={[s.chipText, target.type === type.value && s.chipTextActive]}>{type.label}</STText>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <SettingsListbox
+            label="Stat"
+            value={target.stat}
+            placeholder="Select stat"
+            title="Performance stat"
+            options={statOptions}
+            onChange={(id) => updateTarget(idx, 'stat', id)}
+          />
+          <SettingsListbox
+            label="Type"
+            value={target.type}
+            placeholder="Select type"
+            title="Target type"
+            options={typeOptions}
+            onChange={(id) => updateTarget(idx, 'type', id)}
+          />
           <TextInput
             value={String(target.value ?? '')}
             onChangeText={(value) => updateTarget(idx, 'value', parseFloat(value) || 0)}

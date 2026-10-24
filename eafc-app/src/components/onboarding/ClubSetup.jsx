@@ -41,6 +41,14 @@ export default function ClubSetup({
     () => COUNTRIES.map((item) => ({ id: item.name, label: item.name })),
     [],
   );
+  const consoleOptions = useMemo(
+    () => CONSOLE_OPTIONS.map((item) => ({ id: item, label: item })),
+    [],
+  );
+  const regionOptions = useMemo(
+    () => REGIONS.map((item) => ({ id: item, label: item })),
+    [],
+  );
 
   const continuePresident = () => {
     if (!displayName.trim()) {
@@ -160,23 +168,23 @@ export default function ClubSetup({
         maxLength={5}
       />
 
-      <STText style={s.label}>Platform</STText>
-      <View style={s.chipRow}>
-        {CONSOLE_OPTIONS.map((p) => (
-          <TouchableOpacity key={p} onPress={() => setPlatform(p)} style={[s.tileWide, platform === p && s.chipActive]}>
-            <STText style={[s.chipText, platform === p && s.chipTextActive]}>{p}</STText>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <SettingsListbox
+        label="Platform"
+        value={platform}
+        placeholder="Select platform"
+        title="Platform"
+        options={consoleOptions}
+        onChange={(id) => setPlatform(id)}
+      />
 
-      <STText style={s.label}>Region</STText>
-      <View style={s.chipRow}>
-        {REGIONS.map((r) => (
-          <TouchableOpacity key={r} onPress={() => setRegion(r)} style={[s.chip, region === r && s.chipActive]}>
-            <STText style={[s.chipText, region === r && s.chipTextActive]}>{r}</STText>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <SettingsListbox
+        label="Region"
+        value={region}
+        placeholder="Select region"
+        title="Region"
+        options={regionOptions}
+        onChange={(id) => setRegion(id)}
+      />
 
       <SettingsListbox
         label="Country *"
