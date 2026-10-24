@@ -1,4 +1,5 @@
 // Tournament Engine — auto-generate matches for any format
+import { calculateStandings } from './standingsCore.js';
 
 export function shuffleArray(arr) {
   const a = [...arr];
@@ -65,24 +66,9 @@ export function generateLeagueMatches(clubs) {
   return matches;
 }
 
-// League standings from all league matches
-export function calculateLeagueStandings(matches) {
-  const table = {};
-  matches
-    .filter(m => m.type === "league" && (m.status === "completed" || m.status === "forfeit"))
-    .forEach(m => {
-      if (!table[m.home_club_id]) table[m.home_club_id] = { id: m.home_club_id, name: m.home_club_name, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, GD: 0, Pts: 0 };
-      if (!table[m.away_club_id]) table[m.away_club_id] = { id: m.away_club_id, name: m.away_club_name, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, GD: 0, Pts: 0 };
-      const h = table[m.home_club_id], a = table[m.away_club_id];
-      h.P++; a.P++;
-      h.GF += m.home_score || 0; h.GA += m.away_score || 0;
-      a.GF += m.away_score || 0; a.GA += m.home_score || 0;
-      h.GD = h.GF - h.GA; a.GD = a.GF - a.GA;
-      if (m.winner_club_id === m.home_club_id) { h.W++; h.Pts += 3; a.L++; }
-      else if (m.winner_club_id === m.away_club_id) { a.W++; a.Pts += 3; h.L++; }
-      else { h.D++; h.Pts++; a.D++; a.Pts++; }
-    });
-  return Object.values(table).sort((a, b) => b.Pts - a.Pts || b.GD - a.GD || b.GF - a.GF);
+// League standings — shared core with web (confirmed results only)
+export function calculateLeagueStandings(matches, options = {}) {
+  return calculateStandings(matches, { ...options, phase: 'league' }).rows;
 }
 
 // Group Stage: split clubs into groups, round-robin within each group
@@ -168,30 +154,18 @@ export function generateNextKnockoutRound(completedMatches, round) {
 }
 
 // Group stage standings calculation
-export function calculateGroupStandings(matches, numGroups) {
-  const groups = Array.from({ length: numGroups }, () => ({}));
-
-  matches.filter(m => ["group", "group_stage"].includes(String(m.type || "")) && (m.group !== undefined || m.group_number !== undefined) && (m.status === "completed" || m.status === "forfeit")).forEach(m => {
-    const g = Number(m.group_number ?? m.group ?? 0);
-    if (g >= groups.length) return;
-    if (!groups[g][m.home_club_id]) groups[g][m.home_club_id] = { id: m.home_club_id, name: m.home_club_name, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, GD: 0, Pts: 0 };
-    if (!groups[g][m.away_club_id]) groups[g][m.away_club_id] = { id: m.away_club_id, name: m.away_club_name, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, GD: 0, Pts: 0 };
-
-    const h = groups[g][m.home_club_id];
-    const a = groups[g][m.away_club_id];
-    h.P++; a.P++;
-    h.GF += m.home_score || 0; h.GA += m.away_score || 0;
-    a.GF += m.away_score || 0; a.GA += m.home_score || 0;
-    h.GD = h.GF - h.GA; a.GD = a.GF - a.GA;
-
-    if (m.winner_club_id === m.home_club_id) { h.W++; h.Pts += 3; a.L++; }
-    else if (m.winner_club_id === m.away_club_id) { a.W++; a.Pts += 3; h.L++; }
-    else { h.D++; h.Pts++; a.D++; a.Pts++; }
+export function calculateGroupStandings(matches, numGroups, participantType = 'club') {
+  const size = Math.max(1, Number(numGroups) || 1);
+  return Array.from({ length: size }, (_, groupIndex) => {
+    const groupMatches = (Array.isArray(matches) ? matches : []).filter((match) => {
+      if (!['group', 'group_stage'].includes(String(match?.type || '').toLowerCase())) return false;
+      return Number(match.group_number ?? match.group ?? -1) === groupIndex;
+    });
+    return calculateStandings(groupMatches, {
+      participant_type: participantType,
+      phase: 'group',
+    }).rows;
   });
-
-  return groups.map(g =>
-    Object.values(g).sort((a, b) => b.Pts - a.Pts || b.GD - a.GD || b.GF - a.GF)
-  );
 }
 
 // ─── UCL Swiss Format ────────────────────────────────────────────────────────

@@ -17,6 +17,8 @@ import {
   CYAN,
 } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT, SectionCard } from '@/components/dashboard/CommandCenterUI';
+import StandingsTable from '@/components/tournament/StandingsTable';
+import TournamentLeaderboard from '@/components/tournament/TournamentLeaderboard';
 import { groupFixturesByMatchday, loadLeagueDetail } from '@/lib/competitionSeason';
 import { createMatchFromFixture } from '@/lib/gameDayIntegration';
 import { proposeTime, roleForClub } from '@/lib/scheduleEngine';
@@ -101,7 +103,7 @@ export default function LeagueDetailScreen() {
           </Text>
         </View>
         <View style={{ flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 }}>
-          {['table', 'fixtures'].map((id) => (
+          {['table', 'fixtures', 'stats'].map((id) => (
             <TouchableOpacity
               key={id}
               onPress={() => setTab(id)}
@@ -126,15 +128,17 @@ export default function LeagueDetailScreen() {
         >
           {error ? <Text style={{ color: FUT.rose, fontSize: 12 }}>{error}</Text> : null}
           {tab === 'table' ? (
-            <SectionCard>
-              {data.standings.map((row, i) => (
-                <View key={row.id || i} style={{ flexDirection: 'row', paddingVertical: 8, gap: 8 }}>
-                  <Text style={{ color: i === 0 ? FUT.gold : 'rgba(255,255,255,0.45)', width: 22, fontWeight: '900' }}>{i + 1}</Text>
-                  <Text style={{ color: '#fff', flex: 1, fontWeight: '700' }}>{row.club_tag || row.club_name}</Text>
-                  <Text style={{ color: '#fff', fontWeight: '900' }}>{row.points ?? 0}</Text>
-                </View>
-              ))}
-            </SectionCard>
+            <StandingsTable
+              title="League table"
+              rows={data.standings}
+              emptyLabel="No standings yet."
+            />
+          ) : tab === 'stats' ? (
+            <TournamentLeaderboard
+              tournamentId={data.league.id}
+              title="Season Statistics"
+              statisticsUrl={`/competition-views/regional_league/${encodeURIComponent(data.league.id)}/statistics`}
+            />
           ) : days.map((day) => (
             <SectionCard key={day.matchday}>
               <Text style={{ color: CYAN, fontSize: 11, fontWeight: '900', marginBottom: 6 }}>MATCHDAY {day.matchday}</Text>

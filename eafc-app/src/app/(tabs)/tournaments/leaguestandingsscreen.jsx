@@ -1,57 +1,149 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
-import api from '../../../utils/api';
+import { fetchTournamentMatches, fetchTournamentPublic } from '@/api/tournamentActions';
+import { calculateLeagueStandings, calculateGroupStandings } from '@/lib/tournamentEngine';
+import StandingsTable from '@/components/tournament/StandingsTable';
 import GradientBackground from '../../../components/common/GradientBackground';
 import BackButton from '../../../components/common/BackButton';
 
 export default function LeagueStandingsScreen() {
   const { tournamentId } = useLocalSearchParams();
-  const [standings, setStandings] = useState([]);
+  const [tournament, setTournament] = useState(null);
+  const [matches, setMatches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    api.get(`/tournaments/${tournamentId}/standings`).then(r => setStandings(r.data.data || []));
+  const load = useCallback(async () => {
+    if (!tournamentId) return;
+    try {
+      setError('');
+      const [t, rows] = await Promise.all([
+        fetchTournamentPublic(tournamentId).catch(() => null),
+        fetchTournamentMatches(tournamentId),
+      ]);
+      setTournament(t);
+      setMatches(Array.isArray(rows) ? rows : []);
+    } catch (err) {
+      setError(err?.message || 'Failed to load standings');
+      setMatches([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [tournamentId]);
 
+  useEffect(() => { load(); }, [load]);
+
+  const isGroupStage = String(tournament?.type || '') === 'group_stage';
+  const participantType = tournament?.participant_type === 'player' ? 'player' : 'club';
+  const standingsOpts = useMemo(() => ({ participant_type: participantType }), [participantType]);
+  const leagueRows = useMemo(
+    () => calculateLeagueStandings(matches, standingsOpts),
+    [matches, standingsOpts],
+  );
+  const groupTables = useMemo(() => {
+    if (!isGroupStage) return [];
+    const numGroups = Math.max(1, Number(tournament?.num_groups) || 2);
+    return calculateGroupStandings(matches, numGroups, participantType).map((teams, index) => ({
+      name: `Group ${String.fromCharCode(65 + index)}`,
+      teams,
+    }));
+  }, [isGroupStage, matches, tournament?.num_groups, participantType]);
+
   return (
-    <View className="flex-1">
+    <View style={styles.root}>
       <GradientBackground>
-        <SafeAreaView className="flex-1">
-          <View className="flex-row items-center gap-4 px-4 py-3 border-b border-white/10">
+        <SafeAreaView style={styles.flex}>
+          <View style={styles.topBar}>
             <BackButton variant="light" />
-            <Text className="text-white text-xl font-bold flex-1">League Standings</Text>
-          </View>
-          <ScrollView className="px-4">
-            <View className="bg-card border border-border overflow-hidden" style={{ borderRadius: 2 }}>
-              <View className="flex-row bg-surface px-4 py-2 border-b border-border">
-                <Text className="text-muted text-xs w-6">#</Text>
-                <Text className="text-muted text-xs flex-1">Club</Text>
-                <Text className="text-muted text-xs w-8 text-center">P</Text>
-                <Text className="text-muted text-xs w-8 text-center">W</Text>
-                <Text className="text-muted text-xs w-8 text-center">D</Text>
-                <Text className="text-muted text-xs w-8 text-center">L</Text>
-                <Text className="text-muted text-xs w-8 text-center">GD</Text>
-                <Text className="text-primary text-xs w-10 text-center font-bold">Pts</Text>
-              </View>
-              {standings.map((s, idx) => (
-                <View key={s.team_id} className={`flex-row px-4 py-3 border-b border-border/50 ${idx % 2 === 0 ? '' : 'bg-surface/10'}`}>
-                  <Text className="text-muted text-sm w-6">{idx + 1}</Text>
-                  <Text className="text-white text-sm flex-1 font-medium" numberOfLines={1}>{s.club_name}</Text>
-                  <Text className="text-white text-xs w-8 text-center">{s.played}</Text>
-                  <Text className="text-secondary text-xs w-8 text-center">{s.wins}</Text>
-                  <Text className="text-muted text-xs w-8 text-center">{s.draws}</Text>
-                  <Text className="text-danger text-xs w-8 text-center">{s.losses}</Text>
-                  <Text className="text-muted text-xs w-8 text-center">{(s.goals_for || 0) - (s.goals_against || 0)}</Text>
-                  <Text className="text-primary font-bold text-xs w-10 text-center">{s.points}</Text>
-                </View>
-              ))}
-              {!standings.length && <Text className="text-muted text-center py-8">No standings yet</Text>}
+            <View style={styles.topText}>
+              <Text style={styles.eyebrow}>STANDINGS</Text>
+              <Text style={styles.title} numberOfLines={1}>
+                {tournament?.name || 'Tournament'}
+              </Text>
             </View>
-            <View className="h-8" />
-          </ScrollView>
+          </View>
+
+          {loading ? (
+            <View style={styles.center}>
+              <ActivityIndicator color="#00F0FF" />
+            </View>
+          ) : (
+            <ScrollView
+              contentContainerStyle={styles.scroll}
+              refreshControl={(
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={() => { setRefreshing(true); load(); }}
+                  tintColor="#00F0FF"
+                />
+              )}
+            >
+              {error ? <Text style={styles.error}>{error}</Text> : null}
+
+              {isGroupStage ? (
+                groupTables.length ? groupTables.map((group) => (
+                  <StandingsTable
+                    key={group.name}
+                    title={group.name}
+                    rows={group.teams}
+                    emptyLabel="No group results yet"
+                  />
+                )) : (
+                  <StandingsTable rows={[]} emptyLabel="No group results yet" />
+                )
+              ) : (
+                <StandingsTable
+                  title={tournament?.type === 'league' ? 'League table' : 'Table'}
+                  rows={leagueRows}
+                />
+              )}
+            </ScrollView>
+          )}
         </SafeAreaView>
       </GradientBackground>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  flex: { flex: 1 },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+  },
+  topText: { flex: 1, minWidth: 0 },
+  eyebrow: {
+    color: 'rgba(0,240,255,0.7)',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+  },
+  title: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '900',
+    marginTop: 2,
+  },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  scroll: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 40,
+    gap: 14,
+  },
+  error: {
+    color: '#FF6B8A',
+    fontSize: 12,
+    marginBottom: 4,
+  },
+});

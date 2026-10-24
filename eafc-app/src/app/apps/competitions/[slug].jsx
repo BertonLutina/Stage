@@ -17,8 +17,9 @@ import {
   CYAN,
 } from '@/components/profile/gamer/GamerProfileUI';
 import { FUT, SectionCard } from '@/components/dashboard/CommandCenterUI';
+import StandingsTable from '@/components/tournament/StandingsTable';
+import TournamentLeaderboard from '@/components/tournament/TournamentLeaderboard';
 import { loadCompetitionDetail, groupFixturesByMatchday } from '@/lib/competitionSeason';
-import { parseForm } from '@/lib/competitionUtils';
 import { createMatchFromFixture } from '@/lib/gameDayIntegration';
 import { proposeTime, roleForClub } from '@/lib/scheduleEngine';
 
@@ -108,7 +109,7 @@ export default function CompetitionDetailScreen() {
           </Text>
         </View>
         <View style={{ flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 }}>
-          {['table', 'fixtures'].map((id) => (
+          {['table', 'fixtures', 'stats'].map((id) => (
             <TouchableOpacity
               key={id}
               onPress={() => setTab(id)}
@@ -133,21 +134,21 @@ export default function CompetitionDetailScreen() {
         >
           {error ? <Text style={{ color: FUT.rose, fontSize: 12 }}>{error}</Text> : null}
           {tab === 'table' ? (
-            <SectionCard>
-              {data.standings.length === 0 ? (
-                <Text style={{ color: 'rgba(255,255,255,0.4)' }}>Season table is empty.</Text>
-              ) : data.standings.map((row, i) => (
-                <View key={row.id || i} style={{ flexDirection: 'row', paddingVertical: 8, gap: 8 }}>
-                  <Text style={{ color: i === 0 ? FUT.gold : 'rgba(255,255,255,0.45)', width: 22, fontWeight: '900' }}>{i + 1}</Text>
-                  <Text style={{ color: '#fff', flex: 1, fontWeight: '700' }}>{row.club_tag || row.club_name}</Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.45)', width: 28, textAlign: 'center' }}>{row.played ?? 0}</Text>
-                  <Text style={{ color: '#fff', width: 28, textAlign: 'right', fontWeight: '900' }}>{row.points ?? 0}</Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 10, width: 36 }}>
-                    {parseForm(row.form).slice(0, 3).join('')}
-                  </Text>
-                </View>
-              ))}
-            </SectionCard>
+            <StandingsTable
+              title="Season table"
+              rows={data.standings}
+              emptyLabel="Season table is empty."
+            />
+          ) : tab === 'stats' && data.season?.id ? (
+            <TournamentLeaderboard
+              tournamentId={data.season.id}
+              title="Season Statistics"
+              statisticsUrl={`/competition-views/competition_season/${encodeURIComponent(data.season.id)}/statistics`}
+            />
+          ) : tab === 'stats' ? (
+            <Text style={{ color: 'rgba(255,255,255,0.45)', textAlign: 'center', paddingVertical: 24 }}>
+              No active season for statistics.
+            </Text>
           ) : days.map((day) => (
             <SectionCard key={day.matchday}>
               <Text style={{ color: CYAN, fontSize: 11, fontWeight: '900', marginBottom: 6 }}>MATCHDAY {day.matchday}</Text>
