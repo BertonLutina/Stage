@@ -21,7 +21,7 @@
     "update:preview": "eas update --channel preview",
     "update:prod": "eas update --channel production",
     "test": "jest --watchAll=false",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch" 
   },
   "dependencies": {
     "@expo/metro-runtime": "~57.0.12",
