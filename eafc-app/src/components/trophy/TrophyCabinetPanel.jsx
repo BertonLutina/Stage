@@ -1,12 +1,117 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Alert,
+  Image,
+  PanResponder,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { stageClient } from '@/api/stageClient';
 import { buildTrophyCollection, loadTrophyCatalogue, nextCabinetSpot } from '@/lib/trophyCollection';
+import {
+  CABINET_ASPECT_RATIO,
+  clampPercent,
+  normalizePlacementCoords,
+  trophyPixelSize,
+} from '@/lib/trophyCabinetLayout';
 
 const emptyReport = { awards: [], placements: [], discrepancies: [], titles: { all_time: 0, official_ranking: 0 } };
 
-function clamp(value) {
-  return Math.max(5, Math.min(95, Number(value) || 50));
+function DraggableDraftTrophy({
+  placement,
+  editMode,
+  cabinetSize,
+  onMoveEnd,
+  onDetails,
+  onNudge,
+  onRemove,
+}) {
+  const [live, setLive] = useState(null);
+  const liveRef = useRef(null);
+  const startRef = useRef({ x: 0, y: 0 });
+
+  const x = live?.x ?? clampPercent(placement.x_percent);
+  const y = live?.y ?? clampPercent(placement.y_percent);
+  const scale = Number(placement.scale || 1);
+  const width = trophyPixelSize(cabinetSize?.width || 320, scale);
+
+  const pan = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => editMode,
+    onMoveShouldSetPanResponder: (_, gesture) => editMode && (Math.abs(gesture.dx) > 2 || Math.abs(gesture.dy) > 2),
+    onPanResponderGrant: () => {
+      startRef.current = { x: clampPercent(placement.x_percent), y: clampPercent(placement.y_percent) };
+      const next = { ...startRef.current };
+      liveRef.current = next;
+      setLive(next);
+    },
+    onPanResponderMove: (_, gesture) => {
+      if (!cabinetSize?.width || !cabinetSize?.height) return;
+      const next = {
+        x: clampPercent(startRef.current.x + (gesture.dx / cabinetSize.width) * 100),
+        y: clampPercent(startRef.current.y + (gesture.dy / cabinetSize.height) * 100),
+      };
+      liveRef.current = next;
+      setLive(next);
+    },
+    onPanResponderRelease: () => {
+      const next = liveRef.current;
+      setLive(null);
+      liveRef.current = null;
+      if (!next) return;
+      if (
+        Math.abs(next.x - Number(placement.x_percent)) < 0.2
+        && Math.abs(next.y - Number(placement.y_percent)) < 0.2
+      ) return;
+      onMoveEnd?.(placement, next.x, next.y);
+    },
+    onPanResponderTerminate: () => {
+      setLive(null);
+      liveRef.current = null;
+    },
+  }), [editMode, cabinetSize?.width, cabinetSize?.height, placement.x_percent, placement.y_percent, placement, onMoveEnd]);
+
+  return (
+    <View
+      {...(editMode ? pan.panHandlers : {})}
+      style={{
+        position: 'absolute',
+        left: `${x}%`,
+        top: `${y}%`,
+        width,
+        marginLeft: -width / 2,
+        marginTop: -width / 2,
+        zIndex: live ? 20 : 5,
+        opacity: live ? 0.92 : 1,
+        transform: [{ scale: live ? 1.08 : 1 }],
+      }}
+    >
+      {placement.trophy_image_url ? (
+        <Image source={{ uri: placement.trophy_image_url }} style={{ width: width * 0.9, height: width * 0.9, alignSelf: 'center' }} resizeMode="contain" />
+      ) : (
+        <Text style={{ color: '#fbbf24', fontSize: Math.max(22, width * 0.45), textAlign: 'center' }}>🏆</Text>
+      )}
+      <Text numberOfLines={2} style={{ color: '#fff', fontSize: 9, textAlign: 'center' }}>{placement.trophy_name || 'Trophy'}</Text>
+      <Pressable accessibilityRole="button" onPress={onDetails}>
+        <Text style={{ color: '#9ef7ff', fontSize: 10, textAlign: 'center' }}>Details</Text>
+      </Pressable>
+      {editMode ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, justifyContent: 'center', marginTop: 2 }}>
+          <Pressable onPress={() => onNudge?.(placement, -4, 0)}><Text style={{ color: '#9ef7ff', fontSize: 10 }}>←</Text></Pressable>
+          <Pressable onPress={() => onNudge?.(placement, 4, 0)}><Text style={{ color: '#9ef7ff', fontSize: 10 }}>→</Text></Pressable>
+          <Pressable onPress={() => onNudge?.(placement, 0, -4)}><Text style={{ color: '#9ef7ff', fontSize: 10 }}>↑</Text></Pressable>
+          <Pressable onPress={() => onNudge?.(placement, 0, 4)}><Text style={{ color: '#9ef7ff', fontSize: 10 }}>↓</Text></Pressable>
+          <Pressable onPress={() => onRemove?.(placement)}><Text style={{ color: '#fb7185', fontSize: 10 }}>Remove</Text></Pressable>
+        </View>
+      ) : null}
+      {editMode ? (
+        <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 8, textAlign: 'center', marginTop: 2 }}>
+          Drag to move
+        </Text>
+      ) : null}
+    </View>
+  );
 }
 
 export default function TrophyCabinetPanel({ ownerId, ownerType, canEdit = false }) {
@@ -18,6 +123,7 @@ export default function TrophyCabinetPanel({ ownerId, ownerType, canEdit = false
   const [catalogueError, setCatalogueError] = useState('');
   const [pending, setPending] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [cabinetSize, setCabinetSize] = useState({ width: 320, height: 320 / CABINET_ASPECT_RATIO });
   const requestId = useRef(0);
   const reportRef = useRef(emptyReport);
   const inflight = useRef(Promise.resolve());
@@ -119,23 +225,44 @@ export default function TrophyCabinetPanel({ ownerId, ownerType, canEdit = false
     const award = chosenAward(entry);
     if (!award || placements.some((placement) => placement.award_id === award.id)) return;
     const spot = nextCabinetSpot(placements);
+    const coords = normalizePlacementCoords({
+      x_percent: spot.x,
+      y_percent: spot.y,
+      scale: 1,
+    });
     await mutate(() => stageClient.entities.TrophyPlacement.create({
       owner_id: ownerId,
       owner_type: ownerType,
       award_id: award.id,
-      x_percent: spot.x,
-      y_percent: spot.y,
-      scale: 1,
+      ...coords,
     }));
+  }
+
+  function savePosition(placement, xPercent, yPercent, scale) {
+    if (placement.locked_at || !placement.award_id) return;
+    const coords = normalizePlacementCoords({
+      x_percent: xPercent,
+      y_percent: yPercent,
+      ...(scale != null ? { scale } : {}),
+    });
+    // Optimistic local move — percentages are device-independent.
+    remember({
+      ...reportRef.current,
+      placements: (reportRef.current.placements || []).map((row) => (
+        row.id === placement.id ? { ...row, ...coords } : row
+      )),
+    });
+    mutate(() => stageClient.entities.TrophyPlacement.update(placement.id, coords));
   }
 
   function move(placement, dx, dy, dScale = 0) {
     if (placement.locked_at || !placement.award_id) return;
-    mutate(() => stageClient.entities.TrophyPlacement.update(placement.id, {
-      x_percent: clamp(Number(placement.x_percent) + dx),
-      y_percent: clamp(Number(placement.y_percent) + dy),
-      scale: Math.max(0.3, Math.min(3, Number(placement.scale || 1) + dScale)),
-    }));
+    savePosition(
+      placement,
+      Number(placement.x_percent) + dx,
+      Number(placement.y_percent) + dy,
+      dScale ? Number(placement.scale || 1) + dScale : undefined,
+    );
   }
 
   function copyLabel(award) {
@@ -189,56 +316,110 @@ export default function TrophyCabinetPanel({ ownerId, ownerType, canEdit = false
         <Text style={{ color: '#fb7185' }} onPress={load}>{catalogueError} Tap to retry the catalogue.</Text>
       ) : null}
       {loading ? <Text style={{ color: 'rgba(255,255,255,0.55)' }}>Loading trophy history...</Text> : null}
-      <View style={{ height: 180, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', backgroundColor: 'rgba(0,0,0,0.25)' }}>
+      <View
+        onLayout={(e) => {
+          const { width, height } = e.nativeEvent.layout;
+          setCabinetSize({ width, height });
+        }}
+        style={{
+          width: '100%',
+          aspectRatio: CABINET_ASPECT_RATIO,
+          maxHeight: 420,
+          borderWidth: 1,
+          borderColor: editMode ? 'rgba(251,191,36,0.35)' : 'rgba(255,255,255,0.12)',
+          backgroundColor: 'rgba(0,0,0,0.25)',
+          overflow: 'hidden',
+        }}
+      >
         {placements.length === 0 ? (
-          <Text style={{ color: 'rgba(255,255,255,0.45)', textAlign: 'center', marginTop: 72 }}>
-            {editMode ? 'Place a trophy from the collection below.' : 'No trophies placed yet.'}
+          <Text style={{ color: 'rgba(255,255,255,0.45)', textAlign: 'center', marginTop: 90 }}>
+            {editMode ? 'Place a trophy from the collection below, then drag it around.' : 'No trophies placed yet.'}
           </Text>
-        ) : placements.map((placement) => (
-          <View
-            key={placement.id}
-            style={{
-              position: 'absolute',
-              left: `${clamp(placement.x_percent)}%`,
-              top: `${clamp(placement.y_percent)}%`,
-              width: 64 * Number(placement.scale || 1),
-              transform: [{ translateX: -24 }, { translateY: -24 }],
-            }}
-          >
-            {placement.trophy_image_url ? (
-              <Image source={{ uri: placement.trophy_image_url }} style={{ width: 48, height: 48 }} resizeMode="contain" />
-            ) : (
-              <Text style={{ color: '#fbbf24', fontSize: 28 }}>🏆</Text>
-            )}
-            <Text numberOfLines={2} style={{ color: '#fff', fontSize: 9 }}>{placement.trophy_name || 'Trophy'}</Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => Alert.alert(placement.trophy_name || 'Earned trophy', [
-                placement.award?.competition_name,
-                placement.award?.edition_label,
-                placement.award?.winning_name,
-                placement.award?.format,
-                placement.award?.participant_count == null ? null : `${placement.award.participant_count} participants`,
-                placement.locked_at ? 'Permanent placement' : 'Draft placement',
-              ].filter(Boolean).join('\n'))}
+        ) : placements.map((placement) => {
+          const canDrag = editMode && !placement.locked_at && !!placement.award_id;
+          if (canDrag) {
+            return (
+              <DraggableDraftTrophy
+                key={placement.id}
+                placement={placement}
+                editMode
+                cabinetSize={cabinetSize}
+                onMoveEnd={(row, nextX, nextY) => savePosition(row, nextX, nextY)}
+                onNudge={move}
+                onRemove={(row) => mutate(() => stageClient.entities.TrophyPlacement.delete(row.id))}
+                onDetails={() => Alert.alert(placement.trophy_name || 'Earned trophy', [
+                  placement.award?.competition_name,
+                  placement.award?.edition_label,
+                  placement.award?.winning_name,
+                  placement.award?.format,
+                  placement.award?.participant_count == null ? null : `${placement.award.participant_count} participants`,
+                  placement.locked_at ? 'Permanent placement' : 'Draft — drag to rearrange',
+                ].filter(Boolean).join('\n'))}
+              />
+            );
+          }
+          return (
+            <View
+              key={placement.id}
+              style={{
+                position: 'absolute',
+                left: `${clampPercent(placement.x_percent)}%`,
+                top: `${clampPercent(placement.y_percent)}%`,
+                width: trophyPixelSize(cabinetSize.width, placement.scale),
+                marginLeft: -trophyPixelSize(cabinetSize.width, placement.scale) / 2,
+                marginTop: -trophyPixelSize(cabinetSize.width, placement.scale) / 2,
+              }}
             >
-              <Text style={{ color: '#9ef7ff', fontSize: 10 }}>Details</Text>
-            </Pressable>
-            {editMode && !placement.locked_at && placement.award_id ? (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
-                <Pressable onPress={() => move(placement, -4, 0)}><Text style={{ color: '#9ef7ff' }}>Left</Text></Pressable>
-                <Pressable onPress={() => move(placement, 4, 0)}><Text style={{ color: '#9ef7ff' }}>Right</Text></Pressable>
-                <Pressable onPress={() => move(placement, 0, -4)}><Text style={{ color: '#9ef7ff' }}>Up</Text></Pressable>
-                <Pressable onPress={() => move(placement, 0, 4)}><Text style={{ color: '#9ef7ff' }}>Down</Text></Pressable>
-                <Pressable onPress={() => move(placement, 0, 0, 0.15)}><Text style={{ color: '#9ef7ff' }}>Larger</Text></Pressable>
-                <Pressable onPress={() => move(placement, 0, 0, -0.15)}><Text style={{ color: '#9ef7ff' }}>Smaller</Text></Pressable>
-                <Pressable onPress={() => mutate(() => stageClient.entities.TrophyPlacement.delete(placement.id))}><Text style={{ color: '#fb7185' }}>Remove</Text></Pressable>
-              </View>
-            ) : null}
-          </View>
-        ))}
+              {placement.trophy_image_url ? (
+                <Image
+                  source={{ uri: placement.trophy_image_url }}
+                  style={{
+                    width: trophyPixelSize(cabinetSize.width, placement.scale) * 0.9,
+                    height: trophyPixelSize(cabinetSize.width, placement.scale) * 0.9,
+                  }}
+                  resizeMode="contain"
+                />
+              ) : (
+                <Text style={{ color: '#fbbf24', fontSize: Math.max(22, trophyPixelSize(cabinetSize.width, placement.scale) * 0.45) }}>🏆</Text>
+              )}
+              <Text numberOfLines={2} style={{ color: '#fff', fontSize: 9 }}>{placement.trophy_name || 'Trophy'}</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => Alert.alert(placement.trophy_name || 'Earned trophy', [
+                  placement.award?.competition_name,
+                  placement.award?.edition_label,
+                  placement.award?.winning_name,
+                  placement.locked_at ? 'Permanent placement' : 'Draft placement',
+                ].filter(Boolean).join('\n'))}
+              >
+                <Text style={{ color: '#9ef7ff', fontSize: 10 }}>Details</Text>
+              </Pressable>
+            </View>
+          );
+        })}
+        {editMode && placements.some((p) => !p.locked_at && p.award_id) ? (
+          <Text style={{
+            position: 'absolute',
+            bottom: 6,
+            alignSelf: 'center',
+            left: 0,
+            right: 0,
+            textAlign: 'center',
+            color: 'rgba(251,191,36,0.85)',
+            fontSize: 10,
+            fontWeight: '700',
+          }}
+          >
+            Drag drafts to rearrange · Done locks them
+          </Text>
+        ) : null}
       </View>
       <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10, letterSpacing: 1 }}>TROPHY COLLECTION</Text>
+      {!editMode && canEdit ? (
+        <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11 }}>
+          Tap Edit to place unlocked trophies and drag them inside the cabinet.
+        </Text>
+      ) : null}
       <ScrollView horizontal showsHorizontalScrollIndicator>
         {(entries.length ? entries : []).map((entry) => (
           <View key={entry.design.id} style={{ width: 120, marginRight: 10, padding: 8, borderWidth: 1, borderColor: entry.state === 'available' ? 'rgba(251,191,36,0.45)' : 'rgba(255,255,255,0.12)' }}>
