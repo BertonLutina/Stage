@@ -27,6 +27,7 @@ import ClubFixturesPanel from '@/components/club/ClubFixturesPanel';
 import ClubStatsPanel from '@/components/club/ClubStatsPanel';
 import ClubOfficePanel from '@/components/club/ClubOfficePanel';
 import SquadPlayerCard from '@/components/club/SquadPlayerCard';
+import TrophyCabinetPanel from '@/components/trophy/TrophyCabinetPanel';
 
 function presentActions(title, message, actions) {
   const cancel = { label: 'Cancel', style: 'cancel' };
@@ -391,21 +392,26 @@ export default function ClubProfileTabs({
     );
   };
 
-  const renderTrophies = () => {
-    if (!trophies.length) return <EmptyTabPanel icon="trophy-outline" title="No trophies yet" hint="Cabinet placements will show here." />;
-    return (
-      <View style={{ gap: 8 }}>
-        {trophies.map((item) => (
-          <View key={item.id} style={{ borderRadius: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.03)', padding: 12 }}>
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>{item.title || item.name || 'Trophy'}</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 4 }}>
-              {item.subtitle || item.season || item.competition_name || 'Club achievement'}
-            </Text>
-          </View>
-        ))}
-      </View>
-    );
-  };
+  const renderTrophies = () => (
+    <View style={{ gap: 12 }}>
+      {club?.id ? (
+        <TrophyCabinetPanel ownerId={club.id} ownerType="club" canEdit={access.canOpenClubOffice} />
+      ) : null}
+      {trophies.filter((item) => item.source === 'achievement').length ? (
+        <View style={{ gap: 8 }}>
+          <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: '800' }}>CLUB ACHIEVEMENTS</Text>
+          {trophies.filter((item) => item.source === 'achievement').map((item) => (
+            <View key={item.id} style={{ borderRadius: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.03)', padding: 12 }}>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>{item.title || item.name || 'Trophy'}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 4 }}>
+                {item.subtitle || item.season || item.competition_name || 'Club achievement'}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
 
   const renderChat = () => {
     if (!chatMessages.length) return <EmptyTabPanel icon="chatbubbles-outline" title="No messages yet" hint="Club channel messages will show here." />;

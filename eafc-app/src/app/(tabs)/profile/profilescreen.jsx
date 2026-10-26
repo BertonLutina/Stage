@@ -32,6 +32,7 @@ import FlagMark from '@/components/common/FlagMark';
 import PlayerShowcase from '@/components/profile/PlayerShowcase';
 import ProfileFeedPanel from '@/components/profile/ProfileFeedPanel';
 import ProfileCareerBoard from '@/components/profile/ProfileCareerBoard';
+import TrophyCabinetPanel from '@/components/trophy/TrophyCabinetPanel';
 import FollowToggleButton from '@/components/profile/FollowToggleButton';
 import { uploadLocalMedia } from '@/lib/uploadProfileMedia';
 import { getPrimaryClubRole } from '@/lib/clubStaffRoles';
@@ -535,13 +536,9 @@ export default function ProfileScreen({
             careerLoading={careerLoading}
           />
         )}
-        {tab === 'trophies' && (
-          <EmptyTabPanel
-            icon="trophy-outline"
-            title="Trophies"
-            hint="Cabinet and achievements will show here."
-          />
-        )}
+        {tab === 'trophies' && player?.id ? (
+          <TrophyCabinetPanel ownerId={player.id} ownerType="player" canEdit={isOwn} />
+        ) : null}
         {tab === 'lifestyle' && renderLifestyle()}
         </PageTile>
       </View>
