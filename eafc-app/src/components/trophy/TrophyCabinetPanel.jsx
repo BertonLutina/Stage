@@ -16,10 +16,11 @@ export default function TrophyCabinetPanel({ ownerId, ownerType, canEdit = false
   const [selectedAwardId, setSelectedAwardId] = useState('');
   const [entitlementError, setEntitlementError] = useState('');
   const [catalogueError, setCatalogueError] = useState('');
-  const [pending, setPending] = useState(false);
+  const [pending, setPending] = useState(0);
   const [loading, setLoading] = useState(true);
   const requestId = useRef(0);
   const reportRef = useRef(emptyReport);
+  const inflight = useRef(Promise.resolve());
 
   const remember = (next) => {
     reportRef.current = next || emptyReport;
@@ -69,22 +70,23 @@ export default function TrophyCabinetPanel({ ownerId, ownerType, canEdit = false
     const award = awards.find((item) => (placement.award_id ? item.id === placement.award_id : item.trophy_item_id === placement.trophy_item_id));
     return {
       ...placement,
+      award,
       trophy_name: award?.display_name || award?.name || placement.trophy_name,
       trophy_image_url: award?.image_url || placement.trophy_image_url,
     };
   });
-  const entries = catalogueError ? [] : buildTrophyCollection(catalogue, awards, placements);
+  const entries = buildTrophyCollection(catalogue, entitlementError ? null : awards, placements);
 
   async function mutate(action) {
-    setPending(true);
+    setPending((count) => count + 1);
     const token = requestId.current;
-    try {
+    const job = inflight.current.catch(() => {}).then(async () => {
       await action();
       if (requestId.current !== token) return false;
       const params = new URLSearchParams({ owner_id: String(ownerId), owner_type: ownerType });
       remember(await stageClient.http.get(`/trophy-placements/entitlements?${params}`));
       return true;
-    } catch (error) {
+    }).catch(async (error) => {
       Alert.alert('Cabinet change failed', error?.message || 'The trophy was not saved.');
       if (requestId.current === token) {
         try {
@@ -95,8 +97,12 @@ export default function TrophyCabinetPanel({ ownerId, ownerType, canEdit = false
         }
       }
       return false;
+    });
+    inflight.current = job.then(() => {}, () => {});
+    try {
+      return await job;
     } finally {
-      setPending(false);
+      setPending((count) => Math.max(0, count - 1));
     }
   }
 
@@ -132,14 +138,21 @@ export default function TrophyCabinetPanel({ ownerId, ownerType, canEdit = false
     }));
   }
 
-  function done() {
+  function copyLabel(award) {
+    const name = award.display_name || award.competition_name || 'Earned copy';
+    return award.edition_label && !name.includes(String(award.edition_label)) ? `${name} · ${award.edition_label}` : name;
+  }
+
+  async function done() {
+    await inflight.current.catch(() => {});
     const drafts = (reportRef.current.placements || []).filter((placement) => placement.award_id && !placement.locked_at);
     if (!drafts.length) {
       setEditMode(false);
       return;
     }
+    const names = drafts.map((placement) => placement.trophy_name || 'Trophy').join(', ');
     Alert.alert(
-      'Place these trophies permanently?',
+      `Permanently place ${names}?`,
       'Once confirmed, these trophies cannot be moved, resized, removed, or replaced.',
       [
         { text: 'Cancel', style: 'cancel' },
@@ -150,7 +163,7 @@ export default function TrophyCabinetPanel({ ownerId, ownerType, canEdit = false
               `/trophy-placements/confirm/${ownerType}/${ownerId}`,
               { placement_ids: drafts.map((placement) => placement.id) },
             ));
-            if (saved && requestId.current) setEditMode(false);
+            if (saved) setEditMode(false);
           },
         },
       ],
@@ -164,7 +177,7 @@ export default function TrophyCabinetPanel({ ownerId, ownerType, canEdit = false
           Trophy Cabinet · {report.titles?.all_time || 0} honours
         </Text>
         {canEdit ? (
-          <Pressable disabled={pending} onPress={() => (editMode ? done() : setEditMode(true))}>
+          <Pressable disabled={pending > 0} onPress={() => (editMode ? done() : setEditMode(true))}>
             <Text style={{ color: '#9ef7ff', fontWeight: '800' }}>{editMode ? 'Done' : 'Edit'}</Text>
           </Pressable>
         ) : null}
@@ -198,6 +211,19 @@ export default function TrophyCabinetPanel({ ownerId, ownerType, canEdit = false
               <Text style={{ color: '#fbbf24', fontSize: 28 }}>🏆</Text>
             )}
             <Text numberOfLines={2} style={{ color: '#fff', fontSize: 9 }}>{placement.trophy_name || 'Trophy'}</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => Alert.alert(placement.trophy_name || 'Earned trophy', [
+                placement.award?.competition_name,
+                placement.award?.edition_label,
+                placement.award?.winning_name,
+                placement.award?.format,
+                placement.award?.participant_count == null ? null : `${placement.award.participant_count} participants`,
+                placement.locked_at ? 'Permanent placement' : 'Draft placement',
+              ].filter(Boolean).join('\n'))}
+            >
+              <Text style={{ color: '#9ef7ff', fontSize: 10 }}>Details</Text>
+            </Pressable>
             {editMode && !placement.locked_at && placement.award_id ? (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
                 <Pressable onPress={() => move(placement, -4, 0)}><Text style={{ color: '#9ef7ff' }}>Left</Text></Pressable>
@@ -217,20 +243,26 @@ export default function TrophyCabinetPanel({ ownerId, ownerType, canEdit = false
         {(entries.length ? entries : []).map((entry) => (
           <View key={entry.design.id} style={{ width: 120, marginRight: 10, padding: 8, borderWidth: 1, borderColor: entry.state === 'available' ? 'rgba(251,191,36,0.45)' : 'rgba(255,255,255,0.12)' }}>
             <Text numberOfLines={2} style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>{entry.design.name}</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, marginTop: 4 }}>{entry.label}</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, marginTop: 4 }}>
+              {entry.state === 'locked' || entry.state === 'placed' ? 'Locked · ' : ''}{entry.label}
+            </Text>
             {entry.available.map((award) => (
-              <Pressable key={award.id} onPress={() => setSelectedAwardId(award.id)}>
+              <Pressable key={award.id} accessibilityRole="button" onPress={() => setSelectedAwardId(award.id)}>
                 <Text style={{ color: selectedAwardId === award.id ? '#fbbf24' : 'rgba(255,255,255,0.7)', fontSize: 10, marginTop: 4 }}>
-                  {award.display_name || award.competition_name || 'Earned copy'}
+                  {copyLabel(award)}
                 </Text>
               </Pressable>
             ))}
-            <Pressable disabled={entry.state !== 'available' || !editMode || pending} onPress={() => place(entry)}>
+            <Pressable accessibilityRole="button" disabled={entry.state !== 'available' || !editMode || pending > 0} onPress={() => place(entry)}>
               <Text style={{ color: entry.state === 'available' && editMode ? '#9ef7ff' : 'rgba(255,255,255,0.3)', marginTop: 8, fontWeight: '800' }}>Place</Text>
             </Pressable>
           </View>
         ))}
-        {!entries.length && !catalogueError ? <Text style={{ color: 'rgba(255,255,255,0.45)' }}>No trophies in the library yet.</Text> : null}
+        {!entries.length ? (
+          <Text style={{ color: 'rgba(255,255,255,0.45)' }}>
+            {catalogueError || entitlementError ? 'Trophy collection could not be loaded.' : 'No trophies in the library yet.'}
+          </Text>
+        ) : null}
       </ScrollView>
     </View>
   );

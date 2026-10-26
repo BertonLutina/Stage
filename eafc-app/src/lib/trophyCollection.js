@@ -10,11 +10,13 @@ export function collectionLabel(state, count = 0) {
   if (state === 'available') return count === 1 ? '1 copy available.' : `${count} copies available.`;
   if (state === 'draft') return 'Draft in cabinet.';
   if (state === 'placed') return 'Placed — win again to unlock another copy.';
+  if (state === 'unknown') return 'Availability unknown.';
   return 'Win to unlock.';
 }
 
 export function buildTrophyCollection(catalogue, awards, placements) {
-  const copies = earnedCopies(awards);
+  const known = Array.isArray(awards);
+  const copies = known ? earnedCopies(awards) : [];
   const designs = new Map();
   for (const item of catalogue || []) {
     if (!item?.id) continue;
@@ -43,10 +45,10 @@ export function buildTrophyCollection(catalogue, awards, placements) {
       const placement = placementForAward(placements, award.id);
       return placement && placement.locked_at;
     });
-    let state = 'locked';
-    if (available.length) state = 'available';
-    else if (drafted.length) state = 'draft';
-    else if (permanent.length) state = 'placed';
+    let state = known ? 'locked' : 'unknown';
+    if (known && available.length) state = 'available';
+    else if (known && drafted.length) state = 'draft';
+    else if (known && permanent.length) state = 'placed';
     return {
       design,
       state,
