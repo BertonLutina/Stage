@@ -170,6 +170,41 @@ describe('sendArrangeGameInvite', () => {
       time: '21:00',
     })).rejects.toThrow(/Could not reach this player/);
   });
+
+  test('sends event_id and uses a fresh id on a second invite to the same opponent', async () => {
+    const stageClient = mockStageClient({
+      playerContact: { recipient_email: 'opp@stage.com' },
+    });
+    const payload = {
+      stageClient,
+      myPlayer: { id: 'p1', gamertag: 'Me', email: 'me@stage.com', stc: 100000 },
+      myClub: null,
+      matchType: 'player',
+      opponent: { id: 'p2', gamertag: 'Rival', email: 'opp@stage.com' },
+      recipientKind: 'player',
+      date: '2026-08-20',
+      time: '21:00',
+      timezone: 'Europe/Brussels',
+    };
+
+    await sendArrangeGameInvite(payload);
+
+    expect(stageClient.functions.invoke).toHaveBeenCalledWith(
+      'sendInboxMessage',
+      expect.objectContaining({
+        message_type: 'match_invite',
+        event_id: expect.any(String),
+        related_entity_id: 'p2',
+      }),
+    );
+
+    const firstId = stageClient.functions.invoke.mock.calls.find((c) => c[0] === 'sendInboxMessage')[1].event_id;
+    await sendArrangeGameInvite(payload);
+    const secondId = stageClient.functions.invoke.mock.calls
+      .filter((c) => c[0] === 'sendInboxMessage')
+      .at(-1)[1].event_id;
+    expect(secondId).not.toBe(firstId);
+  });
 });
 
 describe('Matches hub arrange fixture wiring', () => {
