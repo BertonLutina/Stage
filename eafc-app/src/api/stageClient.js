@@ -475,7 +475,8 @@ function makeEntity(name) {
 
 // ── Entity registry ────────────────────────────────────────────────────────────
 const ENTITY_NAMES = [
-  'Player', 'President', 'Club', 'Match', 'Tournament', 'Post', 'Comment',
+  'Player', 'President', 'Club', 'Match', 'MatchHighlight', 'Tournament', 'Post', 'Comment',
+
   'MatchPlayerStat', 'Notification', 'PlayerContract', 'InboxMessage',
   'Prediction', 'PressConference', 'PressQuestion', 'PressArticle',
   'DirectMessage', 'STCTransaction', 'ShirtSale', 'DressingRoom',
@@ -821,6 +822,8 @@ const http = {
   post:   (path, body)         => apiFetch(path, { method: 'POST',   body: JSON.stringify(body || {}) }),
   patch:  (path, body)         => apiFetch(path, { method: 'PATCH',  body: JSON.stringify(body || {}) }),
   delete: (path)               => apiFetch(path, { method: 'DELETE' }),
+  /** Multipart upload (FormData body — do not JSON-serialize). */
+  upload: (path, body)         => apiFetch(path, { method: 'POST', body }),
 };
 
 const posts = {

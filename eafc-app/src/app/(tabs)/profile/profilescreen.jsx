@@ -26,7 +26,7 @@ import {
 } from '@/components/profile/gamer/GamerProfileUI';
 import PageTile, { SilverPill } from '@/components/theme/PageTile';
 import { headingStyleLg } from '@/lib/fonts';
-import { formatPlatformLabel } from '@/lib/platformDisplay';
+import { formatProfilePlatform } from '@/lib/profilePlatform';
 import { getPlayerNationality } from '@/lib/countryDisplay';
 import FlagMark from '@/components/common/FlagMark';
 import PlayerShowcase from '@/components/profile/PlayerShowcase';
@@ -451,7 +451,7 @@ export default function ProfileScreen({
                   ) : null}
                   {player.platform ? (
                     <GamerMetaPill icon="game-controller" iconColor={CYAN}>
-                      {formatPlatformLabel(player.platform)}
+                      {formatProfilePlatform(player.platform)}
                     </GamerMetaPill>
                   ) : null}
                   {getPlayerNationality(player).code ? (

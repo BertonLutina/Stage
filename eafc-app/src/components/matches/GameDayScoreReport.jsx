@@ -6,8 +6,11 @@ import {
   formatDeadlineCountdown,
   formatSideClaim,
   getResultSubmissionControls,
+  pendingFixtureScore,
   resultDeadlineAt,
 } from '@/lib/gameDayResultFlow';
+import { penaltyOutcome } from '@/lib/penaltyOutcome';
+import { CYAN } from '@/components/profile/gamer/GamerProfileUI';
 
 export default function GameDayScoreReport({
   game,
@@ -41,13 +44,17 @@ export default function GameDayScoreReport({
   if (!isMyMatch) return null;
 
   const countdown = formatDeadlineCountdown(dueAt, now);
+  const pending = pendingFixtureScore(game);
+  const pensLabel = penaltyOutcome(game);
   const cta = controls.showHomeReview
     ? 'REVIEW CORRECTION'
     : controls.showConfirmResult
       ? 'CONFIRM RESULT'
-      : controls.showHomeSubmit || controls.showAwaySubmit
-        ? (amIHomeTeam ? 'SUBMIT FULL TIME' : 'SUBMIT RESULT')
-        : null;
+      : controls.showAmendResult
+        ? 'AMEND RESULT'
+        : controls.showHomeSubmit || controls.showAwaySubmit
+          ? (amIHomeTeam ? 'SUBMIT FULL TIME' : 'SUBMIT RESULT')
+          : null;
 
   return (
     <View style={card}>
@@ -63,7 +70,13 @@ export default function GameDayScoreReport({
           Official {game.home_score ?? '?'}–{game.away_score ?? '?'}
           {Number(game.decided_on_penalties) === 1 ? ' · pens' : ''}
         </Text>
+      ) : pending.pending ? (
+        <Text style={official}>
+          Claimed {pending.home}–{pending.away} (awaiting confirmation)
+        </Text>
       ) : null}
+
+      {pensLabel ? <Text style={{ color: CYAN, fontSize: 12, fontWeight: '700', marginTop: 4 }}>{pensLabel}</Text> : null}
 
       {controls.showOverdue ? (
         <View style={disputeBox}>

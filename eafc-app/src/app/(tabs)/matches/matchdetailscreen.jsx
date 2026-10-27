@@ -40,8 +40,10 @@ import GameDayStreamCard from '@/components/matches/GameDayStreamCard';
 import GameDayKickoffArena from '@/components/matches/GameDayKickoffArena';
 import GameDayKickoffActions from '@/components/matches/GameDayKickoffActions';
 import GameDayTileBackgroundDialog from '@/components/matches/GameDayTileBackgroundDialog';
+import GameDayInsights from '@/components/matches/GameDayInsights';
 import { resolveCrestUrl } from '@/lib/gameDayPresentation';
 import { canUseTileBackgrounds, getGameDayTileBackgroundConfig } from '@/lib/gameDayTileBackgrounds';
+import { penaltyOutcome } from '@/lib/penaltyOutcome';
 import { useGameDayMatchRealtime } from '@/hooks/useGameDayMatchRealtime';
 
 export default function MatchDetailScreen() {
@@ -307,6 +309,14 @@ export default function MatchDetailScreen() {
               onSubmitPress={() => setShowResult(true)}
             />
           ) : null}
+
+          {penaltyOutcome(game) ? (
+            <SectionCard>
+              <Text style={{ color: CYAN, fontSize: 12, fontWeight: '700' }}>{penaltyOutcome(game)}</Text>
+            </SectionCard>
+          ) : null}
+
+          <GameDayInsights game={game} />
 
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <TouchableOpacity

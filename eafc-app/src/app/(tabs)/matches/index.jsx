@@ -14,7 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { stageClient } from '@/api/stageClient';
-import useMatchesHub from '../../../hooks/useMatchesHub';
+import useMatchesHub, { GAME_DAY_SCOPES, GAME_DAY_STATUSES } from '../../../hooks/useMatchesHub';
 import { GameDayFixtureChip, ScheduleMatchRow } from '../../../components/matches/MatchHubCards';
 import ArrangeGameModal from '../../../components/matches/ArrangeGameModal';
 import GameDayKickoffArena from '../../../components/matches/GameDayKickoffArena';
@@ -24,6 +24,7 @@ import GameDayResultSheet from '../../../components/matches/GameDayResultSheet';
 import GameDayTileBackgroundDialog from '../../../components/matches/GameDayTileBackgroundDialog';
 import GameDayTileBackgroundLayers from '../../../components/matches/GameDayTileBackgroundLayers';
 import GameDayTileMenuButton from '../../../components/matches/GameDayTileMenuButton';
+import ScheduleCalendar from '@/components/schedule/ScheduleCalendar';
 import {
   GamerProfileShell,
   CYAN,
@@ -62,6 +63,11 @@ export default function MatchesIndex() {
     leagueGroups,
     leagueFilter,
     setLeagueFilter,
+    scopeFilter,
+    setScopeFilter,
+    statusFilter,
+    setStatusFilter,
+    backendNotice,
     myClub,
     presidentClub,
     myPlayer,
@@ -108,8 +114,9 @@ export default function MatchesIndex() {
   const playable = useMemo(() => {
     const applyLeague = (rows) =>
       leagueFilter === 'all' ? rows : rows.filter((e) => e.competition === leagueFilter);
+    if (statusFilter === 'completed') return applyLeague(results);
     return [...applyLeague(live), ...applyLeague(upcoming)];
-  }, [live, upcoming, leagueFilter]);
+  }, [live, upcoming, results, leagueFilter, statusFilter]);
 
   const featured = playable.find((e) => e.id === featuredId) || playable[0] || null;
   const featuredMatch = featured?.matchData;
@@ -269,6 +276,14 @@ export default function MatchesIndex() {
             </View>
           ) : null}
 
+          {backendNotice ? (
+            <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+              <SectionCard>
+                <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12 }}>{backendNotice}</Text>
+              </SectionCard>
+            </View>
+          ) : null}
+
           <View style={{
             marginHorizontal: 12,
             marginTop: 16,
@@ -297,6 +312,34 @@ export default function MatchesIndex() {
               ) : null}
             </View>
 
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8, paddingHorizontal: 12, paddingBottom: 8 }}
+            >
+              {GAME_DAY_SCOPES.map((scope) => (
+                <LeaguePill
+                  key={scope.id}
+                  label={scope.label}
+                  active={scopeFilter === scope.id}
+                  onPress={() => setScopeFilter(scope.id)}
+                />
+              ))}
+            </ScrollView>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8, paddingHorizontal: 12, paddingBottom: 8 }}
+            >
+              {GAME_DAY_STATUSES.map((status) => (
+                <LeaguePill
+                  key={status.id}
+                  label={status.label}
+                  active={statusFilter === status.id}
+                  onPress={() => setStatusFilter(status.id)}
+                />
+              ))}
+            </ScrollView>
             {leagueGroups.length > 1 ? (
               <ScrollView
                 horizontal
@@ -415,6 +458,14 @@ export default function MatchesIndex() {
             </View>
           )}
 
+          <View style={{ paddingHorizontal: 12, paddingTop: 16 }}>
+            <SectionTitle eyebrow="SCHEDULE">Calendar</SectionTitle>
+            <ScheduleCalendar
+              useApi
+              onOpenMatch={(event) => openMatch(event)}
+            />
+          </View>
+
           {results.length > 0 ? (
             <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
               <SectionCard>
@@ -484,7 +535,7 @@ function ActionTab({ icon, label, onPress, disabled, tone = 'cyan' }) {
       activeOpacity={0.85}
       style={{
         minWidth: 112,
-        height: 36,
+        minHeight: 44,
         paddingHorizontal: 12,
         borderWidth: 1,
         borderColor: silver ? 'rgba(238,243,251,0.4)' : 'rgba(142,238,255,0.35)',
@@ -520,7 +571,9 @@ function LeaguePill({ label, active, onPress }) {
         borderColor: active ? 'rgba(248,251,255,0.55)' : 'rgba(255,255,255,0.12)',
         backgroundColor: active ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.35)',
         paddingHorizontal: 12,
-        paddingVertical: 8,
+        paddingVertical: 10,
+        minHeight: 44,
+        justifyContent: 'center',
         maxWidth: 220,
       }}
     >

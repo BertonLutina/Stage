@@ -3,7 +3,29 @@ import { resolveMyPlayerAndClub, stageClient } from '../api/stageClient';
 import { materializeConfirmedFixtures } from '../lib/gameDayIntegration';
 import { isActiveGameDayMatch } from '../lib/gameDayPresentation';
 import { isGameDayMatchSocketPayload, sameRecordId } from '../lib/gameDayRealtime';
+import {
+  enrichGameDayMatches,
+  filterGameDayMatches,
+  isHubMatch,
+  isOfficialGameDayResult,
+} from '../lib/gameDayHub';
+import { scheduleResult } from '../lib/scheduleResult';
 import { matchBelongsToIdentity, pickMyClubForMatch, sameId, settleClubMatches, uniqueIdentityClubs } from '../lib/gameDayOps';
+
+export const GAME_DAY_SCOPES = [
+  { id: 'general', label: 'General' },
+  { id: 'gost', label: 'GOST' },
+  { id: 'regional', label: 'Regional' },
+  { id: 'tournament', label: 'Tournament' },
+  { id: 'friendly', label: 'Friendly' },
+];
+
+export const GAME_DAY_STATUSES = [
+  { id: 'all', label: 'All' },
+  { id: 'upcoming', label: 'Upcoming' },
+  { id: 'live', label: 'Live' },
+  { id: 'completed', label: 'Completed' },
+];
 
 function uniqById(rows = []) {
   const map = new Map();
@@ -32,22 +54,6 @@ function matchIsHome(match, club, player) {
   return sameId(match.home_player_id, player?.id);
 }
 
-function getResult(match, club, player) {
-  if (match.status !== 'completed' && match.status !== 'awaiting_confirmation') return null;
-  const isHome = matchIsHome(match, club, player);
-  const myScore = isHome ? Number(match.home_score ?? 0) : Number(match.away_score ?? 0);
-  const theirScore = isHome ? Number(match.away_score ?? 0) : Number(match.home_score ?? 0);
-  let outcome = 'D';
-  if (myScore > theirScore) outcome = 'W';
-  if (myScore < theirScore) outcome = 'L';
-  return {
-    outcome,
-    myScore,
-    theirScore,
-    display: `${outcome} ${myScore}-${theirScore}`,
-  };
-}
-
 function toEvent(match, { clubs, player, tournamentMap }) {
   const tournament = tournamentMap.get(match.tournament_id);
   const club = pickMyClubForMatch(match, clubs);
@@ -57,6 +63,7 @@ function toEvent(match, { clubs, player, tournamentMap }) {
   const homeName = isSolo ? match.home_player_name : match.home_club_name || match.home_player_name;
   const awayName = isSolo ? match.away_player_name : match.away_club_name || match.away_player_name;
   const opposition = isHome ? awayName : homeName;
+  const result = scheduleResult(match, club, player);
 
   return {
     id: match.id,
@@ -67,7 +74,9 @@ function toEvent(match, { clubs, player, tournamentMap }) {
     opposition: opposition || 'TBD',
     venue: isHome ? 'Home' : 'Away',
     venueKey: isHome ? 'home' : 'away',
-    result: getResult(match, club, player),
+    result: result
+      ? { ...result, display: `${result.outcome} ${result.display}` }
+      : null,
     competition: deriveCompetition(match, tournament),
     status: match.status,
     matchData: match,
@@ -87,19 +96,26 @@ function isActiveGameDay(match) {
 export default function useMatchesHub() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [backendNotice, setBackendNotice] = useState('');
   const [events, setEvents] = useState([]);
   const [myClub, setMyClub] = useState(null);
   const [presidentClub, setPresidentClub] = useState(null);
   const [myPlayer, setMyPlayer] = useState(null);
   const [leagueFilter, setLeagueFilter] = useState('all');
+  const [scopeFilter, setScopeFilter] = useState('general');
+  const [statusFilter, setStatusFilter] = useState('all');
   const identityRef = useRef({ clubs: [], playerId: null });
   const eventsRef = useRef([]);
+  const loadGeneration = useRef(0);
 
   const load = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
     setError(null);
+    const generation = ++loadGeneration.current;
+    const isCurrent = () => generation === loadGeneration.current;
     try {
       const { player, club, presidentClub: ownedClub } = await resolveMyPlayerAndClub();
+      if (!isCurrent()) return;
       const clubs = uniqueIdentityClubs(
         player?.club_id ? { id: player.club_id } : null,
         club,
@@ -113,6 +129,7 @@ export default function useMatchesHub() {
       const clubIds = clubs.map((row) => row.id);
       const playerId = player?.id;
       await Promise.all(clubIds.map((id) => settleClubMatches(id).catch(() => null)));
+      if (!isCurrent()) return;
 
       const matchPromises = [];
       clubIds.forEach((clubId) => {
@@ -132,7 +149,6 @@ export default function useMatchesHub() {
         );
       }
 
-      // Fallback browse list if user has no club/player yet
       if (!matchPromises.length) {
         matchPromises.push(stageClient.entities.Match.list('-scheduled_date', 40).catch(() => []));
       }
@@ -142,11 +158,25 @@ export default function useMatchesHub() {
         ...clubIds.map((clubId) => materializeConfirmedFixtures(clubId).catch(() => [])),
         ...matchPromises,
       ]);
+      if (!isCurrent()) return;
+
       const materialized = rest.slice(0, clubIds.length).flat();
       const matchChunks = rest.slice(clubIds.length);
-
       const tournamentMap = new Map((tournaments || []).map((t) => [t.id, t]));
-      const matches = uniqById([...(materialized || []), ...matchChunks.flat()]);
+      const matchMap = new Map();
+      uniqById([...(materialized || []), ...matchChunks.flat()]).forEach((match) => {
+        matchMap.set(match.id, match);
+      });
+
+      const notice = await enrichGameDayMatches(
+        matchMap,
+        (query) => stageClient.http.get('/game-day/matches', query),
+        isCurrent,
+      ).catch((err) => (err?.status === 404 ? err.message : ''));
+      if (!isCurrent()) return;
+      setBackendNotice(typeof notice === 'string' ? notice : '');
+
+      const matches = Array.from(matchMap.values()).filter(isHubMatch);
       const mapped = matches
         .map((m) => toEvent(m, { clubs, player, tournamentMap }))
         .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
@@ -154,10 +184,11 @@ export default function useMatchesHub() {
       eventsRef.current = mapped;
       setEvents(mapped);
     } catch (err) {
+      if (!isCurrent()) return;
       setEvents([]);
       setError(err?.message || 'Failed to load matches');
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   }, []);
 
@@ -182,11 +213,26 @@ export default function useMatchesHub() {
     };
   }, [load]);
 
+  const scopedEvents = useMemo(() => {
+    const matches = events.map((e) => e.matchData).filter(Boolean);
+    const allowed = new Set(
+      filterGameDayMatches(matches, { scope: scopeFilter, status: statusFilter })
+        .map((m) => String(m.id)),
+    );
+    return events.filter((e) => allowed.has(String(e.id)));
+  }, [events, scopeFilter, statusFilter]);
+
   const buckets = useMemo(() => {
-    const live = events.filter((e) => e.status === 'in_progress' || e.status === 'awaiting_confirmation');
-    const upcoming = events.filter((e) => e.status === 'scheduled' && isActiveGameDay(e.matchData));
-    const results = events.filter((e) => e.status === 'completed' || e.status === 'forfeit');
-    const gameDay = events.filter((e) => isActiveGameDay(e.matchData));
+    const live = scopedEvents.filter((e) => e.status === 'in_progress' || e.status === 'awaiting_confirmation');
+    const upcoming = scopedEvents.filter((e) => e.status === 'scheduled' && isActiveGameDay(e.matchData));
+    const results = scopedEvents.filter((e) => isOfficialGameDayResult(e.matchData));
+    const gameDay = statusFilter === 'completed'
+      ? results
+      : statusFilter === 'live'
+        ? live
+        : statusFilter === 'upcoming'
+          ? upcoming
+          : scopedEvents.filter((e) => isActiveGameDay(e.matchData) || isOfficialGameDayResult(e.matchData));
 
     const competitions = new Map();
     gameDay.forEach((e) => {
@@ -198,7 +244,7 @@ export default function useMatchesHub() {
       .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
 
     return { live, upcoming, results, gameDay, leagueGroups };
-  }, [events]);
+  }, [scopedEvents, statusFilter]);
 
   const filteredGameDay = useMemo(() => {
     if (leagueFilter === 'all') return buckets.gameDay;
@@ -208,14 +254,20 @@ export default function useMatchesHub() {
   return {
     loading,
     error,
+    backendNotice,
     reload: load,
     myClub,
     presidentClub,
     myPlayer,
     setMyPlayer,
     events,
+    scopedEvents,
     leagueFilter,
     setLeagueFilter,
+    scopeFilter,
+    setScopeFilter,
+    statusFilter,
+    setStatusFilter,
     filteredGameDay,
     ...buckets,
   };

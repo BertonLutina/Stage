@@ -52,7 +52,7 @@ export default function GameDayResultSheet({
   const submittedFixture = fixtureScoreFromSubmission(submittedScore, controls.submitSide);
   const correction = parseMatchSubmission(game?.away_submission);
   const correctionFixture = fixtureScoreFromSubmission(correction, 'away');
-  const allowPens = penaltiesAllowed(game);
+  const localPensAllowed = penaltiesAllowed(game);
 
   const [homeScore, setHomeScore] = useState('0');
   const [awayScore, setAwayScore] = useState('0');
@@ -60,6 +60,8 @@ export default function GameDayResultSheet({
   const [playedIds, setPlayedIds] = useState(() => new Set());
   const [playerMarks, setPlayerMarks] = useState({});
   const [penaltyChoice, setPenaltyChoice] = useState('none');
+  const [penaltyContext, setPenaltyContext] = useState(null);
+  const [penaltyError, setPenaltyError] = useState('');
   const [correcting, setCorrecting] = useState(false);
   const [countering, setCountering] = useState(false);
   const [explanation, setExplanation] = useState('');
@@ -72,7 +74,38 @@ export default function GameDayResultSheet({
   const scoreLocked = confirmMode && !correcting && !countering;
   const needsEvidence = evidenceRequired(game) && !confirmMode && !correcting;
   const isDraw = Number(homeScore) === Number(awayScore);
+  const allowPens = penaltyContext ? Boolean(penaltyContext.applicable) : localPensAllowed;
   const showPenalties = allowPens && isDraw && !scoreLocked;
+
+  useEffect(() => {
+    if (!visible || !game?.id) return undefined;
+    let active = true;
+    setPenaltyContext(null);
+    setPenaltyError('');
+    const timer = setTimeout(() => {
+      stageClient.http.get(`/game-day/${encodeURIComponent(game.id)}/penalties`, {
+        home_score: Number(homeScore),
+        away_score: Number(awayScore),
+      })
+        .then((context) => {
+          if (!active) return;
+          setPenaltyContext(context);
+          if (!context?.applicable) setPenaltyChoice('none');
+        })
+        .catch((e) => {
+          if (!active) return;
+          if (e?.status === 404) {
+            setPenaltyError('');
+            return;
+          }
+          setPenaltyError(e?.message || 'Penalty eligibility could not be verified.');
+        });
+    }, 200);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [visible, game?.id, homeScore, awayScore]);
 
   useEffect(() => {
     if (!visible) return;
@@ -265,6 +298,9 @@ export default function GameDayResultSheet({
               <ScoreBox label={`${awayName} (away)`} value={awayScore} onChange={setAwayScore} readOnly={scoreLocked} />
             </View>
 
+            {penaltyError ? (
+              <Text style={{ color: FUT.rose, fontSize: 12 }}>{penaltyError}</Text>
+            ) : null}
             {showPenalties ? (
               <View style={{ gap: 8 }}>
                 <Text style={label}>PENALTIES</Text>
