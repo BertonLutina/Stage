@@ -38,4 +38,27 @@ describe('OneSignal mobile helpers', () => {
       params: { matchId: 'm1' },
     });
   });
+
+  test('keeps ids embedded in notification links when additional data omits them', () => {
+    expect(pathFromNotificationData({ link: '/inbox?id=msg-link' })).toEqual({
+      pathname: '/apps/inbox/[id]',
+      params: { id: 'msg-link' },
+    });
+    expect(pathFromNotificationData({ link: '/game-day?match=match-link' })).toEqual({
+      pathname: '/(tabs)/matches/matchdetailscreen',
+      params: { matchId: 'match-link' },
+    });
+    expect(pathFromNotificationData({ link: '/clubs/club-9' })).toEqual({
+      pathname: '/apps/club/[id]',
+      params: { id: 'club-9' },
+    });
+    expect(pathFromNotificationData({ link: '/tournaments/cup-9' })).toEqual({
+      pathname: '/(tabs)/tournaments/tournamentdetailscreen',
+      params: { tournamentId: 'cup-9' },
+    });
+    expect(pathFromNotificationData({ link: '/players/player-9' })).toEqual({
+      pathname: '/(tabs)/profile/profilescreen',
+      params: { playerId: 'player-9' },
+    });
+  });
 });

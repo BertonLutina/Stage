@@ -1,150 +1,158 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, Pressable, StatusBar } from 'react-native';
-import { useRouter } from 'expo-router';
+import {
+  ActivityIndicator, RefreshControl, ScrollView, StatusBar, Text, View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import useThemeStore from '@/store/themeStore';
-import { readAccountMode } from '@/lib/accountMode';
-import { getMiniAppGroups, filterMiniAppGroups } from '@/lib/miniApps';
-import { Screen, SectionLabel } from '@/components/ui';
-import { AVATAR_RADIUS, AVATAR_SIZE, ICON_SIZE } from '@/components/ui/metrics';
-import { innerTileChrome } from '@/components/dashboard/CommandCenterUI';
+import useSearchDirectory from '@/hooks/useSearchDirectory';
+import {
+  clubDisplayName, clubOverallRating, filterClubDirectory, filterPlayerDirectory,
+  playerDisplayName, playerOverallRating,
+} from '@/lib/stageDirectories';
+import { playerAvatarInitials } from '@/lib/playerAvatar';
+import { Button, Card, Screen, SectionLabel, SegmentedControl } from '@/components/ui';
+import DirectoryResultRow from '@/components/directory/DirectoryResultRow';
 import DirectorySearchField from '@/components/directory/DirectorySearchField';
 import PageTile, { PageTitle } from '@/components/theme/PageTile';
 
-function AppTile({ item, onPress, tokens }) {
-  const ready = Boolean(item.ready);
+const SEARCH_VIEWS = [
+  { key: 'players', label: 'Players' },
+  { key: 'clubs', label: 'Clubs' },
+];
+
+function EmptyResults({ view }) {
+  const tokens = useThemeStore((state) => state.tokens);
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={item.label}
-      style={({ pressed }) => [
-        innerTileChrome(tokens, {
-          width: '31%',
-          minHeight: 104,
-          borderColor: ready ? tokens.borderStrong : tokens.border,
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingHorizontal: 8,
-          paddingVertical: 14,
-          gap: 10,
-          opacity: pressed ? 0.85 : 1,
-        }),
-      ]}
-    >
-      <View
-        style={{
-          width: AVATAR_SIZE,
-          height: AVATAR_SIZE,
-          borderRadius: AVATAR_RADIUS,
-          backgroundColor: tokens.border,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Ionicons
-          name={item.icon}
-          size={ICON_SIZE}
-          color={ready ? tokens.cyanHi : tokens.muted}
-        />
-      </View>
-      <Text
-        numberOfLines={2}
-        style={{
-          color: ready ? tokens.text : tokens.muted,
-          fontSize: 11,
-          fontWeight: '700',
-          letterSpacing: 0.6,
-          textTransform: 'uppercase',
-          textAlign: 'center',
-          lineHeight: 14,
-        }}
-      >
-        {item.label}
-      </Text>
-    </Pressable>
+    <Card style={{ alignItems: 'center', paddingVertical: 40, gap: 8 }}>
+      <Ionicons name={view === 'players' ? 'people-outline' : 'shield-outline'} size={36} color={tokens.muted} />
+      <Text style={{ color: tokens.text, fontSize: 15, fontWeight: '700' }}>No {view} found</Text>
+      <Text style={{ color: tokens.muted, fontSize: 12 }}>Try another search</Text>
+    </Card>
   );
 }
 
-/**
- * Search tab: searchable grid of Stage destinations that are not already in the
- * native tabs (Find Players, Find Clubs, Transfers, Inbox, Settings...).
- */
+/** Native Search tab: real public player and club directories. */
 export default function SearchIndex() {
   const router = useRouter();
-  const tokens = useThemeStore((s) => s.tokens);
+  const tokens = useThemeStore((state) => state.tokens);
+  const [view, setView] = useState('players');
   const [query, setQuery] = useState('');
-  const mode = readAccountMode() || 'player';
+  const resource = useSearchDirectory();
+  const { players, clubs, playerClubs, identity } = resource.data;
+  const isClubOwner = Boolean(identity?.presidentClub?.id);
 
-  const groups = useMemo(
-    () => filterMiniAppGroups(getMiniAppGroups(mode), query),
-    [mode, query],
+  const results = useMemo(
+    () => (view === 'players'
+      ? filterPlayerDirectory(players, { query })
+      : filterClubDirectory(clubs, { query })),
+    [clubs, players, query, view],
   );
 
-  const openApp = (item) => {
-    if (!item?.href) return;
-    if (item.params) {
-      router.push({ pathname: item.href, params: item.params });
-      return;
-    }
-    router.push(item.href);
-  };
+  const openPlayer = (player) => router.push({
+    pathname: '/(tabs)/profile/profilescreen', params: { playerId: player.id },
+  });
+  const openClub = (club) => router.push({
+    pathname: '/apps/club/[id]', params: { id: club.id },
+  });
+  const challenge = (kind, target) => router.push({
+    pathname: '/(tabs)/matches',
+    params: {
+      arrange: '1', opponentKind: kind, opponentId: target.id,
+      opponentName: kind === 'player' ? playerDisplayName(target) : clubDisplayName(target),
+      opponentEmail: target.email || target.owner_email || '',
+      ...(kind === 'club' ? { opponentTag: target.tag || '' } : {}),
+    },
+  });
+
+  const countLabel = `${results.length} ${view === 'players'
+    ? (results.length === 1 ? 'player' : 'players')
+    : (results.length === 1 ? 'club' : 'clubs')}`;
 
   return (
-    <Screen>
+    <Screen scroll={false}>
       <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
-      <View style={{ gap: 14 }}>
-        <PageTitle
-          title="SEARCH"
-          subtitle="Find players, clubs, transfers, inbox, and settings."
-          padded={false}
-          style={{ paddingBottom: 0 }}
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={resource.refreshing} onRefresh={resource.refetch} tintColor={tokens.cyan} />}
+        contentContainerStyle={{ gap: 14, paddingBottom: 28 }}
+      >
+        <PageTitle title="SEARCH" subtitle="Find public players and clubs on Stage." padded={false} style={{ paddingBottom: 0 }} />
+        <SegmentedControl
+          accessibilityLabel="Search directory"
+          options={SEARCH_VIEWS}
+          value={view}
+          onChange={(next) => { setView(next); setQuery(''); }}
         />
-
         <DirectorySearchField
           value={query}
           onChangeText={setQuery}
-          placeholder="Search — players, clubs, inbox…"
+          placeholder={view === 'players' ? 'Search players' : 'Search clubs'}
           clearLabel="Clear search"
           autoCorrect={false}
           autoCapitalize="none"
           returnKeyType="search"
         />
 
-        <PageTile
-          tileKey="apps"
-          tileTitle="APPS"
-          contentStyle={{ paddingHorizontal: 12, gap: 16 }}
-        >
-          {groups.length === 0 ? (
-            <View
-              style={{
-                paddingVertical: 40,
-                alignItems: 'center',
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: tokens.border,
-              }}
-            >
-              <Ionicons name="search-outline" size={36} color={tokens.muted} />
-              <Text style={{ color: tokens.muted, marginTop: 12, fontWeight: '700', textAlign: 'center', paddingHorizontal: 16 }}>
-                No apps match “{query.trim()}”
-              </Text>
+        {resource.loading ? (
+          <ActivityIndicator color={tokens.cyan} style={{ marginTop: 44 }} />
+        ) : resource.error ? (
+          <Card style={{ alignItems: 'center', gap: 14, paddingVertical: 28 }}>
+            <Ionicons name="cloud-offline-outline" size={34} color={tokens.danger} />
+            <Text style={{ color: tokens.text, fontWeight: '700', textAlign: 'center' }}>{resource.error}</Text>
+            <View style={{ alignSelf: 'stretch' }}>
+              <Button title="Try again" variant="secondary" onPress={resource.refetch} />
             </View>
-          ) : (
-            groups.map((group) => (
-              <View key={group.id} style={{ gap: 10 }}>
-                <SectionLabel>{group.label}</SectionLabel>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-                  {group.items.map((item) => (
-                    <AppTile key={item.id} item={item} tokens={tokens} onPress={() => openApp(item)} />
-                  ))}
-                </View>
-              </View>
-            ))
-          )}
-        </PageTile>
-      </View>
+          </Card>
+        ) : (
+          <PageTile
+            tileKey="search"
+            tileTitle="SEARCH"
+            contentStyle={{ paddingHorizontal: 12, gap: 10 }}
+          >
+            <SectionLabel>{countLabel}</SectionLabel>
+            {results.length === 0 ? <EmptyResults view={view} /> : results.map((item) => {
+              if (view === 'players') {
+                const club = playerClubs?.[item.club_id];
+                const meta = [item.position, `OVR ${playerOverallRating(item)}`, item.platform, club?.name]
+                  .filter(Boolean).join(' · ');
+                return (
+                  <DirectoryResultRow
+                    key={String(item.id)}
+                    imageUrl={item.avatar_url}
+                    initials={playerAvatarInitials(item)}
+                    name={playerDisplayName(item)}
+                    meta={meta}
+                    actionLabel={isClubOwner ? 'Invite' : 'Challenge'}
+                    onPress={() => openPlayer(item)}
+                    onAction={() => challenge('player', item)}
+                  />
+                );
+              }
+              const name = clubDisplayName(item);
+              const meta = [
+                item.tag, item.region,
+                clubOverallRating(item) != null ? `OVR ${clubOverallRating(item)}` : null,
+                item.platform,
+              ].filter(Boolean).join(' · ');
+              return (
+                <DirectoryResultRow
+                  key={String(item.id)}
+                  imageUrl={item.logo_url}
+                  initials={String(item.tag || name).slice(0, 3).toUpperCase()}
+                  name={name}
+                  meta={meta}
+                  actionLabel={isClubOwner ? 'Challenge' : 'View'}
+                  actionPrimary={isClubOwner}
+                  onPress={() => openClub(item)}
+                  onAction={() => (isClubOwner ? challenge('club', item) : openClub(item))}
+                />
+              );
+            })}
+          </PageTile>
+        )}
+      </ScrollView>
     </Screen>
   );
 }

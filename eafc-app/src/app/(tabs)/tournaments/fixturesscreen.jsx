@@ -1,131 +1,111 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, RefreshControl, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import api from '../../../utils/api';
 import useThemeStore from '@/store/themeStore';
-import { Screen, Card, Chip } from '@/components/ui';
+import useTournament from '@/hooks/useTournament';
+import { Button, Card, Chip, Screen } from '@/components/ui';
 import { SCREEN_GUTTER, guideFabClearance } from '@/components/ui/metrics';
 import { FONT_EA_SPORTS } from '@/lib/fonts';
-import CompetitionHeader from '../../../components/tournament/CompetitionHeader';
+import CompetitionHeader from '@/components/tournament/CompetitionHeader';
 
 const FILTERS = ['all', 'scheduled', 'completed'];
 const capitalize = (value) => value.charAt(0).toUpperCase() + value.slice(1);
+const terminal = (status) => ['completed', 'forfeit'].includes(String(status || '').toLowerCase());
+const teamName = (item, side) => item?.[`${side}_club_name`] || item?.[`${side}_player_name`] || item?.[`${side}_team_name`] || 'TBD';
 
-export default function FixturesScreen() {
-  const { tournamentId } = useLocalSearchParams();
-  const router = useRouter();
-  const tokens = useThemeStore((s) => s.tokens);
-  const insets = useSafeAreaInsets();
-  const [fixtures, setFixtures] = useState([]);
-  const [filter, setFilter] = useState('all');
+function FixtureCard({ item, onPress }) {
+  const tokens = useThemeStore((state) => state.tokens);
+  const complete = terminal(item.status);
+  const date = item.scheduled_at ? new Date(item.scheduled_at) : null;
+  const time = date && !Number.isNaN(date.getTime())
+    ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : 'vs';
 
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (tournamentId) params.append('tournament_id', tournamentId);
-    if (filter !== 'all') params.append('status', filter);
-    api.get(`/matches/fixtures?${params}`).then(r => setFixtures(r.data.data || []));
-  }, [tournamentId, filter]);
-
-  const renderItem = ({ item }) => (
-    <Card
-      onPress={() =>
-        router.push({
-          pathname: '/(tabs)/matches/matchdetailscreen',
-          params: { matchId: item.id },
-        })
-      }
-      style={{ paddingVertical: 12, paddingHorizontal: 14, marginBottom: 12 }}
-    >
-      {item.tournament_name ? (
-        <Text
-          numberOfLines={1}
-          style={{
-            color: tokens.muted,
-            fontSize: 11,
-            fontWeight: '600',
-            letterSpacing: 11 * 0.08,
-            textTransform: 'uppercase',
-            marginBottom: 8,
-          }}
-        >
-          {item.tournament_name}
-        </Text>
-      ) : null}
+  return (
+    <Card onPress={onPress} highlight={!complete} style={{ paddingVertical: 14, paddingHorizontal: 16, marginBottom: 12 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Text
-          numberOfLines={1}
-          style={{ flex: 1, textAlign: 'right', color: tokens.text, fontSize: 13, fontWeight: '600' }}
-        >
-          {item.home_team_name}
+        <Text numberOfLines={1} style={{ flex: 1, textAlign: 'right', color: tokens.text, fontSize: 14, fontWeight: '600' }}>
+          {teamName(item, 'home')}
         </Text>
-        <View style={{ width: 64, alignItems: 'center' }}>
-          {item.status === 'completed' ? (
-            <Text
-              numberOfLines={1}
-              style={{ color: tokens.cyan, fontFamily: FONT_EA_SPORTS, fontSize: 18, letterSpacing: 0.5 }}
-            >
-              {item.home_score} - {item.away_score}
-            </Text>
-          ) : (
-            <Text style={{ color: tokens.muted, fontSize: 14, fontWeight: '700' }}>vs</Text>
-          )}
-        </View>
-        <Text
-          numberOfLines={1}
-          style={{ flex: 1, color: tokens.text, fontSize: 13, fontWeight: '600' }}
-        >
-          {item.away_team_name}
+        <Text style={{ width: 70, color: complete ? tokens.text : tokens.cyan, fontFamily: complete ? FONT_EA_SPORTS : undefined, fontSize: complete ? 18 : 14, fontWeight: '700', textAlign: 'center' }}>
+          {complete ? `${item.home_score ?? 0} - ${item.away_score ?? 0}` : time}
+        </Text>
+        <Text numberOfLines={1} style={{ flex: 1, color: tokens.text, fontSize: 14, fontWeight: '600' }}>
+          {teamName(item, 'away')}
         </Text>
       </View>
-      {item.status === 'completed' && item.videos?.length > 0 && (
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            marginTop: 8,
-          }}
-        >
+      {complete && item.videos?.length > 0 ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8 }}>
           <Ionicons name="videocam-outline" size={16} color={tokens.aqua} />
           <Text style={{ color: tokens.aqua, fontSize: 12 }}>Video available</Text>
         </View>
-      )}
+      ) : null}
     </Card>
   );
+}
+export default function FixturesScreen() {
+  const { tournamentId } = useLocalSearchParams();
+  const router = useRouter();
+  const tokens = useThemeStore((state) => state.tokens);
+  const insets = useSafeAreaInsets();
+  const { data, loading, error, refreshing, refetch } = useTournament(tournamentId);
+  const [filter, setFilter] = useState('all');
+  const fixtures = useMemo(() => {
+    const rows = data?.fixtures || [];
+    if (filter === 'completed') return rows.filter((item) => terminal(item.status));
+    if (filter === 'scheduled') return rows.filter((item) => !terminal(item.status));
+    return rows;
+  }, [data?.fixtures, filter]);
 
   const header = (
     <View style={{ gap: 14, paddingBottom: 14, paddingHorizontal: SCREEN_GUTTER }}>
-      <CompetitionHeader title="Fixtures" />
+      <CompetitionHeader eyebrow={data?.tournament?.name || 'Tournament'} title="Fixtures" />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {FILTERS.map(f => (
-          <Chip key={f} label={capitalize(f)} active={filter === f} onPress={() => setFilter(f)} />
+        {FILTERS.map((item) => (
+          <Chip key={item} label={capitalize(item)} active={filter === item} onPress={() => setFilter(item)} />
         ))}
       </View>
+      {error ? (
+        <Card style={{ gap: 12, alignItems: 'center' }}>
+          <Text style={{ color: tokens.danger, textAlign: 'center' }}>{error}</Text>
+          <Button title="Retry" variant="secondary" onPress={refetch} />
+        </Card>
+      ) : null}
     </View>
   );
 
   return (
     <Screen scroll={false} style={{ paddingHorizontal: 0, paddingBottom: 0 }}>
-      {/* Header and filter chips live outside the list so they stay reachable while scrolling. */}
       {header}
-      <FlatList
-        data={fixtures}
-        keyExtractor={i => i.id}
-        renderItem={renderItem}
-        ListEmptyComponent={
-          <Text style={{ color: tokens.muted, textAlign: 'center', marginTop: 32, fontSize: 14 }}>
-            No fixtures found
-          </Text>
-        }
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingHorizontal: SCREEN_GUTTER,
-          paddingBottom: guideFabClearance(insets.bottom),
-        }}
-      />
+      {loading ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={tokens.cyan} />
+        </View>
+      ) : (
+        <FlatList
+          data={fixtures}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={({ item }) => (
+            <FixtureCard
+              item={item}
+              onPress={() => router.push({
+                pathname: '/(tabs)/matches/matchdetailscreen',
+                params: { matchId: item.id },
+              })}
+            />
+          )}
+          ListEmptyComponent={
+            <Text style={{ color: tokens.muted, textAlign: 'center', marginTop: 32, fontSize: 14 }}>
+              No fixtures found
+            </Text>
+          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refetch} tintColor={tokens.cyan} />}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: SCREEN_GUTTER, paddingBottom: guideFabClearance(insets.bottom) }}
+        />
+      )}
     </Screen>
   );
 }

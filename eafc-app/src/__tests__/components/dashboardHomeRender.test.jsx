@@ -120,6 +120,10 @@ describe.each(['theme-dark', 'theme-video'])('Home layouts in %s', (theme) => {
     expect(open).toHaveBeenCalledWith('/(tabs)/matches');
     fireEvent.press(getByLabelText('Transfers'));
     expect(open).toHaveBeenCalledWith('/apps/transfers');
+    if (layout === 'E') {
+      fireEvent.press(getByLabelText('Apps'));
+      expect(open).toHaveBeenCalledWith('/apps');
+    }
     if (layout !== 'B') expect(await findByText('No open objectives.')).toBeTruthy();
   });
 

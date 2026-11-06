@@ -18,10 +18,11 @@ describe('page tiles', () => {
     expect(read('../../components/theme/PageTile.jsx')).toMatch(/tileKey/);
   });
 
-  test('Tournaments uses the silver page tile, not gold neon', () => {
+  test('Tournaments uses the rebuild mockup primitives, not the legacy page tile or gold neon', () => {
     const list = read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx');
-    expect(list).toMatch(/tileKey="tournaments"/);
-    expect(list).toMatch(/PageTile/);
+    expect(list).toMatch(/SegmentedControl/);
+    expect(list).toMatch(/TournamentCard/);
+    expect(list).not.toMatch(/PageTile/);
     expect(list).not.toMatch(/PitchAtmosphere/);
     expect(list).not.toMatch(/FUT\.gold/);
     expect(list).not.toMatch(/GamerTabNav/);
@@ -35,7 +36,7 @@ describe('page tiles', () => {
   test('Home, Profile, Apps, Inbox, and GOST wrap content in PageTile', () => {
     expect(read('../../components/dashboard/DashboardLayoutLab.jsx')).toMatch(/tileKey="home"/);
     expect(read('../../app/(tabs)/profile/profilescreen.jsx')).toMatch(/tileKey="profile"/);
-    expect(read('../../app/(tabs)/search/index.jsx')).toMatch(/tileKey="apps"/);
+    expect(read('../../app/apps/index.jsx')).toMatch(/tileKey="apps"/);
     expect(read('../../app/apps/inbox/index.jsx')).toMatch(/tileKey="inbox"/);
     expect(read('../../app/apps/competitions.jsx')).toMatch(/tileKey="competitions"/);
     expect(read('../../app/apps/competitions.jsx')).not.toMatch(/PitchAtmosphere/);
@@ -53,7 +54,6 @@ describe('page tiles', () => {
       '../../app/apps/competitions.jsx',
       '../../app/apps/register.jsx',
       '../../app/(tabs)/search/index.jsx',
-      '../../app/(tabs)/tournaments/tournamentlistscreen.jsx',
       '../../app/(tabs)/tournaments/tournamentdetailscreen.jsx',
       '../../app/apps/find-players.jsx',
       '../../app/apps/find-clubs.jsx',

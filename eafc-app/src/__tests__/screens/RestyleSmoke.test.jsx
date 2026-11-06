@@ -600,8 +600,7 @@ const FIXTURES = {
 
 // Nothing is skipped today: every exported component in COMPONENT_DIRS renders under jest with the mocks above.
 // Add `'<path>#<export>': 'reason'` here for a component that genuinely cannot render in jest (native-only module).
-// Not covered on purpose: src/components/{news,trophy} (not part of the Stage restyle) and the root navigators
-// (src/App.jsx, src/navigation/MainTabNavigator.jsx), which need a real NavigationContainer.
+// Not covered on purpose: src/components/{news,trophy} (kept, unwired, no mockup).
 const SKIPPED = {};
 
 describe('restyle smoke: components', () => {

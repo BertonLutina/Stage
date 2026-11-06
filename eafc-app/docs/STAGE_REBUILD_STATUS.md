@@ -20,48 +20,56 @@ Sources keyed as: **stageClient** `/api/stage` · **api** `/api/mobile` · store
 
 | Screen | Elements | Source | Status |
 |---|---|---|---|
-| Home | greeting + gamertag, next match (teams/time/comp), club rank+div, contract games x/y + bar, recent form W/D/L, avg rating, objectives list + progress + CLAIM REWARD, unread inbox dot, Apps grid link | `authStore`/`/auth/me`; next match `api GET /matches/fixtures`; club `api /teams/:id`; **contract games x/y**, **recent form**, **avg rating**, **objectives+rewards** ; unread count via `lib/inboxData.js` / `useNotificationsSocket` | next match + club mapped; **contract games, recent form, avg rating, objectives/claim-reward = gap** |
+| Home | greeting + gamertag, next match (teams/time/comp), club rank+div, contract games x/y + bar, recent form W/D/L, avg rating, objectives list + progress + CLAIM REWARD, unread inbox dot, Apps grid link | `authStore`/`/auth/me`; next match `api GET /matches/fixtures`; club `api /teams/:id`; `vm.tenure`, `vm.form`, `vm.avgRating`; `ObjectivesWidget`; `/apps` | rebuilt + mapped; Apps launcher is reachable from Stage layout E |
 | GameDay | Arrange Game CTA, Fixtures/Calendar/Results segmented, contract-ends-in-N-games banner, dated events (match/contract-end), invite chips | `api GET /matches/fixtures?status=…`; `lib/arrangeGame.js`, `lib/scheduleData.js`, `lib/scheduleCalendar.js`; contract reminder via `CONTEXT.md` Schedule | fixtures + schedule mapped; **contract-games-left count = gap (shared w/ Home)** |
 | MatchDetail | score, scorers line, Watch/Upload CTAs, match stats (possession/shots/pass%), man of the match + rating | `api GET /matches/:id` | score/teams mapped; **match stats, scorers, MOTM = gap** |
 | WatchMatch | video player, scrub markers, Highlights/Full/My-clips tabs, highlight list (goal, player, time, duration) | `api POST /matches/:id/chat/read`; video source; **highlights list** | player chrome mapped; **highlights list, scrub markers = gap** |
 | UploadVideo | dropzone, upload progress, title, type chips (Full/Highlight/Clip), visibility select, publish | `api POST /matches/:id/video` (`lib/uploadProfileMedia.js`, `lib/formDataFile.js`) | mapped |
-| Search | search box, Players/Clubs segmented, filter chips, result count, result rows (name, pos/platform/club, OVR) | `api GET /users/search`, `/teams/with-members` (`lib/playerDirectory.js`, `stageDirectories.js`) | mapped; **OVR rating source** confirm |
+| Search | search box, Players/Clubs segmented, result count, result rows (name, pos/platform/club, OVR), actions | `useSearchDirectory` → `loadPlayerDirectory` / `loadClubDirectory`; Player/Club entities + real OVR fields | rebuilt + mapped; loading/error/retry/refresh contract |
 
 ## Section 3 · Tournaments
 
 | Screen | Elements | Source | Status |
 |---|---|---|---|
-| Tournaments | Open/My/Finished filter, cards (name, format, clubs, registered/open state, stage, prize, next, entry fee, slots x/y, starts) | `useTournamentsList` GET `/tournaments/list` | list mapped; **prize/entry-fee/slots fields** confirm in payload |
-| TournamentDetail | header (format·state), stats (clubs/prize/final-date), rules-accepted + group chips, nav rows (group/standings/fixtures/bracket), next-match CTA, start | `tournamentStore` GET `/tournaments/:id`, start; `api/tournamentActions.js` | detail/start mapped; **prize, final date, rules-accepted** confirm |
-| CreateTournament | name, format (League/Groups+KO/Knockout), clubs count, platform, start date, entry fee STC, rules, create | `tournamentStore` POST `/tournaments`; `lib/communityTournamentCreate.js`, `tournamentRuleTemplates.js` | mapped |
-| GroupStage | group chips A–D, group table (#,club,P,GD,PTS, qualify marker), "top N qualify", group matches (played + upcoming) | `api GET /tournaments/:id/groups`; `lib/standingsCore.js` | **group tables endpoint** confirm → likely gap |
-| Standings | Overall/Home/Away/Form tabs, league table (#,club,P,W,D,L,PTS), promotion/relegation legend | `api GET /tournaments/:id/standings`; `lib/standingsRows.js`, `standingsCore.js`, `apps/leagues/[slug]` | table mapped; **Home/Away/Form splits = gap** |
-| Fixtures | prev/next round, round header + dates, grouped by day, rows (home/score-or-time/away), last round results | `api GET /tournaments/:id/…` + `/matches/fixtures`; `lib/clubFixtures.js`, `scheduleEngine.js` | mapped |
-| Bracket | rounds columns (QF/SF/Final), match cells (win/lose + score), trophy, final date | `api GET /tournaments/:id/bracket`; `lib/bracketRounds.js` | **bracket endpoint** confirm → likely gap |
+| Tournaments | Open/My/Finished filter, cards (name, format, clubs, registered/open state, prize, entry fee, slots x/y, starts) | `useTournamentsList` → `stageClient.entities.Tournament.list`; player/club identity for My tournaments | rebuilt + mapped; canonical loading/error/refresh contract |
+| TournamentDetail | header (format·state), stats (clubs/entry/prize/start), rules-accepted + entrant chip, nav rows (group/standings/fixtures/bracket), next-match CTA, start/register/admin actions | `fetchTournamentPublic`, `fetchTournamentMatches`, `resolveMyPlayerAndClub`, `api/tournamentActions.js` | rebuilt + mapped; richer registration/admin features retained |
+| CreateTournament | name, entrant type, format (League/Groups+KO/Knockout/Swiss), clubs count, platform, start date, region, entry fee STC, rules, prize breakdown, create | `stageClient.entities.Tournament.create`; `lib/communityTournamentCreate.js`, `tournamentRuleTemplates.js` | rebuilt + mapped; richer real fields retained |
+| GroupStage | group chips, group table (#,club,P,GD,PTS), qualification note, group matches (played + upcoming) | `useTournament` → real tournament matches; groups + tables derived with `tournamentEngine` / `standingsCore` | rebuilt + mapped; no dedicated `/groups` endpoint required |
+| Standings | Overall/Home/Away/Form tabs, league/group tables | `useTournament` → real matches; `tournamentEngine`, `standingsRows.js`, `standingsCore.js`; `apps/leagues/[slug]` retained for regional leagues | Overall rebuilt + mapped; **Home/Away/Form splits = gap** and render explicit empty state |
+| Fixtures | All/Scheduled/Completed filters, score-or-time rows, open match detail | `useTournament` → `fetchTournamentMatches` | rebuilt + mapped; client-side filters preserve one fetched source of truth |
+| Bracket | rounds columns, match cells (win/lose + score), TBD slots | `useTournament` → real tournament matches; `lib/bracketRounds.js` | rebuilt + mapped; no dedicated `/bracket` endpoint required |
 
 ## Section 4 · Profile & teams
 
 | Screen | Elements | Source | Status |
 |---|---|---|---|
-| Profile | avatar + OVR badge, name, pos/platform, club chip, stat grid (Games/Goals/Assists/Rating), Linked Pro Club + UNLINK, nav rows (Edit/Availability/Team/Wallet + STC) | `api GET /users/:id` / `auth/me` + players; `lib/playerCareer.js`, `clubProfileData.js`; wallet STC (gap) | profile + stats mapped; **OVR, Pro-Club link/unlink, wallet STC = gap** |
-| EditProfile | avatar + change photo, display name, bio, main/alt position, platform, country, preferred foot, save | `api PUT /users/me`; `lib/uploadProfileMedia.js`, `countries.js`, `userIdentityFields.js` | mapped; **bio, preferred foot fields** confirm |
-| Availability | weekly grid (7 days × 4 slots), available/maybe/busy states, timezone label, save | `api GET/PUT /users/:id/availability` | **grid format (day×slot, tri-state)** confirm vs current payload → likely gap |
-| TeamProfile | crest, name, meta (platform/region/founded), stat grid (Rank/Wins/Players/Trophies), Squad/Matches/Trophies/About tabs, squad rows (pos, avatar, name, captain), Recruit CTA | `api GET /teams/:id` with-members, formation; `teamStore`; `lib/clubSquadDisplay.js`, `trophyCollection.js` | squad/stats mapped; **founded date, trophies count** confirm |
-| CreateTeam | crest, team name, tag, colours, invite players (chips + add), open-to-applications toggle, create | `teamStore` POST `/teams`; invite via players search | mapped; **crest upload, invite list** confirm |
+| Profile | avatar + OVR badge, name, pos/platform, club chip, stat grid (Games/Goals/Assists/Rating), nav rows (Edit/Availability/Team/Wallet), richer Posts/Showcase/Career/Trophies/Lifestyle tabs | `useProfile` → `resolveMyPlayerAndClub` + `GET /player-careers/:id`; real player `overall_rating`; wallet route backed by `playerWallet`; existing profile services | rebuilt + mapped; richer profile retained; **Pro-Club link/unlink = gap** |
+| EditProfile | avatar/banner upload, display name, bio, main/alt position, platform, country, save | `stageClient.entities.Player`; `lib/uploadProfileMedia.js`, `countries.js`, `platformDisplay.js` | rebuilt + mapped; **preferred foot = gap** and omitted |
+| Availability | weekly 7×4 grid, available/busy states, timezone label, save, error/retry/refresh | `useAvailability` → `api GET/PUT /users/:id/availability`; time ranges mapped losslessly to binary cells | rebuilt + mapped for binary availability; **Maybe tri-state = gap** |
+| TeamProfile | crest, name, platform/region/founded, wins/players/trophies, squad and richer club tabs | `useTeam` → `loadClubProfile`; founded year from `created_date`; trophies from real achievements/placements | rebuilt + mapped; richer office/fixtures/stats/chat features retained |
+| CreateTeam | crest, team name, tag, country, bio, find players, create | `teamStore` POST `/teams`; player directory route | rebuilt + mapped for confirmed fields; **colours, direct invites, open-to-applications = gaps** |
 
 ## Section 5 · Apps
 
 | Screen | Elements | Source | Status |
 |---|---|---|---|
-| Apps | grouped grid (Club/Compete/Account) of app tiles → routes | `lib/miniApps.js` | mapped |
-| Inbox | All/Needs-action/Unread filter, message rows (sender avatar, title, preview, time, unread dot, Needs-action tag), mark-all-read | `lib/inboxData.js`, `inboxHelpers.js`; `useNotificationsSocket`; unread count | list mapped; **mark-all-read, needs-action classification** confirm |
-| InboxMessage | sender, title, body, structured offer card (club/pos/length/bonus/expires), warning banner, Decline/Accept | message detail; contract-offer accept/decline (`lib/contractOfferVisibility.js`, `contractTypes.js`) | **message detail endpoint + accept/decline actions** confirm → partial gap |
-| Wallet | balance + STC, +N this month, Top-up/Send/Store quick actions, activity list (label, context, date, +/− amount) | **wallet balance + activity + top-up/send** | **gap (whole screen)** |
-| Store | STC balance chip, All/Kits/Boots/Celebrations filter, featured pack, item grid (name, price STC), buy | **store catalogue + purchase**; `lib/stripeCheckout.js` for top-up | **gap (catalogue + buy)** |
-| Transfers | Latest/My-offers/Free-agents segmented, transfer rows (player, pos/OVR, from→to, games, status), Make-offer | `lib/transferMarketEntries.js`, `transferCarousel.js`, `transferWindow.js`; `useTransferWindowStatus` | **transfer feed endpoint + make-offer** confirm → likely gap |
-| Settings | Appearance (Live Dark toggle, Home layout, Language), Notifications toggles, Account (edit, linked accounts, sign out) | `themeStore`, `dashboardLayoutStore`, `translations/index`; notif prefs; `authStore` POST `/auth/logout` | theme/layout/language/sign-out mapped; **notification preference persistence = gap** |
-| Club | header (crest/name/meta), Challenge/Follow, stats (Rank/Record/Squad), recent form, head-to-head, league link | `api GET /teams/:id`; follow via `lib/followTarget.js`; **head-to-head** | club + form mapped; **head-to-head, challenge, follow persistence = gap** |
+| Apps | dedicated `/apps` grouped launcher with searchable tiles → real routes | `lib/miniApps.js`; Home Stage layout E shortcut | rebuilt + mapped; launcher moved out of Search |
+| Inbox | All/Needs-action/Unread filters, message rows, unread state, needs-action tag, mark-all-read, realtime refresh | `lib/inboxData.js`, `inboxHelpers.js`; InboxMessage entity subscription | rebuilt + mapped; mark-all-read persists each unread entity |
+| InboxMessage | sender, title, body, structured contract/match/loan cards, warning banner, Decline/Accept/Delete | InboxMessage entity loaded from the real inbox; `respondInboxMessage`, `contractManagement`, schedule and loan services | rebuilt + mapped; richer action types retained |
+| Wallet | balance, weekly salary, collect salary, activity list and filters | `loadWallet` → `playerWallet` actions `get_balance`, `get_history`, `pay_salary` | rebuilt + mapped for real balance/history/salary; **monthly delta and Send STC = gaps** |
+| Store | balances, STAGE Plus monthly/yearly, credit packs, Stripe checkout/return/cancel-renewal | `loadStore`; `StoreConfig`; `lib/stripeCheckout.js` | real store retained and mapped; **cosmetic STC catalogue + item buy = gaps** |
+| Transfers | real free-agent/expiring market, list/carousel, filters, window status, profile/contract/loan path | `getTransferMarket`; `transferMarketEntries.js`; `useTransferWindowStatus`; profile contract/loan services | rebuilt + mapped for current market; **Latest/My-offers feed = gap** |
+| Settings | Appearance, Live Dark, Home layout, Language, Notifications, native push, biometrics, Account/sign-out | `themeStore`, `dashboardLayoutStore`, translations; Player `notification_settings`; OneSignal; biometric service; `authStore` | rebuilt + mapped; notification preferences persist to Player and OneSignal |
+| Club | header, Challenge/Follow, stats, recent form, richer club tabs, loading/error/retry/refresh | `useTeam` → `loadClubProfile`; arrange-game route; Follow entity via `followTarget.js` | rebuilt + mapped; **head-to-head = gap** |
 
-## Gap summary (→ `STAGE_DATA_GAPS.md`)
+## Phase 7 · Cleanup
 
-Home objectives/rewards · contract-games-left count · avg rating · match stats/scorers/MOTM · highlights list · group tables · bracket · standings home/away/form splits · availability grid format · Pro-Club link/unlink · gamertag availability check · Wallet (balance+activity+send) · Store (catalogue+buy) · Transfers (feed+offer) · head-to-head · notification preferences · mark-all-read.
+| Item | Status |
+|---|---|
+| Legacy `src/navigation/*`, `src/App.jsx`, root `index.js` | deleted — Expo Router is the entry, and those files imported missing `src/screens/**` |
+| Replaced `components/common` primitives, `mockMatches`, unused `tournamentStore`, `scheduleData`, `base44Client` | deleted — nothing in `src/app` imported them |
+| No-mockup features (Feed, Chat, Dressing Room, Formation, dashboard layouts, international tournaments) | kept — see inventory decision |
+| Notification / deep-link targets | `resolveNotificationHref` maps `/inbox`, `/game-day?match=`, `/clubs/:id`, `/players/:id`, `/tournaments/:id`, `/schedule`, `/wallet` onto the rebuilt routes. OneSignal and the root URL listener both use it. |
+| Backend gaps | unchanged, still out of mobile scope |
+
+Match stats/scorers/MOTM · highlights list · standings home/away/form splits · Pro-Club link/unlink · gamertag availability check · Wallet monthly delta/Send STC · Store cosmetic catalogue/buy · Transfers Latest/My-offers feed · head-to-head.

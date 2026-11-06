@@ -2,7 +2,7 @@ import useThemeStore from '../store/themeStore';
 
 /**
  * Hook to get colors based on the current theme (light/dark).
- * Uses useThemeStore so theme is consistent with GradientBackground, ThemeToggle, etc.
+ * Uses useThemeStore so theme stays consistent with GradientBackground and Settings.
  *
  * @returns {{ isDark: boolean; isLight: boolean; iconColor: string; iconColorSecondary: string; darklightImage: boolean }}
  */

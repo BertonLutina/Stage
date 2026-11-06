@@ -4,6 +4,25 @@ import { FlatList } from 'react-native';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 
 const mockPush = jest.fn();
+const mockTournamentMatches = [
+  {
+    id: 'g1', tournament_id: 't1', type: 'group', group: 0, round: 1,
+    status: 'completed', result_state: 'confirmed', stats_processed: 1,
+    home_club_id: 'night', home_club_name: 'Night Owls',
+    away_club_id: 'blue', away_club_name: 'Blue Comets', home_score: 3, away_score: 1,
+    videos: [{}],
+  },
+  {
+    id: 'g2', tournament_id: 't1', type: 'group', group: 0, round: 2,
+    status: 'scheduled', home_club_id: 'blue', home_club_name: 'Blue Comets',
+    away_club_id: 'night', away_club_name: 'Night Owls', scheduled_at: '2030-11-04T21:00:00Z',
+  },
+  {
+    id: 'k1', tournament_id: 't1', type: 'quarter_final', round: 1,
+    status: 'completed', home_club_name: 'Iron Wolves', away_club_name: 'Storm United',
+    home_score: 2, away_score: 0,
+  },
+];
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn(), canGoBack: () => true }),
   useLocalSearchParams: () => ({ tournamentId: 't1' }),
@@ -32,8 +51,10 @@ jest.mock('../../utils/api', () => ({
   },
 }));
 jest.mock('../../api/tournamentActions', () => ({
-  fetchTournamentMatches: jest.fn(async () => []),
-  fetchTournamentPublic: jest.fn(async () => ({ id: 't1', name: 'Autumn Cup', type: 'knockout' })),
+  fetchTournamentMatches: jest.fn(async () => mockTournamentMatches),
+  fetchTournamentPublic: jest.fn(async () => ({
+    id: 't1', name: 'Autumn Cup', type: 'group_stage', participant_type: 'club', num_groups: 1,
+  })),
 }));
 
 import BracketView from '../../components/tournament/BracketView';
@@ -74,21 +95,20 @@ describe('competition views restyle', () => {
 
   test('Fixtures lists matches, filters and opens match detail', async () => {
     const { findByText, getByText } = render(<FixturesScreen />);
-    fireEvent.press(await findByText('Blue Comets'));
+    fireEvent.press(await findByText('Storm United'));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/(tabs)/matches/matchdetailscreen',
-      params: { matchId: 'f1' },
+      params: { matchId: 'k1' },
     });
     expect(getByText('3 - 1')).toBeTruthy();
-    expect(getByText('vs')).toBeTruthy();
+    expect(getByText('10:00 PM')).toBeTruthy();
     expect(getByText('Video available')).toBeTruthy();
     expect(getByText('Scheduled')).toBeTruthy();
   });
 
   test('Fixtures header and filter chips sit outside the list so they stay reachable', async () => {
-    const api = require('../../utils/api').default;
-    const { findByText, getByText, getByLabelText, UNSAFE_getByType } = render(<FixturesScreen />);
-    await findByText('Blue Comets');
+    const { findAllByText, getByText, getByLabelText, queryByText, UNSAFE_getByType } = render(<FixturesScreen />);
+    await findAllByText('Blue Comets');
     const list = UNSAFE_getByType(FlatList);
     expect(list.props.ListHeaderComponent).toBeUndefined();
     // the list ends above the tab bar and the Guide button
@@ -98,17 +118,20 @@ describe('competition views restyle', () => {
     expect(list.findAll((n) => n.props?.children === 'Completed')).toHaveLength(0);
     expect(getByText('Fixtures')).toBeTruthy();
     expect(getByLabelText('Back')).toBeTruthy();
-    // chips still drive the request
-    api.get.mockClear();
+    // chips filter the already-loaded real tournament match records.
     fireEvent.press(getByText('Completed'));
-    await waitFor(() => expect(api.get).toHaveBeenCalledWith(expect.stringContaining('status=completed')));
+    await waitFor(() => expect(queryByText('10:00 PM')).toBeNull());
+    expect(getByText('3 - 1')).toBeTruthy();
   });
 
-  test('Group stage and bracket screens render empty states', async () => {
+  test('Group stage and bracket screens render real match-derived data', async () => {
     const group = render(<GroupStageScreen />);
-    await waitFor(() => expect(group.getByText('No group data yet')).toBeTruthy());
+    await waitFor(() => expect(group.getAllByText('Group A').length).toBeGreaterThan(0));
+    expect(group.getAllByText('Night Owls').length).toBeGreaterThan(0);
+    expect(group.getByText('3 - 1')).toBeTruthy();
     const br = render(<BracketScreen />);
-    await waitFor(() => expect(br.getByText('No bracket data')).toBeTruthy());
+    await waitFor(() => expect(br.getByText('Quarter-finals')).toBeTruthy());
+    expect(br.getByText('Iron Wolves')).toBeTruthy();
     expect(br.getByLabelText('Back')).toBeTruthy();
   });
 });

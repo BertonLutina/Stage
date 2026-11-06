@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, ScrollView, TouchableOpacity, ActivityIndicator, StatusBar, Alert, Text,
+  View, ScrollView, TouchableOpacity, ActivityIndicator, StatusBar, Alert, Text, RefreshControl,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -39,6 +39,8 @@ import { getPrimaryClubRole } from '@/lib/clubStaffRoles';
 import { clubRoleLabel } from '@/lib/clubSquadDisplay';
 import { displayNamedFounder } from '@/lib/founderDisplay';
 import { isFounderPlayerContract } from '@/lib/playerContractFields';
+import { Card, ListRow, StatGrid } from '@/components/ui';
+import useProfile from '@/hooks/useProfile';
 
 const PRIMARY_TABS = [
   { id: 'posts', label: 'Posts' },
@@ -88,6 +90,7 @@ export default function ProfileScreen({
   const [careerLoading, setCareerLoading] = useState(false);
 
   const isOwn = !viewingOther;
+  const profileResource = useProfile(!playerProp && isOwn);
 
   useEffect(() => {
     if (playerProp) {
@@ -96,21 +99,12 @@ export default function ProfileScreen({
       setLoading(false);
       return;
     }
+    if (isOwn) return undefined;
     let cancelled = false;
     (async () => {
       setLoading(true);
       try {
-        if (isOwn) {
-          const { player: p, club } = await resolveMyPlayerAndClub();
-          if (cancelled) return;
-          setPlayer(p);
-          if (p?.club_id) {
-            const signed = await stageClient.entities.Club.get(p.club_id).catch(() => null);
-            if (!cancelled) setSignedClub(signed || (club && String(club.id) === String(p.club_id) ? club : null));
-          } else {
-            setSignedClub(null);
-          }
-        } else if (params?.playerId) {
+        if (params?.playerId) {
           const p = await stageClient.entities.Player.get(params.playerId).catch(() => null);
           if (cancelled) return;
           setPlayer(p);
@@ -144,6 +138,21 @@ export default function ProfileScreen({
   }, [playerProp, signedClubProp, isOwn, params?.userId, params?.playerId]);
 
   useEffect(() => {
+    if (playerProp || !isOwn) return;
+    setLoading(profileResource.loading);
+    if (profileResource.data) {
+      setPlayer(profileResource.data.player);
+      setSignedClub(profileResource.data.club);
+      setCareer(profileResource.data.career);
+    }
+  }, [playerProp, isOwn, profileResource.loading, profileResource.data]);
+
+  useEffect(() => {
+    if (isOwn && profileResource.data?.career) {
+      setCareer(profileResource.data.career);
+      setCareerLoading(false);
+      return undefined;
+    }
     let cancelled = false;
     (async () => {
       const resolved = await resolveMyPlayerAndClub().catch(() => ({}));
@@ -175,7 +184,7 @@ export default function ProfileScreen({
       .catch(() => { if (!cancelled) setCareer(null); })
       .finally(() => { if (!cancelled) setCareerLoading(false); });
     return () => { cancelled = true; };
-  }, [player?.id]);
+  }, [player?.id, isOwn, profileResource.data?.career]);
 
   const canRequestLoan = canShowLoanRequestButton({
     player,
@@ -385,9 +394,41 @@ export default function ProfileScreen({
     </View>
   );
 
+  const careerStats = career?.club_career || null;
+  const summaryStats = careerStats ? [
+    { label: 'Games', value: careerStats.games ?? '—' },
+    { label: 'Goals', value: careerStats.goals ?? '—' },
+    { label: 'Assists', value: careerStats.assists ?? '—' },
+    { label: 'Rating', value: careerStats.avg_rating ?? '—' },
+  ] : [];
+
+  const ownProfileSummary = isOwn ? (
+    <View style={{ gap: 12, marginBottom: 16 }}>
+      {summaryStats.length ? <Card><StatGrid items={summaryStats} columns={4} /></Card> : null}
+      <Card style={{ paddingVertical: 2 }}>
+        <ListRow icon="create-outline" title="Edit profile" onPress={() => router.push('/(tabs)/profile/editprofilescreen')} />
+        <View style={{ height: 1, backgroundColor: tokens.border }} />
+        <ListRow icon="calendar-outline" title="Availability" onPress={() => router.push('/(tabs)/profile/availabilityscreen')} />
+        {signedClub?.id ? (
+          <>
+            <View style={{ height: 1, backgroundColor: tokens.border }} />
+            <ListRow icon="people-outline" title="My team" onPress={() => openClub(signedClub.id)} />
+          </>
+        ) : null}
+        <View style={{ height: 1, backgroundColor: tokens.border }} />
+        <ListRow icon="wallet-outline" title="Wallet" onPress={() => router.push('/apps/wallet')} />
+      </Card>
+    </View>
+  ) : null;
+
   const body = loading ? (
     <View style={{ paddingTop: 80, alignItems: 'center' }}>
       <ActivityIndicator color={tokens.cyan} />
+    </View>
+  ) : profileResource.error && isOwn ? (
+    <View style={{ padding: 32, alignItems: 'center', gap: 12 }}>
+      <Text style={{ color: tokens.danger, textAlign: 'center' }}>{profileResource.error}</Text>
+      <GlassTextButton label="Try again" tone="outline" onPress={profileResource.refetch} />
     </View>
   ) : !player ? (
     <View style={{ padding: 32, alignItems: 'center' }}>
@@ -397,7 +438,13 @@ export default function ProfileScreen({
       </Text>
     </View>
   ) : (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: embedded ? 16 : 120 }}>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      refreshControl={!playerProp && isOwn ? (
+        <RefreshControl refreshing={profileResource.refreshing} onRefresh={profileResource.refetch} tintColor={tokens.cyan} />
+      ) : undefined}
+      contentContainerStyle={{ paddingBottom: embedded ? 16 : 120 }}
+    >
       {tab !== 'career' ? (
         <View>
           <GamerBanner
@@ -496,6 +543,7 @@ export default function ProfileScreen({
       ) : null}
 
       <View style={{ paddingHorizontal: 20, marginTop: tab === 'career' ? 8 : 16 }}>
+        {ownProfileSummary}
         <PageTile
           tileKey="profile"
           tileTitle="PROFILE"

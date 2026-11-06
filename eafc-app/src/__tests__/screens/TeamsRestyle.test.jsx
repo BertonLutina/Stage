@@ -109,14 +109,22 @@ describe('Teams restyle', () => {
       mockCreateTeam.mockResolvedValue({ id: 'new-1' });
       const { getByLabelText } = render(<CreateTeamScreen navigation={{ replace }} />);
       fireEvent.changeText(getByLabelText('Club Name *'), 'FC Test');
+      fireEvent.changeText(getByLabelText('Tag'), 'FCT');
       fireEvent.changeText(getByLabelText('Country'), 'Belgium');
       fireEvent.changeText(getByLabelText('Country Code'), 'BE');
       fireEvent.changeText(getByLabelText('Bio'), 'Hello');
       fireEvent.press(getByLabelText('Create Team'));
       await waitFor(() => expect(mockCreateTeam).toHaveBeenCalledWith({
-        club_name: 'FC Test', country: 'Belgium', country_code: 'BE', bio: 'Hello',
+        club_name: 'FC Test', tag: 'FCT', country: 'Belgium', country_code: 'BE', bio: 'Hello',
       }));
       await waitFor(() => expect(replace).toHaveBeenCalledWith('TeamProfile', { teamId: 'new-1' }));
+    });
+
+    it('keeps player discovery real instead of pretending an invite was sent', () => {
+      const { getByText } = render(<CreateTeamScreen navigation={{ replace: jest.fn() }} />);
+      expect(getByText('Invite players')).toBeTruthy();
+      fireEvent.press(getByText('+ Find players'));
+      expect(mockPush).toHaveBeenCalledWith('/(tabs)/search/searchplayer');
     });
 
     it('shows the API error and closes with back', async () => {
@@ -145,7 +153,7 @@ describe('Teams restyle', () => {
 
     it('renders the hero and a stat card from the loaded bundle', async () => {
       mockLoadClubProfile.mockResolvedValue({
-        club: { id: 't1', name: 'Night Owls', tag: 'NOW', platform: 'ps5', region: 'EU' },
+        club: { id: 't1', name: 'Night Owls', tag: 'NOW', platform: 'ps5', region: 'EU', created_date: '2025-04-01' },
         players: [{ id: 'p1' }, { id: 'p2' }],
         record: { wins: 24, draws: 1, losses: 2, totalGames: 27, winRate: 89 },
         trophies: [{ id: 'x' }],
@@ -158,6 +166,7 @@ describe('Teams restyle', () => {
       expect(getByText('Players')).toBeTruthy();
       expect(getByText('Trophies')).toBeTruthy();
       expect(getAllByText('2').length).toBeGreaterThan(0);
+      expect(getByText('Founded 2025')).toBeTruthy();
     });
 
     it('hides zero-filled stats from failed fetches instead of showing 0', async () => {

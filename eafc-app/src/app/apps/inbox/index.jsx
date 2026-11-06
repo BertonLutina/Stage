@@ -6,7 +6,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import useThemeStore from '@/store/themeStore';
 import { stageClient } from '@/api/stageClient';
 import { loadInboxMessages, markAllInboxRead } from '@/lib/inboxData';
-import { upsertInboxMessage } from '@/lib/inboxHelpers';
+import { inboxMessageNeedsAction, upsertInboxMessage } from '@/lib/inboxHelpers';
 import InboxMessageList from '@/components/inbox/InboxMessageList';
 import { Chip, IconButton, Screen } from '@/components/ui';
 import PageTile, { PageTitle } from '@/components/theme/PageTile';
@@ -23,6 +23,7 @@ export default function InboxScreen() {
   const [messages, setMessages] = useState([]);
   const [email, setEmail] = useState(null);
   const [error, setError] = useState(null);
+  const [filter, setFilter] = useState('all');
 
   const openMessage = useCallback((msg) => {
     if (!msg?.id) return;
@@ -108,6 +109,11 @@ export default function InboxScreen() {
   };
 
   const unreadCount = messages.filter((m) => !m.is_read).length;
+  const visibleMessages = messages.filter((message) => {
+    if (filter === 'action') return inboxMessageNeedsAction(message);
+    if (filter === 'unread') return !message.is_read;
+    return true;
+  });
 
   if (loading) {
     return (
@@ -144,6 +150,12 @@ export default function InboxScreen() {
           style={{ paddingBottom: 0 }}
         />
 
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <Chip testID="inbox-filter-all" label="All" active={filter === 'all'} onPress={() => setFilter('all')} />
+          <Chip testID="inbox-filter-action" label="Needs action" active={filter === 'action'} onPress={() => setFilter('action')} />
+          <Chip testID="inbox-filter-unread" label="Unread" active={filter === 'unread'} onPress={() => setFilter('unread')} />
+        </View>
+
         <PageTile
           tileKey="inbox"
           tileTitle="INBOX"
@@ -151,7 +163,7 @@ export default function InboxScreen() {
           contentStyle={{ flex: 1, paddingHorizontal: 0 }}
         >
           <InboxMessageList
-            messages={messages}
+            messages={visibleMessages}
             onSelect={openMessage}
             refreshControl={(
               <RefreshControl

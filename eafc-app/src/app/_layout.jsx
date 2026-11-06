@@ -13,6 +13,7 @@ import useAuthBootstrap from '../hooks/useAuthBootstrap';
 import useNotificationsSocket from '../hooks/useNotificationsSocket';
 import { SocketProvider } from '@/lib/SocketContext';
 import useOneSignal from '../hooks/useOneSignal';
+import { resolveNotificationHref } from '../lib/inboxHelpers';
 import useThemeStore from '../store/themeStore';
 import GradientBackground from '../components/common/GradientBackground';
 import Toast from '../components/common/Toast';
@@ -59,7 +60,10 @@ export default function RootLayout() {
       }
       if (/apps\/store/i.test(url) || /auth\/store-return/i.test(url) || /store\/mobile-return/i.test(url)) {
         router.replace(query ? `/apps/store?${query}` : '/apps/store');
+        return;
       }
+      const target = resolveNotificationHref(url);
+      if (target) router.replace(target);
     };
 
     const sub = Linking.addEventListener('url', ({ url }) => openIncomingUrl(url));

@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, ScrollView, ActivityIndicator, StatusBar, Text,
+  View, ScrollView, ActivityIndicator, StatusBar, Text, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import useAuthStore from '../../store/authStore';
 import { stageClient, resolveMyPlayerAndClub } from '@/api/stageClient';
-import { loadClubProfile } from '@/lib/clubProfileData';
+import useTeam from '@/hooks/useTeam';
 import { getPrimaryClubRole } from '@/lib/clubStaffRoles';
 import { playerRoute } from '@/lib/stageNews';
 import { clubStatItems } from '@/lib/clubStatItems';
@@ -24,19 +24,12 @@ export default function TeamProfileScreen() {
   const teamId = params?.teamId;
   const router = useRouter();
   const tokens = useThemeStore((s) => s.tokens);
-  const [bundle, setBundle] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [myPlayer, setMyPlayer] = useState(null);
+  const { data, loading, error, refreshing, refetch } = useTeam(teamId);
+  const bundle = data?.bundle || null;
 
   useEffect(() => {
-    if (!teamId) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    loadClubProfile(String(teamId), stageClient).then((next) => {
-      setBundle(next?.club ? next : null);
-    }).catch(() => setBundle(null)).finally(() => setLoading(false));
+    if (!teamId) return;
     resolveMyPlayerAndClub().then((resolved) => setMyPlayer(resolved?.player || null)).catch(() => setMyPlayer(null));
   }, [teamId]);
 
@@ -58,6 +51,11 @@ export default function TeamProfileScreen() {
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             {loading ? (
               <ActivityIndicator color={tokens.cyan} />
+            ) : error ? (
+              <View style={{ gap: 12, alignItems: 'center', paddingHorizontal: 24 }}>
+                <Text style={{ color: tokens.danger, fontSize: 15, textAlign: 'center' }}>{error}</Text>
+                <Text accessibilityRole="button" onPress={refetch} style={{ color: tokens.cyan, fontWeight: '700' }}>Try again</Text>
+              </View>
             ) : (
               <Text style={{ color: tokens.muted, fontSize: 15 }}>Club not found</Text>
             )}
@@ -74,7 +72,11 @@ export default function TeamProfileScreen() {
     <GamerProfileShell>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refetch} tintColor={tokens.cyan} />}
+          contentContainerStyle={{ paddingBottom: 40 }}
+        >
           <ClubHero
             club={club}
             president={president}

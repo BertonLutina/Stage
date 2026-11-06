@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
 import useThemeStore from '../../../store/themeStore';
 import {
@@ -11,10 +11,6 @@ import {
   FormBadge,
   StatGrid,
 } from '../../../components/ui';
-import CommonButton from '../../../components/common/Button';
-import CommonCard from '../../../components/common/Card';
-import CommonInput from '../../../components/common/Input';
-import CommonAvatar from '../../../components/common/Avatar';
 
 jest.mock('@expo/vector-icons/Ionicons', () => {
   const React = require('react');
@@ -298,45 +294,6 @@ describe('ui primitives B', () => {
     test('renders nothing for an empty list', () => {
       const { queryAllByTestId } = render(<StatGrid items={[]} />);
       expect(queryAllByTestId(/^stat-row-/)).toHaveLength(0);
-    });
-  });
-
-  describe('common/ delegates', () => {
-    test('Button maps legacy variants onto ui variants', () => {
-      const { getByLabelText, rerender } = render(<CommonButton title="Go" onPress={() => {}} />);
-      expect(flat(getByLabelText('Go')).backgroundColor).toBe('#5FE3E8');
-      expect(flat(getByLabelText('Go')).height).toBe(52);
-      rerender(<CommonButton title="Go" variant="primary2" onPress={() => {}} />);
-      expect(flat(getByLabelText('Go')).backgroundColor).toBe('#5FE3E8');
-      rerender(<CommonButton title="Go" variant="ghost" onPress={() => {}} />);
-      expect(flat(getByLabelText('Go')).borderColor).toBe('#5FE3E8');
-      expect(flat(getByLabelText('Go')).backgroundColor).toBe('transparent');
-      rerender(<CommonButton title="Go" variant="danger" onPress={() => {}} />);
-      expect(flat(getByLabelText('Go')).borderColor).toBe('#F87171');
-    });
-
-    test('Card renders the ui card surface', () => {
-      const { UNSAFE_queryAllByProps } = render(<CommonCard className="mb-4"><Text>inside</Text></CommonCard>);
-      const surfaces = UNSAFE_queryAllByProps({}).filter((n) => {
-        const st = n.props && n.props.style ? StyleSheet.flatten(n.props.style) : null;
-        return st && st.backgroundColor === '#132B5C' && st.borderRadius === 16;
-      });
-      expect(surfaces.length).toBeGreaterThan(0);
-    });
-
-    test('Input renders a 50 high ui field and shows the password toggle', () => {
-      const onToggle = jest.fn();
-      const { getByLabelText, getByPlaceholderText } = render(
-        <CommonInput label="Password" placeholder="pw" value="" onChangeText={() => {}} secureTextEntry onTogglePassword={onToggle} />,
-      );
-      expect(flat(getByPlaceholderText('pw')).height).toBe(50);
-      fireEvent.press(getByLabelText('Show password'));
-      expect(onToggle).toHaveBeenCalledTimes(1);
-    });
-
-    test('Avatar shows initials on a ui tile', () => {
-      const { getByText } = render(<CommonAvatar name="John Doe" size={48} />);
-      expect(getByText('JD')).toBeTruthy();
     });
   });
 

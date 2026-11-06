@@ -1,6 +1,6 @@
 # Stage Rebuild — Screen Inventory
 
-> Step 0 of `docs/STAGE_REBUILD_PROMPT.md`. Every route/screen in `src/app/**` and `src/navigation/**`, with an action: **rebuild** (from mockup) · **delete** · **keep & restyle** (new components, no mockup). **Nothing is deleted before Lutina clears the "Needs decision before delete" list below.** Rebuilding the 33 mocked screens needs no approval.
+> Step 0 of `docs/STAGE_REBUILD_PROMPT.md`. Every route/screen in `src/app/**`, with an action: **rebuild** (from mockup) · **delete** · **keep & restyle** (new components, no mockup). Phase 7 applied the lossless decision: no-mockup product features stay; only the unreachable legacy navigator and unimported replacements were removed.
 
 ## Baseline test state (Task 0.1 step 1)
 
@@ -80,30 +80,26 @@ _See `baseline-test.log` in the plan workspace. Recorded verbatim in every secti
 | `teams/createteamscreen.jsx` | CreateTeam | rebuild |
 | `teams/index.jsx` | — | keep & restyle |
 
-## `src/navigation/**`
+## Decision — features without a mockup (6 Nov 2026)
 
-The app routes through expo-router (`src/app/**`). These three files are a parallel React Navigation setup.
+The lossless rule already chosen for this rebuild stands: a working product feature is kept even when a mockup does not show it. Phase 7 confirmed what is actually mounted from `src/app/**`.
 
-| File | Action |
-|---|---|
-| `src/navigation/AppNavigator.jsx` | **verify imported**; if expo-router does not use it → delete (needs decision) |
-| `src/navigation/AuthNavigator.jsx` | same |
-| `src/navigation/MainTabNavigator.jsx` | same |
+| Feature | Reachable from Expo Router | Decision |
+|---|---|---|
+| Feed / Stage Times (`src/components/news/*`, `src/hooks/useFeed.js`) | No. Kept on disk, not mounted. | **keep** |
+| Reels | No screen module remains. The old navigator only named a missing `src/screens/social/ReelsScreen`. | **nothing left to mount** |
+| Chat (`src/components/chat/*`) | Yes on Watch Match (bubbles, attachments, filters). `CreatePollModal` is unwired. | **keep** |
+| Dressing Room (`GameDayDressingRoom*`) | Components remain. Game Day screens intentionally do not mount them. | **keep the files, stay off Game Day** |
+| Formation (`src/lib/clubFormations.js`, `teamStore.saveFormation`) | Library is unwired; the store action remains. | **keep** |
+| Manage Team / Team Dashboard | No remaining screen module. | **nothing left to mount** |
+| Dashboard layout lab / picker | Yes. Settings and Home layout E. | **keep** |
+| International tournaments | Yes, via `src/lib/stageDirectories.js`. | **keep** |
+| Legacy React Navigation (`src/navigation/*`, `src/App.jsx`, root `index.js`) | No. `package.json` `main` is `expo-router/entry`, and the navigator imported `src/screens/**`, which is already gone. | **deleted** |
 
-## Needs Lutina's decision before delete (user-reachable, no mockup)
+Keep-&-restyle (functional, needed, no mockup): `apps/competitions`, `apps/competitions/[slug]`, `apps/find-clubs`, `apps/find-players`, `apps/register`, `auth/callback`, `auth/onboarding`, `teams/index`.
 
-These features have no mockup but may be reachable today. **Do not delete until Lutina rules keep-&-restyle vs delete on each:**
-
-- Feed (`src/components/news/*`, `src/hooks/useFeed.js`) — social feed
-- Reels (`src/components/*`, social reels)
-- Chat / Messages / DressingRoom / TeamChat (`src/components/chat/*`)
-- Formation / ManageTeam / TeamDashboard (`src/components/team/*`)
-- Dashboard layout lab / picker (`src/store/dashboardLayoutStore.js`, `src/lib/dashboardLayouts.js`)
-- International tournaments (`src/api/internationalTournaments.js`)
-- `src/navigation/*` (above)
-
-Keep-&-restyle (functional, needed, no mockup — no decision needed, restyle only): `apps/competitions`, `apps/competitions/[slug]`, `apps/find-clubs`, `apps/find-players`, `apps/register`, `auth/callback`, `auth/onboarding`, `teams/index`.
+Also deleted in Phase 7 because nothing in the live app imported them: `components/common/{Button,Card,Input,Avatar,Heading,ThemeToggle}`, `lib/layoutClassName.js`, `utils/mockMatches.js`, `api/base44Client.js`, `store/tournamentStore.js`, `lib/scheduleData.js`. Screens use `components/ui/*`, `useTournament`, and `GET /schedule/calendar`.
 
 ## Counts
 
-Rebuild: 33 mocked screens (7 onboarding · 6 home/gameday · 7 tournaments · 5 profile/teams · 8 apps). Keep & restyle: 8. Keep (layouts/entries): 11. Delete: pending Lutina's decision on the list above.
+Rebuild: 33 mocked screens (7 onboarding · 6 home/gameday · 7 tournaments · 5 profile/teams · 8 apps). Keep & restyle: 8. Keep (layouts/entries): 11. No-mockup product features: kept. Legacy navigator: deleted.

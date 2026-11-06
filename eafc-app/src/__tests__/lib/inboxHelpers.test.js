@@ -52,6 +52,40 @@ describe('resolveNotificationHref', () => {
       params: { id: 'abc' },
     });
   });
+
+  test('preserves the match id from a Game Day deep link', () => {
+    expect(resolveNotificationHref('/game-day?match=match-9')).toEqual({
+      pathname: '/(tabs)/matches/matchdetailscreen',
+      params: { matchId: 'match-9' },
+    });
+  });
+
+  test('maps server notification links onto the rebuilt screens', () => {
+    expect(resolveNotificationHref('/schedule')).toEqual({ pathname: '/(tabs)/matches' });
+    expect(resolveNotificationHref('/clubs/club-1')).toEqual({
+      pathname: '/apps/club/[id]',
+      params: { id: 'club-1' },
+    });
+    expect(resolveNotificationHref('/players/player-1')).toEqual({
+      pathname: '/(tabs)/profile/profilescreen',
+      params: { playerId: 'player-1' },
+    });
+    expect(resolveNotificationHref('/tournaments/cup-1/clubs')).toEqual({
+      pathname: '/(tabs)/tournaments/tournamentdetailscreen',
+      params: { tournamentId: 'cup-1' },
+    });
+    expect(resolveNotificationHref('https://stage.gg/clubs/c9')).toEqual({
+      pathname: '/apps/club/[id]',
+      params: { id: 'c9' },
+    });
+    expect(resolveNotificationHref('stage://players/p9')).toEqual({
+      pathname: '/(tabs)/profile/profilescreen',
+      params: { playerId: 'p9' },
+    });
+    expect(resolveNotificationHref('/wallet')).toEqual({ pathname: '/apps/wallet' });
+    expect(resolveNotificationHref('/lifestyle')).toEqual({ pathname: '/(tabs)/profile' });
+    expect(resolveNotificationHref('/rankings')).toBeNull();
+  });
 });
 
 describe('groupInboxMessages', () => {

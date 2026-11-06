@@ -195,6 +195,15 @@ export default function TournamentDetailScreen() {
     ...(prizePool > 0 ? [{ label: 'Prize', value: `${prizePool.toLocaleString()} STC` }] : []),
     ...(startLabel ? [{ label: 'Starts', value: startLabel }] : []),
   ];
+  const nextMatch = [...matches]
+    .filter((match) => !['completed', 'forfeit', 'cancelled'].includes(String(match?.status || '').toLowerCase()))
+    .sort((left, right) => {
+      const leftTime = new Date(left?.scheduled_at || left?.scheduled_date || 0).getTime() || Number.MAX_SAFE_INTEGER;
+      const rightTime = new Date(right?.scheduled_at || right?.scheduled_date || 0).getTime() || Number.MAX_SAFE_INTEGER;
+      return leftTime - rightTime;
+    })[0] || null;
+  const nextHome = nextMatch?.home_club_name || nextMatch?.home_player_name || nextMatch?.home_team_name || 'TBD';
+  const nextAway = nextMatch?.away_club_name || nextMatch?.away_player_name || nextMatch?.away_team_name || 'TBD';
   const enteredLabel = clubEntered
     ? registrationClub?.name
     : (playerEntered ? 'Registered' : null);
@@ -429,18 +438,44 @@ export default function TournamentDetailScreen() {
           <TournamentLeaderboard tournamentId={tournamentId} />
 
           <Card style={{ paddingVertical: 4 }}>
-            <ListRow
-              icon="git-network-outline"
-              title="Bracket"
-              onPress={() => router.push({ pathname: '/(tabs)/tournaments/bracketscreen', params: { tournamentId } })}
-            />
-            <View style={{ height: 1, backgroundColor: tokens.border }} />
+            {tournament.type === 'group_stage' ? (
+              <>
+                <ListRow
+                  icon="grid-outline"
+                  title="Group stage"
+                  onPress={() => router.push({ pathname: '/(tabs)/tournaments/groupstagescreen', params: { tournamentId } })}
+                />
+                <View style={{ height: 1, backgroundColor: tokens.border }} />
+              </>
+            ) : null}
             <ListRow
               icon="list-outline"
               title="Standings"
               onPress={() => router.push({ pathname: '/(tabs)/tournaments/leaguestandingsscreen', params: { tournamentId } })}
             />
+            <View style={{ height: 1, backgroundColor: tokens.border }} />
+            <ListRow
+              icon="calendar-outline"
+              title="Fixtures"
+              onPress={() => router.push({ pathname: '/(tabs)/tournaments/fixturesscreen', params: { tournamentId } })}
+            />
+            <View style={{ height: 1, backgroundColor: tokens.border }} />
+            <ListRow
+              icon="git-network-outline"
+              title="Bracket"
+              onPress={() => router.push({ pathname: '/(tabs)/tournaments/bracketscreen', params: { tournamentId } })}
+            />
           </Card>
+
+          {nextMatch ? (
+            <Button
+              title={`Next match · ${nextHome} vs ${nextAway}`}
+              onPress={() => router.push({
+                pathname: '/(tabs)/matches/matchdetailscreen',
+                params: { matchId: nextMatch.id },
+              })}
+            />
+          ) : null}
         </PageTile>
       </View>
     </Screen>

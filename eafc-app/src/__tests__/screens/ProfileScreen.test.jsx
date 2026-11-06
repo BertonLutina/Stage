@@ -160,6 +160,22 @@ describe('ProfileScreen tabs', () => {
     expect(getByLabelText('Edit Profile')).toBeTruthy();
   });
 
+  it('exposes the mockup profile shortcuts without removing the richer tabs', async () => {
+    const signedClub = { id: 'club-1', name: 'Night Owls FC' };
+    const { findByText, getByText } = render(
+      <ProfileScreen player={{ ...player, club_id: 'club-1', overall_rating: 84 }} signedClub={signedClub} />,
+    );
+
+    expect(getByText('Edit profile')).toBeTruthy();
+    expect(getByText('Availability')).toBeTruthy();
+    expect(getByText('My team')).toBeTruthy();
+    expect(getByText('Wallet')).toBeTruthy();
+    expect(await findByText('Games')).toBeTruthy();
+
+    fireEvent.press(getByText('My team'));
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/teams/teamprofilescreen', params: { teamId: 'club-1' } });
+  });
+
   it('puts Leave club and Sign out under Lifestyle', () => {
     const signedClub = { id: 'club-1', name: 'FC Congo' };
     const { getByText, queryByText } = render(

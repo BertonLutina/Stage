@@ -48,6 +48,7 @@ jest.mock('../../lib/stageDirectories', () => {
 });
 
 const SearchIndex = require('../../app/(tabs)/search/index').default;
+const AppsIndex = require('../../app/apps/index').default;
 const SearchPlayers = require('../../app/(tabs)/search/searchplayer').default;
 const SearchClubs = require('../../app/(tabs)/search/searchclubs').default;
 const FindPlayers = require('../../app/apps/find-players').default;
@@ -78,13 +79,13 @@ beforeEach(() => {
   mockBack.mockClear();
 });
 
-describe('Search tab (apps launcher)', () => {
-  test('keeps the app grid, filter and navigation', () => {
-    const { getByLabelText, getByText, queryByText, toJSON } = render(<SearchIndex />);
+describe('Apps directory', () => {
+  test('owns the app grid, filter and navigation', () => {
+    const { getByLabelText, getByText, queryByText, toJSON } = render(<AppsIndex />);
     expect(getByText('Find Players')).toBeTruthy();
     fireEvent.press(getByLabelText('Find Clubs'));
     expect(mockPush).toHaveBeenCalledWith('/apps/find-clubs');
-    fireEvent.changeText(getByLabelText('Search — players, clubs, inbox…'), 'zzzz-none');
+    fireEvent.changeText(getByLabelText('Search apps'), 'zzzz-none');
     expect(getByText(/No apps match/)).toBeTruthy();
     expect(queryByText('Find Players')).toBeNull();
     fireEvent.press(getByLabelText('Clear search'));
@@ -93,7 +94,7 @@ describe('Search tab (apps launcher)', () => {
   });
 });
 
-describe('Search tile borders', () => {
+describe('Apps tile borders', () => {
   test('a ready tile uses the stronger border, a not-ready tile the dimmer one', () => {
     const miniApps = require('../../lib/miniApps');
     const real = miniApps.getMiniAppGroups;
@@ -105,7 +106,7 @@ describe('Search tile borders', () => {
       ],
     }]);
     try {
-      const { getByLabelText } = render(<SearchIndex />);
+      const { getByLabelText } = render(<AppsIndex />);
       const tokens = useThemeStore.getState().tokens;
       const border = (label) => StyleSheet.flatten(getByLabelText(label).props.style).borderColor;
       expect(border('Ready App')).toBe(tokens.borderStrong);
@@ -118,6 +119,42 @@ describe('Search tile borders', () => {
 });
 
 describe('search tab directories', () => {
+  test('combines players and clubs behind a segmented control', async () => {
+    const { findByText, getByLabelText, getByText, queryByText, toJSON } = render(<SearchIndex />);
+    await findByText('Kaze');
+    expect(getByText('2 players')).toBeTruthy();
+    expect(queryByText('Find Players')).toBeNull();
+    fireEvent.press(getByLabelText('Clubs'));
+    await findByText('Red Foxes');
+    expect(getByText('1 club')).toBeTruthy();
+    fireEvent.changeText(getByLabelText('Search clubs'), 'zzz');
+    expect(await findByText('No clubs found')).toBeTruthy();
+    expect(strayHex(toJSON)).toEqual([]);
+  });
+
+  test('unified search preserves profile, club and challenge routes', async () => {
+    const { findByText, getByLabelText } = render(<SearchIndex />);
+    await findByText('Kaze');
+    fireEvent.press(getByLabelText('Kaze, CAM · OVR 87 · PS5'));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/(tabs)/profile/profilescreen',
+      params: { playerId: 'p1' },
+    });
+    fireEvent.press(getByLabelText('Clubs'));
+    await findByText('Red Foxes');
+    fireEvent.press(getByLabelText('Red Foxes, RFX · EU · OVR 80 · PS5'));
+    expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/apps/club/[id]', params: { id: 'c1' } });
+  });
+
+  test('shows a retry action when directory loading fails', async () => {
+    const directories = require('../../lib/stageDirectories');
+    directories.loadPlayerDirectory.mockRejectedValueOnce(new Error('Directory unavailable'));
+    const { findByText, getByText } = render(<SearchIndex />);
+    await findByText('Directory unavailable');
+    fireEvent.press(getByText('Try again'));
+    expect(await findByText('Kaze')).toBeTruthy();
+  });
+
   test('players: rows, view action and challenge action', async () => {
     const { findByText, getByLabelText, toJSON } = render(<SearchPlayers />);
     await findByText('Kaze');

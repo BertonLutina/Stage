@@ -57,7 +57,7 @@ describe('mobile match / tournament / season parity wiring', () => {
     expect(source).not.toMatch(/tournament\.mode !== 'club'/);
   });
 
-  test('match hub and tournament list use Game Day / Open Tournaments labels', () => {
+  test('match hub and tournament list use Game Day / rebuild tournament labels', () => {
     expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/KICKOFF/);
     expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/Game Day/);
     expect(read('../../app/(tabs)/matches/index.jsx')).toMatch(/MATCH SCREENS/);
@@ -72,7 +72,9 @@ describe('mobile match / tournament / season parity wiring', () => {
     expect(read('../../components/matches/GameDayTileBackgroundDialog.jsx')).toMatch(/game-day-tile-background/);
     expect(read('../../app/(tabs)/matches/index.jsx')).not.toMatch(/MATCH CENTER/);
     expect(read('../../app/(tabs)/_layout.jsx')).toMatch(/title: 'Game Day'/);
-    expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).toMatch(/Open tournaments/);
+    expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).toMatch(/label: 'Open'/);
+    expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).toMatch(/label: 'My tournaments'/);
+    expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).toMatch(/label: 'Finished'/);
     expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).toMatch(/GOST/);
     expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).toMatch(/\/apps\/register/);
     expect(read('../../app/(tabs)/tournaments/tournamentlistscreen.jsx')).toMatch(/createtournamentscreen/);

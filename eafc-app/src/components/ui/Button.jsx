@@ -24,9 +24,6 @@ export default function Button({
   icon,
   accessibilityLabel,
   testID,
-  // TODO(restyle): `textClassName` is a compat prop (passed by common/Button) kept for an
-  // unmodified legacy test. Remove it together with that test once callers are gone.
-  textClassName,
 }) {
   const tokens = useThemeStore((s) => s.tokens);
   const inert = disabled || loading;
@@ -65,7 +62,6 @@ export default function Button({
             {icon ? <Ionicons name={icon} size={ICON_SIZE} color={c.fg} /> : null}
             <View style={{ flexShrink: 1 }}>
               <Text
-                className={textClassName}
                 numberOfLines={1}
                 ellipsizeMode="tail"
                 style={{

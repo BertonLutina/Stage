@@ -12,7 +12,7 @@ import { resolveMyPlayerAndClub, stageClient } from '@/api/stageClient';
 import DateTimeZoneFields from '@/components/matches/DateTimeZoneFields';
 import useThemeStore from '@/store/themeStore';
 import { Button, Card, IconButton, Screen, SectionLabel, TextField } from '@/components/ui';
-import PageTile, { PageTitle, SilverPill } from '@/components/theme/PageTile';
+import { PageTitle, SilverPill } from '@/components/theme/PageTile';
 import { combineDateTimeToMysql } from '@/lib/arrangeGame';
 import {
   DEFAULT_TOURNAMENT_FORM,
@@ -203,15 +203,15 @@ export default function CreateTournamentScreen() {
           <IconButton icon="close" accessibilityLabel="Close" onPress={() => router.back()} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <PageTitle
-              title="CREATE CUP"
-              subtitle="Community tournament · STAGE Plus"
+              eyebrow="NEW TOURNAMENT"
+              title="CREATE TOURNAMENT"
               padded={false}
               style={{ paddingBottom: 0 }}
             />
           </View>
         </View>
 
-        <PageTile tileKey="tournaments" tileTitle="CREATE CUP" contentStyle={{ paddingHorizontal: 12, gap: 16 }}>
+        <View style={{ gap: 16 }}>
           {!canCreate ? (
             <View style={{ gap: 10 }}>
               <Text style={{ color: tokens.warning, fontSize: 15, fontWeight: '700' }}>STAGE Plus required</Text>
@@ -400,7 +400,7 @@ export default function CreateTournamentScreen() {
               <Button title="Create tournament" onPress={create} loading={creating} />
             </>
           )}
-        </PageTile>
+        </View>
       </View>
     </Screen>
   );

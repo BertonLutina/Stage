@@ -66,6 +66,8 @@ export default function ClubHero({
   const portrait = club?.logo_url || club?.avatar_url || club?.avatar;
   const motto = club?.motto || club?.slogan || club?.bio || club?.description;
   const members = memberCount ?? club?.member_count ?? club?.members_count ?? null;
+  const foundedAt = club?.founded_at || club?.created_date || club?.created_at;
+  const foundedYear = foundedAt ? new Date(foundedAt).getFullYear() : null;
 
   return (
     <View>
@@ -128,6 +130,9 @@ export default function ClubHero({
               ) : null}
               {members != null ? (
                 <GamerMetaPill icon="people" iconColor={tokens.cyan}>{members}</GamerMetaPill>
+              ) : null}
+              {Number.isFinite(foundedYear) ? (
+                <GamerMetaPill icon="calendar-outline" iconColor={tokens.cyan}>{`Founded ${foundedYear}`}</GamerMetaPill>
               ) : null}
             </View>
             <RecordDots record={record} />

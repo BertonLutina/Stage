@@ -12,9 +12,10 @@ import IconButton from '@/components/ui/IconButton';
 import TextField from '@/components/ui/TextField';
 import Button from '@/components/ui/Button';
 import SectionLabel from '@/components/ui/SectionLabel';
+import Card from '@/components/ui/Card';
 
 export default function CreateTeamScreen({ navigation }) {
-  const [form, setForm] = useState({ club_name: '', country: '', country_code: '', bio: '' });
+  const [form, setForm] = useState({ club_name: '', tag: '', country: '', country_code: '', bio: '' });
   const [avatarUri, setAvatarUri] = useState(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -43,7 +44,10 @@ export default function CreateTeamScreen({ navigation }) {
     if (!form.club_name) return setError('Club name is required');
     setLoading(true);
     try {
-      const payload = { ...form };
+      const payload = {
+        ...form,
+        tag: form.tag.trim().toUpperCase().slice(0, 5),
+      };
       if (avatarUri && avatarUri.startsWith('file://')) {
         const ext = avatarUri.split('.').pop() || 'jpg';
         payload.avatar = {
@@ -53,7 +57,8 @@ export default function CreateTeamScreen({ navigation }) {
         };
       }
       const team = await createTeam(payload);
-      navigation.replace('TeamProfile', { teamId: team.id });
+      if (navigation?.replace) navigation.replace('TeamProfile', { teamId: team.id });
+      else router.replace({ pathname: '/teams/teamprofilescreen', params: { teamId: String(team.id) } });
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create team');
     } finally { setLoading(false); }
@@ -140,6 +145,20 @@ export default function CreateTeamScreen({ navigation }) {
         </View>
       </View>
 
+      <TextField label="Tag" value={form.tag} onChangeText={set('tag')} placeholder="NOB" autoCapitalize="characters" />
+      <View style={{ gap: 8 }}>
+        <Text style={{ color: tokens.muted, fontSize: 12, fontWeight: '600' }}>Invite players</Text>
+        <Card style={{ paddingVertical: 10 }}>
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/search/searchplayer')}
+            accessibilityRole="button"
+            accessibilityLabel="Find players"
+            style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed', borderColor: tokens.borderStrong, borderRadius: 999 }}
+          >
+            <Text style={{ color: tokens.cyan, fontWeight: '700' }}>+ Find players</Text>
+          </TouchableOpacity>
+        </Card>
+      </View>
       <TextField label="Country" value={form.country} onChangeText={set('country')} placeholder="Belgium" />
       <TextField label="Country Code" value={form.country_code} onChangeText={set('country_code')} placeholder="BE" autoCapitalize="characters" />
       <TextField label="Bio" value={form.bio} onChangeText={set('bio')} placeholder="About your team..." multiline numberOfLines={3} />

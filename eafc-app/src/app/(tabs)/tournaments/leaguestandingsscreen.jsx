@@ -1,98 +1,71 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ActivityIndicator, RefreshControl } from 'react-native';
+import React, { useState } from 'react';
+import { ActivityIndicator, RefreshControl, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { fetchTournamentMatches, fetchTournamentPublic } from '@/api/tournamentActions';
-import { calculateLeagueStandings, calculateGroupStandings } from '@/lib/tournamentEngine';
 import useThemeStore from '@/store/themeStore';
-import { Screen } from '@/components/ui';
+import useTournament from '@/hooks/useTournament';
+import { Button, Card, Screen, SegmentedControl } from '@/components/ui';
 import StandingsTable from '@/components/tournament/StandingsTable';
 import CompetitionHeader from '@/components/tournament/CompetitionHeader';
 
+const FILTERS = [
+  { key: 'overall', label: 'Overall' },
+  { key: 'home', label: 'Home' },
+  { key: 'away', label: 'Away' },
+  { key: 'form', label: 'Form' },
+];
+
 export default function LeagueStandingsScreen() {
   const { tournamentId } = useLocalSearchParams();
-  const tokens = useThemeStore((s) => s.tokens);
-  const [tournament, setTournament] = useState(null);
-  const [matches, setMatches] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
-
-  const load = useCallback(async () => {
-    if (!tournamentId) return;
-    try {
-      setError('');
-      const [t, rows] = await Promise.all([
-        fetchTournamentPublic(tournamentId).catch(() => null),
-        fetchTournamentMatches(tournamentId),
-      ]);
-      setTournament(t);
-      setMatches(Array.isArray(rows) ? rows : []);
-    } catch (err) {
-      setError(err?.message || 'Failed to load standings');
-      setMatches([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [tournamentId]);
-
-  useEffect(() => { load(); }, [load]);
-
-  const isGroupStage = String(tournament?.type || '') === 'group_stage';
-  const participantType = tournament?.participant_type === 'player' ? 'player' : 'club';
-  const standingsOpts = useMemo(() => ({ participant_type: participantType }), [participantType]);
-  const leagueRows = useMemo(
-    () => calculateLeagueStandings(matches, standingsOpts),
-    [matches, standingsOpts],
-  );
-  const groupTables = useMemo(() => {
-    if (!isGroupStage) return [];
-    const numGroups = Math.max(1, Number(tournament?.num_groups) || 2);
-    return calculateGroupStandings(matches, numGroups, participantType).map((teams, index) => ({
-      name: `Group ${String.fromCharCode(65 + index)}`,
-      teams,
-    }));
-  }, [isGroupStage, matches, tournament?.num_groups, participantType]);
+  const tokens = useThemeStore((state) => state.tokens);
+  const { data, loading, error, refreshing, refetch } = useTournament(tournamentId);
+  const [filter, setFilter] = useState('overall');
+  const tournament = data?.tournament || null;
+  const groups = data?.groups || [];
+  const rows = data?.standings || [];
+  const grouped = String(tournament?.type || '').toLowerCase() === 'group_stage';
 
   return (
     <Screen
       refreshControl={loading ? undefined : (
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => { setRefreshing(true); load(); }}
-          tintColor={tokens.cyan}
-        />
+        <RefreshControl refreshing={refreshing} onRefresh={refetch} tintColor={tokens.cyan} />
       )}
     >
-      <View style={{ gap: 14 }}>
+      <View style={{ gap: 16 }}>
         <CompetitionHeader eyebrow={tournament?.name || 'Tournament'} title="Standings" />
+        <SegmentedControl
+          accessibilityLabel="Standings view"
+          options={FILTERS}
+          value={filter}
+          onChange={setFilter}
+        />
 
         {loading ? (
-          <View style={{ paddingVertical: 48, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ paddingVertical: 48, alignItems: 'center' }}>
             <ActivityIndicator color={tokens.cyan} />
           </View>
+        ) : error ? (
+          <Card style={{ gap: 14, alignItems: 'center' }}>
+            <Text style={{ color: tokens.danger, textAlign: 'center' }}>{error}</Text>
+            <Button title="Retry" variant="secondary" onPress={refetch} />
+          </Card>
+        ) : filter !== 'overall' ? (
+          <Card style={{ gap: 8, alignItems: 'center', paddingVertical: 28 }}>
+            <Text style={{ color: tokens.text, fontWeight: '700' }}>{FILTERS.find((item) => item.key === filter)?.label} split unavailable</Text>
+            <Text style={{ color: tokens.muted, textAlign: 'center', lineHeight: 19 }}>
+              Stage does not provide this standings split yet. Overall results remain available.
+            </Text>
+          </Card>
+        ) : grouped ? (
+          groups.length ? groups.map((group) => (
+            <StandingsTable
+              key={group.id}
+              title={group.name}
+              rows={group.teams}
+              emptyLabel="No group results yet"
+            />
+          )) : <StandingsTable rows={[]} emptyLabel="No group results yet" />
         ) : (
-          <>
-            {error ? <Text style={{ color: tokens.danger, fontSize: 12 }}>{error}</Text> : null}
-
-            {isGroupStage ? (
-              groupTables.length ? groupTables.map((group) => (
-                <StandingsTable
-                  key={group.name}
-                  title={group.name}
-                  rows={group.teams}
-                  emptyLabel="No group results yet"
-                />
-              )) : (
-                <StandingsTable rows={[]} emptyLabel="No group results yet" />
-              )
-            ) : (
-              <StandingsTable
-                title={tournament?.type === 'league' ? 'League table' : 'Table'}
-                rows={leagueRows}
-              />
-            )}
-          </>
+          <StandingsTable title="League table" rows={rows} emptyLabel="No standings yet" />
         )}
       </View>
     </Screen>

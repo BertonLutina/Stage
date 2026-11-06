@@ -21,45 +21,47 @@ Legend: **GAP** = no endpoint found · **CONFIRM** = client helper exists, endpo
 | Screen | Element | Data needed | Proposed endpoint |
 |---|---|---|---|
 | Tournaments | prize / entry fee / slots | per-tournament {prizeStc, entryFeeStc, slotsFilled, slotsTotal} | extend `GET /tournaments/list` items — **CONFIRM** |
-| GroupStage | Group tables + matches | groups [{name, rows:[{rank,club,played,gd,pts,qualifies}], matches:[...]}] | `GET /api/mobile/tournaments/:id/groups` — **GAP** |
 | Standings | Home/Away/Form splits | standings filtered by scope | `GET /api/mobile/tournaments/:id/standings?scope=home|away|form` — **CONFIRM/GAP** (overall via `lib/standingsCore.js`) |
-| Bracket | Knockout bracket | rounds [{name, matches:[{home,away,homeScore,awayScore,date,winner}]}] | `GET /api/mobile/tournaments/:id/bracket` — **GAP** (`lib/bracketRounds.js` is client-only) |
 
 ## Profile / teams
 
 | Screen | Element | Data needed | Proposed endpoint |
 |---|---|---|---|
-| Profile | OVR rating badge | computed overall rating | part of `players/me/stats` or `players/:id` → `{ovr}` — **CONFIRM** |
 | Profile / Gamertag | Pro Club link / unlink / import | {linked, clubName, platform}; link, unlink, import stats | `GET/POST/DELETE /api/mobile/players/me/proclub` — **GAP** |
 | Gamertag | Gamertag availability check | {available:boolean} for a candidate tag | `GET /api/mobile/players/gamertag-available?tag=` — **GAP** |
-| Availability | Weekly grid tri-state | {day, slot} → available|maybe|busy; timezone | confirm `GET/PUT /users/:id/availability` returns a 7×4 tri-state grid, not free-text — **CONFIRM** |
-| TeamProfile | Founded date, trophies count | club {foundedYear, trophies} | extend `GET /teams/:id` — **CONFIRM** (`lib/trophyCollection.js`) |
+| EditProfile | Preferred foot | player `preferred_foot: left|right|both` persisted with the profile | extend the Player schema / `PUT /users/me` — **GAP** |
+| Availability | “Maybe” tri-state | availability slot status `available|maybe|busy` | extend `GET/PUT /users/:id/availability`; current endpoint persists only `{day_of_week,start_time,end_time}` available ranges — **GAP** |
+| CreateTeam | Colours, direct invite list, open-to-applications | confirmed create fields + invitation action | extend `POST /api/mobile/teams` and add invite action — **GAP** |
 
 ## Apps
 
 | Screen | Element | Data needed | Proposed endpoint |
 |---|---|---|---|
-| Wallet | Balance + monthly delta | `{balanceStc, monthDeltaStc}` | `GET /api/mobile/wallet` → `{balanceStc,monthDeltaStc}` — **GAP** |
-| Wallet | Activity list | transactions [{id,label,context,date,amountStc,sign}] | `GET /api/mobile/wallet/activity` — **GAP** |
+| Wallet | Monthly delta | `{monthDeltaStc}` | extend `playerWallet {action:'get_balance'}` with a confirmed month delta — **GAP** |
 | Wallet | Send STC | transfer STC to a player/club | `POST /api/mobile/wallet/send` — **GAP** (financial — server-side only) |
 | Store | Catalogue | items [{id,name,category,priceStc,featured,image}] | `GET /api/mobile/store/items` — **GAP** |
 | Store | Buy item | purchase with STC balance | `POST /api/mobile/store/items/:id/buy` — **GAP** (top-up via `lib/stripeCheckout.js`) |
-| Transfers | Transfer feed | entries [{player,pos,ovr,from,to,games,status}] filtered by Latest/MyOffers/FreeAgents | `GET /api/mobile/transfers?scope=` — **CONFIRM** (`lib/transferMarketEntries.js`) |
-| Transfers | Make offer | create a transfer offer to a player | `POST /api/mobile/transfers/offers` — **CONFIRM** (`lib/wagerActions.js`?) |
-| InboxMessage | Message detail + accept/decline | message {id,type,sender,body,offer{...}}; act on contract offer / match invite | `GET /api/mobile/inbox/:id`; `POST /api/mobile/inbox/:id/accept|decline` — **CONFIRM** (`lib/inboxData.js`) |
-| Inbox | Mark all read | mark all inbox items read | `POST /api/mobile/inbox/read-all` — **CONFIRM** |
+| Transfers | Latest / My offers feed | entries [{player,pos,ovr,from,to,games,status}] scoped to latest activity or the viewer's offers | extend `getTransferMarket` with `latest` and `my_offers` collections — **GAP** |
 | Club | Head-to-head | H2H record vs the viewer's club {wins,draws,losses} | `GET /api/mobile/teams/:id/head-to-head?vs=` — **GAP** |
-| Club | Challenge / Follow | create a challenge; follow a club | challenge via arrange-game flow; follow `POST /api/mobile/teams/:id/follow` — **CONFIRM** (`lib/followTarget.js`) |
-| Settings | Notification preferences | persist match-reminder / contract-offer / club-mail toggles | `GET/PUT /api/mobile/settings/notifications` — **GAP** |
 
 ## Resolved during build (were listed as gaps, found fully backed)
 
 - **Home — Objectives + CLAIM REWARD**: real (`ObjectivesWidget` → `claimObjectiveReward` function).
 - **Home — contract games x/y**: real (`vm.tenure.contractProgress` — gamesPlayed / maxGames / gamesLeft).
 - **Home — avg rating**: real (`vm.avgRating`).
+- **GroupStage — group tables + matches**: derived from real `fetchTournamentMatches` records with `calculateGroupStandings`; a dedicated `/groups` endpoint is not required.
+- **Bracket — knockout rounds**: derived from real `fetchTournamentMatches` records with `normalizeBracketRounds`; a dedicated `/bracket` endpoint is not required.
+- **Profile — OVR and career stats**: real Player `overall_rating` plus `GET /player-careers/:id`.
+- **Availability — 7×4 binary grid**: derived losslessly from the real day/start/end availability ranges and saved back through the existing endpoint.
+- **TeamProfile — founded year and trophies**: founded year derives from the real club creation date; trophy count comes from `loadClubProfile` achievements/placements.
+- **Wallet — balance + activity + salary**: real `playerWallet` function actions (`get_balance`, `get_history`, `pay_salary`).
+- **Transfers — free agents + expiring contracts**: real `getTransferMarket` function normalized by `transferMarketEntries.js`; contract and loan offers continue through the player-profile services.
+- **Inbox / InboxMessage**: real InboxMessage entities, persistent mark-all-read, contract/match/loan response actions, and realtime subscriptions.
+- **Club — Challenge + Follow**: Challenge opens the real arrange-game flow; Follow persists through the Follow entity.
+- **Settings — notification preferences**: persisted on Player `notification_settings`, synchronized to OneSignal tags and native push state.
 
-Still open (highest-value first): Wallet, Store, match stats + MOTM + scorers, highlights list, group tables + bracket, head-to-head, UploadVideo file-upload, GameDay contract-ends banner, notification preferences.
+Still open (highest-value first): Store cosmetic catalogue/buy, Wallet Send STC + monthly delta, Transfers Latest/My-offers feed, match stats + MOTM + scorers, highlights list, standings Home/Away/Form splits, head-to-head, UploadVideo file-upload, GameDay contract-ends banner.
 
 ## Note for the server team (`Lengarose/stage`)
 
-Highest-value gaps (block whole screens): **Wallet**, **Store**, **objectives/rewards**, **match stats + MOTM + highlights**, **group tables + bracket**, **head-to-head**. The rest degrade gracefully to empty states or hidden blocks. Each screen task that hits a **GAP** ships the empty state and leaves its row here; each **CONFIRM** row is resolved (promoted to `mapped` or demoted to `GAP`) during that screen's task.
+Highest-value gaps are the **cosmetic Store catalogue**, **Wallet Send STC**, **Transfers Latest/My-offers**, **match stats + MOTM + highlights**, and **head-to-head**. Wallet, Store and Transfers still have real usable surfaces; unsupported mockup-only blocks remain hidden rather than showing fake data.

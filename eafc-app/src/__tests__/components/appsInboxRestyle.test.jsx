@@ -26,10 +26,11 @@ jest.mock('@react-native-community/datetimepicker', () => 'DateTimePicker');
 const mockLoanGet = jest.fn();
 const mockInboxLoad = jest.fn();
 jest.mock('../../api/stageClient', () => ({
+  resolveMyPlayerAndClub: jest.fn(() => Promise.resolve({ player: null })),
   stageClient: {
     entities: {
       PlayerLoan: { get: (...a) => mockLoanGet(...a) },
-      InboxMessage: { subscribe: () => () => {} },
+      InboxMessage: { subscribe: () => () => {}, filter: jest.fn(), update: jest.fn() },
     },
     http: { post: jest.fn() },
   },
@@ -49,6 +50,7 @@ const InboxMessageDetail = require('../../components/inbox/InboxMessageDetail').
 const MiniAppFallback = require('../../app/apps/[slug]').default;
 const InboxLoanCard = require('../../components/inbox/InboxLoanCard').default;
 const InboxDetailScreen = require('../../app/apps/inbox/[id]').default;
+const InboxScreen = require('../../app/apps/inbox/index').default;
 
 const offer = {
   id: 'm1',
@@ -126,6 +128,22 @@ describe('Apps hub and Inbox on the Stage design', () => {
   test('empty inbox keeps its empty state', () => {
     const { getByText } = render(<InboxMessageList messages={[]} />);
     expect(getByText('Your inbox is empty')).toBeTruthy();
+  });
+
+  test('inbox filters all, needs-action and unread messages', async () => {
+    const readMessage = {
+      ...offer, id: 'm2', subject: 'Welcome', message_type: 'system', status: 'sent', is_read: true,
+    };
+    mockInboxLoad.mockResolvedValue({ email: 'player@example.com', messages: [offer, readMessage] });
+    const { findByText, getByText, getByTestId, queryByText } = render(<InboxScreen />);
+    await findByText('Welcome');
+    fireEvent.press(getByTestId('inbox-filter-action'));
+    expect(getByText('Contract offer')).toBeTruthy();
+    expect(queryByText('Welcome')).toBeNull();
+    fireEvent.press(getByTestId('inbox-filter-unread'));
+    expect(getByText('Contract offer')).toBeTruthy();
+    fireEvent.press(getByTestId('inbox-filter-all'));
+    expect(getByText('Welcome')).toBeTruthy();
   });
 
   test('message detail keeps accept and decline actions and labelled icon buttons', async () => {

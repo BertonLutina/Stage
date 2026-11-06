@@ -1,3 +1,4 @@
+import { resolveNotificationHref } from './inboxHelpers';
 import { NOTIFICATION_SETTINGS, isChannelCategoryOn } from './notificationTypes';
 
 export function getOneSignalAppId() {
@@ -11,19 +12,18 @@ export function isOneSignalConfigured() {
 export function pathFromNotificationData(data = {}) {
   const link = String(data.link || data.url || '').trim();
   if (!link) return '/apps/inbox';
-  if (/inbox/i.test(link)) {
-    const id = String(data.related_id || data.relatedId || '').trim();
-    return id ? { pathname: '/apps/inbox/[id]', params: { id } } : '/apps/inbox';
+  const extraId = String(data.match_id || data.matchId || data.related_id || data.relatedId || '').trim();
+  let href = link;
+  if (extraId && !/[?&](id|match|matchId)=/i.test(link)) {
+    const key = /inbox/i.test(link) ? 'id' : 'match';
+    if (key === 'id' || /game-?day|match|live/i.test(link)) {
+      href = `${link}${link.includes('?') ? '&' : '?'}${key}=${encodeURIComponent(extraId)}`;
+    }
   }
-  if (/notification/i.test(link)) return '/apps/inbox';
-  if (/game-?day|match/i.test(link)) {
-    const matchId = String(data.match_id || data.matchId || data.related_id || '').trim();
-    return matchId
-      ? { pathname: '/(tabs)/matches/matchdetailscreen', params: { matchId } }
-      : '/(tabs)/matches';
-  }
-  if (link.startsWith('/apps/')) return link;
-  return '/apps/inbox';
+  const target = resolveNotificationHref(href);
+  if (!target) return '/apps/inbox';
+  if (target.params && Object.keys(target.params).length) return target;
+  return target.pathname;
 }
 
 export function getOneSignalNative() {

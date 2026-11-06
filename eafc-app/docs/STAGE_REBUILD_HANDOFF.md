@@ -4,7 +4,7 @@
 
 ## Your task
 
-Continue the **full rebuild of the Stage mobile app** (`eafc-app`, Expo / React Native, expo-router): every one of the 33 mocked screens must render the new design from its mockup **and** be wired to **real Stage data**. You are picking up mid-way. Sections 1 and 2 are done; do Section 3 next (see "What to do next").
+Continue the **full rebuild of the Stage mobile app** (`eafc-app`, Expo / React Native, expo-router): every one of the 33 mocked screens must render the new design from its mockup **and** be wired to **real Stage data**. Sections 1–5 are implemented in the current working tree; do final verification and Phase 7 cleanup next (see "What to do next").
 
 **Read these first (they are the source of truth):**
 - `docs/STAGE_REBUILD_PROMPT.md` — the rebuild spec (goal, order of work, rules).
@@ -56,19 +56,35 @@ Continue the **full rebuild of the Stage mobile app** (`eafc-app`, Expo / React 
 - **GameDay / MatchDetail / UploadVideo / WatchMatch** — verified as-is (richer than mockup, real data, states). Unbacked bits are gaps: MatchDetail stats/possession/shots/pass% + MOTM + scorers; WatchMatch highlights list; UploadVideo file-upload (backend only takes a video **URL**: `POST /matches/:id/video {video_url, video_source}`); GameDay "contract ends in N games" banner.
 - **Search tab** — **deferred to Section 5** (see below).
 
+**Section 3 — Tournaments** (working tree, not committed):
+- All seven tournament screens rebuilt around canonical `useTournament` / `useTournamentsList` data contracts.
+- Group tables and brackets derive from real matches; no dedicated fake endpoints. Home/Away/Form standings remain an explicit gap.
+
+**Section 4 — Profile & teams** (working tree, not committed):
+- Profile summary/navigation added without removing Posts/Showcase/Career/Trophies/Lifestyle; real OVR and career stats.
+- Availability is a real 7×4 binary grid backed by the existing day/time-range endpoint; unsupported “Maybe” remains a gap.
+- Team profile uses canonical `useTeam`, real founded year/trophies, and preserves the richer club features. Create Team keeps only confirmed fields/actions.
+
+**Section 5 — Apps + Search** (working tree, not committed):
+- Added the dedicated `/apps` launcher backed by `lib/miniApps.js`, moved the mini-app grid out of Search, and linked it from Home layout E.
+- Rebuilt the Search tab as one Players/Clubs directory with `useSearchDirectory`, real Player/Club entities, OVR, actions, error/retry and pull-to-refresh. Legacy deep-link directory routes remain available.
+- Inbox now includes All / Needs action / Unread filters while retaining realtime messages, persistent mark-all-read, and rich contract/match/loan actions.
+- Wallet, Store, Transfers and Settings were verified as real, richer implementations: `playerWallet`, Stripe/STAGE Plus, `getTransferMarket`, Player notification settings/OneSignal/biometrics. Unsupported mockup-only data stays recorded as a gap.
+- Public Club now uses canonical `useTeam`, supports retry/refresh, real Follow persistence, and the arrange-game Challenge flow. Head-to-head remains a backend gap.
+- Section 5 verification: 9 focused suites, 477 assertions green; Expo iOS export succeeds. Jest still exits 1 after the green assertions because the known delayed `polyfillStorage.js` persistence timer imports AsyncStorage after teardown in `moneyAppsRestyle.test.jsx`.
+
 ## What to do next
 
 Work section by section, each screen via this recipe: **data hook (per domain, `useAsyncResource` shape) → screen UI from the mockup → wire actions to existing services → loading/empty/error/refresh states → tests → compare to the `.png`**. After each section: run touched suites isolated, update `STAGE_REBUILD_STATUS.md`, report to Lutina (done / data gaps / anything that doesn't match and why).
 
-### Section 3 — Tournaments (7 screens) ← start here
+### Section 3 — Tournaments (7 screens) — complete
 `Tournaments`, `TournamentDetail`, `CreateTournament`, `GroupStage`, `Standings`, `Fixtures`, `Bracket`. Files under `src/app/(tabs)/tournaments/*` (+ `src/app/apps/leagues/[slug].jsx` for Standings). Data via `useTournamentsList`, `tournamentStore`, `src/api/tournamentActions.js`, `src/lib/{tournamentEngine,standingsCore,bracketRounds,standingsRows}.js`. **Expect these to be already built/rich** (verify first, like Section 2). **Likely real gaps to confirm by grep/probe** before building: group tables (`/tournaments/:id/groups`), bracket (`/tournaments/:id/bracket`), standings Home/Away/Form splits, prize/entry-fee/slots fields. Confirm each endpoint exists; if not, empty state + keep the `STAGE_DATA_GAPS.md` row.
 
-### Section 4 — Profile & teams (5 screens)
+### Section 4 — Profile & teams (5 screens) — complete
 `Profile`, `EditProfile`, `Availability`, `TeamProfile`, `CreateTeam`. Files `src/app/(tabs)/profile/*`, `src/app/teams/*`. Confirm: availability grid is a real 7×4 tri-state (vs free text); Pro-Club link/unlink; trophies/founded date.
 
-### Section 5 — Apps (8 screens) + the deferred Search tab
-`Apps` (directory), `Inbox`, `InboxMessage`, `Wallet`, `Store`, `Transfers`, `Settings`, `Club`. **Highest-value backend gaps live here: Wallet (balance+activity+send), Store (catalogue+buy), Transfers feed, head-to-head** — these likely need new endpoints in the web repo `Lengarose/stage` (`server/src/server/routes/…`); render empty states until they exist.
-- **Build the Apps directory to host the mini-apps grid first** (it currently lives only in `src/app/(tabs)/search/index.jsx` via `getMiniAppGroups`). Then **repurpose the Search tab** (`search/index.jsx`) into **player/club search** with a Players/Clubs `SegmentedControl`, folding in the near-identical `searchplayer.jsx` / `searchclubs.jsx` (real directory loaders `loadPlayerDirectory` / `loadClubDirectory`). This is the mockup's Search tab; it was deferred from Section 2 because the grid had to relocate first.
+### Section 5 — Apps (8 screens) + the deferred Search tab — complete
+`Apps` (directory), `Inbox`, `InboxMessage`, `Wallet`, `Store`, `Transfers`, `Settings`, `Club`, plus the Search relocation/rebuild. Real gaps are narrower than first expected: Wallet monthly delta/Send STC, cosmetic Store catalogue/buy, Transfers Latest/My-offers feed, and Club head-to-head. See the updated status and gap registers.
 
 ### Phase 7 — Cleanup (last)
 Delete replaced components / dead helpers once nothing imports them; remove tests that only covered deleted UI (keep logic tests); re-point deep links / notification targets to rebuilt routes. **Before deleting any user-reachable no-mockup feature (Feed, Reels, Chat/Messages, DressingRoom, Formation, ManageTeam, TeamDashboard, dashboard layout lab/picker, international tournaments, `src/navigation/*`), stop and get Lutina's approval** — see the inventory's "needs decision" list.

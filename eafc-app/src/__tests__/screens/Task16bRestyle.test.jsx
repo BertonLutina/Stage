@@ -60,6 +60,11 @@ jest.mock('../../lib/registrationEngine', () => ({
 jest.mock('../../lib/subscriptionUtils', () => ({
   entityHasStagePlus: () => mockPlus,
 }));
+jest.mock('../../components/profile/FollowToggleButton', () => {
+  const React = require('react');
+  const { Text } = require('react-native');
+  return ({ hidden }) => (hidden ? null : React.createElement(Text, null, 'Follow'));
+});
 const mockTabsProps = jest.fn();
 jest.mock('../../app/(tabs)/profile/clubProfileTabs', () => (props) => {
   mockTabsProps(props);
@@ -111,7 +116,9 @@ const BUNDLE = {
 describe('Club app screen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockLoadClubProfile.mockReset();
     mockParams = { id: 'c1' };
+    mockResolve.mockResolvedValue({ presidentClub: null });
     useTheme('theme-dark');
   });
 
@@ -153,6 +160,31 @@ describe('Club app screen', () => {
     expect(styles(r).some((s) => s.paddingHorizontal === 20 && s.gap === 14)).toBe(true);
     fireEvent.press(r.getByLabelText('Back'));
     expect(mockBack).toHaveBeenCalled();
+  });
+
+  test('club president can challenge and follow a public club', async () => {
+    mockResolve.mockResolvedValue({ presidentClub: { id: 'own-club' } });
+    mockLoadClubProfile.mockResolvedValue(BUNDLE);
+    const r = render(<ClubScreen />);
+    await waitFor(() => r.getByText('Challenge'));
+    expect(r.getByText('Follow')).toBeTruthy();
+    fireEvent.press(r.getByText('Challenge'));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/(tabs)/matches',
+      params: expect.objectContaining({
+        arrange: '1', opponentKind: 'club', opponentId: 'c1', opponentName: 'Red Foxes',
+      }),
+    });
+  });
+
+  test('load errors expose retry and recover', async () => {
+    mockLoadClubProfile
+      .mockRejectedValueOnce(new Error('Club unavailable'))
+      .mockResolvedValueOnce(BUNDLE);
+    const r = render(<ClubScreen />);
+    await waitFor(() => r.getByText('Club unavailable'));
+    fireEvent.press(r.getByText('Try again'));
+    await waitFor(() => r.getByText('Red Foxes'));
   });
 
   test('real zero-filled shapes (failed fetches) hide the stat card instead of showing 0', async () => {

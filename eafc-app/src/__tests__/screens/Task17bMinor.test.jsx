@@ -312,12 +312,13 @@ describe('Availability screen back button', () => {
     expect(mockBack).not.toHaveBeenCalled();
   });
 
-  test('toggling a day and saving still work', async () => {
+  test('adjacent grid cells are saved as one real availability range', async () => {
     const { getByLabelText, getByText } = render(<AvailabilityScreen />);
     await waitFor(() => expect(mockApiGet).toHaveBeenCalled());
-    fireEvent.press(getByLabelText('Monday availability'));
-    expect(getByText('18:00 – 22:00')).toBeTruthy();
-    await act(async () => { fireEvent.press(getByText('Save Availability')); });
+    await act(async () => { fireEvent.press(getByLabelText('Monday 18–20, busy')); });
+    await waitFor(() => expect(getByLabelText('Monday 18–20, available')).toBeTruthy());
+    await act(async () => { fireEvent.press(getByLabelText('Monday 20–22, busy')); });
+    await act(async () => { fireEvent.press(getByText('Save availability')); });
     expect(mockApiPut).toHaveBeenCalledWith('/users/u1/availability', {
       slots: [{ day_of_week: 1, start_time: '18:00', end_time: '22:00' }],
     });

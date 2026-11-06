@@ -1,104 +1,112 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import api from '../../../utils/api';
 import useAuthStore from '../../../store/authStore';
 import useThemeStore from '@/store/themeStore';
-import { Screen, Card, Button, IconButton, SectionLabel, Toggle } from '@/components/ui';
+import useAvailability, { AVAILABILITY_WINDOWS } from '@/hooks/useAvailability';
+import { Button, IconButton, Screen, SectionLabel } from '@/components/ui';
 import { headingStyle } from '@/lib/fonts';
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAYS = [
+  { value: 1, short: 'Mon', long: 'Monday' }, { value: 2, short: 'Tue', long: 'Tuesday' },
+  { value: 3, short: 'Wed', long: 'Wednesday' }, { value: 4, short: 'Thu', long: 'Thursday' },
+  { value: 5, short: 'Fri', long: 'Friday' }, { value: 6, short: 'Sat', long: 'Saturday' },
+  { value: 0, short: 'Sun', long: 'Sunday' },
+];
+const LABELS = ['18–20', '20–22', '22–24', '00–02'];
 
 export default function AvailabilityScreen() {
   const { user } = useAuthStore();
   const router = useRouter();
   const tokens = useThemeStore((s) => s.tokens);
-  const [slots, setSlots] = useState([]);
+  const { data, loading, error, refreshing, refetch, save } = useAvailability(user?.id);
+  const [grid, setGrid] = useState(data.grid);
+  const dirtyRef = useRef(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
-  useEffect(() => {
-    api.get(`/users/${user.id}/availability`).then(r => setSlots(r.data.data || []));
-  }, []);
-
-  const toggleDay = (day) => {
-    const exists = slots.find(s => s.day_of_week === day);
-    if (exists) setSlots(slots.filter(s => s.day_of_week !== day));
-    else setSlots([...slots, { day_of_week: day, start_time: '18:00', end_time: '22:00' }]);
+  useEffect(() => { if (!dirtyRef.current) setGrid(data.grid); }, [data.grid]);
+  const toggle = (day, column) => {
+    dirtyRef.current = true;
+    setGrid((current) => current.map((row, index) => (
+      index === day ? row.map((value, slot) => (
+        slot === column ? (value === 'available' ? 'busy' : 'available') : value
+      )) : row
+    )));
   };
-
-  const save = async () => {
-    setSaving(true);
-    try { await api.put(`/users/${user.id}/availability`, { slots }); }
+  const submit = async () => {
+    setSaving(true); setSaveError(null);
+    try {
+      await save(grid);
+      await refetch();
+      dirtyRef.current = false;
+    } catch (err) { setSaveError(err?.message || 'Could not save availability'); }
     finally { setSaving(false); }
   };
-
   const goBack = () => {
     if (typeof router.canGoBack === 'function' && router.canGoBack()) router.back();
     else router.replace('/(tabs)/profile');
   };
 
   return (
-    <Screen style={{ gap: 14 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+    <Screen
+      tabBar={false}
+      style={{ gap: 14 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refetch} tintColor={tokens.cyan} />}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <IconButton icon="chevron-back" accessibilityLabel="Back" onPress={goBack} />
         <SectionLabel>Availability</SectionLabel>
-        <View style={{ width: 44, height: 44 }} />
+        <View style={{ width: 44 }} />
       </View>
-      <View style={{ gap: 8 }}>
-        <Text
-          accessibilityRole="header"
-          numberOfLines={2}
-          style={[headingStyle, { color: tokens.text, fontSize: 34, lineHeight: 38, letterSpacing: 1 }]}
-        >
-          When can you play?
-        </Text>
-        <Text style={{ color: tokens.muted, fontSize: 14 }}>
-          Set the days you are available to play
-        </Text>
-      </View>
-      <View style={{ gap: 10 }}>
-        {DAYS.map((day, idx) => {
-          const slot = slots.find(s => s.day_of_week === idx);
-          return (
-            <Card key={day} highlight={!!slot}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>
-                <Pressable
-                  accessible={false}
-                  onPress={() => toggleDay(idx)}
-                  style={{ flex: 1, gap: 2 }}
-                >
-                  <Text
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
+      <Text accessibilityRole="header" style={[headingStyle, { color: tokens.text, fontSize: 34, lineHeight: 39 }]}>When can you play?</Text>
+      <Text style={{ color: tokens.muted, fontSize: 14, lineHeight: 20 }}>
+        Tap slots to tell your club when you are free. Times in {user?.timezone || 'your timezone'}.
+      </Text>
+
+      {loading ? <ActivityIndicator color={tokens.cyan} style={{ marginTop: 48 }} /> : error ? (
+        <View accessibilityRole="alert" style={{ gap: 12, paddingVertical: 28, alignItems: 'center' }}>
+          <Text style={{ color: tokens.danger, textAlign: 'center' }}>{error}</Text>
+          <Button title="Try again" variant="secondary" onPress={refetch} />
+        </View>
+      ) : (
+        <View style={{ gap: 8 }}>
+          <View style={{ flexDirection: 'row', gap: 6, paddingLeft: 48 }}>
+            {LABELS.map((label) => <Text key={label} style={{ color: tokens.muted, fontSize: 11, fontWeight: '600', textAlign: 'center', flex: 1 }}>{label}</Text>)}
+          </View>
+          {DAYS.map((day) => (
+            <View key={day.value} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={{ color: tokens.text, fontSize: 13, fontWeight: '700', width: 42 }}>{day.short}</Text>
+              {AVAILABILITY_WINDOWS.map((_, column) => {
+                const active = grid?.[day.value]?.[column] === 'available';
+                return (
+                  <Pressable
+                    key={LABELS[column]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${day.long} ${LABELS[column]}, ${active ? 'available' : 'busy'}`}
+                    onPress={() => toggle(day.value, column)}
                     style={{
-                      color: slot ? tokens.cyan : tokens.text,
-                      fontSize: 15,
-                      fontWeight: '600',
+                      flex: 1, minHeight: 48, borderRadius: 10, borderWidth: 1,
+                      borderColor: active ? tokens.cyan : tokens.border,
+                      backgroundColor: active ? tokens.cyan : tokens.bgDeep,
                     }}
-                  >
-                    {day}
-                  </Text>
-                  <Text
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                    style={{ color: tokens.muted, fontSize: 13 }}
-                  >
-                    {slot ? `${slot.start_time} – ${slot.end_time}` : 'Unavailable'}
-                  </Text>
-                </Pressable>
-                <Toggle
-                  value={!!slot}
-                  onValueChange={() => toggleDay(idx)}
-                  accessibilityLabel={`${day} availability`}
-                />
+                  />
+                );
+              })}
+            </View>
+          ))}
+          <View style={{ flexDirection: 'row', gap: 18, marginTop: 4 }}>
+            {[['Available', tokens.cyan], ['Busy', tokens.bgDeep]].map(([label, color]) => (
+              <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <View style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: color, borderWidth: 1, borderColor: label === 'Busy' ? tokens.border : color }} />
+                <Text style={{ color: tokens.muted, fontSize: 12 }}>{label}</Text>
               </View>
-            </Card>
-          );
-        })}
-      </View>
-      <View style={{ marginTop: 6 }}>
-        <Button title="Save Availability" onPress={save} loading={saving} />
-      </View>
+            ))}
+          </View>
+          {saveError ? <Text accessibilityRole="alert" style={{ color: tokens.danger }}>{saveError}</Text> : null}
+          <View style={{ marginTop: 14 }}><Button title="Save availability" onPress={submit} loading={saving} /></View>
+        </View>
+      )}
     </Screen>
   );
 }

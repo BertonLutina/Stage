@@ -798,6 +798,9 @@ function LayoutE({ vm }) {
         <KickoffCard vm={vm} />
         <ClubBlock vm={vm} compact />
         <FormBlock vm={vm} stageOnly />
+        <View style={{ flexDirection: 'row' }}>
+          <ShortcutTile icon="apps-outline" label="Apps" onPress={() => vm.open('/apps')} />
+        </View>
         <DashboardQuickGlance glance={vm.glance} onOpen={vm.open} />
         <BelowFold vm={vm} />
       </HomePageTile>

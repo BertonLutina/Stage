@@ -38,38 +38,80 @@ export function parseInboxMetadata(message = {}) {
   }
 }
 
-/** Map web notification links to Expo routes. */
+function normalizeNotificationPath(link) {
+  let path = link.trim();
+  if (/^https?:\/\//i.test(path)) {
+    const url = new URL(path);
+    path = `${url.pathname}${url.search}`;
+  } else if (/^[a-z][a-z0-9+.-]*:\/\//i.test(path)) {
+    const rest = path.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '');
+    path = rest.startsWith('/') ? rest : `/${rest}`;
+  }
+  if (!path.startsWith('/')) path = `/${path}`;
+  return path.replace(/^\/messages(?=\?|\/|$)/, '/inbox');
+}
+
+/** Map a Stage web or app link onto a rebuilt Expo route. Unknown links return null. */
 export function resolveNotificationHref(link) {
   if (!link || typeof link !== 'string') return null;
-  let path = link.trim();
-  if (!path) return null;
-  path = path.replace(/^\/messages/, '/inbox');
+  const raw = link.trim();
+  if (!raw) return null;
 
-  const inboxMatch = path.match(/^\/inbox(?:\?id=([^&]+))?/);
-  if (inboxMatch) {
-    const id = inboxMatch[1] ? decodeURIComponent(inboxMatch[1]) : null;
+  let path;
+  try {
+    path = normalizeNotificationPath(raw);
+  } catch {
+    return null;
+  }
+
+  const queryIndex = path.indexOf('?');
+  const query = queryIndex >= 0 ? path.slice(queryIndex + 1).split('#')[0] : '';
+  const params = new URLSearchParams(query);
+  const bare = (queryIndex >= 0 ? path.slice(0, queryIndex) : path.split('#')[0]).replace(/\/$/, '') || '/';
+
+  if (bare === '/inbox' || bare.startsWith('/inbox/')) {
+    const fromPath = bare === '/inbox' ? '' : decodeURIComponent(bare.slice('/inbox/'.length));
+    const id = params.get('id') || fromPath;
     return id ? { pathname: '/apps/inbox/[id]', params: { id } } : { pathname: '/apps/inbox' };
   }
 
-  if (path.startsWith('/schedule') || path.startsWith('/game-day')) return { pathname: '/(tabs)/matches' };
-  if (path.startsWith('/apps/')) {
-    return { pathname: path.split('?')[0] };
+  if (bare === '/notifications') return { pathname: '/apps/inbox' };
+  if (bare === '/schedule') return { pathname: '/(tabs)/matches' };
+  if (bare === '/lifestyle') return { pathname: '/(tabs)/profile' };
+
+  if (bare === '/game-day' || bare.startsWith('/matches') || bare === '/live' || bare.startsWith('/live/')) {
+    const fromLive = bare.startsWith('/live/') ? decodeURIComponent(bare.slice('/live/'.length)) : '';
+    const matchPath = bare.match(/^\/matches\/([^/]+)$/);
+    const fromPath = matchPath && matchPath[1] !== 'game-day' ? decodeURIComponent(matchPath[1]) : '';
+    const matchId = params.get('match') || params.get('matchId') || fromLive || fromPath;
+    return matchId
+      ? { pathname: '/(tabs)/matches/matchdetailscreen', params: { matchId } }
+      : { pathname: '/(tabs)/matches' };
   }
 
-  // Fallback: try inbox if link contains inbox message id query
-  try {
-    const url = path.includes('://') ? new URL(path) : new URL(path, 'https://stage.local');
-    if (url.pathname.includes('inbox')) {
-      const id = url.searchParams.get('id');
-      return id
-        ? { pathname: '/apps/inbox/[id]', params: { id } }
-        : { pathname: '/apps/inbox' };
-    }
-  } catch {
-    /* ignore */
+  const club = bare.match(/^\/clubs\/([^/]+)/);
+  if (club) return { pathname: '/apps/club/[id]', params: { id: decodeURIComponent(club[1]) } };
+
+  const player = bare.match(/^\/players\/([^/]+)/);
+  if (player) {
+    return { pathname: '/(tabs)/profile/profilescreen', params: { playerId: decodeURIComponent(player[1]) } };
   }
 
-  return { pathname: '/apps/inbox' };
+  const tournament = bare.match(/^\/tournaments\/([^/]+)/);
+  if (tournament) {
+    return {
+      pathname: '/(tabs)/tournaments/tournamentdetailscreen',
+      params: { tournamentId: decodeURIComponent(tournament[1]) },
+    };
+  }
+
+  if (bare === '/wallet') return { pathname: '/apps/wallet' };
+  if (bare === '/store') return { pathname: '/apps/store' };
+  if (bare === '/settings') return { pathname: '/apps/settings' };
+  if (bare === '/transfers') return { pathname: '/apps/transfers' };
+  if (bare.startsWith('/apps/')) return { pathname: bare };
+
+  return null;
 }
 
 function isFlagOn(value) {
