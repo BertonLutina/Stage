@@ -52,6 +52,14 @@ Legend: **GAP** = no endpoint found · **CONFIRM** = client helper exists, endpo
 | Club | Challenge / Follow | create a challenge; follow a club | challenge via arrange-game flow; follow `POST /api/mobile/teams/:id/follow` — **CONFIRM** (`lib/followTarget.js`) |
 | Settings | Notification preferences | persist match-reminder / contract-offer / club-mail toggles | `GET/PUT /api/mobile/settings/notifications` — **GAP** |
 
+## Resolved during build (were listed as gaps, found fully backed)
+
+- **Home — Objectives + CLAIM REWARD**: real (`ObjectivesWidget` → `claimObjectiveReward` function).
+- **Home — contract games x/y**: real (`vm.tenure.contractProgress` — gamesPlayed / maxGames / gamesLeft).
+- **Home — avg rating**: real (`vm.avgRating`).
+
+Still open (highest-value first): Wallet, Store, match stats + MOTM + scorers, highlights list, group tables + bracket, head-to-head, UploadVideo file-upload, GameDay contract-ends banner, notification preferences.
+
 ## Note for the server team (`Lengarose/stage`)
 
 Highest-value gaps (block whole screens): **Wallet**, **Store**, **objectives/rewards**, **match stats + MOTM + highlights**, **group tables + bracket**, **head-to-head**. The rest degrade gracefully to empty states or hidden blocks. Each screen task that hits a **GAP** ships the empty state and leaves its row here; each **CONFIRM** row is resolved (promoted to `mapped` or demoted to `GAP`) during that screen's task.

@@ -784,9 +784,31 @@ function LayoutD({ vm }) {
   );
 }
 
+/**
+ * Stage home — the mockup layout (docs/design/stage-mockups/2-home-gameday/Home).
+ * Stacks the existing blocks in the mockup order: next match, club rank, recent
+ * form, then objectives (via BelowFold). Reuses every block, so nothing is lost
+ * versus the other layouts.
+ */
+function LayoutE({ vm }) {
+  return (
+    <>
+      <PlayerIdentityHero vm={vm} />
+      <HomePageTile vm={vm}>
+        <KickoffCard vm={vm} />
+        <ClubBlock vm={vm} compact />
+        <FormBlock vm={vm} stageOnly />
+        <DashboardQuickGlance glance={vm.glance} onOpen={vm.open} />
+        <BelowFold vm={vm} />
+      </HomePageTile>
+    </>
+  );
+}
+
 export function DashboardLayoutBody({ layout, vm }) {
   if (layout === 'B') return <LayoutB vm={vm} />;
   if (layout === 'C') return <LayoutC vm={vm} />;
   if (layout === 'D') return <LayoutD vm={vm} />;
-  return <LayoutA vm={vm} />;
+  if (layout === 'A') return <LayoutA vm={vm} />;
+  return <LayoutE vm={vm} />;
 }

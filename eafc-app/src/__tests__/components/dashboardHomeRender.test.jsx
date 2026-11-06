@@ -104,7 +104,7 @@ beforeEach(() => {
 describe.each(['theme-dark', 'theme-video'])('Home layouts in %s', (theme) => {
   beforeEach(() => useThemeStore.getState().setStageTheme(theme));
 
-  test.each(['A', 'B', 'C', 'D'])('layout %s renders the hero, next match and form badges', async (layout) => {
+  test.each(['A', 'B', 'C', 'D', 'E'])('layout %s renders the hero, next match and form badges', async (layout) => {
     const open = jest.fn();
     const {
       getByTestId, getByText, getAllByText, getByLabelText, findByText,
@@ -123,7 +123,7 @@ describe.each(['theme-dark', 'theme-video'])('Home layouts in %s', (theme) => {
     if (layout !== 'B') expect(await findByText('No open objectives.')).toBeTruthy();
   });
 
-  test.each(['A', 'B', 'C', 'D'])('layout %s keeps its empty states with a bare account', async (layout) => {
+  test.each(['A', 'B', 'C', 'D', 'E'])('layout %s keeps its empty states with a bare account', async (layout) => {
     const { getByText, queryByLabelText, findByText } = render(
       <DashboardLayoutBody layout={layout} vm={emptyVm(jest.fn())} />,
     );

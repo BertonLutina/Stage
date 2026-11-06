@@ -6,7 +6,7 @@ const LAYOUT_KEY = 'eafc.dashboardLayoutPreview';
 const SEEN_KEY = 'eafc.dashboardLayoutOnboarded';
 
 const useDashboardLayoutStore = create((set, get) => ({
-  layout: 'A',
+  layout: 'E',
   ready: false,
   needsOnboarding: false,
 
@@ -17,7 +17,7 @@ const useDashboardLayoutStore = create((set, get) => ({
         AsyncStorage.getItem(LAYOUT_KEY),
         AsyncStorage.getItem(SEEN_KEY),
       ]);
-      const layout = isDashboardLayoutId(saved) ? saved : 'A';
+      const layout = isDashboardLayoutId(saved) ? saved : 'E';
       set({
         layout,
         ready: true,
