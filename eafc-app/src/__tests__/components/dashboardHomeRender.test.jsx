@@ -104,7 +104,7 @@ beforeEach(() => {
 describe.each(['theme-dark', 'theme-video'])('Home layouts in %s', (theme) => {
   beforeEach(() => useThemeStore.getState().setStageTheme(theme));
 
-  test.each(['A', 'B', 'C', 'D', 'E'])('layout %s renders the hero, next match and form badges', async (layout) => {
+  test.each(['A', 'B', 'C', 'D'])('layout %s renders the hero, next match and form badges', async (layout) => {
     const open = jest.fn();
     const {
       getByTestId, getByText, getAllByText, getByLabelText, findByText,
@@ -127,13 +127,55 @@ describe.each(['theme-dark', 'theme-video'])('Home layouts in %s', (theme) => {
     if (layout !== 'B') expect(await findByText('No open objectives.')).toBeTruthy();
   });
 
-  test.each(['A', 'B', 'C', 'D', 'E'])('layout %s keeps its empty states with a bare account', async (layout) => {
+  test.each(['A', 'B', 'C', 'D'])('layout %s keeps its empty states with a bare account', async (layout) => {
     const { getByText, queryByLabelText, findByText } = render(
       <DashboardLayoutBody layout={layout} vm={emptyVm(jest.fn())} />,
     );
     expect(getByText('No fixture yet')).toBeTruthy();
     expect(queryByLabelText('Transfers')).toBeNull();
     if (layout !== 'B') expect(await findByText('No open objectives.')).toBeTruthy();
+  });
+});
+
+describe('Home — Stage mockup layout (E)', () => {
+  beforeEach(() => useThemeStore.getState().setStageTheme('theme-dark'));
+
+  test('renders the mockup header, next match, club/contract, form and objectives', async () => {
+    const open = jest.fn();
+    const {
+      getByText, getByLabelText, getAllByText, findByText,
+    } = render(<DashboardLayoutBody layout="E" vm={fullVm(open)} />);
+
+    expect(getByText('NightOwl_10')).toBeTruthy();
+    expect(getByLabelText('Apps')).toBeTruthy();
+    expect(getByLabelText(/Inbox/)).toBeTruthy();
+
+    expect(getByText('Night Owls')).toBeTruthy();
+    expect(getByText('Red Foxes')).toBeTruthy();
+    expect(getByText('VS')).toBeTruthy();
+
+    expect(getByText('Night Owls FC')).toBeTruthy();
+    expect(getByText('Rank #12')).toBeTruthy();
+    expect(getByText('14 / 30')).toBeTruthy();
+
+    expect(getAllByText('W').length).toBeGreaterThan(0);
+    expect(getByText('7.8 avg rating')).toBeTruthy();
+    expect(getByText('Recent form')).toBeTruthy();
+    expect(getByText('Match results')).toBeTruthy();
+
+    fireEvent.press(getByLabelText('Next match versus Red Foxes'));
+    expect(open).toHaveBeenCalledWith({
+      pathname: '/(tabs)/matches/matchdetailscreen',
+      params: { matchId: 'm1' },
+    });
+
+    expect(await findByText('No open objectives.')).toBeTruthy();
+  });
+
+  test('a bare account shows the no-fixture state and still renders objectives', async () => {
+    const { getByText, findByText } = render(<DashboardLayoutBody layout="E" vm={emptyVm(jest.fn())} />);
+    expect(getByText('No fixture yet')).toBeTruthy();
+    expect(await findByText('No open objectives.')).toBeTruthy();
   });
 });
 

@@ -7,7 +7,7 @@ import { FONT_EA_SPORTS } from '@/lib/fonts';
 import { getMatchOpponent } from '@/lib/dashboardData';
 import { DASHBOARD_LAYOUTS } from '@/lib/dashboardLayouts';
 import TransferWindowHomeIcon from '@/components/dashboard/TransferWindowHomeIcon';
-import { Avatar, Card, Chip, FormBadge, SectionLabel, SegmentedControl } from '@/components/ui';
+import { Avatar, BrandLogo, Card, Chip, FormBadge, IconButton, SectionLabel, SegmentedControl } from '@/components/ui';
 import {
   DashboardGamerStatCard,
   DashboardQuickGlance,
@@ -784,25 +784,141 @@ function LayoutD({ vm }) {
   );
 }
 
+function homeGreeting(date = new Date()) {
+  const hour = date.getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+const FORM_LETTER = { win: 'W', won: 'W', w: 'W', draw: 'D', drawn: 'D', d: 'D', loss: 'L', lost: 'L', l: 'L' };
+function formLetter(value) {
+  const key = String(value || '').toLowerCase();
+  return FORM_LETTER[key] || String(value || '').charAt(0).toUpperCase();
+}
+
 /**
- * Stage home — the mockup layout (docs/design/stage-mockups/2-home-gameday/Home).
- * Stacks the existing blocks in the mockup order: next match, club rank, recent
- * form, then objectives (via BelowFold). Reuses every block, so nothing is lost
- * versus the other layouts.
+ * Stage home — a faithful build of docs/design/stage-mockups/2-home-gameday/Home:
+ * logo + greeting + gamertag header, highlighted next-match card, Club / Contract
+ * games pair, Recent form, and Objectives. Wired to the real dashboard view-model
+ * (`loadPlayerDashboard`) and `ObjectivesWidget`. The default layout; A/B/C/D keep
+ * the Command Center.
  */
 function LayoutE({ vm }) {
+  const tokens = useGamerTokens();
+  const opponent = vm.opponentInfo || {};
+  const next = vm.nextMatch;
+  const contract = vm.tenure?.contractProgress;
+  const unread = Number(vm.glance?.unreadInbox || 0);
+  const formItems = Array.isArray(vm.form?.stage) ? vm.form.stage : [];
+  const clubMeta = [
+    vm.clubRank?.rank ? `Rank #${vm.clubRank.rank}` : null,
+    vm.club?.division ? `Div ${vm.club.division}` : null,
+  ].filter(Boolean).join(' · ');
+
   return (
     <>
-      <PlayerIdentityHero vm={vm} />
-      <HomePageTile vm={vm}>
-        <KickoffCard vm={vm} />
-        <ClubBlock vm={vm} compact />
-        <FormBlock vm={vm} stageOnly />
-        <View style={{ flexDirection: 'row' }}>
-          <ShortcutTile icon="apps-outline" label="Apps" onPress={() => vm.open('/apps')} />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+        <View>
+          <BrandLogo variant="lockup" width={108} style={{ marginBottom: 10 }} />
+          <Text style={{ color: tokens.muted, fontSize: 13 }}>{homeGreeting()}</Text>
+          <Text
+            numberOfLines={1}
+            style={{ color: tokens.text, fontFamily: FONT_EA_SPORTS, fontSize: 28, letterSpacing: 28 * 0.03, textTransform: 'uppercase' }}
+          >
+            {vm.gamertag}
+          </Text>
         </View>
-        <DashboardQuickGlance glance={vm.glance} onOpen={vm.open} />
-        <BelowFold vm={vm} />
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <IconButton icon="grid-outline" accessibilityLabel="Apps" onPress={() => vm.open('/apps')} />
+          <View>
+            <IconButton
+              icon="notifications-outline"
+              accessibilityLabel={unread ? `Inbox, ${unread} unread` : 'Inbox'}
+              onPress={() => vm.open('/apps/inbox')}
+            />
+            {unread > 0 ? (
+              <View style={{ position: 'absolute', top: 8, right: 9, width: 9, height: 9, borderRadius: 5, backgroundColor: tokens.cyan }} />
+            ) : null}
+          </View>
+        </View>
+      </View>
+
+      <HomePageTile vm={vm}>
+        {next ? (
+          <Card
+            highlight
+            onPress={() => vm.open({ pathname: '/(tabs)/matches/matchdetailscreen', params: { matchId: String(next.id) } })}
+            accessibilityLabel={`Next match versus ${opponent.opponent || opponent.away || 'opponent'}`}
+            style={{ gap: 14 }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              <Text style={{ color: tokens.cyan, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12, textTransform: 'uppercase', flexShrink: 1 }}>
+                {`Game Day · ${formatWhen(next.scheduled_date || next.scheduled_at || next.match_date) || 'Scheduled'}`}
+              </Text>
+              <Chip label={next.competition || next.type || 'Match'} />
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 6 }}>
+              <View style={{ alignItems: 'center', gap: 6, width: 90 }}>
+                <Avatar initials={initialsOf(opponent.home)} size={52} />
+                <Text numberOfLines={1} style={{ color: tokens.text, fontWeight: '700', fontSize: 13 }}>{opponent.home}</Text>
+              </View>
+              <Text style={{ color: tokens.muted, fontFamily: FONT_EA_SPORTS, fontSize: 30 }}>VS</Text>
+              <View style={{ alignItems: 'center', gap: 6, width: 90 }}>
+                <Avatar initials={initialsOf(opponent.away)} size={52} />
+                <Text numberOfLines={1} style={{ color: tokens.text, fontWeight: '700', fontSize: 13 }}>{opponent.away}</Text>
+              </View>
+            </View>
+          </Card>
+        ) : (
+          <Card><Text style={{ color: tokens.muted, fontSize: 14 }}>No fixture yet</Text></Card>
+        )}
+
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <Card style={{ flex: 1, gap: 6 }}>
+            <SectionLabel>Club</SectionLabel>
+            <Text numberOfLines={1} style={{ color: tokens.text, fontWeight: '700', fontSize: 16 }}>{vm.club?.name || 'Free agent'}</Text>
+            {clubMeta ? <Text style={{ color: tokens.muted, fontSize: 12 }}>{clubMeta}</Text> : null}
+          </Card>
+          <Card style={{ flex: 1, gap: 6 }}>
+            <SectionLabel>Contract games</SectionLabel>
+            {contract ? (
+              <>
+                <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 16 }}>
+                  {`${contract.gamesPlayed ?? 0} / ${contract.maxGames ?? 0}`}
+                </Text>
+                <View style={{ height: 6, borderRadius: 3, backgroundColor: tokens.border }}>
+                  <View style={{ width: `${Math.min(100, Math.max(0, contract.gamesPercent ?? 0))}%`, height: 6, borderRadius: 3, backgroundColor: tokens.cyan }} />
+                </View>
+              </>
+            ) : (
+              <Text style={{ color: tokens.muted, fontSize: 12 }}>No active contract</Text>
+            )}
+          </Card>
+        </View>
+
+        <Card style={{ gap: 12 }}>
+          <SectionLabel right={<LinkText label="Match results" onPress={() => vm.open('/(tabs)/matches')} />}>Recent form</SectionLabel>
+          {formItems.length ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              {formItems.slice(0, 5).map((item, index) => <FormBadge key={index} result={formLetter(item)} />)}
+              {vm.avgRating ? (
+                <Text style={{ color: tokens.muted, fontSize: 12, marginLeft: 'auto' }}>{`${formatNumber(vm.avgRating, 1)} avg rating`}</Text>
+              ) : null}
+            </View>
+          ) : (
+            <Text style={{ color: tokens.muted, fontSize: 12 }}>No matches yet</Text>
+          )}
+        </Card>
+
+        <Card style={{ gap: 12 }}>
+          <SectionLabel>Objectives</SectionLabel>
+          {vm.player?.id ? (
+            <ObjectivesWidget playerId={vm.player.id} />
+          ) : (
+            <Text style={{ color: tokens.muted, fontSize: 12 }}>Finish setup to unlock objectives.</Text>
+          )}
+        </Card>
       </HomePageTile>
     </>
   );
