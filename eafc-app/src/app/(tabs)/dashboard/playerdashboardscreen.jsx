@@ -8,7 +8,9 @@ import { useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
 import { Button, Screen } from '@/components/ui';
 import { DASHBOARD_CARD_RADIUS, SectionCard } from '@/components/dashboard/CommandCenterUI';
 import { DashboardLayoutBody } from '@/components/dashboard/DashboardLayoutLab';
+import { DashboardHomeLayoutSheet } from '@/components/dashboard/DashboardHomeLayoutPicker';
 import { useTransferWindowStatus } from '@/hooks/useTransferWindowStatus';
+import useDashboardLayoutStore from '@/store/dashboardLayoutStore';
 
 /**
  * Home — Stage Command Center.
@@ -19,7 +21,15 @@ export default function PlayerDashboardScreen() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const layout = useDashboardLayoutStore((s) => s.layout);
+  const needsOnboarding = useDashboardLayoutStore((s) => s.needsOnboarding);
+  const initializeLayout = useDashboardLayoutStore((s) => s.initialize);
+  const completeOnboarding = useDashboardLayoutStore((s) => s.completeOnboarding);
   const { windowOpen } = useTransferWindowStatus();
+
+  useEffect(() => {
+    initializeLayout();
+  }, [initializeLayout]);
 
   const load = useCallback(async () => {
     try {
@@ -98,6 +108,7 @@ export default function PlayerDashboardScreen() {
 
   return (
     <Screen
+      scrollKey={layout}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={tokens.cyan} />}
       style={{ gap: 14 }}
     >
@@ -116,8 +127,14 @@ export default function PlayerDashboardScreen() {
           </View>
         </SectionCard>
       ) : (
-        <DashboardLayoutBody layout="E" vm={vm} />
+        <DashboardLayoutBody layout={layout} vm={vm} />
       )}
+      <DashboardHomeLayoutSheet
+        visible={needsOnboarding}
+        layout={layout}
+        onConfirm={completeOnboarding}
+        onDismiss={() => completeOnboarding(layout)}
+      />
     </Screen>
   );
 }

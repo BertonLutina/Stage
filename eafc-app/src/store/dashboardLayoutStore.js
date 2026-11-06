@@ -2,7 +2,9 @@ import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isDashboardLayoutId } from '@/lib/dashboardLayouts';
 
-const LAYOUT_KEY = 'eafc.dashboardLayoutPreview';
+// v2: reset any pre-Stage saved layout so existing devices default to the
+// Stage mockup Home ('E'); the picker still lets them switch.
+const LAYOUT_KEY = 'eafc.dashboardLayoutPreview.v2';
 const SEEN_KEY = 'eafc.dashboardLayoutOnboarded';
 
 const useDashboardLayoutStore = create((set, get) => ({

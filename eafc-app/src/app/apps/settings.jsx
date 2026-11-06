@@ -59,6 +59,8 @@ import { FONT_EA_SPORTS } from '@/lib/fonts';
 import { normalizeThemeId } from '@/lib/stageTheme';
 import { CUSTOM_THEME_DEFAULTS } from '@/lib/customThemeDefaults';
 import { SettingsListbox } from '@/components/settings/SettingsListbox';
+import { DASHBOARD_LAYOUTS } from '@/lib/dashboardLayouts';
+import useDashboardLayoutStore from '@/store/dashboardLayoutStore';
 import useThemeStore from '@/store/themeStore';
 
 const THEME_KEY = 'stage-theme';
@@ -188,6 +190,13 @@ export default function SettingsScreen() {
   const [biometricEnabled, setBiometricEnabledState] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [bioLabel, setBioLabel] = useState('Biometric login');
+  const homeLayout = useDashboardLayoutStore((s) => s.layout);
+  const setHomeLayout = useDashboardLayoutStore((s) => s.setLayout);
+  const initializeHomeLayout = useDashboardLayoutStore((s) => s.initialize);
+
+  useEffect(() => {
+    initializeHomeLayout();
+  }, [initializeHomeLayout]);
 
   useEffect(() => {
     let cancelled = false;
@@ -542,6 +551,24 @@ export default function SettingsScreen() {
             />
           </View>
         ) : null}
+      </SettingsSection>
+
+      <SettingsSection
+        title="Home layout"
+        description="Choose how Command Center is arranged. Change it anytime here."
+        icon="grid-outline"
+      >
+        <SettingsListbox
+          flush
+          label="Home layout"
+          value={homeLayout}
+          options={DASHBOARD_LAYOUTS.map((item) => ({
+            id: item.id,
+            label: `${item.id} · ${item.name}`,
+            description: item.blurb,
+          }))}
+          onChange={(id) => setHomeLayout(id)}
+        />
       </SettingsSection>
 
       <SettingsSection title={t('settingsPage.stgAccountSecurity')} description={t('settingsPage.stgAccountSecurityDesc')} icon="lock-closed-outline">
