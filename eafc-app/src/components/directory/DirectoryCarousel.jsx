@@ -9,12 +9,13 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import useThemeStore from '@/store/themeStore';
 import { headingStyle, headingStyleSm } from '@/lib/fonts';
 import { stepCarouselIndex, visibleCarouselSlots } from '@/lib/transferCarousel';
-import { SILVER } from '@/components/transfer/transferHubTheme';
+import { ICON_SIZE, ICON_BUTTON_RADIUS, MIN_TOUCH } from '@/components/ui/metrics';
 
 function CarouselSlot({ offset, focused, cardWidth, xFar, xNear, name, children, onPress }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const anim = useRef(new Animated.Value(offset)).current;
 
   useEffect(() => {
@@ -79,7 +80,7 @@ function CarouselSlot({ offset, focused, cardWidth, xFar, xNear, name, children,
             {
               marginTop: 12,
               maxWidth: cardWidth,
-              color: focused ? SILVER : 'rgba(255,255,255,0.5)',
+              color: focused ? tokens.text : tokens.muted,
               fontSize: focused ? 16 : 11,
               textAlign: 'center',
             },
@@ -104,6 +105,7 @@ export default function DirectoryCarousel({
   prevLabel = 'Previous',
   nextLabel = 'Next',
 }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const { width } = useWindowDimensions();
   const itemsRef = useRef(items);
   const centerRef = useRef(0);
@@ -140,11 +142,11 @@ export default function DirectoryCarousel({
   if (items.length === 0) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28 }}>
-        <Ionicons name={emptyIcon} size={40} color="rgba(238,243,251,0.28)" />
-        <Text style={[headingStyleSm, { color: 'rgba(255,255,255,0.55)', marginTop: 12, textAlign: 'center' }]}>
+        <Ionicons name={emptyIcon} size={40} color={tokens.muted} />
+        <Text style={[headingStyleSm, { color: tokens.textSoft, marginTop: 12, textAlign: 'center' }]}>
           {emptyText}
         </Text>
-        <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, marginTop: 8, textAlign: 'center' }}>
+        <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 8, textAlign: 'center' }}>
           Try adjusting filters
         </Text>
       </View>
@@ -153,31 +155,10 @@ export default function DirectoryCarousel({
 
   return (
     <View style={{ flex: 1, overflow: 'hidden' }} {...pan.panHandlers}>
-      <LinearGradient
-        colors={['rgba(238,243,251,0.22)', 'transparent']}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 0.55 }}
-        style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 220 }}
-        pointerEvents="none"
-      />
-      <LinearGradient
-        colors={['rgba(238,243,251,0.14)', 'transparent']}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 0.45, y: 0.5 }}
-        style={{ position: 'absolute', left: 0, top: 40, bottom: 40, width: 140 }}
-        pointerEvents="none"
-      />
-      <LinearGradient
-        colors={['rgba(238,243,251,0.14)', 'transparent']}
-        start={{ x: 1, y: 0.5 }}
-        end={{ x: 0.55, y: 0.5 }}
-        style={{ position: 'absolute', right: 0, top: 40, bottom: 40, width: 140 }}
-        pointerEvents="none"
-      />
-
       <TouchableOpacity
         accessibilityRole="button"
         accessibilityLabel={prevLabel}
+        accessibilityState={{ disabled: items.length < 2 }}
         onPress={() => go(-1)}
         disabled={items.length < 2}
         style={{
@@ -185,21 +166,23 @@ export default function DirectoryCarousel({
           left: 8,
           top: '42%',
           zIndex: 40,
-          width: 42,
-          height: 42,
+          width: MIN_TOUCH,
+          height: MIN_TOUCH,
           alignItems: 'center',
           justifyContent: 'center',
+          borderRadius: ICON_BUTTON_RADIUS,
           borderWidth: 1,
-          borderColor: 'rgba(238,243,251,0.4)',
-          backgroundColor: 'rgba(0,0,0,0.5)',
+          borderColor: tokens.border,
+          backgroundColor: tokens.card,
           opacity: items.length < 2 ? 0.3 : 1,
         }}
       >
-        <Ionicons name="chevron-back" size={24} color={SILVER} />
+        <Ionicons name="chevron-back" size={ICON_SIZE} color={tokens.text} />
       </TouchableOpacity>
       <TouchableOpacity
         accessibilityRole="button"
         accessibilityLabel={nextLabel}
+        accessibilityState={{ disabled: items.length < 2 }}
         onPress={() => go(1)}
         disabled={items.length < 2}
         style={{
@@ -207,17 +190,18 @@ export default function DirectoryCarousel({
           right: 8,
           top: '42%',
           zIndex: 40,
-          width: 42,
-          height: 42,
+          width: MIN_TOUCH,
+          height: MIN_TOUCH,
           alignItems: 'center',
           justifyContent: 'center',
+          borderRadius: ICON_BUTTON_RADIUS,
           borderWidth: 1,
-          borderColor: 'rgba(238,243,251,0.4)',
-          backgroundColor: 'rgba(0,0,0,0.5)',
+          borderColor: tokens.border,
+          backgroundColor: tokens.card,
           opacity: items.length < 2 ? 0.3 : 1,
         }}
       >
-        <Ionicons name="chevron-forward" size={24} color={SILVER} />
+        <Ionicons name="chevron-forward" size={ICON_SIZE} color={tokens.text} />
       </TouchableOpacity>
 
       <View style={{ flex: 1, position: 'relative' }}>
@@ -247,7 +231,7 @@ export default function DirectoryCarousel({
         style={[
           headingStyleSm,
           {
-            color: SILVER,
+            color: tokens.muted,
             textAlign: 'center',
             paddingBottom: 18,
             letterSpacing: 4,

@@ -27,7 +27,7 @@ describe('mobile transfer hub', () => {
     expect(page.match(/<PageTile\b[\s\S]*?>/)[0]).not.toMatch(/\beyebrow=/);
   });
 
-  test('transfer hub chrome uses Game Day silver, not gold or cyan', () => {
+  test('transfer hub chrome takes its colours from the Stage tokens', () => {
     const hubFiles = [
       '../../app/apps/transfers.jsx',
       '../../components/transfer/transferHubTheme.js',
@@ -39,12 +39,11 @@ describe('mobile transfer hub', () => {
       '../../components/transfer/TransferWindowBanner.jsx',
       '../../components/transfer/TransferDetailSheet.jsx',
     ].map(read).join('\n');
-    expect(hubFiles).toMatch(/SILVER/);
-    expect(hubFiles).not.toMatch(/#f5c542/i);
-    expect(hubFiles).not.toMatch(/#00e5ff/i);
-    expect(hubFiles).not.toMatch(/#7cff6b/i);
-    expect(hubFiles).not.toMatch(/rgba\(245,\s*197,\s*66/i);
-    expect(hubFiles).not.toMatch(/rgba\(0,\s*229,\s*255/i);
-    expect(hubFiles).not.toMatch(/rgba\(124,\s*255,\s*107/i);
+    expect(hubFiles).toMatch(/useThemeStore|stageTheme/);
+    // The old silver palette (Game Day silver) is gone.
+    expect(hubFiles).not.toMatch(/SILVER/);
+    expect(hubFiles).not.toMatch(/CommandCenterUI/);
+    expect(hubFiles).not.toMatch(/#[0-9a-f]{6}\b/i);
+    expect(hubFiles).not.toMatch(/rgba\(\s*(?:238|248|244)\s*,/i);
   });
 });

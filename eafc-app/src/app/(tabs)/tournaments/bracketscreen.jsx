@@ -1,14 +1,15 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, ActivityIndicator, RefreshControl } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { fetchTournamentMatches, fetchTournamentPublic } from '@/api/tournamentActions';
+import useThemeStore from '@/store/themeStore';
+import { Screen } from '@/components/ui';
 import BracketView from '../../../components/tournament/BracketView';
-import GradientBackground from '../../../components/common/GradientBackground';
-import BackButton from '../../../components/common/BackButton';
+import CompetitionHeader from '../../../components/tournament/CompetitionHeader';
 
 export default function BracketScreen() {
   const { tournamentId } = useLocalSearchParams();
+  const tokens = useThemeStore((s) => s.tokens);
   const [matches, setMatches] = useState([]);
   const [title, setTitle] = useState('Bracket');
   const [loading, setLoading] = useState(true);
@@ -37,36 +38,32 @@ export default function BracketScreen() {
   useEffect(() => { load(); }, [load]);
 
   return (
-    <View className="flex-1">
-      <GradientBackground>
-        <SafeAreaView className="flex-1">
-          <View className="flex-row items-center gap-4 px-4 py-3 border-b border-white/10">
-            <BackButton variant="light" />
-            <Text className="text-white text-xl font-bold flex-1" numberOfLines={1}>{title}</Text>
+    <Screen
+      refreshControl={loading ? undefined : (
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => { setRefreshing(true); load(); }}
+          tintColor={tokens.cyan}
+        />
+      )}
+    >
+      <View style={{ gap: 14 }}>
+        <CompetitionHeader eyebrow={title === 'Bracket' ? null : title} title="Bracket" />
+        {loading ? (
+          <View style={{ paddingVertical: 48, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator color={tokens.cyan} />
           </View>
-          {loading ? (
-            <View className="flex-1 items-center justify-center">
-              <ActivityIndicator color="#00F0FF" />
-            </View>
-          ) : (
-            <ScrollView
-              className="px-4"
-              refreshControl={(
-                <RefreshControl
-                  refreshing={refreshing}
-                  onRefresh={() => { setRefreshing(true); load(); }}
-                  tintColor="#00F0FF"
-                />
-              )}
-            >
-              {error ? (
-                <Text className="text-rose-400 text-center py-6 text-sm">{error}</Text>
-              ) : null}
-              <BracketView matches={matches} />
-            </ScrollView>
-          )}
-        </SafeAreaView>
-      </GradientBackground>
-    </View>
+        ) : (
+          <>
+            {error ? (
+              <Text style={{ color: tokens.danger, textAlign: 'center', paddingVertical: 24, fontSize: 14 }}>
+                {error}
+              </Text>
+            ) : null}
+            <BracketView matches={matches} />
+          </>
+        )}
+      </View>
+    </Screen>
   );
 }

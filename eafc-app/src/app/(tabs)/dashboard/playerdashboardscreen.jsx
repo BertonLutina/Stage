@@ -1,14 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  View, ScrollView, Text, TouchableOpacity, StatusBar, ActivityIndicator, RefreshControl,
+  View, Text, StatusBar, ActivityIndicator, RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { loadPlayerDashboard, getMatchOpponent } from '@/lib/dashboardData';
-import {
-  GamerProfileShell,
-  useGamerTokens,
-} from '@/components/profile/gamer/GamerProfileUI';
+import { useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
+import { Button, Screen } from '@/components/ui';
 import { DASHBOARD_CARD_RADIUS, SectionCard } from '@/components/dashboard/CommandCenterUI';
 import { DashboardLayoutBody } from '@/components/dashboard/DashboardLayoutLab';
 import { DashboardHomeLayoutSheet } from '@/components/dashboard/DashboardHomeLayoutPicker';
@@ -103,52 +100,41 @@ export default function PlayerDashboardScreen() {
 
   if (loading && !data) {
     return (
-      <GamerProfileShell>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={tokens.cyan} size="large" />
-        </View>
-      </GamerProfileShell>
+      <Screen scroll={false} style={{ alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={tokens.cyan} size="large" />
+      </Screen>
     );
   }
 
   return (
-    <GamerProfileShell>
+    <Screen
+      scrollKey={layout}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={tokens.cyan} />}
+      style={{ gap: 14 }}
+    >
       <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-        <ScrollView
-          key={layout}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 160, gap: 14 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={tokens.cyan} />}
-        >
-          {!vm.player?.id ? (
-            <SectionCard radius={DASHBOARD_CARD_RADIUS}>
-              <Text style={{ color: tokens.muted, fontSize: 14, lineHeight: 20 }}>
-                Finish player onboarding to unlock your Command Center widgets.
-              </Text>
-              <TouchableOpacity
-                onPress={() => open('/auth/onboarding')}
-                accessibilityRole="button"
-                accessibilityLabel="Continue player setup"
-                style={{
-                  marginTop: 14, minHeight: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
-                  backgroundColor: 'rgba(0,240,255,0.14)', borderWidth: 1, borderColor: 'rgba(0,240,255,0.35)',
-                }}
-              >
-                <Text style={{ color: tokens.cyan, fontWeight: '800' }}>Continue setup</Text>
-              </TouchableOpacity>
-            </SectionCard>
-          ) : (
-            <DashboardLayoutBody layout={layout} vm={vm} />
-          )}
-        </ScrollView>
-        <DashboardHomeLayoutSheet
-          visible={needsOnboarding}
-          layout={layout}
-          onConfirm={completeOnboarding}
-          onDismiss={() => completeOnboarding(layout)}
-        />
-      </SafeAreaView>
-    </GamerProfileShell>
+      {!vm.player?.id ? (
+        <SectionCard radius={DASHBOARD_CARD_RADIUS}>
+          <Text style={{ color: tokens.muted, fontSize: 14, lineHeight: 20 }}>
+            Finish player onboarding to unlock your Command Center widgets.
+          </Text>
+          <View style={{ marginTop: 14 }}>
+            <Button
+              title="Continue setup"
+              accessibilityLabel="Continue player setup"
+              onPress={() => open('/auth/onboarding')}
+            />
+          </View>
+        </SectionCard>
+      ) : (
+        <DashboardLayoutBody layout={layout} vm={vm} />
+      )}
+      <DashboardHomeLayoutSheet
+        visible={needsOnboarding}
+        layout={layout}
+        onConfirm={completeOnboarding}
+        onDismiss={() => completeOnboarding(layout)}
+      />
+    </Screen>
   );
 }

@@ -1,19 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, StatusBar, ActivityIndicator, RefreshControl,
+  View, Text, StatusBar, ActivityIndicator, RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import useThemeStore from '@/store/themeStore';
 import { stageClient } from '@/api/stageClient';
 import { loadInboxMessages, markAllInboxRead } from '@/lib/inboxData';
 import { upsertInboxMessage } from '@/lib/inboxHelpers';
 import InboxMessageList from '@/components/inbox/InboxMessageList';
-import {
-  GamerProfileShell,
-  GlassIconButton,
-} from '@/components/profile/gamer/GamerProfileUI';
-import { GAME_DAY_SILVER } from '@/components/dashboard/CommandCenterUI';
+import { Chip, IconButton, Screen } from '@/components/ui';
 import PageTile, { PageTitle } from '@/components/theme/PageTile';
 
 /**
@@ -21,6 +16,7 @@ import PageTile, { PageTitle } from '@/components/theme/PageTile';
  */
 export default function InboxScreen() {
   const router = useRouter();
+  const tokens = useThemeStore((st) => st.tokens);
   const params = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -115,67 +111,59 @@ export default function InboxScreen() {
 
   if (loading) {
     return (
-      <GamerProfileShell>
+      <Screen scroll={false} tabBar={false} guideFab>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={GAME_DAY_SILVER} size="large" />
+          <ActivityIndicator color={tokens.cyan} size="large" />
         </View>
-      </GamerProfileShell>
+      </Screen>
     );
   }
 
   return (
-    <GamerProfileShell>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-        <View style={{
-          paddingHorizontal: 16,
-          paddingTop: 8,
-          paddingBottom: 10,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 10,
-          borderBottomWidth: 1,
-          borderBottomColor: 'rgba(255,255,255,0.08)',
-        }}
-        >
-          <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
-          <View style={{ flex: 1 }} />
+    <Screen scroll={false} tabBar={false} guideFab>
+      <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
+      <View style={{ flex: 1, gap: 14 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <IconButton icon="arrow-back" accessibilityLabel="Back" onPress={() => router.back()} />
           {unreadCount > 0 ? (
-            <TouchableOpacity onPress={onMarkAll} hitSlop={8} style={{ padding: 8 }}>
-              <Ionicons name="checkmark-done" size={20} color={GAME_DAY_SILVER} />
-            </TouchableOpacity>
+            <IconButton icon="checkmark-done" accessibilityLabel="Mark all as read" onPress={onMarkAll} />
           ) : null}
         </View>
 
         {error ? (
-          <View style={{ padding: 16 }}>
-            <Text style={{ color: '#FF4D6D', marginBottom: 8 }}>{error}</Text>
-            <TouchableOpacity onPress={load}>
-              <Text style={{ color: GAME_DAY_SILVER, fontWeight: '800' }}>Retry</Text>
-            </TouchableOpacity>
+          <View style={{ gap: 8 }}>
+            <Text style={{ color: tokens.danger }}>{error}</Text>
+            <Chip label="Retry" onPress={load} />
           </View>
         ) : null}
 
         <PageTitle
           title="INBOX"
           subtitle={unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
+          padded={false}
+          style={{ paddingBottom: 0 }}
         />
 
         <PageTile
           tileKey="inbox"
           tileTitle="INBOX"
-          style={{ flex: 1, marginHorizontal: 12, marginBottom: 12 }}
+          style={{ flex: 1 }}
           contentStyle={{ flex: 1, paddingHorizontal: 0 }}
         >
-        <InboxMessageList
-          messages={messages}
-          onSelect={openMessage}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={GAME_DAY_SILVER} />
-          }
-        />
+          <InboxMessageList
+            messages={messages}
+            onSelect={openMessage}
+            refreshControl={(
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={tokens.cyan}
+                colors={[tokens.cyan]}
+              />
+            )}
+          />
         </PageTile>
-      </SafeAreaView>
-    </GamerProfileShell>
+      </View>
+    </Screen>
   );
 }

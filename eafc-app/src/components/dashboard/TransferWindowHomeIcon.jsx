@@ -1,21 +1,23 @@
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import useThemeStore from '@/store/themeStore';
 
-const LIME = '#7CFF6B';
-const LIME_INK = '#052e16';
-
+/** Transfer window open marker: a success-green dot next to the gamertag. 44pt hit area via hitSlop. */
 export default function TransferWindowHomeIcon({ onPress }) {
+  const tokens = useThemeStore((s) => s.tokens);
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.85}
-      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      hitSlop={{
+        top: 8, bottom: 8, left: 8, right: 8,
+      }}
       accessibilityRole="button"
       accessibilityLabel="Transfers"
     >
-      <View style={styles.button}>
-        <Ionicons name="swap-horizontal" size={14} color={LIME_INK} />
+      <View style={[styles.button, { backgroundColor: tokens.success }]}>
+        <Ionicons name="swap-horizontal-outline" size={18} color={tokens.bgDeep} />
       </View>
     </TouchableOpacity>
   );
@@ -23,16 +25,10 @@ export default function TransferWindowHomeIcon({ onPress }) {
 
 const styles = StyleSheet.create({
   button: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: LIME,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: LIME,
-    shadowOpacity: 0.55,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 6,
   },
 });

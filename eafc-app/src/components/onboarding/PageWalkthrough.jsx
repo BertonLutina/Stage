@@ -5,27 +5,23 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { localStorage } from '@/lib/polyfillStorage';
 import { getPageWalkthrough } from '@/lib/pageWalkthroughs';
-import { headingStyle, headingStyleSm } from '@/lib/fonts';
-import { CARD_RADIUS } from '@/lib/stageTheme';
-import {
-  GAME_DAY_SILVER,
-  TILE_BORDER,
-  TILE_BORDER_HOT,
-  TILE_FILL,
-  TILE_FILL_LIVE,
-  TILE_FILL_LIVE_INNER,
-} from '@/components/dashboard/CommandCenterUI';
-import { useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
+import { headingStyle } from '@/lib/fonts';
+import { hexToRgba } from '@/lib/stageTheme';
+import useThemeStore from '@/store/themeStore';
+import { Button, IconButton } from '@/components/ui';
+import { BUTTON_RADIUS, MIN_TOUCH, guideFabBottom, guideFabBottomStack } from '@/components/ui/metrics';
 
 export default function PageWalkthrough() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const tokens = useGamerTokens();
+  const tokens = useThemeStore((st) => st.tokens);
   const [open, setOpen] = useState(false);
   const language = localStorage.getItem('language') || 'en';
   const guide = useMemo(() => getPageWalkthrough(pathname, language), [pathname, language]);
+  // /apps/* screens are stack pages: no floating tab bar to sit above.
+  const onStack = /^\/apps(\/|$)/.test(pathname || '');
   const live = tokens.live === true;
-  const panelFill = live ? TILE_FILL_LIVE : TILE_FILL;
+  const innerFill = live ? hexToRgba(tokens.bgDeep, 0.55) : tokens.bgDeep;
 
   useEffect(() => {
     setOpen(false);
@@ -42,28 +38,30 @@ export default function PageWalkthrough() {
           accessibilityLabel={`Open ${guide.label} guide`}
           style={{
             position: 'absolute',
-            right: 16,
-            bottom: Math.max(insets.bottom, 8) + 72,
+            right: 20,
+            bottom: onStack ? guideFabBottomStack(insets.bottom) : guideFabBottom(insets.bottom),
             zIndex: 40,
             flexDirection: 'row',
             alignItems: 'center',
             gap: 6,
-            height: 36,
-            paddingHorizontal: 12,
-            backgroundColor: live ? 'rgba(0,0,0,0.35)' : TILE_FILL,
+            minHeight: MIN_TOUCH,
+            paddingHorizontal: 14,
+            backgroundColor: tokens.card,
             borderWidth: 1,
-            borderColor: TILE_BORDER_HOT,
-            borderRadius: CARD_RADIUS,
+            borderColor: tokens.borderStrong,
+            borderRadius: BUTTON_RADIUS,
           }}
         >
-          <Ionicons name="help-circle-outline" size={14} color={GAME_DAY_SILVER} />
-          <Text style={{
-            color: GAME_DAY_SILVER,
-            fontWeight: '900',
-            fontSize: 11,
-            letterSpacing: 1.6,
-            textTransform: 'uppercase',
-          }}
+          <Ionicons name="help-circle-outline" size={18} color={tokens.cyan} />
+          <Text
+            numberOfLines={1}
+            style={{
+              color: tokens.cyan,
+              fontWeight: '700',
+              fontSize: 12,
+              letterSpacing: 12 * 0.12,
+              textTransform: 'uppercase',
+            }}
           >
             GUIDE
           </Text>
@@ -71,66 +69,63 @@ export default function PageWalkthrough() {
       ) : null}
 
       <Modal visible={open} animationType="fade" transparent onRequestClose={() => setOpen(false)}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', justifyContent: 'flex-end' }}>
-          <Pressable style={{ flex: 1 }} onPress={() => setOpen(false)} />
+        <View style={{ flex: 1, backgroundColor: tokens.overlay, justifyContent: 'flex-end' }}>
+          <Pressable
+            style={{ flex: 1 }}
+            onPress={() => setOpen(false)}
+            accessibilityLabel="Dismiss guide"
+          />
           <View
             style={{
               maxHeight: '78%',
-              backgroundColor: panelFill,
-              borderTopLeftRadius: CARD_RADIUS,
-              borderTopRightRadius: CARD_RADIUS,
+              backgroundColor: tokens.card,
+              borderTopLeftRadius: tokens.cardRadius,
+              borderTopRightRadius: tokens.cardRadius,
               borderWidth: 1,
-              borderColor: TILE_BORDER,
+              borderColor: tokens.border,
               paddingBottom: Math.max(insets.bottom, 16),
               overflow: 'hidden',
             }}
           >
             <View style={{
-              height: 1,
-              marginHorizontal: 20,
-              marginTop: 14,
-              marginBottom: 12,
-              backgroundColor: TILE_BORDER,
+              alignSelf: 'center',
+              width: 40,
+              height: 4,
+              borderRadius: 2,
+              marginTop: 10,
+              backgroundColor: tokens.borderStrong,
             }}
             />
-            <View style={{ flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 20, paddingBottom: 8 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={[headingStyleSm, { color: GAME_DAY_SILVER, fontSize: 11, letterSpacing: 2 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingHorizontal: 20, paddingTop: 14, paddingBottom: 12 }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    color: tokens.muted,
+                    fontSize: 11,
+                    fontWeight: '600',
+                    letterSpacing: 11 * 0.12,
+                    textTransform: 'uppercase',
+                  }}
+                >
                   {String(guide.label).toUpperCase()}
                 </Text>
-                <Text style={[headingStyle, { color: '#fff', fontSize: 22, marginTop: 6 }]}>
+                <Text
+                  numberOfLines={2}
+                  style={[headingStyle, { color: tokens.text, fontSize: 24, marginTop: 6, letterSpacing: 24 * 0.03 }]}
+                >
                   {guide.title}
                 </Text>
-                <Text style={{
-                  color: 'rgba(238,243,251,0.45)',
-                  fontSize: 10,
-                  fontWeight: '800',
-                  letterSpacing: 1.4,
-                  textTransform: 'uppercase',
-                  marginTop: 6,
-                }}
+                <Text
+                  numberOfLines={1}
+                  style={{ color: tokens.muted, fontSize: 13, marginTop: 6 }}
                 >
                   {guide.steps.length} steps on this path
                 </Text>
               </View>
-              <TouchableOpacity
-                onPress={() => setOpen(false)}
-                accessibilityLabel="Close guide"
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: CARD_RADIUS,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: live ? TILE_FILL_LIVE_INNER : 'rgba(0,0,0,0.35)',
-                  borderWidth: 1,
-                  borderColor: TILE_BORDER,
-                }}
-              >
-                <Ionicons name="close" size={16} color={GAME_DAY_SILVER} />
-              </TouchableOpacity>
+              <IconButton icon="close" accessibilityLabel="Close guide" onPress={() => setOpen(false)} />
             </View>
-            <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 16, gap: 8 }}>
+            <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 16, gap: 10 }}>
               {guide.steps.map((step, index) => (
                 <View
                   key={`${guide.key}-${index}`}
@@ -139,52 +134,32 @@ export default function PageWalkthrough() {
                     gap: 12,
                     alignItems: 'flex-start',
                     borderWidth: 1,
-                    borderColor: TILE_BORDER,
-                    backgroundColor: live ? TILE_FILL_LIVE_INNER : 'rgba(0,0,0,0.28)',
-                    padding: 12,
+                    borderColor: tokens.border,
+                    borderRadius: tokens.cardRadius,
+                    backgroundColor: innerFill,
+                    padding: 14,
                   }}
                 >
                   <View
                     style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: CARD_RADIUS,
+                      width: 28,
+                      height: 28,
+                      borderRadius: 8,
                       borderWidth: 1,
-                      borderColor: TILE_BORDER_HOT,
-                      backgroundColor: 'rgba(0,0,0,0.35)',
+                      borderColor: tokens.cyanBorder,
+                      backgroundColor: tokens.bgDeep,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      marginTop: 1,
                     }}
                   >
-                    <Text style={{ color: GAME_DAY_SILVER, fontSize: 11, fontWeight: '900' }}>{index + 1}</Text>
+                    <Text style={{ color: tokens.cyan, fontSize: 13, fontWeight: '700' }}>{index + 1}</Text>
                   </View>
-                  <Text style={{ flex: 1, color: 'rgba(238,243,251,0.78)', fontSize: 14, lineHeight: 20 }}>{step}</Text>
+                  <Text style={{ flex: 1, color: tokens.textSoft, fontSize: 14, lineHeight: 20 }}>{step}</Text>
                 </View>
               ))}
             </ScrollView>
             <View style={{ paddingHorizontal: 20 }}>
-              <TouchableOpacity
-                onPress={() => setOpen(false)}
-                style={{
-                  minHeight: 44,
-                  borderRadius: CARD_RADIUS,
-                  backgroundColor: GAME_DAY_SILVER,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text style={{
-                  color: '#111827',
-                  fontWeight: '900',
-                  fontSize: 12,
-                  letterSpacing: 1.6,
-                  textTransform: 'uppercase',
-                }}
-                >
-                  GOT IT
-                </Text>
-              </TouchableOpacity>
+              <Button title="GOT IT" onPress={() => setOpen(false)} />
             </View>
           </View>
         </View>

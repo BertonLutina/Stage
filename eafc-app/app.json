@@ -5,13 +5,12 @@
     "scheme": "stage",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/brand/stage-app-icon.png",
     "userInterfaceStyle": "dark",
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundImage": "./assets/adaptive-icon-background.png",
-        "backgroundColor": "#07153C"
+        "foregroundImage": "./assets/brand/stage-adaptive-icon.png",
+        "backgroundColor": "#0A1F4A"
       },
       "package": "com.eafc.platform",
       "permissions": [
@@ -60,14 +59,14 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#07153C",
-          "image": "./assets/splash.png",
+          "backgroundColor": "#0A1F4A",
+          "image": "./assets/brand/stage-splash.png",
           "resizeMode": "cover",
           "enableFullScreenImage_legacy": true,
           "android": {
-            "image": "./assets/adaptive-icon.png",
+            "image": "./assets/brand/stage-adaptive-icon.png",
             "resizeMode": "contain",
-            "backgroundColor": "#07153C"
+            "backgroundColor": "#0A1F4A"
           }
         }
       ],

@@ -28,7 +28,8 @@ describe('page tiles', () => {
     const card = read('../../components/tournament/TournamentCard.jsx');
     expect(card).not.toMatch(/TYPE_COLOR/);
     expect(card).not.toMatch(/LiveGlass/);
-    expect(card).toMatch(/GAME_DAY_SILVER/);
+    expect(card).toMatch(/useThemeStore/);
+    expect(card).not.toMatch(/GAME_DAY_SILVER|FUT\./);
   });
 
   test('Home, Profile, Apps, Inbox, and GOST wrap content in PageTile', () => {

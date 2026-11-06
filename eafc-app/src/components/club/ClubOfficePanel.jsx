@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import useThemeStore from '@/store/themeStore';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
+import Card from '@/components/ui/Card';
 import { CLUB_OFFICE_SECTIONS } from '@/lib/clubOfficeTabs';
 import { GamerSectionCard, GamerStatTile, EmptyTabPanel } from '@/components/profile/gamer/GamerProfileUI';
 
@@ -11,29 +14,34 @@ function formatStc(value) {
 }
 
 function LineItem({ title, subtitle, trailing }) {
+  const tokens = useThemeStore((s) => s.tokens);
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, borderRadius: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.03)', paddingHorizontal: 12, paddingVertical: 10 }}>
+    <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 56, paddingVertical: 10 }}>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }} numberOfLines={1}>{title}</Text>
-        {subtitle ? <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 2 }} numberOfLines={1}>{subtitle}</Text> : null}
+        <Text style={{ color: tokens.text, fontWeight: '600', fontSize: 14 }} numberOfLines={1}>{title}</Text>
+        {subtitle ? <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 2 }} numberOfLines={1}>{subtitle}</Text> : null}
       </View>
-      {trailing ? <Text style={{ color: '#F5C542', fontWeight: '800', fontSize: 12 }}>{trailing}</Text> : null}
-    </View>
+      {trailing ? <Text style={{ color: tokens.amber, fontWeight: '700', fontSize: 12, flexShrink: 0 }} numberOfLines={1}>{trailing}</Text> : null}
+    </Card>
   );
 }
 
 function OfficeToolRow({ tool, onPress }) {
+  const tokens = useThemeStore((s) => s.tokens);
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.85}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, borderRadius: 2, borderWidth: 1, borderColor: 'rgba(0,229,255,0.18)', backgroundColor: 'rgba(0,229,255,0.05)', paddingHorizontal: 14, paddingVertical: 12 }}
+      accessibilityRole="button"
+      accessibilityLabel={tool.label}
     >
-      <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(0,229,255,0.12)', alignItems: 'center', justifyContent: 'center' }}>
-        <Ionicons name={tool.icon} size={18} color="#00E5FF" />
-      </View>
-      <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14, flex: 1 }}>{tool.label}</Text>
-      <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.35)" />
+      <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, paddingVertical: 10 }}>
+        <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: tokens.bgDeep, borderWidth: 1, borderColor: tokens.border, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name={tool.icon} size={22} color={tokens.cyan} />
+        </View>
+        <Text style={{ color: tokens.text, fontWeight: '600', fontSize: 15, flex: 1 }} numberOfLines={1}>{tool.label}</Text>
+        <Ionicons name="chevron-forward" size={20} color={tokens.muted} />
+      </Card>
     </TouchableOpacity>
   );
 }
@@ -51,11 +59,12 @@ export default function ClubOfficePanel({
   weeklyWage,
 }) {
   const [section, setSection] = useState(null);
+  const tokens = useThemeStore((st) => st.tokens);
 
   if (!section) {
     return (
-      <View style={{ gap: 8 }}>
-        <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '800', letterSpacing: 1.4, marginBottom: 4, textTransform: 'uppercase' }}>
+      <View style={{ gap: 10 }}>
+        <Text style={{ color: tokens.muted, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12, marginBottom: 4, textTransform: 'uppercase' }}>
           Club Office
         </Text>
         {CLUB_OFFICE_SECTIONS.map((tool) => (
@@ -66,9 +75,14 @@ export default function ClubOfficePanel({
   }
 
   const back = (
-    <TouchableOpacity onPress={() => setSection(null)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 }}>
-      <Ionicons name="chevron-back" size={16} color="#00E5FF" />
-      <Text style={{ color: '#00E5FF', fontWeight: '800', fontSize: 12, letterSpacing: 1, textTransform: 'uppercase' }}>Club Office</Text>
+    <TouchableOpacity
+      onPress={() => setSection(null)}
+      accessibilityRole="button"
+      accessibilityLabel="Back to Club Office"
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 }}
+    >
+      <Ionicons name="chevron-back" size={20} color={tokens.cyan} />
+      <Text style={{ color: tokens.cyan, fontFamily: FONT_EA_SPORTS, fontSize: 14, letterSpacing: 14 * 0.03, textTransform: 'uppercase' }}>Club Office</Text>
     </TouchableOpacity>
   );
 

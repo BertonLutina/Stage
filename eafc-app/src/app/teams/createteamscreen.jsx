@@ -1,22 +1,24 @@
 import React, { useState } from 'react';
-import { View, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import STText from '../../components/common/STText';
-import Input from '../../components/common/Input';
-import Button from '../../components/common/Button';
 import useTeamStore from '../../store/teamStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import useColorSchemeColors from '../../hooks/useColorSchemeColors';
-import BackButton from '../../components/common/BackButton';
+import useThemeStore from '@/store/themeStore';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
+import { goBackInPlace } from '@/lib/navigationBack';
+import Screen from '@/components/ui/Screen';
+import IconButton from '@/components/ui/IconButton';
+import TextField from '@/components/ui/TextField';
+import Button from '@/components/ui/Button';
+import SectionLabel from '@/components/ui/SectionLabel';
 
 export default function CreateTeamScreen({ navigation }) {
   const [form, setForm] = useState({ club_name: '', country: '', country_code: '', bio: '' });
   const [avatarUri, setAvatarUri] = useState(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { isDark } = useColorSchemeColors();
+  const tokens = useThemeStore((s) => s.tokens);
   const [error, setError] = useState(null);
   const { createTeam } = useTeamStore();
   const set = (k) => (v) => setForm(f => ({ ...f, [k]: v }));
@@ -58,35 +60,90 @@ export default function CreateTeamScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView className="flex-1">
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
-        <ScrollView className="px-6">
-          <View className="flex-row items-center gap-6">
-          <BackButton />
-            <STText className="text-2xl font-bold mt-6 mb-6">Create Team</STText></View>
-          {error && <View className="bg-danger/20 border border-danger rounded-xl p-3 mb-4"><STText className="text-danger">{error}</STText></View>}
+    <Screen tabBar={false} keyboardAvoiding style={{ gap: 16 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <IconButton icon="close" accessibilityLabel="Close" onPress={() => goBackInPlace(router)} />
+        <SectionLabel>New team</SectionLabel>
+        <View style={{ width: 44 }} />
+      </View>
 
-          <TouchableOpacity onPress={pickImage} className="self-center mb-4">
-            <View className="w-20 h-20 rounded-full border-2 border-[#5FE3E8] overflow-hidden bg-[#1A3566] items-center justify-center">
+      <Text
+        accessibilityRole="header"
+        style={{
+          color: tokens.text,
+          fontFamily: FONT_EA_SPORTS,
+          fontSize: 34,
+          letterSpacing: 34 * 0.03,
+          textTransform: 'uppercase',
+        }}
+      >
+        Create Team
+      </Text>
+
+      {error ? (
+        <View
+          accessibilityRole="alert"
+          style={{ backgroundColor: tokens.dangerBg, borderColor: tokens.danger, borderWidth: 1, borderRadius: 12, padding: 12 }}
+        >
+          <Text style={{ color: tokens.danger, fontSize: 14 }}>{error}</Text>
+        </View>
+      ) : null}
+
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 16 }}>
+        <TouchableOpacity
+          onPress={pickImage}
+          accessibilityRole="button"
+          accessibilityLabel="Team logo"
+          style={{ alignItems: 'center' }}
+        >
+          <View style={{ width: 88, height: 88 }}>
+            <View
+              style={{
+                width: 88,
+                height: 88,
+                borderRadius: 44,
+                borderWidth: 2,
+                borderStyle: avatarUri ? 'solid' : 'dashed',
+                borderColor: avatarUri ? tokens.cyan : tokens.borderStrong,
+                backgroundColor: tokens.bgDeep,
+                overflow: 'hidden',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               {avatarUri ? (
-                <Image source={{ uri: avatarUri }} className="w-full h-full" />
+                <Image source={{ uri: avatarUri }} style={{ width: 88, height: 88 }} />
               ) : (
-                <Ionicons name="shield" size={36} color="#5FE3E8" />
+                <Ionicons name="shield-outline" size={36} color={tokens.muted} />
               )}
-              <View className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-[#5FE3E8] items-center justify-center">
-                <Ionicons name="camera" size={12} color="#0A1F4A" />
-              </View>
             </View>
-            <STText className="text-center text-xs mt-1 opacity-70">Team logo</STText>
-          </TouchableOpacity>
+            <View
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                right: 0,
+                width: 28,
+                height: 28,
+                borderRadius: 14,
+                backgroundColor: tokens.cyan,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Ionicons name="camera" size={16} color={tokens.onCyan} />
+            </View>
+          </View>
+          <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 6 }}>Team logo</Text>
+        </TouchableOpacity>
+        <View style={{ flex: 1, minWidth: 0, alignSelf: 'flex-start' }}>
+          <TextField label="Club Name *" value={form.club_name} onChangeText={set('club_name')} placeholder="FC Longue Vie" />
+        </View>
+      </View>
 
-          <Input label="Club Name *" value={form.club_name} onChangeText={set('club_name')} placeholder="FC Longue Vie" />
-          <Input label="Country" value={form.country} onChangeText={set('country')} placeholder="Belgium" />
-          <Input label="Country Code" value={form.country_code} onChangeText={set('country_code')} placeholder="BE" autoCapitalize="characters" />
-          <Input label="Bio" value={form.bio} onChangeText={set('bio')} placeholder="About your team..." multiline numberOfLines={3} />
-          <Button title="Create Team" onPress={submit} loading={loading} className="mt-2 mb-8" />
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      <TextField label="Country" value={form.country} onChangeText={set('country')} placeholder="Belgium" />
+      <TextField label="Country Code" value={form.country_code} onChangeText={set('country_code')} placeholder="BE" autoCapitalize="characters" />
+      <TextField label="Bio" value={form.bio} onChangeText={set('bio')} placeholder="About your team..." multiline numberOfLines={3} />
+      <Button title="Create Team" onPress={submit} loading={loading} />
+    </Screen>
   );
 }

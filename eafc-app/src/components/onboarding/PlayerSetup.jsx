@@ -1,16 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import {
-  View,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
-import STText from '../common/STText';
-import { stageClient } from '../../api/stageClient';
+import { View } from 'react-native';
+import { Button, TextField } from '@/components/ui';
 import { COUNTRIES } from '../../lib/countries';
+import { savePlayerProfile, buildPlayerPayload } from '../../lib/savePlayerProfile';
 import { CONSOLE_OPTIONS, normalizeConsoleChoice } from '../../lib/platformDisplay';
-import { SettingsListbox } from '../settings/SettingsListbox';
-import { onboardingStyles as s } from './onboardingStyles';
+import { FormError, OnboardingSelect, StepHeading } from './OnboardingParts';
+import { STEP_GAP } from './onboardingStyles';
 
 const POSITIONS = ['GK', 'CB', 'LB', 'RB', 'CDM', 'CM', 'CAM', 'LM', 'RM', 'LW', 'RW', 'ST', 'CF'];
 
@@ -51,36 +46,9 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
     setSaving(true);
     setError(null);
     try {
-      const foundCountry = COUNTRIES.find((c) => c.name === country);
-      const payload = {
-        user_id: user.id,
-        gamertag: gamertag.trim(),
-        email: user.email,
-        position,
-        secondary_position: secondaryPosition === 'none' ? null : secondaryPosition,
-        country,
-        country_code: foundCountry?.code || '',
-        platform,
-        credits: 50,
-        stc: 50000,
-      };
-
-      let existing = [];
-      if (user.player_id) {
-        const p = await stageClient.entities.Player.get(user.player_id).catch(() => null);
-        existing = p ? [p] : [];
-      } else {
-        existing = await stageClient.entities.Player.filter({ email: user.email }, null, 1).catch(() => []);
-      }
-
-      let savedPlayer = null;
-      if (existing?.length) {
-        savedPlayer = await stageClient.entities.Player.update(existing[0].id, payload);
-      } else {
-        savedPlayer = await stageClient.entities.Player.create(payload);
-      }
-
-      onComplete?.(savedPlayer || { ...payload, id: existing?.[0]?.id || null });
+      const fields = { user, gamertag, position, secondaryPosition, country, platform };
+      const savedPlayer = await savePlayerProfile(fields);
+      onComplete?.(savedPlayer || buildPlayerPayload(fields));
     } catch (err) {
       setError(err?.data?.error || err?.data?.message || err?.message || 'Failed to save profile');
     } finally {
@@ -89,22 +57,22 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
   };
 
   return (
-    <View>
-      <STText style={s.title}>Your name on the pitch</STText>
-      <STText style={s.subtitle}>This is how clubs and opponents will find you.</STText>
+    <View style={{ gap: STEP_GAP }}>
+      <StepHeading
+        title="Your name on the pitch"
+        subtitle="This is how clubs and opponents will find you."
+      />
 
-      <STText style={s.label}>Gamertag</STText>
-      <TextInput
+      <TextField
+        label="Gamertag"
         value={gamertag}
         onChangeText={setGamertag}
         placeholder="Your in-game name"
-        placeholderTextColor="rgba(255,255,255,0.35)"
-        style={s.input}
         autoCapitalize="none"
         autoCorrect={false}
       />
 
-      <SettingsListbox
+      <OnboardingSelect
         label="Main position"
         value={position}
         placeholder="Select position"
@@ -116,7 +84,7 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
         }}
       />
 
-      <SettingsListbox
+      <OnboardingSelect
         label="Second position"
         value={secondaryPosition}
         placeholder="Select position"
@@ -125,7 +93,7 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
         onChange={(id) => setSecondaryPosition(id)}
       />
 
-      <SettingsListbox
+      <OnboardingSelect
         label="Console"
         value={platform}
         placeholder="Select console"
@@ -134,7 +102,7 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
         onChange={(id) => setPlatform(id)}
       />
 
-      <SettingsListbox
+      <OnboardingSelect
         label="Country"
         value={country}
         placeholder="Select country"
@@ -144,17 +112,13 @@ export default function PlayerSetup({ onComplete, user, initialPlayer = null, in
         onChange={(id) => setCountry(id)}
       />
 
-      {error ? <STText style={s.error}>{error}</STText> : null}
+      <FormError>{error}</FormError>
 
-      <TouchableOpacity onPress={handleSave} disabled={saving} style={[s.primaryBtn, saving && { opacity: 0.55 }]}>
-        {saving ? (
-          <ActivityIndicator color="#041018" />
-        ) : (
-          <STText style={s.primaryBtnText}>
-            {intent === 'both' ? 'Next' : 'Continue'}
-          </STText>
-        )}
-      </TouchableOpacity>
+      <Button
+        title={intent === 'both' ? 'Next' : 'Continue'}
+        onPress={handleSave}
+        loading={saving}
+      />
     </View>
   );
 }

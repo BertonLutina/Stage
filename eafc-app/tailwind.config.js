@@ -14,10 +14,21 @@ module.exports = {
 
         // Stadium blues (dark mode)
         dark: '#07163A',          // Midnight Blue - outer
-        darkSurface: '#0A1F4A',   // Deep Navy Blue - main bg
-        darkCard: '#1A3566',      // Soft Navy - cards/inner glow
-        darkBorder: '#1A3566',
-        darkMuted: '#6B7280',
+        darkSurface: '#03153F',   // Deep Navy Blue - gradient fallback (rebuild spec)
+        darkCard: '#132B5C',      // Card surface
+        darkBorder: '#234480',
+        darkMuted: '#9FB3D1',
+
+        // Stage tokens
+        bgDeep: '#07163A',
+        card: '#132B5C',
+        cardHi: '#16346B',
+        border: '#234480',
+        borderStrong: '#4A6AA5',
+        textSoft: '#C9D8EE',
+        cyanHi: '#8CF5F8',
+        success: '#4ADE80',
+        warning: '#FBBF24',
 
         // Stadium lines detail
         lineMain: '#5FE3E8',  // same as primary
@@ -30,7 +41,7 @@ module.exports = {
         lightBorder: '#E5E7EB',
         lightMuted: '#6B7280',
 
-        danger: '#EF4444',
+        danger: '#F87171',
       },
       fontFamily: {
         sans: ['System'],

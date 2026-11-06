@@ -3,15 +3,14 @@ import {
   ActivityIndicator,
   Linking,
   RefreshControl,
-  ScrollView,
   StatusBar,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { resolveMyPlayerAndClub } from '@/api/stageClient';
 import {
   acceptTournamentRules,
@@ -25,11 +24,16 @@ import {
   registerTournamentPlayer,
   withdrawTournamentClub,
 } from '@/api/tournamentActions';
+import useThemeStore from '@/store/themeStore';
 import {
-  GamerProfileShell,
-  GlassIconButton,
-} from '@/components/profile/gamer/GamerProfileUI';
-import { FUT, GAME_DAY_SILVER, SectionCard } from '@/components/dashboard/CommandCenterUI';
+  Button,
+  Card,
+  IconButton,
+  ListRow,
+  Screen,
+  StatGrid,
+  TextField,
+} from '@/components/ui';
 import PageTile, { PageTitle } from '@/components/theme/PageTile';
 import TournamentStages from '@/components/tournament/TournamentStages';
 import TournamentLeaderboard from '@/components/tournament/TournamentLeaderboard';
@@ -49,6 +53,7 @@ function parseList(value) {
 export default function TournamentDetailScreen() {
   const { tournamentId } = useLocalSearchParams();
   const router = useRouter();
+  const tokens = useThemeStore((st) => st.tokens);
   const [tournament, setTournament] = useState(null);
   const [matches, setMatches] = useState([]);
   const [myClub, setMyClub] = useState(null);
@@ -155,88 +160,127 @@ export default function TournamentDetailScreen() {
 
   if (loading) {
     return (
-      <GamerProfileShell>
+      <Screen scroll={false}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={GAME_DAY_SILVER} />
+          <ActivityIndicator color={tokens.cyan} />
         </View>
-      </GamerProfileShell>
+      </Screen>
     );
   }
 
   if (!tournament) {
     return (
-      <GamerProfileShell>
-        <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-          <View style={{ padding: 16 }}>
-            <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
-            <Text style={{ color: 'rgba(255,255,255,0.5)', marginTop: 24, textAlign: 'center' }}>Tournament not found</Text>
+      <Screen scroll={false}>
+        <View style={{ gap: 24 }}>
+          <View style={{ flexDirection: 'row' }}>
+            <IconButton icon="arrow-back" accessibilityLabel="Back" onPress={() => router.back()} />
           </View>
-        </SafeAreaView>
-      </GamerProfileShell>
+          <Text style={{ color: tokens.muted, textAlign: 'center' }}>Tournament not found</Text>
+        </View>
+      </Screen>
     );
   }
 
+  const participantCount = playerTournament ? players.length : clubs.length;
+  const maxTeams = Number(tournament.max_teams) || 0;
+  const prizePool = Number(tournament.prize_pool_stc) > 0
+    ? Number(tournament.prize_pool_stc)
+    : entryStcNeeded * maxTeams;
+  const startLabel = tournament.start_date && !Number.isNaN(new Date(tournament.start_date).getTime())
+    ? new Date(tournament.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+    : null;
+  const statItems = [
+    { label: playerTournament ? 'Players' : 'Clubs', value: maxTeams ? `${participantCount} / ${maxTeams}` : String(participantCount) },
+    { label: 'Entry', value: entryStcNeeded > 0 ? `${entryStcNeeded.toLocaleString()} STC` : 'Free' },
+    ...(prizePool > 0 ? [{ label: 'Prize', value: `${prizePool.toLocaleString()} STC` }] : []),
+    ...(startLabel ? [{ label: 'Starts', value: startLabel }] : []),
+  ];
+  const enteredLabel = clubEntered
+    ? registrationClub?.name
+    : (playerEntered ? 'Registered' : null);
+  const showRulesChip = hasSavedRulesAcceptance && !(canSubmitClub || canSubmitPlayer);
+
   return (
-    <GamerProfileShell>
+    <Screen
+      refreshControl={(
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => { setRefreshing(true); load(); }}
+          tintColor={tokens.cyan}
+        />
+      )}
+    >
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 }}>
-          <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
+      <DetailHero tokens={tokens}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <IconButton icon="arrow-back" accessibilityLabel="Back" onPress={() => router.back()} />
         </View>
-        <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, gap: 12 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={GAME_DAY_SILVER} />}
-        >
+        <View style={{ marginTop: 22 }}>
           <PageTitle
             eyebrow={(tournament.type || 'CUP').toUpperCase()}
             title={tournament.name}
             subtitle={`${tournament.status} · ${playerTournament ? `${players.length} players` : `${clubs.length} clubs`}`}
             padded={false}
+            style={{ paddingBottom: 0 }}
           />
-          <PageTile
-            tileKey="tournaments"
-            tileTitle={(tournament.type || 'CUP').toUpperCase()}
-            player={myPlayer}
-            onPlayerChanged={setMyPlayer}
-            contentStyle={{ paddingHorizontal: 12, gap: 12 }}
-          >
+        </View>
+      </DetailHero>
+      <View style={{ paddingTop: 18 }}>
+        <PageTile
+          tileKey="tournaments"
+          tileTitle={(tournament.type || 'CUP').toUpperCase()}
+          player={myPlayer}
+          onPlayerChanged={setMyPlayer}
+          contentStyle={{ paddingHorizontal: 12, gap: 14 }}
+        >
+          <StatGrid items={statItems} columns={statItems.length >= 3 ? 2 : 3} />
+
+          {showRulesChip || enteredLabel ? (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {showRulesChip ? (
+                <StatusChip tokens={tokens} icon="checkmark" iconColor={tokens.success} label="Rules accepted" />
+              ) : null}
+              {enteredLabel ? <StatusChip tokens={tokens} label={enteredLabel} /> : null}
+            </View>
+          ) : null}
+
           {error ? (
-            <SectionCard accent="rose">
-              <Text style={{ color: FUT.rose, fontSize: 12 }}>{error}</Text>
-            </SectionCard>
+            <Card style={{ borderColor: tokens.danger }}>
+              <Text style={{ color: tokens.danger, fontSize: 13 }}>{error}</Text>
+            </Card>
           ) : null}
 
           {(canSubmitPlayer || canSubmitClub) ? (
-            <SectionCard>
-              <Text style={{ color: '#fff', fontWeight: '800', marginBottom: 8 }}>Your balance</Text>
+            <Card>
+              <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 15, marginBottom: 8 }}>Your balance</Text>
               <Text style={{
-                color: userCredits < entryCreditsNeeded ? FUT.rose : 'rgba(255,255,255,0.75)',
-                fontSize: 13,
+                color: userCredits < entryCreditsNeeded ? tokens.danger : tokens.textSoft,
+                fontSize: 14,
               }}
               >
                 Credits: {userCredits.toLocaleString()} / {entryCreditsNeeded}
               </Text>
               {entryStcNeeded > 0 ? (
                 <Text style={{
-                  color: (playerTournament ? playerStc : clubStc) < entryStcNeeded ? FUT.rose : 'rgba(255,255,255,0.75)',
-                  fontSize: 13,
+                  color: (playerTournament ? playerStc : clubStc) < entryStcNeeded ? tokens.danger : tokens.textSoft,
+                  fontSize: 14,
                   marginTop: 4,
                 }}
                 >
                   STC: {(playerTournament ? playerStc : clubStc).toLocaleString()} / {entryStcNeeded.toLocaleString()}
                 </Text>
               ) : null}
-            </SectionCard>
+            </Card>
           ) : null}
 
           {canRegister && !playerTournament && !registrationClub ? (
-            <SectionCard>
-              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }}>
+            <Card>
+              <Text style={{ color: tokens.textSoft, fontSize: 14, lineHeight: 20 }}>
                 {myClub
                   ? 'Only the club president can register this club for a tournament.'
                   : 'You need a club to register. Create one first, then come back as president.'}
               </Text>
-            </SectionCard>
+            </Card>
           ) : null}
 
           {showRulesConsentPanel ? (
@@ -266,12 +310,12 @@ export default function TournamentDetailScreen() {
           ) : null}
 
           {hasSavedRulesAcceptance && (canSubmitClub || canSubmitPlayer) ? (
-            <SectionCard>
-              <Text style={{ color: GAME_DAY_SILVER, fontWeight: '800' }}>Rules accepted</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 6 }}>
+            <Card>
+              <Text style={{ color: tokens.cyan, fontWeight: '700', fontSize: 15 }}>Rules accepted</Text>
+              <Text style={{ color: tokens.muted, fontSize: 13, marginTop: 6 }}>
                 You can still open the book to review the rules.
               </Text>
-            </SectionCard>
+            </Card>
           ) : null}
 
           {rules?.body ? (
@@ -281,67 +325,63 @@ export default function TournamentDetailScreen() {
             />
           ) : null}
           {rulesExpanded && rules?.body ? (
-            <SectionCard>
-              <Text style={{ color: '#fff', fontWeight: '800' }}>{rules.title}</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 13, lineHeight: 20, marginTop: 8 }}>
+            <Card>
+              <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 15 }}>{rules.title}</Text>
+              <Text style={{ color: tokens.textSoft, fontSize: 14, lineHeight: 21, marginTop: 8 }}>
                 {rules.body}
               </Text>
               {rules.rulesFileUrl ? (
-                <TouchableOpacity onPress={() => Linking.openURL(rules.rulesFileUrl)} style={{ marginTop: 10 }}>
-                  <Text style={{ color: GAME_DAY_SILVER, fontSize: 12, fontWeight: '800' }}>{rules.fileLabel}</Text>
+                <TouchableOpacity
+                  onPress={() => Linking.openURL(rules.rulesFileUrl)}
+                  accessibilityRole="link"
+                  style={{ marginTop: 10, minHeight: 44, justifyContent: 'center' }}
+                >
+                  <Text style={{ color: tokens.cyan, fontSize: 13, fontWeight: '600' }}>{rules.fileLabel}</Text>
                 </TouchableOpacity>
               ) : null}
-            </SectionCard>
+            </Card>
           ) : null}
 
           {canSubmitClub ? (
-            <SectionCard>
-              <Text style={{ color: '#fff', fontWeight: '800' }}>Register {registrationClub.name}</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 6, lineHeight: 17 }}>
-                Enter the exact EA FC Pro Clubs name your team uses in-game. Admin verifies it before your club appears in the tournament.
-              </Text>
-              <TextInput
+            <Card style={{ gap: 12 }}>
+              <View>
+                <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 15 }}>Register {registrationClub.name}</Text>
+                <Text style={{ color: tokens.muted, fontSize: 13, marginTop: 6, lineHeight: 18 }}>
+                  Enter the exact EA FC Pro Clubs name your team uses in-game. Admin verifies it before your club appears in the tournament.
+                </Text>
+              </View>
+              <TextField
                 value={eaClubName}
                 onChangeText={setEaClubName}
                 placeholder="EA FC Pro Clubs name"
-                placeholderTextColor="rgba(255,255,255,0.3)"
+                accessibilityLabel="EA FC Pro Clubs name"
                 autoCapitalize="words"
-                style={{
-                  marginTop: 10,
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.12)',
-                  borderRadius: 12,
-                  color: '#fff',
-                  padding: 10,
-                }}
               />
-              <View style={{ marginTop: 12 }}>
-                <Primary
-                  label={`Register my club (${entryCreditsNeeded}✧${entryStcNeeded > 0 ? ` + ${entryStcNeeded.toLocaleString()} STC` : ''})`}
-                  busy={busy === 'regClub'}
-                  disabled={!hasSavedRulesAcceptance || !canAffordClubEntry}
-                  onPress={() => run('regClub', async () => {
-                    const name = eaClubName.trim();
-                    if (!hasSavedRulesAcceptance) throw new Error('Save your rules acceptance before registering.');
-                    if (!canAffordClubEntry) throw new Error('Not enough credits or STC for this tournament.');
-                    if (!name) throw new Error('Enter your EA FC Pro Clubs name so admins can verify your club.');
-                    await registerTournamentClub(tournament.id, registrationClub.id, {
-                      eaClubName: name,
-                      ...registrationOptions,
-                    });
-                    setEaClubName('');
-                  })}
-                />
-              </View>
-            </SectionCard>
+              <Primary
+                label={`Register my club (${entryCreditsNeeded}✧${entryStcNeeded > 0 ? ` + ${entryStcNeeded.toLocaleString()} STC` : ''})`}
+                busy={busy === 'regClub'}
+                disabled={!hasSavedRulesAcceptance || !canAffordClubEntry}
+                onPress={() => run('regClub', async () => {
+                  const name = eaClubName.trim();
+                  if (!hasSavedRulesAcceptance) throw new Error('Save your rules acceptance before registering.');
+                  if (!canAffordClubEntry) throw new Error('Not enough credits or STC for this tournament.');
+                  if (!name) throw new Error('Enter your EA FC Pro Clubs name so admins can verify your club.');
+                  await registerTournamentClub(tournament.id, registrationClub.id, {
+                    eaClubName: name,
+                    ...registrationOptions,
+                  });
+                  setEaClubName('');
+                })}
+              />
+            </Card>
           ) : null}
           {canRegister && !playerTournament && clubPending ? (
-            <SectionCard>
-              <Text style={{ color: GAME_DAY_SILVER, fontWeight: '800' }}>Pending admin approval</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 6 }}>
+            <Card>
+              <Text style={{ color: tokens.warning, fontWeight: '700', fontSize: 15 }}>Pending admin approval</Text>
+              <Text style={{ color: tokens.muted, fontSize: 13, marginTop: 6 }}>
                 Your EA FC club name is waiting for verification.
               </Text>
-            </SectionCard>
+            </Card>
           ) : null}
           {canSubmitPlayer ? (
             <Primary
@@ -388,34 +428,112 @@ export default function TournamentDetailScreen() {
 
           <TournamentLeaderboard tournamentId={tournamentId} />
 
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <Ghost
-              label="Bracket"
+          <Card style={{ paddingVertical: 4 }}>
+            <ListRow
+              icon="git-network-outline"
+              title="Bracket"
               onPress={() => router.push({ pathname: '/(tabs)/tournaments/bracketscreen', params: { tournamentId } })}
             />
-            <Ghost
-              label="Standings"
+            <View style={{ height: 1, backgroundColor: tokens.border }} />
+            <ListRow
+              icon="list-outline"
+              title="Standings"
               onPress={() => router.push({ pathname: '/(tabs)/tournaments/leaguestandingsscreen', params: { tournamentId } })}
             />
-          </View>
-          </PageTile>
-        </ScrollView>
-      </SafeAreaView>
-    </GamerProfileShell>
+          </Card>
+        </PageTile>
+      </View>
+    </Screen>
+  );
+}
+
+/** Full-bleed header band (bgDeep, two outline rings) that sits under the status bar. */
+function DetailHero({ tokens, children }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View
+      style={{
+        marginTop: -(insets.top + 12),
+        marginHorizontal: -20,
+        paddingTop: insets.top + 12,
+        paddingHorizontal: 20,
+        paddingBottom: 18,
+        backgroundColor: tokens.live ? 'transparent' : tokens.bgDeep,
+        overflow: 'hidden',
+      }}
+    >
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          right: -40,
+          top: 40,
+          width: 220,
+          height: 220,
+          borderRadius: 110,
+          borderWidth: 2,
+          borderColor: tokens.border,
+        }}
+      />
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          right: 30,
+          top: 110,
+          width: 80,
+          height: 80,
+          borderRadius: 40,
+          borderWidth: 2,
+          borderColor: tokens.aqua,
+          opacity: 0.5,
+        }}
+      />
+      {children}
+    </View>
+  );
+}
+
+function StatusChip({ tokens, label, icon, iconColor }) {
+  return (
+    <View
+      style={{
+        height: 34,
+        maxWidth: '100%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 14,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: tokens.border,
+        backgroundColor: tokens.card,
+      }}
+    >
+      {icon ? <Ionicons name={icon} size={16} color={iconColor || tokens.textSoft} /> : null}
+      <Text numberOfLines={1} style={{ color: tokens.textSoft, fontSize: 13, fontWeight: '600', flexShrink: 1 }}>
+        {label}
+      </Text>
+    </View>
   );
 }
 
 function RulesConsent({ rules, checked, showCheckbox, onToggle, onSave, saveBusy }) {
+  const tokens = useThemeStore((st) => st.tokens);
   if (!rules?.body) return null;
   return (
-    <SectionCard>
-      <Text style={{ color: '#fff', fontWeight: '800' }}>{rules.title}</Text>
-      <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 13, lineHeight: 20, marginTop: 8 }}>
+    <Card>
+      <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 15 }}>{rules.title}</Text>
+      <Text style={{ color: tokens.textSoft, fontSize: 14, lineHeight: 21, marginTop: 8 }}>
         {rules.body}
       </Text>
       {rules.rulesFileUrl ? (
-        <TouchableOpacity onPress={() => Linking.openURL(rules.rulesFileUrl)} style={{ marginTop: 10 }}>
-          <Text style={{ color: GAME_DAY_SILVER, fontSize: 12, fontWeight: '800' }}>{rules.fileLabel}</Text>
+        <TouchableOpacity
+          onPress={() => Linking.openURL(rules.rulesFileUrl)}
+          accessibilityRole="link"
+          style={{ marginTop: 10, minHeight: 44, justifyContent: 'center' }}
+        >
+          <Text style={{ color: tokens.cyan, fontSize: 13, fontWeight: '600' }}>{rules.fileLabel}</Text>
         </TouchableOpacity>
       ) : null}
       {showCheckbox ? (
@@ -423,21 +541,22 @@ function RulesConsent({ rules, checked, showCheckbox, onToggle, onSave, saveBusy
           onPress={onToggle}
           accessibilityRole="checkbox"
           accessibilityState={{ checked }}
-          style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 14 }}
+          style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginTop: 14, minHeight: 44 }}
         >
           <View style={{
-            width: 22,
-            height: 22,
+            width: 24,
+            height: 24,
+            borderRadius: 8,
             borderWidth: 1,
-            borderColor: checked ? GAME_DAY_SILVER : 'rgba(255,255,255,0.35)',
-            backgroundColor: checked ? 'rgba(0,232,255,0.18)' : 'transparent',
+            borderColor: checked ? tokens.cyan : tokens.borderStrong,
+            backgroundColor: checked ? tokens.cyan : 'transparent',
             alignItems: 'center',
             justifyContent: 'center',
           }}
           >
-            {checked ? <Text style={{ color: GAME_DAY_SILVER, fontWeight: '900' }}>✓</Text> : null}
+            {checked ? <Ionicons name="checkmark" size={16} color={tokens.onCyan} /> : null}
           </View>
-          <Text style={{ color: '#fff', flex: 1, fontSize: 13, lineHeight: 18 }}>{rules.acceptanceLabel}</Text>
+          <Text style={{ color: tokens.text, flex: 1, fontSize: 14, lineHeight: 20 }}>{rules.acceptanceLabel}</Text>
         </TouchableOpacity>
       ) : null}
       {showCheckbox ? (
@@ -450,44 +569,14 @@ function RulesConsent({ rules, checked, showCheckbox, onToggle, onSave, saveBusy
           />
         </View>
       ) : null}
-    </SectionCard>
+    </Card>
   );
 }
 
 function Primary({ label, onPress, busy, disabled }) {
-  const off = !!busy || !!disabled;
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={off}
-      style={{
-        backgroundColor: 'rgba(255,255,255,0.12)',
-        borderWidth: 1,
-        borderColor: 'rgba(248,251,255,0.55)',
-        paddingVertical: 13,
-        alignItems: 'center',
-        opacity: disabled ? 0.45 : 1,
-      }}
-    >
-      {busy ? <ActivityIndicator color={GAME_DAY_SILVER} /> : <Text style={{ color: GAME_DAY_SILVER, fontWeight: '900' }}>{label}</Text>}
-    </TouchableOpacity>
-  );
+  return <Button title={label} onPress={onPress} loading={!!busy} disabled={!!disabled} />;
 }
 
 function Ghost({ label, onPress, busy }) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={!!busy}
-      style={{
-        flex: 1,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.12)',
-        paddingVertical: 13,
-        alignItems: 'center',
-      }}
-    >
-      {busy ? <ActivityIndicator color={GAME_DAY_SILVER} /> : <Text style={{ color: GAME_DAY_SILVER, fontWeight: '800' }}>{label}</Text>}
-    </TouchableOpacity>
-  );
+  return <Button title={label} variant="secondary" onPress={onPress} loading={!!busy} />;
 }

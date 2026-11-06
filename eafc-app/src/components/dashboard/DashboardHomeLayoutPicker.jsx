@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { CYAN, useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
-import { headingStyleLg } from '@/lib/fonts';
+import { useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
+import { hexToRgba } from '@/lib/stageTheme';
 import { DASHBOARD_LAYOUTS } from '@/lib/dashboardLayouts';
 import LiveGlass from '@/components/theme/LiveGlass';
+import { Button } from '@/components/ui';
 
 export function DashboardLayoutOptions({ layout, onChange }) {
+  const tokens = useGamerTokens();
   return (
-    <View accessibilityRole="radiogroup" accessibilityLabel="Home layout" style={{ gap: 8 }}>
+    <View accessibilityRole="radiogroup" accessibilityLabel="Home layout" style={{ gap: 10 }}>
       {DASHBOARD_LAYOUTS.map((item) => {
         const active = layout === item.id;
         return (
@@ -21,10 +24,10 @@ export function DashboardLayoutOptions({ layout, onChange }) {
             accessibilityLabel={`${item.name}. ${item.blurb}`}
             style={{
               minHeight: 56,
-              borderRadius: 2,
-              borderWidth: 1.5,
-              borderColor: active ? 'rgba(0,232,255,0.55)' : 'rgba(255,255,255,0.12)',
-              backgroundColor: active ? 'rgba(0,232,255,0.12)' : 'rgba(255,255,255,0.04)',
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: active ? tokens.aqua : tokens.border,
+              backgroundColor: active ? tokens.cardHi : tokens.card,
               paddingHorizontal: 14,
               paddingVertical: 12,
               flexDirection: 'row',
@@ -35,23 +38,23 @@ export function DashboardLayoutOptions({ layout, onChange }) {
             <View style={{
               width: 36,
               height: 36,
-              borderRadius: 10,
+              borderRadius: 12,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: active ? 'rgba(0,232,255,0.18)' : 'rgba(255,255,255,0.06)',
+              backgroundColor: active ? hexToRgba(tokens.cyan, 0.18) : tokens.border,
             }}
             >
-              <Text style={{ color: active ? CYAN : 'rgba(255,255,255,0.55)', fontWeight: '900' }}>
+              <Text style={{ color: active ? tokens.cyan : tokens.muted, fontFamily: FONT_EA_SPORTS, fontSize: 16 }}>
                 {item.id}
               </Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 14 }}>{item.name}</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 2, lineHeight: 16 }}>
+              <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 15 }}>{item.name}</Text>
+              <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 2, lineHeight: 16 }}>
                 {item.blurb}
               </Text>
             </View>
-            {active ? <Ionicons name="checkmark-circle" size={20} color={CYAN} /> : null}
+            {active ? <Ionicons name="checkmark-circle-outline" size={22} color={tokens.cyan} /> : null}
           </TouchableOpacity>
         );
       })}
@@ -85,17 +88,17 @@ export function DashboardHomeLayoutSheet({ visible, layout, onConfirm, onDismiss
             right: 0,
             bottom: 0,
             left: 0,
-            backgroundColor: 'rgba(0,0,0,0.55)',
+            backgroundColor: tokens.overlay,
           }}
         />
         <LiveGlass
           intensity={26}
           style={{
-            backgroundColor: tokens.live ? 'transparent' : '#0B1220',
+            backgroundColor: tokens.live ? 'transparent' : tokens.bgDeep,
             borderTopLeftRadius: 22,
             borderTopRightRadius: 22,
             borderWidth: 1,
-            borderColor: tokens.live ? tokens.cyanBorder : 'rgba(0,232,255,0.22)',
+            borderColor: tokens.border,
             paddingHorizontal: 18,
             paddingTop: 16,
             paddingBottom: 28,
@@ -104,30 +107,25 @@ export function DashboardHomeLayoutSheet({ visible, layout, onConfirm, onDismiss
         >
           <View style={{ alignItems: 'center' }}>
             <View style={{
-              width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.22)',
+              width: 40, height: 4, borderRadius: 2, backgroundColor: tokens.borderStrong,
             }}
             />
           </View>
-          <Text style={[headingStyleLg, { color: '#fff', fontSize: 22 }]}>Home layout</Text>
-          <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14, lineHeight: 20 }}>
+          <Text style={{
+            color: tokens.text, fontFamily: FONT_EA_SPORTS, fontSize: 28, letterSpacing: 28 * 0.03, textTransform: 'uppercase',
+          }}
+          >
+            Home layout
+          </Text>
+          <Text style={{ color: tokens.muted, fontSize: 14, lineHeight: 20 }}>
             Pick how Command Center looks. You can change this later in Settings.
           </Text>
           <DashboardLayoutOptions layout={draft} onChange={setDraft} />
-          <TouchableOpacity
-            onPress={() => onConfirm(draft)}
-            activeOpacity={0.88}
-            accessibilityRole="button"
+          <Button
+            title="Use this layout"
             accessibilityLabel="Use this Home layout"
-            style={{
-              minHeight: 48,
-              borderRadius: 14,
-              backgroundColor: CYAN,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text style={{ color: '#041018', fontWeight: '900', fontSize: 15 }}>Use this layout</Text>
-          </TouchableOpacity>
+            onPress={() => onConfirm(draft)}
+          />
           <TouchableOpacity
             onPress={onDismiss}
             activeOpacity={0.85}
@@ -135,7 +133,7 @@ export function DashboardHomeLayoutSheet({ visible, layout, onConfirm, onDismiss
             accessibilityLabel="Not now"
             style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
           >
-            <Text style={{ color: 'rgba(255,255,255,0.5)', fontWeight: '800' }}>Not now</Text>
+            <Text style={{ color: tokens.muted, fontWeight: '600', fontSize: 15 }}>Not now</Text>
           </TouchableOpacity>
         </LiveGlass>
       </View>

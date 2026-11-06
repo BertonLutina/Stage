@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, TouchableOpacity, Modal, ScrollView } from 'react-native';
+import { View, Pressable, Modal, ScrollView, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import STText from '../common/STText';
+import useThemeStore from '@/store/themeStore';
 
 const OPTIONS = [
   { key: 'camera', icon: 'camera', label: 'Camera' },
@@ -15,47 +15,78 @@ const OPTIONS = [
 ];
 
 export default function ChatAttachmentMenu({ visible, onClose, onSelect }) {
+  const tokens = useThemeStore((s) => s.tokens);
+
   return (
-    <Modal visible={visible} transparent animationType="slide">
-      <TouchableOpacity activeOpacity={1} onPress={onClose} className="flex-1 bg-black/70 justify-end">
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={(e) => e.stopPropagation()}
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+        {/* Scrim is a sibling of the sheet, so the sheet's controls stay separate accessibility elements. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss"
+          onPress={onClose}
+          style={[StyleSheet.absoluteFill, { backgroundColor: tokens.overlay }]}
+        />
+        <View
           style={{
-            backgroundColor: '#0B101C',
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            paddingHorizontal: 16,
-            paddingTop: 16,
+            backgroundColor: tokens.bgDeep,
+            borderTopLeftRadius: 22,
+            borderTopRightRadius: 22,
+            paddingHorizontal: 20,
+            paddingTop: 12,
             paddingBottom: 32,
             borderTopWidth: 1,
-            borderColor: 'rgba(255,214,10,0.2)',
+            borderLeftWidth: 1,
+            borderRightWidth: 1,
+            borderColor: tokens.border,
           }}
         >
-          <View className="w-10 h-1 rounded-full self-center mb-4" style={{ backgroundColor: 'rgba(255,214,10,0.35)' }} />
-          <STText className="text-white font-bold text-lg mb-4">Attach</STText>
+          <View
+            style={{
+              width: 40,
+              height: 4,
+              borderRadius: 2,
+              alignSelf: 'center',
+              marginBottom: 16,
+              backgroundColor: tokens.borderStrong,
+            }}
+          />
+          <Text style={{ color: tokens.text, fontSize: 16, fontWeight: '700', marginBottom: 16 }}>Attach</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
             {OPTIONS.map((opt) => (
-              <TouchableOpacity
+              <Pressable
                 key={opt.key}
+                accessibilityRole="button"
+                accessibilityLabel={opt.label}
                 onPress={() => {
                   onSelect(opt.key);
                   onClose();
                 }}
-                className="items-center w-16"
+                style={{ alignItems: 'center', width: 64, minHeight: 44 }}
               >
                 <View
-                  className="w-14 h-14 rounded-2xl items-center justify-center mb-2"
-                  style={{ backgroundColor: 'rgba(255,214,10,0.12)', borderWidth: 1, borderColor: 'rgba(255,214,10,0.25)' }}
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 12,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 8,
+                    backgroundColor: tokens.card,
+                    borderWidth: 1,
+                    borderColor: tokens.border,
+                  }}
                 >
-                  <Ionicons name={opt.icon} size={26} color="#FFD60A" />
+                  <Ionicons name={opt.icon} size={24} color={tokens.cyan} />
                 </View>
-                <STText className="text-white text-xs">{opt.label}</STText>
-              </TouchableOpacity>
+                <Text numberOfLines={2} style={{ color: tokens.textSoft, fontSize: 12, textAlign: 'center' }}>
+                  {opt.label}
+                </Text>
+              </Pressable>
             ))}
           </ScrollView>
-        </TouchableOpacity>
-      </TouchableOpacity>
+        </View>
+      </View>
     </Modal>
   );
 }

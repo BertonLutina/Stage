@@ -1,16 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  View,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
-import STText from '../common/STText';
+import { View } from 'react-native';
+import { Button, TextField } from '@/components/ui';
 import { stageClient } from '../../api/stageClient';
 import { COUNTRIES } from '../../lib/countries';
 import { CONSOLE_OPTIONS, normalizeConsoleChoice } from '../../lib/platformDisplay';
-import { SettingsListbox } from '../settings/SettingsListbox';
-import { onboardingStyles as s } from './onboardingStyles';
+import { FormError, OnboardingSelect, StepHeading, TextLink } from './OnboardingParts';
+import { STEP_GAP } from './onboardingStyles';
 
 const REGIONS = ['Europe', 'North America', 'South America', 'Asia', 'Oceania', 'Africa', 'Middle East'];
 
@@ -107,68 +102,60 @@ export default function ClubSetup({
 
   if (phase === 'president') {
     return (
-      <View>
-        <STText style={s.title}>How should they call you?</STText>
-        <STText style={s.subtitle}>This is your public name as club president.</STText>
+      <View style={{ gap: STEP_GAP }}>
+        <StepHeading
+          title="How should they call you?"
+          subtitle="This is your public name as club president."
+        />
 
-        <STText style={s.label}>Display name *</STText>
-        <TextInput
+        <TextField
+          label="Display name *"
           value={displayName}
           onChangeText={setDisplayName}
           placeholder="President name"
-          placeholderTextColor="rgba(255,255,255,0.35)"
-          style={s.input}
         />
 
-        <STText style={s.label}>Role title</STText>
-        <TextInput
+        <TextField
+          label="Role title"
           value={roleTitle}
           onChangeText={setRoleTitle}
           placeholder="President"
-          placeholderTextColor="rgba(255,255,255,0.35)"
-          style={s.input}
         />
 
-        {error ? <STText style={s.error}>{error}</STText> : null}
+        <FormError>{error}</FormError>
 
-        <TouchableOpacity onPress={continuePresident} style={s.primaryBtn}>
-          <STText style={s.primaryBtnText}>Next</STText>
-        </TouchableOpacity>
+        <Button title="Next" onPress={continuePresident} />
         {!required ? (
-          <TouchableOpacity onPress={() => onComplete?.(null)} style={s.ghostBtn}>
-            <STText style={s.ghostBtnText}>Skip for now</STText>
-          </TouchableOpacity>
+          <TextLink title="Skip for now" onPress={() => onComplete?.(null)} />
         ) : null}
       </View>
     );
   }
 
   return (
-    <View>
-      <STText style={s.title}>Name the club</STText>
-      <STText style={s.subtitle}>This is the club you will own and play for.</STText>
+    <View style={{ gap: STEP_GAP }}>
+      <StepHeading
+        title="Name the club"
+        subtitle="This is the club you will own and play for."
+      />
 
-      <STText style={s.label}>Club name *</STText>
-      <TextInput
+      <TextField
+        label="Club name *"
         value={name}
         onChangeText={setName}
         placeholder="Club name"
-        placeholderTextColor="rgba(255,255,255,0.35)"
-        style={s.input}
       />
 
-      <STText style={s.label}>Tag * (max 5)</STText>
-      <TextInput
+      <TextField
+        label="Tag * (max 5)"
         value={tag}
         onChangeText={(v) => setTag(v.toUpperCase().slice(0, 5))}
         placeholder="CLB"
-        placeholderTextColor="rgba(255,255,255,0.35)"
-        style={s.input}
         autoCapitalize="characters"
         maxLength={5}
       />
 
-      <SettingsListbox
+      <OnboardingSelect
         label="Platform"
         value={platform}
         placeholder="Select platform"
@@ -177,7 +164,7 @@ export default function ClubSetup({
         onChange={(id) => setPlatform(id)}
       />
 
-      <SettingsListbox
+      <OnboardingSelect
         label="Region"
         value={region}
         placeholder="Select region"
@@ -186,7 +173,7 @@ export default function ClubSetup({
         onChange={(id) => setRegion(id)}
       />
 
-      <SettingsListbox
+      <OnboardingSelect
         label="Country *"
         value={country}
         placeholder="Select country"
@@ -196,14 +183,10 @@ export default function ClubSetup({
         onChange={(id) => setCountry(id)}
       />
 
-      {error ? <STText style={s.error}>{error}</STText> : null}
+      <FormError>{error}</FormError>
 
-      <TouchableOpacity onPress={handleCreate} disabled={saving} style={[s.primaryBtn, saving && { opacity: 0.55 }]}>
-        {saving ? <ActivityIndicator color="#041018" /> : <STText style={s.primaryBtnText}>Create club</STText>}
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => setPhase('president')} style={s.ghostBtn}>
-        <STText style={s.ghostBtnText}>Back</STText>
-      </TouchableOpacity>
+      <Button title="Create club" onPress={handleCreate} loading={saving} />
+      <TextLink title="Back" onPress={() => setPhase('president')} />
     </View>
   );
 }

@@ -1,7 +1,9 @@
 import React from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { GamerSectionCard, useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
+import { GamerSectionCard, statAccentColor, useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
+import { hexToRgba } from '@/lib/stageTheme';
 import {
   CAREER_LABELS,
   clubCareerTiles,
@@ -9,22 +11,15 @@ import {
   recentCareerHistory,
 } from '@/lib/playerCareer';
 
-const OUTCOME = {
-  W: { color: '#34D399', bg: 'rgba(16,185,129,0.18)', border: 'rgba(52,211,153,0.4)' },
-  D: { color: '#FFD60A', bg: 'rgba(255,214,10,0.14)', border: 'rgba(255,214,10,0.35)' },
-  L: { color: '#FB7185', bg: 'rgba(244,63,94,0.16)', border: 'rgba(251,113,133,0.4)' },
-};
-
-function tileColor(accent, tokens) {
-  if (accent === 'amber' || accent === 'gold') return tokens.amber;
-  if (accent === 'green') return '#34D399';
-  if (accent === 'rose') return '#FB7185';
-  if (accent === 'violet') return '#C4B5FD';
-  return tokens.cyan;
+function outcomeChip(outcome, tokens) {
+  if (outcome === 'W') return { color: tokens.success, bg: hexToRgba(tokens.success, 0.18), border: hexToRgba(tokens.success, 0.4) };
+  if (outcome === 'D') return { color: tokens.amber, bg: hexToRgba(tokens.amber, 0.14), border: tokens.amberBorder };
+  if (outcome === 'L') return { color: tokens.danger, bg: hexToRgba(tokens.danger, 0.16), border: hexToRgba(tokens.danger, 0.4) };
+  return null;
 }
 
 function CareerTile({ label, value, accent, tokens }) {
-  const color = tileColor(accent, tokens);
+  const color = statAccentColor(accent, tokens);
   return (
     <View
       style={{
@@ -32,9 +27,9 @@ function CareerTile({ label, value, accent, tokens }) {
         flexGrow: 1,
         minWidth: 84,
         minHeight: 68,
-        borderRadius: 6,
+        borderRadius: 12,
         borderWidth: 1,
-        borderColor: tokens.hairline,
+        borderColor: tokens.border,
         backgroundColor: tokens.inputFill,
         paddingHorizontal: 10,
         paddingVertical: 8,
@@ -45,11 +40,11 @@ function CareerTile({ label, value, accent, tokens }) {
         numberOfLines={2}
         style={{
           color: tokens.muted,
-          fontSize: 10,
-          fontWeight: '800',
-          letterSpacing: 1.1,
+          fontSize: 11,
+          fontWeight: '600',
+          letterSpacing: 11 * 0.12,
           textTransform: 'uppercase',
-          lineHeight: 13,
+          lineHeight: 14,
         }}
       >
         {label}
@@ -58,9 +53,8 @@ function CareerTile({ label, value, accent, tokens }) {
         numberOfLines={1}
         style={{
           color,
+          fontFamily: FONT_EA_SPORTS,
           fontSize: 24,
-          fontWeight: '900',
-          letterSpacing: -0.6,
           fontVariant: ['tabular-nums'],
           marginTop: 8,
         }}
@@ -92,13 +86,13 @@ function HistoryRows({ history, playerCareer, tokens }) {
   }
 
   return (
-    <View style={{ marginTop: 4, paddingTop: 12, borderTopWidth: 1, borderTopColor: tokens.hairline }}>
-      <Text style={{ color: tokens.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1.6, textTransform: 'uppercase', marginBottom: 10 }}>
+    <View style={{ marginTop: 4, paddingTop: 12, borderTopWidth: 1, borderTopColor: tokens.border }}>
+      <Text style={{ color: tokens.muted, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12, textTransform: 'uppercase', marginBottom: 10 }}>
         {CAREER_LABELS.recentMatches}
       </Text>
       <View style={{ gap: 8 }}>
         {rows.map((row) => {
-          const chip = OUTCOME[row.outcome];
+          const chip = outcomeChip(row.outcome, tokens);
           return (
             <View
               key={row.key}
@@ -107,9 +101,9 @@ function HistoryRows({ history, playerCareer, tokens }) {
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 10,
-                borderRadius: 2,
+                borderRadius: 12,
                 borderWidth: 1,
-                borderColor: tokens.hairline,
+                borderColor: tokens.border,
                 backgroundColor: tokens.inputFill,
                 paddingHorizontal: 12,
                 paddingVertical: 10,
@@ -134,14 +128,14 @@ function HistoryRows({ history, playerCareer, tokens }) {
                 <Ionicons name="flash-outline" size={16} color={tokens.cyan} />
               )}
               <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={{ color: tokens.text, fontSize: 13, fontWeight: '700' }} numberOfLines={1}>
+                <Text style={{ color: tokens.text, fontSize: 14, fontWeight: '600' }} numberOfLines={1}>
                   {row.title}
                 </Text>
                 <Text style={{ color: tokens.muted, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
                   {row.meta}
                 </Text>
               </View>
-              <Text style={{ color: tokens.text, fontSize: 16, fontWeight: '900', fontVariant: ['tabular-nums'] }}>
+              <Text style={{ color: tokens.text, fontFamily: FONT_EA_SPORTS, fontSize: 18, fontVariant: ['tabular-nums'] }}>
                 {row.score}
               </Text>
             </View>

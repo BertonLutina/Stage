@@ -11,6 +11,7 @@ import {
   normalizeTransferMarketPlayers,
 } from '@/lib/transferMarketEntries';
 import { matchesPlatformFilter } from '@/lib/platformDisplay';
+import { normalizePlayerContracts } from '@/lib/playerContractFields';
 
 export const PLAYER_POSITIONS = ['All', 'GK', 'CB', 'LB', 'RB', 'CDM', 'CM', 'CAM', 'LM', 'RM', 'LW', 'RW', 'ST', 'CF'];
 export const PLATFORMS = ['All', 'PlayStation', 'Xbox', 'PC'];

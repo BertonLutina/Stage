@@ -59,5 +59,5 @@ export default function SplashOverlay({ visible, onHidden }) {
 
 const styles = StyleSheet.create({
   root: { backgroundColor: '#07153C' },
-  image: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
+  image: { ...StyleSheet.absoluteFill, width: '100%', height: '100%' },
 });

@@ -52,7 +52,8 @@ describe('mobile onboarding intent parity', () => {
 
   it('uses a phone-first shell instead of a centered web card', () => {
     expect(source).toMatch(/StepDots/);
-    expect(source).toMatch(/KeyboardAvoidingView/);
+    // Screen (ui/) owns the KeyboardAvoidingView; the flow opts in with keyboardAvoiding.
+    expect(source).toMatch(/<Screen[^>]*keyboardAvoiding/);
     expect(source).not.toMatch(/maxWidth:\s*440/);
     expect(source).not.toMatch(/How do you play\?/);
   });

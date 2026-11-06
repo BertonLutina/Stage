@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Inbox message</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+a{color:#5FE3E8;text-decoration:none}a:hover{color:#8CF5F8}
+.scr{width:390px;height:844px;position:relative;overflow:hidden;background-color:#03153F;background-image:radial-gradient(ellipse 75% 42% at 50% 78%,rgba(0,82,140,.95) 0%,rgba(0,82,140,0) 72%),radial-gradient(ellipse 90% 35% at 50% 0%,rgba(14,58,124,.9) 0%,rgba(14,58,124,0) 75%),linear-gradient(90deg,#020C30 0%,#06306A 50%,#020C30 100%);color:#EAF2FF;font-family:Inter,system-ui,sans-serif;font-size:14px}
+.pad{padding:58px 20px 110px;display:flex;flex-direction:column;gap:16px}
+.h{font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.03em;margin:0}
+.k{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#9FB3D1}
+.mut{color:#9FB3D1}
+.card{background:#132B5C;border:1px solid #234480;border-radius:16px;padding:16px}
+.row{display:flex;align-items:center;gap:12px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:14px;border:0;background:#5FE3E8;color:#07163A;font:700 15px Inter,sans-serif;width:100%}
+.btn:hover{color:#07163A;background:#8CF5F8}
+.btn2{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:14px;background:transparent;border:1px solid #5FE3E8;color:#5FE3E8;font:600 15px Inter,sans-serif;width:100%}
+.chip{display:inline-flex;align-items:center;height:34px;padding:0 14px;border-radius:999px;background:#132B5C;border:1px solid #234480;color:#C9D8EE;font:600 13px Inter,sans-serif;white-space:nowrap}
+.chip.on{background:#5FE3E8;color:#07163A;border-color:#5FE3E8}
+.av{width:44px;height:44px;border-radius:12px;background:#234480;display:flex;align-items:center;justify-content:center;font:800 16px 'Saira Condensed',sans-serif;color:#8CF5F8;flex:none}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ib{width:44px;height:44px;border-radius:12px;background:#132B5C;border:1px solid #234480;display:flex;align-items:center;justify-content:center;color:#EAF2FF;flex:none}
+.in{display:flex;flex-direction:column;gap:6px}
+.in input,.in select,.in textarea{height:50px;border-radius:12px;border:1px solid #234480;background:#07163A;color:#EAF2FF;padding:0 14px;font:500 15px Inter,sans-serif}
+.in label{font-size:12px;font-weight:600;color:#9FB3D1}
+.tabs{position:absolute;left:16px;right:16px;bottom:24px;height:64px;border-radius:22px;background:#07163A;border:1px solid #234480;display:flex;align-items:center;justify-content:space-around}
+.tab{width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#9FB3D1;border-radius:14px}
+.tab.on{color:#5FE3E8;background:#132B5C}
+.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.sep{height:1px;background:#234480}
+.sec{display:flex;justify-content:space-between;align-items:baseline}
+.ok{color:#4ADE80}.bad{color:#F87171}
+.kv{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #234480;font-size:14px}
+.kv span:first-child{color:#9FB3D1}
+</style>
+</helmet>
+<div class="scr">
+<div class="pad" style="gap: 16px">
+<div class="top"><a class="ib" href="Inbox.dc.html" aria-label="Back"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><span class="k">Contract offer</span><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"></path></svg></button></div>
+<div class="row"><div class="av" style="width: 56px; height: 56px; color: #FBBF24">RDF</div><div><b style="font-size: 16px">Red Foxes</b><div class="mut" style="font-size: 13px">Manager · Today 10:42</div></div></div>
+<h1 class="h" style="font-size: 30px; line-height: 1.05">We want you up front</h1>
+<p style="margin: 0; line-height: 1.55; color: #C9D8EE">Saw your last few matches against us. We are building for the Euro Pro League and want a clinical ST. Offer below, open until Sunday.</p>
+<div class="card" style="padding: 4px 16px">
+<div class="kv"><span>Club</span><b>Red Foxes</b></div>
+<div class="kv"><span>Position</span><b>ST</b></div>
+<div class="kv"><span>Length</span><b>20 games</b></div>
+<div class="kv"><span>Signing bonus</span><b>300 STC</b></div>
+<div class="kv" style="border-bottom: 0"><span>Expires</span><b>Sun 1 Nov</b></div>
+</div>
+<div class="card row" style="border-color: #B45309; background: #2A2418; gap: 10px"><svg class="i" style="color: #FBBF24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4M12 16h.01"></path></svg><span style="font-size: 13px">Accepting ends your contract with Night Owls FC (9 games left).</span></div>
+</div>
+<div style="position: absolute; left: 20px; right: 20px; bottom: 40px; display: flex; gap: 10px"><a class="btn2" href="Inbox.dc.html" style="flex: 1; border-color: #F87171; color: #F87171">Decline</a><a class="btn" href="Inbox.dc.html" style="flex: 1">Accept offer</a></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

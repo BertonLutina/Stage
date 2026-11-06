@@ -5,11 +5,12 @@ import GameDayTileBackgroundDialog from '@/components/matches/GameDayTileBackgro
 import GameDayTileBackgroundLayers from '@/components/matches/GameDayTileBackgroundLayers';
 import GameDayTileMenuButton from '@/components/matches/GameDayTileMenuButton';
 import {
-  GAME_DAY_SILVER,
   TILE_FILL_LIVE,
+  sectionLabelStyle,
   tileChrome,
 } from '@/components/dashboard/CommandCenterUI';
-import { headingStyleLg, headingStyleSm } from '@/lib/fonts';
+import { STAGE_PALETTE, hexToRgba } from '@/lib/stageTheme';
+import { headingStyleLg } from '@/lib/fonts';
 import {
   canUseTileBackgrounds,
   getGameDayTileBackgroundConfig,
@@ -18,8 +19,9 @@ import {
 import { useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
 
 /**
- * Game Day MATCH SCREENS chrome for any page: silver hairline, sharp corners,
- * STAGE Plus photo background via the same tile-key API.
+ * Stage card chrome for any page (radius 16, token border and fill), with the
+ * STAGE Plus photo background via the same tile-key API. Over a photo the fill
+ * goes translucent so the picture shows through the scrim.
  */
 export default function PageTile({
   tileKey,
@@ -72,11 +74,9 @@ export default function PageTile({
     <>
       <View
         style={[
-          tileChrome(tokens, {
-            backgroundColor: custom
-              ? (live ? TILE_FILL_LIVE : 'rgba(0,0,0,0.4)')
-              : undefined,
-          }),
+          tileChrome(tokens, custom
+            ? { backgroundColor: live ? TILE_FILL_LIVE : hexToRgba(STAGE_PALETTE.bgDeep, 0.55) }
+            : {}),
           style,
         ]}
       >
@@ -94,7 +94,7 @@ export default function PageTile({
             >
               <View style={{ flex: 1, minWidth: 0 }}>
                 {eyebrow ? (
-                  <Text style={[headingStyleSm, { color: GAME_DAY_SILVER, fontSize: 11, letterSpacing: 2 }]}>
+                  <Text numberOfLines={1} style={sectionLabelStyle(tokens)}>
                     {eyebrow}
                   </Text>
                 ) : null}
@@ -102,11 +102,9 @@ export default function PageTile({
                   <Text
                     numberOfLines={1}
                     style={{
-                      color: 'rgba(255,255,255,0.35)',
-                      fontSize: 10,
+                      color: tokens.muted,
+                      fontSize: 11,
                       marginTop: eyebrow ? 4 : 0,
-                      letterSpacing: 1.4,
-                      textTransform: 'uppercase',
                     }}
                   >
                     {subtitle}
@@ -143,21 +141,27 @@ export default function PageTile({
 }
 
 export function PageTitle({ eyebrow, title, subtitle, padded = true, style }) {
+  const tokens = useGamerTokens();
   if (!eyebrow && !title && !subtitle) return null;
   return (
     <View style={[{ paddingBottom: 12, gap: 6 }, padded ? { paddingHorizontal: 16 } : null, style]}>
       {eyebrow ? (
-        <Text style={[headingStyleSm, { color: GAME_DAY_SILVER, fontSize: 11, letterSpacing: 2 }]}>
+        <Text numberOfLines={1} style={sectionLabelStyle(tokens)}>
           {eyebrow}
         </Text>
       ) : null}
       {title ? (
-        <Text style={[headingStyleLg, { color: '#fff', fontSize: 34, letterSpacing: 1 }]}>
+        <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+          style={[headingStyleLg, { color: tokens.text, fontSize: 34, letterSpacing: 34 * 0.03 }]}
+        >
           {title}
         </Text>
       ) : null}
       {subtitle ? (
-        <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12 }}>
+        <Text style={{ color: tokens.muted, fontSize: 13 }}>
           {subtitle}
         </Text>
       ) : null}
@@ -165,17 +169,24 @@ export function PageTitle({ eyebrow, title, subtitle, padded = true, style }) {
   );
 }
 
+/** Filter pill: Stage chip (34 high, radius 999) with an optional trailing count. */
 export function SilverPill({ label, active, onPress, badge }) {
+  const tokens = useGamerTokens();
+  const fg = active ? tokens.onCyan : tokens.textSoft;
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.85}
+      hitSlop={{ top: 5, bottom: 5 }}
+      accessibilityRole="button"
+      accessibilityState={{ selected: Boolean(active) }}
       style={{
+        height: 34,
+        borderRadius: 999,
         borderWidth: 1,
-        borderColor: active ? 'rgba(248,251,255,0.55)' : 'rgba(255,255,255,0.12)',
-        backgroundColor: active ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.35)',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
+        borderColor: active ? tokens.cyan : tokens.border,
+        backgroundColor: active ? tokens.cyan : tokens.card,
+        paddingHorizontal: 14,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
@@ -183,21 +194,12 @@ export function SilverPill({ label, active, onPress, badge }) {
     >
       <Text
         numberOfLines={1}
-        style={{
-          color: active ? GAME_DAY_SILVER : 'rgba(255,255,255,0.5)',
-          fontSize: 11,
-          fontWeight: '800',
-        }}
+        style={{ color: fg, fontSize: 13, fontWeight: '600', flexShrink: 1 }}
       >
         {label}
       </Text>
       {badge != null && badge !== '' ? (
-        <Text style={{
-          color: active ? GAME_DAY_SILVER : 'rgba(255,255,255,0.4)',
-          fontSize: 10,
-          fontWeight: '800',
-        }}
-        >
+        <Text style={{ color: fg, fontSize: 12, fontWeight: '600', opacity: 0.8 }}>
           {badge}
         </Text>
       ) : null}

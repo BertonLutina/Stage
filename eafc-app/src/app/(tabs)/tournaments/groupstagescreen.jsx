@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import api from '../../../utils/api';
+import useThemeStore from '@/store/themeStore';
+import { Screen } from '@/components/ui';
 import GroupTable from '../../../components/tournament/GroupTable';
-import GradientBackground from '../../../components/common/GradientBackground';
-import BackButton from '../../../components/common/BackButton';
+import CompetitionHeader from '../../../components/tournament/CompetitionHeader';
 
 export default function GroupStageScreen() {
   const { tournamentId } = useLocalSearchParams();
+  const tokens = useThemeStore((s) => s.tokens);
   const [groups, setGroups] = useState([]);
 
   useEffect(() => {
@@ -16,19 +17,16 @@ export default function GroupStageScreen() {
   }, [tournamentId]);
 
   return (
-    <View className="flex-1">
-      <GradientBackground>
-        <SafeAreaView className="flex-1">
-          <View className="flex-row items-center gap-4 px-4 py-3 border-b border-white/10">
-            <BackButton variant="light" />
-            <Text className="text-white text-xl font-bold flex-1">Group Stage</Text>
-          </View>
-          <ScrollView className="px-4">
-            {groups.map(g => <GroupTable key={g.id} group={g} />)}
-            {!groups.length && <Text className="text-muted text-center mt-8">No group data yet</Text>}
-          </ScrollView>
-        </SafeAreaView>
-      </GradientBackground>
-    </View>
+    <Screen>
+      <View style={{ gap: 14 }}>
+        <CompetitionHeader title="Group stage" />
+        {groups.map(g => <GroupTable key={g.id} group={g} />)}
+        {!groups.length && (
+          <Text style={{ color: tokens.muted, textAlign: 'center', marginTop: 32, fontSize: 14 }}>
+            No group data yet
+          </Text>
+        )}
+      </View>
+    </Screen>
   );
 }

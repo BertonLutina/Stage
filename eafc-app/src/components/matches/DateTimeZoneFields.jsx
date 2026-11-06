@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Platform, Text, TouchableOpacity, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
-import { CYAN } from '@/components/profile/gamer/GamerProfileUI';
+import useThemeStore from '@/store/themeStore';
+import { Chip } from '@/components/ui';
 import {
   formatArrangeDateLabel,
   formatDateYmd,
@@ -20,6 +21,7 @@ export default function DateTimeZoneFields({
   onTimezoneChange,
   showTimezone = true,
 }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const [openPicker, setOpenPicker] = useState(null);
   const pickerValue = parseArrangeDateTime(date, time || '21:00');
   const knownZone = TIMEZONES.some((zone) => zone.value === timezone);
@@ -81,51 +83,21 @@ export default function DateTimeZoneFields({
 
       {showTimezone ? (
         <View style={{ gap: 8 }}>
-          <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: '700' }}>
+          <Text numberOfLines={1} style={{ color: tokens.textSoft, fontSize: 13, fontWeight: '600' }}>
             Timezone · {timezoneLabel(timezone)}
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {TIMEZONES.map((zone) => {
-              const selected = timezone === zone.value;
-              return (
-                <TouchableOpacity
-                  key={zone.value}
-                  onPress={() => onTimezoneChange?.(zone.value)}
-                  style={{
-                    borderRadius: 999,
-                    borderWidth: 1,
-                    borderColor: selected ? CYAN : 'rgba(255,255,255,0.14)',
-                    backgroundColor: selected ? 'rgba(0,240,255,0.12)' : 'rgba(255,255,255,0.04)',
-                    paddingHorizontal: 10,
-                    paddingVertical: 7,
-                  }}
-                >
-                  <Text style={{
-                    color: selected ? CYAN : 'rgba(255,255,255,0.7)',
-                    fontWeight: '800',
-                    fontSize: 11,
-                  }}
-                  >
-                    {zone.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-            {!knownZone && timezone ? (
-              <View style={{
-                borderRadius: 999,
-                borderWidth: 1,
-                borderColor: CYAN,
-                backgroundColor: 'rgba(0,240,255,0.12)',
-                paddingHorizontal: 10,
-                paddingVertical: 7,
-              }}
-              >
-                <Text style={{ color: CYAN, fontWeight: '800', fontSize: 11 }}>{timezone}</Text>
-              </View>
-            ) : null}
+            {TIMEZONES.map((zone) => (
+              <Chip
+                key={zone.value}
+                label={zone.label}
+                active={timezone === zone.value}
+                onPress={() => onTimezoneChange?.(zone.value)}
+              />
+            ))}
+            {!knownZone && timezone ? <Chip label={timezone} active /> : null}
           </View>
-          <Text style={{ color: 'rgba(255,255,255,0.38)', fontSize: 11, lineHeight: 15 }}>
+          <Text style={{ color: tokens.muted, fontSize: 12, lineHeight: 17 }}>
             Kickoff is this wall-clock time in the selected zone. Brussels switches CET/CEST automatically.
           </Text>
         </View>
@@ -135,42 +107,50 @@ export default function DateTimeZoneFields({
 }
 
 function PickerField({ icon, label, value, empty, active, onPress }) {
+  const tokens = useThemeStore((s) => s.tokens);
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}: ${value}`}
       style={{
-        backgroundColor: 'rgba(255,255,255,0.06)',
+        backgroundColor: tokens.bgDeep,
         borderWidth: 1,
-        borderColor: active ? 'rgba(0,232,255,0.55)' : 'rgba(255,255,255,0.12)',
+        borderColor: active ? tokens.cyan : tokens.border,
         borderRadius: 12,
-        paddingHorizontal: 12,
-        paddingVertical: 12,
+        minHeight: 56,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
+        gap: 12,
       }}
     >
-      <Ionicons name={icon} size={18} color={active ? CYAN : 'rgba(255,255,255,0.55)'} />
-      <View style={{ flex: 1 }}>
-        <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '800', letterSpacing: 0.6 }}>
+      <Ionicons name={icon} size={22} color={active ? tokens.cyan : tokens.muted} />
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={{ color: tokens.muted, fontSize: 11, fontWeight: '600', letterSpacing: 0.6 }}>
           {label.toUpperCase()}
         </Text>
-        <Text style={{
-          color: empty ? 'rgba(255,255,255,0.35)' : '#fff',
-          fontWeight: '700',
-          marginTop: 2,
-        }}
+        <Text
+          numberOfLines={1}
+          style={{
+            color: empty ? tokens.muted : tokens.text,
+            fontSize: 15,
+            fontWeight: '600',
+            marginTop: 2,
+          }}
         >
           {value}
         </Text>
       </View>
-      <Ionicons name={active ? 'chevron-up' : 'chevron-down'} size={16} color="rgba(255,255,255,0.35)" />
+      <Ionicons name={active ? 'chevron-up' : 'chevron-down'} size={18} color={tokens.muted} />
     </TouchableOpacity>
   );
 }
 
 function NativePicker({ value, mode, onChange, onDone, minimumDate }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const picker = (
     <DateTimePicker
       value={value}
@@ -180,8 +160,8 @@ function NativePicker({ value, mode, onChange, onDone, minimumDate }) {
       minimumDate={minimumDate}
       is24Hour
       themeVariant="dark"
-      accentColor={CYAN}
-      textColor="#ffffff"
+      accentColor={tokens.cyan}
+      textColor={tokens.text}
     />
   );
 
@@ -189,16 +169,21 @@ function NativePicker({ value, mode, onChange, onDone, minimumDate }) {
 
   return (
     <View style={{
-      backgroundColor: 'rgba(255,255,255,0.04)',
+      backgroundColor: tokens.card,
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.08)',
+      borderColor: tokens.border,
       overflow: 'hidden',
     }}
     >
-      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 10, paddingTop: 8 }}>
-        <TouchableOpacity onPress={onDone} hitSlop={10}>
-          <Text style={{ color: CYAN, fontWeight: '800', fontSize: 13 }}>Done</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 10, paddingTop: 4 }}>
+        <TouchableOpacity
+          onPress={onDone}
+          hitSlop={10}
+          accessibilityRole="button"
+          style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 6 }}
+        >
+          <Text style={{ color: tokens.cyan, fontWeight: '700', fontSize: 15 }}>Done</Text>
         </TouchableOpacity>
       </View>
       {picker}

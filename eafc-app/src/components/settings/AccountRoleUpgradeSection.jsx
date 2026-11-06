@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, Modal, ScrollView, ActivityIndicator,
+  View, Text, Modal, ScrollView, ActivityIndicator,
 } from 'react-native';
+import useThemeStore from '@/store/themeStore';
+import { Button, IconButton } from '@/components/ui';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
 import { resolveMyPlayerAndClub } from '@/api/stageClient';
 import { readAccountIntent, writeAccountIntent } from '@/lib/accountIntent';
 import { writeAccountMode } from '@/lib/accountMode';
@@ -9,9 +12,40 @@ import { localStorage } from '@/lib/polyfillStorage';
 import ClubSetup from '@/components/onboarding/ClubSetup';
 import PlayerSetup from '@/components/onboarding/PlayerSetup';
 import SettingsSection from './SettingsSection';
-import { AMBER, CYAN } from '@/components/profile/gamer/GamerProfileUI';
+
+function UpgradeDialogHeader({ title, onClose }) {
+  const tokens = useThemeStore((s) => s.tokens);
+  return (
+    <View
+      style={{
+        paddingHorizontal: 16,
+        paddingBottom: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+      }}
+    >
+      <Text
+        numberOfLines={2}
+        style={{
+          flex: 1,
+          color: tokens.text,
+          fontFamily: FONT_EA_SPORTS,
+          fontSize: 20,
+          letterSpacing: 20 * 0.03,
+          textTransform: 'uppercase',
+        }}
+      >
+        {title}
+      </Text>
+      <IconButton icon="close" accessibilityLabel="Close" onPress={onClose} />
+    </View>
+  );
+}
 
 export default function AccountRoleUpgradeSection({ t }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const [loading, setLoading] = useState(true);
   const [clubDialogOpen, setClubDialogOpen] = useState(false);
   const [playerDialogOpen, setPlayerDialogOpen] = useState(false);
@@ -77,8 +111,8 @@ export default function AccountRoleUpgradeSection({ t }) {
         icon="shield-outline"
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <ActivityIndicator color={CYAN} size="small" />
-          <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13 }}>
+          <ActivityIndicator color={tokens.cyan} size="small" />
+          <Text style={{ color: tokens.muted, fontSize: 13 }}>
             {t('settingsPage.roleUpgradeLoading')}
           </Text>
         </View>
@@ -96,19 +130,10 @@ export default function AccountRoleUpgradeSection({ t }) {
           description={t('settingsPage.roleUpgradePlayerDesc')}
           icon="shield-outline"
         >
-          <TouchableOpacity
+          <Button
+            title={t('settingsPage.roleUpgradePlayerButton')}
             onPress={() => setClubDialogOpen(true)}
-            style={{
-              backgroundColor: AMBER,
-              borderRadius: 12,
-              paddingVertical: 13,
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ color: '#1A1200', fontWeight: '900', letterSpacing: 0.6 }}>
-              {t('settingsPage.roleUpgradePlayerButton')}
-            </Text>
-          </TouchableOpacity>
+          />
         </SettingsSection>
       ) : null}
 
@@ -118,32 +143,19 @@ export default function AccountRoleUpgradeSection({ t }) {
           description={t('settingsPage.roleUpgradePresidentDesc')}
           icon="shield-outline"
         >
-          <TouchableOpacity
+          <Button
+            title={t('settingsPage.roleUpgradePresidentButton')}
             onPress={() => setPlayerDialogOpen(true)}
-            style={{
-              backgroundColor: CYAN,
-              borderRadius: 12,
-              paddingVertical: 13,
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ color: '#041018', fontWeight: '900', letterSpacing: 0.6 }}>
-              {t('settingsPage.roleUpgradePresidentButton')}
-            </Text>
-          </TouchableOpacity>
+          />
         </SettingsSection>
       ) : null}
 
       <Modal visible={clubDialogOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setClubDialogOpen(false)}>
-        <View style={{ flex: 1, backgroundColor: '#111a2f', paddingTop: 16 }}>
-          <View style={{ paddingHorizontal: 16, paddingBottom: 8, flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16 }}>
-              {t('settingsPage.roleUpgradePlayerDialogTitle')}
-            </Text>
-            <TouchableOpacity onPress={() => setClubDialogOpen(false)}>
-              <Text style={{ color: CYAN, fontWeight: '800' }}>Close</Text>
-            </TouchableOpacity>
-          </View>
+        <View style={{ flex: 1, backgroundColor: tokens.bg, paddingTop: 16 }}>
+          <UpgradeDialogHeader
+            title={t('settingsPage.roleUpgradePlayerDialogTitle')}
+            onClose={() => setClubDialogOpen(false)}
+          />
           <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
             <ClubSetup player={player} user={user} required onComplete={handleClubUpgradeComplete} />
           </ScrollView>
@@ -151,15 +163,11 @@ export default function AccountRoleUpgradeSection({ t }) {
       </Modal>
 
       <Modal visible={playerDialogOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setPlayerDialogOpen(false)}>
-        <View style={{ flex: 1, backgroundColor: '#111a2f', paddingTop: 16 }}>
-          <View style={{ paddingHorizontal: 16, paddingBottom: 8, flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16 }}>
-              {t('settingsPage.roleUpgradePresidentDialogTitle')}
-            </Text>
-            <TouchableOpacity onPress={() => setPlayerDialogOpen(false)}>
-              <Text style={{ color: CYAN, fontWeight: '800' }}>Close</Text>
-            </TouchableOpacity>
-          </View>
+        <View style={{ flex: 1, backgroundColor: tokens.bg, paddingTop: 16 }}>
+          <UpgradeDialogHeader
+            title={t('settingsPage.roleUpgradePresidentDialogTitle')}
+            onClose={() => setPlayerDialogOpen(false)}
+          />
           <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
             <PlayerSetup user={user} intent="player" onComplete={handlePlayerUpgradeComplete} />
           </ScrollView>

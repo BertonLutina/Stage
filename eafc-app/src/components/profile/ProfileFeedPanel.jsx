@@ -13,10 +13,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { stageClient } from '@/api/stageClient';
 import { uploadLocalMedia } from '@/lib/uploadProfileMedia';
 import { buildPlayerFeedPostPayload, playerFeedAuthorEmail } from '@/lib/playerFeedPost';
-import { CARD_RADIUS } from '@/lib/stageTheme';
+import { CARD_RADIUS, hexToRgba } from '@/lib/stageTheme';
 import useAuthStore from '@/store/authStore';
 import {
-  CYAN,
   EmptyTabPanel,
   GamerSectionCard,
   useGamerTokens,
@@ -108,10 +107,10 @@ export default function ProfileFeedPanel({ player, isOwn }) {
           <View style={{ gap: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
               {player?.avatar_url ? (
-                <Image source={{ uri: player.avatar_url }} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#0A1222' }} />
+                <Image source={{ uri: player.avatar_url }} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: tokens.bgDeep }} />
               ) : (
-                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,240,255,0.12)', alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name="person" size={16} color={CYAN} />
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: hexToRgba(tokens.cyan, 0.12), alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="person" size={16} color={tokens.cyan} />
                 </View>
               )}
               <TextInput
@@ -125,14 +124,14 @@ export default function ProfileFeedPanel({ player, isOwn }) {
                   flex: 1,
                   minHeight: 44,
                   color: tokens.text,
-                  fontSize: 14,
-                  lineHeight: 20,
+                  fontSize: 15,
+                  lineHeight: 21,
                   paddingTop: 8,
                 }}
               />
             </View>
             {photo?.uri ? (
-              <Image source={{ uri: photo.uri }} style={{ width: '100%', height: 148, borderRadius: 6 }} resizeMode="cover" />
+              <Image source={{ uri: photo.uri }} style={{ width: '100%', height: 148, borderRadius: 12 }} resizeMode="cover" />
             ) : null}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <TouchableOpacity
@@ -142,8 +141,8 @@ export default function ProfileFeedPanel({ player, isOwn }) {
                 hitSlop={8}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 }}
               >
-                <Ionicons name="image-outline" size={16} color={tokens.muted} />
-                <Text style={{ color: tokens.muted, fontSize: 12, fontWeight: '700' }}>Photo</Text>
+                <Ionicons name="image-outline" size={20} color={tokens.muted} />
+                <Text style={{ color: tokens.muted, fontSize: 13, fontWeight: '600' }}>Photo</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={publish}
@@ -155,19 +154,19 @@ export default function ProfileFeedPanel({ player, isOwn }) {
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 6,
-                  minHeight: 40,
-                  paddingHorizontal: 14,
-                  borderRadius: 6,
-                  backgroundColor: CYAN,
+                  minHeight: 44,
+                  paddingHorizontal: 18,
+                  borderRadius: 14,
+                  backgroundColor: tokens.cyan,
                   opacity: posting || (!draft.trim() && !photo) ? 0.45 : 1,
                 }}
               >
                 {posting ? (
-                  <ActivityIndicator color="#041018" size="small" />
+                  <ActivityIndicator color={tokens.onCyan} size="small" />
                 ) : (
-                  <Ionicons name="send" size={13} color="#041018" />
+                  <Ionicons name="send" size={14} color={tokens.onCyan} />
                 )}
-                <Text style={{ color: '#041018', fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>Post</Text>
+                <Text style={{ color: tokens.onCyan, fontSize: 14, fontWeight: '700' }}>Post</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -176,7 +175,7 @@ export default function ProfileFeedPanel({ player, isOwn }) {
 
       {loading ? (
         <View style={{ paddingVertical: 24, alignItems: 'center' }}>
-          <ActivityIndicator color={CYAN} />
+          <ActivityIndicator color={tokens.cyan} />
         </View>
       ) : posts.length === 0 ? (
         <EmptyTabPanel
@@ -191,21 +190,21 @@ export default function ProfileFeedPanel({ player, isOwn }) {
             style={{
               borderRadius: CARD_RADIUS,
               borderWidth: 1,
-              borderColor: 'rgba(0,240,255,0.14)',
+              borderColor: tokens.border,
               backgroundColor: tokens.cardSolid,
-              padding: 14,
+              padding: 16,
               gap: 8,
             }}
           >
-            <Text style={{ color: tokens.muted, fontSize: 11, fontWeight: '700' }}>
+            <Text numberOfLines={1} style={{ color: tokens.muted, fontSize: 12, fontWeight: '600' }}>
               {postAuthor(post, name)}
               {post.created_date ? ` · ${String(post.created_date).slice(0, 10)}` : ''}
             </Text>
             {post.content ? (
-              <Text style={{ color: tokens.text, fontSize: 14, lineHeight: 20 }}>{post.content}</Text>
+              <Text style={{ color: tokens.text, fontSize: 15, lineHeight: 21 }}>{post.content}</Text>
             ) : null}
             {post.media_url ? (
-              <Image source={{ uri: post.media_url }} style={{ width: '100%', height: 180, borderRadius: 6 }} resizeMode="cover" />
+              <Image source={{ uri: post.media_url }} style={{ width: '100%', height: 180, borderRadius: 12 }} resizeMode="cover" />
             ) : null}
           </View>
         ))

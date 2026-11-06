@@ -42,7 +42,7 @@ describe('Live Dark wallpaper', () => {
       require('path').resolve(__dirname, '../../components/dashboard/CommandCenterUI.jsx'),
       'utf8',
     );
-    expect(ui).toMatch(/TILE_FILL_LIVE = 'rgba\(0,0,0,0\.4\)'/);
+    expect(ui).toMatch(/TILE_FILL_LIVE = 'rgba\(19,43,92,0\.62\)'/);
     expect(ui).toMatch(/tokens\?\.live === true/);
   });
 

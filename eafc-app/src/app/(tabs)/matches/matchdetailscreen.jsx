@@ -2,22 +2,16 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
-  ScrollView,
   StatusBar,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { resolveMyPlayerAndClub, stageClient } from '@/api/stageClient';
-import {
-  GamerProfileShell,
-  GlassIconButton,
-  CYAN,
-} from '@/components/profile/gamer/GamerProfileUI';
-import { FUT, SectionCard } from '@/components/dashboard/CommandCenterUI';
+import useThemeStore from '@/store/themeStore';
+import { hexToRgba } from '@/lib/stageTheme';
+import { Button, Card, IconButton, Screen, SectionLabel } from '@/components/ui';
+import { MIN_TOUCH } from '@/components/ui/metrics';
 import {
   MATCH_STATUS_LABEL,
   afterMatchCompleted,
@@ -49,6 +43,7 @@ import { useGameDayMatchRealtime } from '@/hooks/useGameDayMatchRealtime';
 export default function MatchDetailScreen() {
   const { matchId } = useLocalSearchParams();
   const router = useRouter();
+  const tokens = useThemeStore((st) => st.tokens);
   const [game, setGame] = useState(null);
   const [myClub, setMyClub] = useState(null);
   const [myPlayer, setMyPlayer] = useState(null);
@@ -203,171 +198,162 @@ export default function MatchDetailScreen() {
 
   if (loading) {
     return (
-      <GamerProfileShell>
+      <Screen scroll={false}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={CYAN} size="large" />
+          <ActivityIndicator color={tokens.cyan} size="large" />
         </View>
-      </GamerProfileShell>
+      </Screen>
     );
   }
 
   if (!game) {
     return (
-      <GamerProfileShell>
-        <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-          <View style={{ padding: 16 }}>
-            <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
-            <Text style={{ color: 'rgba(255,255,255,0.5)', marginTop: 24, textAlign: 'center' }}>
-              Match not found
-            </Text>
-          </View>
-        </SafeAreaView>
-      </GamerProfileShell>
+      <Screen scroll={false}>
+        <View style={{ alignItems: 'flex-start' }}>
+          <IconButton icon="arrow-back" onPress={() => router.back()} accessibilityLabel="Back" />
+        </View>
+        <Text style={{ color: tokens.muted, marginTop: 24, textAlign: 'center', fontSize: 14 }}>
+          Match not found
+        </Text>
+      </Screen>
     );
   }
 
   return (
-    <GamerProfileShell>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 }}>
-          <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
-          <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, marginLeft: 12, flex: 1 }}>GAME DAY</Text>
+    <Screen
+      refreshControl={(
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => { setRefreshing(true); load(); }}
+          tintColor={tokens.cyan}
+          colors={[tokens.cyan]}
+        />
+      )}
+    >
+      <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
+      <View style={{ gap: 16 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <IconButton icon="arrow-back" onPress={() => router.back()} accessibilityLabel="Back" />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <SectionLabel>GAME DAY</SectionLabel>
+          </View>
+          <View style={{ width: MIN_TOUCH }} />
         </View>
-        <ScrollView
-          contentContainerStyle={{ paddingBottom: 120 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={CYAN} />}
+
+        <GameDayKickoffArena
+          homeName={sides.homeName}
+          awayName={sides.awayName}
+          homeLogo={crests.home}
+          awayLogo={crests.away}
+          homeYou={sides.isMyMatch && sides.amIHomeTeam}
+          awayYou={sides.isMyMatch && !sides.amIHomeTeam}
+          date={game.scheduled_date}
+          status={game.status}
+          statusLabel={MATCH_STATUS_LABEL[game.status] || game.status}
+          competitionLabel={game.competition_context || (game.tournament_id === 'ranked' ? 'Ranked Match' : 'MATCH DETAILS')}
+          homeScore={game.home_score}
+          awayScore={game.away_score}
+          wagerStc={game.wager_stc}
+          wagerLocked={Boolean(game.wager_home_locked && game.wager_away_locked)}
+          backgroundConfig={canCustomizeTiles ? getGameDayTileBackgroundConfig(myPlayer, 'match_details') : undefined}
+          onChangeBackground={myPlayer ? () => setTileDialog({ tileKey: 'match_details', title: 'Match Details' }) : undefined}
         >
-          <View style={{ marginHorizontal: 12, gap: 12 }}>
-          <GameDayKickoffArena
+          <GameDayKickoffActions
+            controls={kickoffControls}
+            loading={kickoffLoading}
+            onKickoff={onKickoff}
+          />
+        </GameDayKickoffArena>
+
+        {error ? (
+          <Card style={{ borderColor: hexToRgba(tokens.danger, 0.5) }}>
+            <Text style={{ color: tokens.danger, fontSize: 13 }}>{error}</Text>
+          </Card>
+        ) : null}
+
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Button
+              title="Watch"
+              icon="play"
+              onPress={() => router.push({ pathname: '/(tabs)/matches/watchmatchscreen', params: { matchId: game.id } })}
+            />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Button
+              variant="secondary"
+              title="Upload video"
+              icon="cloud-upload-outline"
+              onPress={() => router.push({ pathname: '/(tabs)/matches/uploadvideoscreen', params: { matchId: game.id } })}
+            />
+          </View>
+        </View>
+
+        <GameDayWagerCard
+          game={game}
+          isMyMatch={sides.isMyMatch}
+          amIHomeTeam={sides.amIHomeTeam}
+          onGameUpdate={setGame}
+        />
+
+        <GameDayFixtureActions
+          game={game}
+          myPlayer={myPlayer}
+          myClub={myClub}
+          isMyMatch={sides.isMyMatch}
+          onGameUpdate={setGame}
+        />
+
+        <GameDayStreamCard
+          game={game}
+          isMyMatch={sides.isMyMatch}
+          amIHomeTeam={sides.amIHomeTeam}
+          isCompleted={isCompleted}
+          onGameUpdate={setGame}
+        />
+
+        {(isLive || isCompleted || isDisputed || resultControls.homeResultSubmitted || resultControls.awayResultSubmitted || resultControls.resultState) ? (
+          <GameDayScoreReport
+            game={game}
             homeName={sides.homeName}
             awayName={sides.awayName}
-            homeLogo={crests.home}
-            awayLogo={crests.away}
-            homeYou={sides.isMyMatch && sides.amIHomeTeam}
-            awayYou={sides.isMyMatch && !sides.amIHomeTeam}
-            date={game.scheduled_date}
-            status={game.status}
-            statusLabel={MATCH_STATUS_LABEL[game.status] || game.status}
-            competitionLabel={game.competition_context || (game.tournament_id === 'ranked' ? 'Ranked Match' : 'MATCH DETAILS')}
-            homeScore={game.home_score}
-            awayScore={game.away_score}
-            wagerStc={game.wager_stc}
-            wagerLocked={Boolean(game.wager_home_locked && game.wager_away_locked)}
-            backgroundConfig={canCustomizeTiles ? getGameDayTileBackgroundConfig(myPlayer, 'match_details') : undefined}
-            onChangeBackground={myPlayer ? () => setTileDialog({ tileKey: 'match_details', title: 'Match Details' }) : undefined}
-          >
-            <GameDayKickoffActions
-              controls={kickoffControls}
-              loading={kickoffLoading}
-              onKickoff={onKickoff}
-            />
-          </GameDayKickoffArena>
-          </View>
-
-          <View style={{ paddingHorizontal: 12, gap: 12, marginTop: 12 }}>
-          {error ? (
-            <SectionCard accent="rose">
-              <Text style={{ color: FUT.rose, fontSize: 12 }}>{error}</Text>
-            </SectionCard>
-          ) : null}
-
-          <GameDayWagerCard
-            game={game}
             isMyMatch={sides.isMyMatch}
             amIHomeTeam={sides.amIHomeTeam}
-            onGameUpdate={setGame}
-          />
-
-          <GameDayFixtureActions
-            game={game}
-            myPlayer={myPlayer}
-            myClub={myClub}
-            isMyMatch={sides.isMyMatch}
-            onGameUpdate={setGame}
-          />
-
-          <GameDayStreamCard
-            game={game}
-            isMyMatch={sides.isMyMatch}
-            amIHomeTeam={sides.amIHomeTeam}
+            isLive={isLive}
             isCompleted={isCompleted}
-            onGameUpdate={setGame}
+            isDisputed={isDisputed}
+            showResultForm={showResult}
+            onSubmitPress={() => setShowResult(true)}
           />
+        ) : null}
 
-          {(isLive || isCompleted || isDisputed || resultControls.homeResultSubmitted || resultControls.awayResultSubmitted || resultControls.resultState) ? (
-            <GameDayScoreReport
-              game={game}
-              homeName={sides.homeName}
-              awayName={sides.awayName}
-              isMyMatch={sides.isMyMatch}
-              amIHomeTeam={sides.amIHomeTeam}
-              isLive={isLive}
-              isCompleted={isCompleted}
-              isDisputed={isDisputed}
-              showResultForm={showResult}
-              onSubmitPress={() => setShowResult(true)}
-            />
-          ) : null}
+        {penaltyOutcome(game) ? (
+          <Card>
+            <Text style={{ color: tokens.cyan, fontSize: 13, fontWeight: '600' }}>{penaltyOutcome(game)}</Text>
+          </Card>
+        ) : null}
 
-          {penaltyOutcome(game) ? (
-            <SectionCard>
-              <Text style={{ color: CYAN, fontSize: 12, fontWeight: '700' }}>{penaltyOutcome(game)}</Text>
-            </SectionCard>
-          ) : null}
+        <GameDayInsights game={game} />
+      </View>
 
-          <GameDayInsights game={game} />
-
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <TouchableOpacity
-              onPress={() => router.push({ pathname: '/(tabs)/matches/watchmatchscreen', params: { matchId: game.id } })}
-              style={secondaryBtn}
-            >
-              <Ionicons name="play" size={14} color={CYAN} />
-              <Text style={{ color: CYAN, fontWeight: '800' }}>Watch</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => router.push({ pathname: '/(tabs)/matches/uploadvideoscreen', params: { matchId: game.id } })}
-              style={secondaryBtn}
-            >
-              <Ionicons name="cloud-upload" size={14} color={CYAN} />
-              <Text style={{ color: CYAN, fontWeight: '800' }}>Upload video</Text>
-            </TouchableOpacity>
-          </View>
-          </View>
-        </ScrollView>
-
-        <GameDayResultSheet
-          visible={showResult}
-          onClose={() => setShowResult(false)}
-          game={game}
-          myClub={myClub}
-          myPlayer={myPlayer}
-          isHomeTeam={sides.amIHomeTeam}
-          onSubmitted={onResultSubmitted}
-        />
-        <GameDayTileBackgroundDialog
-          visible={Boolean(tileDialog)}
-          onClose={() => setTileDialog(null)}
-          player={myPlayer}
-          tileKey={tileDialog?.tileKey}
-          tileTitle={tileDialog?.title}
-          canCustomize={canCustomizeTiles}
-          onPlayerChanged={(updated) => setMyPlayer((prev) => ({ ...(prev || {}), ...updated }))}
-        />
-      </SafeAreaView>
-    </GamerProfileShell>
+      <GameDayResultSheet
+        visible={showResult}
+        onClose={() => setShowResult(false)}
+        game={game}
+        myClub={myClub}
+        myPlayer={myPlayer}
+        isHomeTeam={sides.amIHomeTeam}
+        onSubmitted={onResultSubmitted}
+      />
+      <GameDayTileBackgroundDialog
+        visible={Boolean(tileDialog)}
+        onClose={() => setTileDialog(null)}
+        player={myPlayer}
+        tileKey={tileDialog?.tileKey}
+        tileTitle={tileDialog?.title}
+        canCustomize={canCustomizeTiles}
+        onPlayerChanged={(updated) => setMyPlayer((prev) => ({ ...(prev || {}), ...updated }))}
+      />
+    </Screen>
   );
 }
-
-const secondaryBtn = {
-  flex: 1,
-  flexDirection: 'row',
-  gap: 6,
-  alignItems: 'center',
-  justifyContent: 'center',
-  borderWidth: 1,
-  borderColor: 'rgba(0,232,255,0.3)',
-  paddingVertical: 12,
-};
-

@@ -1,25 +1,26 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import Input from '../../../components/common/Input';
-import Button from '../../../components/common/Button';
 import VideoPlayer from '../../../components/common/VideoPlayer';
-import STText from '../../../components/common/STText';
-import GradientBackground from '../../../components/common/GradientBackground';
-import BackButton from '../../../components/common/BackButton';
 import api from '../../../utils/api';
+import useThemeStore from '@/store/themeStore';
+import { goBackInPlace } from '@/lib/navigationBack';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
+import { Button, Chip, IconButton, Screen, SectionLabel, TextField } from '@/components/ui';
+import { MIN_TOUCH } from '@/components/ui/metrics';
 
 const SOURCES = [
-  { key: 'youtube', label: 'YouTube', color: 'bg-red-500/20 border-red-500' },
-  { key: 'twitch', label: 'Twitch', color: 'bg-purple-500/20 border-purple-500' },
-  { key: 'tiktok', label: 'TikTok', color: 'bg-pink-500/20 border-pink-500' },
-  { key: 'kick', label: 'Kick', color: 'bg-secondary/20 border-secondary' },
+  { key: 'youtube', label: 'YouTube' },
+  { key: 'twitch', label: 'Twitch' },
+  { key: 'tiktok', label: 'TikTok' },
+  { key: 'kick', label: 'Kick' },
 ];
 
 export default function UploadVideoScreen() {
   const { matchId } = useLocalSearchParams();
   const router = useRouter();
+  const tokens = useThemeStore((s) => s.tokens);
   const [url, setUrl] = useState('');
   const [source, setSource] = useState('youtube');
   const [saving, setSaving] = useState(false);
@@ -37,31 +38,89 @@ export default function UploadVideoScreen() {
   };
 
   return (
-    <GradientBackground>
-      <SafeAreaView className="flex-1">
-        <View className="flex-row items-center gap-4 px-6 py-3 border-b border-white/10">
-          <BackButton variant="light" />
-          <STText className="text-white text-xl font-bold flex-1">Add Match Video</STText>
+    <Screen keyboardAvoiding>
+      <View style={{ gap: 18 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <IconButton icon="arrow-back" onPress={() => goBackInPlace(router)} accessibilityLabel="Back" />
+          <View style={{ flex: 1, minWidth: 0, alignItems: 'center' }}>
+            <SectionLabel>Upload video</SectionLabel>
+          </View>
+          <View style={{ width: MIN_TOUCH }} />
         </View>
-        <ScrollView className="px-6">
-          <STText className="text-white font-semibold mb-3">Platform</STText>
-          <View className="flex-row flex-wrap gap-2 mb-6">
+
+        <Text
+          numberOfLines={2}
+          style={{
+            color: tokens.text,
+            fontFamily: FONT_EA_SPORTS,
+            fontSize: 34,
+            letterSpacing: 34 * 0.03,
+            textTransform: 'uppercase',
+          }}
+        >
+          Add Match Video
+        </Text>
+
+        <View
+          style={{
+            borderRadius: 18,
+            borderWidth: 2,
+            borderStyle: 'dashed',
+            borderColor: tokens.borderStrong,
+            backgroundColor: tokens.bgDeep,
+            padding: 16,
+            gap: 14,
+          }}
+        >
+          <View style={{ alignItems: 'center', gap: 10 }}>
+            <View
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: tokens.cyan,
+                backgroundColor: tokens.card,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Ionicons name="link-outline" size={26} color={tokens.cyan} />
+            </View>
+            <Text style={{ color: tokens.text, fontSize: 16, fontWeight: '700', textAlign: 'center' }}>
+              Add a video link
+            </Text>
+            <Text style={{ color: tokens.muted, fontSize: 13, textAlign: 'center' }}>
+              YouTube, Twitch, TikTok or Kick
+            </Text>
+          </View>
+          <TextField
+            label="Video URL"
+            value={url}
+            onChangeText={setUrl}
+            placeholder="https://..."
+            autoCapitalize="none"
+          />
+        </View>
+
+        <View style={{ gap: 6 }}>
+          <Text style={{ color: tokens.muted, fontSize: 12, fontWeight: '600' }}>Platform</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {SOURCES.map((s) => (
-              <TouchableOpacity
+              <Chip
                 key={s.key}
+                label={s.label}
+                active={source === s.key}
                 onPress={() => setSource(s.key)}
-                className={`px-4 py-2 rounded-xl border ${source === s.key ? s.color : 'bg-white/10 border-white/20'}`}
-              >
-                <STText className="text-white font-semibold">{s.label}</STText>
-              </TouchableOpacity>
+              />
             ))}
           </View>
-        <Input label="Video URL" value={url} onChangeText={setUrl} placeholder="https://..." autoCapitalize="none" />
-        {url && preview && <VideoPlayer url={url} source={source} height={200} />}
-        {url && !preview && <Button title="Preview Video" variant="ghost" onPress={() => setPreview(true)} className="mb-4" />}
-        <Button title="Save Video" onPress={submit} loading={saving} className="mt-2 mb-8" />
-        </ScrollView>
-      </SafeAreaView>
-    </GradientBackground>
+        </View>
+
+        {url && preview && <VideoPlayer url={url} source={source} height={200} radius={16} />}
+        {url && !preview && <Button title="Preview Video" variant="secondary" onPress={() => setPreview(true)} />}
+        <Button title="Save Video" onPress={submit} loading={saving} />
+      </View>
+    </Screen>
   );
 }

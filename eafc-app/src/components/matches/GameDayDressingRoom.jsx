@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator, Text, View } from 'react-native';
 import { stageClient } from '@/api/stageClient';
-import { CYAN } from '@/components/profile/gamer/GamerProfileUI';
-import { FUT } from '@/components/dashboard/CommandCenterUI';
+import useThemeStore from '@/store/themeStore';
+import { Button, SectionLabel } from '@/components/ui';
 import { parseIdList, sameId } from '@/lib/gameDayOps';
 
 export default function GameDayDressingRoom({ game, myClub, myPlayer, embedded = false, onSeatChange }) {
+  const tokens = useThemeStore((st) => st.tokens);
   const [players, setPlayers] = useState([]);
   const [availableIds, setAvailableIds] = useState(new Set());
   const [seated, setSeated] = useState([]);
@@ -100,41 +100,42 @@ export default function GameDayDressingRoom({ game, myClub, myPlayer, embedded =
   };
 
   if (!myClub) return null;
-  if (loading) return <ActivityIndicator color={CYAN} style={{ marginVertical: 12 }} />;
+  if (loading) return <ActivityIndicator color={tokens.cyan} style={{ marginVertical: 12 }} />;
+
+  const hint = { color: tokens.muted, fontSize: 13, lineHeight: 18 };
 
   return (
-    <View style={card}>
+    <View style={{ gap: 12 }}>
       {!embedded ? (
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={title}>DRESSING ROOM</Text>
-          <Text style={{ color: CYAN, fontSize: 11, fontWeight: '800' }}>{seated.length}/{players.length} seated</Text>
-        </View>
+        <SectionLabel
+          right={(
+            <Text style={{ color: tokens.cyan, fontSize: 12, fontWeight: '600' }}>{seated.length}/{players.length} seated</Text>
+          )}
+        >
+          DRESSING ROOM
+        </SectionLabel>
       ) : null}
       {locked ? (
         <Text style={hint}>Locked — match has started.</Text>
       ) : (
         <Text style={hint}>Only seated players get ratings and stats.</Text>
       )}
-      {error ? <Text style={{ color: FUT.rose, fontSize: 11 }}>{error}</Text> : null}
+      {error ? <Text style={{ color: tokens.danger, fontSize: 12 }}>{error}</Text> : null}
       {myPlayer && !locked ? (
-        <TouchableOpacity onPress={takeSeat} disabled={saving} style={seatBtn}>
-          {saving
-            ? <ActivityIndicator color="#111827" />
-            : (
-              <>
-                <Ionicons name={iAmSeated ? 'checkmark-circle' : 'person-add'} size={16} color="#111827" />
-                <Text style={{ color: '#111827', fontWeight: '900' }}>{iAmSeated ? 'Leave seat' : 'Take my seat'}</Text>
-              </>
-            )}
-        </TouchableOpacity>
+        <Button
+          title={iAmSeated ? 'Leave seat' : 'Take my seat'}
+          icon={iAmSeated ? 'checkmark-circle-outline' : 'person-add-outline'}
+          loading={saving}
+          onPress={takeSeat}
+        />
       ) : null}
-      <View style={{ gap: 6, marginTop: 8 }}>
+      <View style={{ gap: 8 }}>
         {players.slice(0, 12).map((p) => {
           const on = seated.some((id) => sameId(id, p.id));
           return (
-            <View key={p.id} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ color: on ? '#fff' : 'rgba(255,255,255,0.45)', fontSize: 12 }}>{p.gamertag}</Text>
-              <Text style={{ color: on ? FUT.lime : 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: '800' }}>
+            <View key={p.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <Text numberOfLines={1} style={{ flex: 1, color: on ? tokens.text : tokens.muted, fontSize: 14 }}>{p.gamertag}</Text>
+              <Text style={{ color: on ? tokens.success : tokens.muted, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12 }}>
                 {on ? 'SEATED' : 'OUT'}
               </Text>
             </View>
@@ -144,19 +145,3 @@ export default function GameDayDressingRoom({ game, myClub, myPlayer, embedded =
     </View>
   );
 }
-
-const card = {
-  backgroundColor: 'transparent',
-  padding: 0,
-  gap: 8,
-};
-const title = { color: '#fff', fontSize: 12, fontWeight: '900', letterSpacing: 0.8 };
-const hint = { color: 'rgba(255,255,255,0.45)', fontSize: 11, lineHeight: 16 };
-const seatBtn = {
-  backgroundColor: '#EEF3FB',
-  paddingVertical: 11,
-  flexDirection: 'row',
-  justifyContent: 'center',
-  alignItems: 'center',
-  gap: 8,
-};

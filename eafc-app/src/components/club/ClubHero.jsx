@@ -1,5 +1,7 @@
 import React from 'react';
 import { Image, Text, View } from 'react-native';
+import useThemeStore from '@/store/themeStore';
+import { hexToRgba } from '@/lib/stageTheme';
 import {
   GamerBanner,
   GamerMetaPill,
@@ -12,12 +14,13 @@ import { formatPlatformLabel } from '@/lib/platformDisplay';
 import { getPlayerNationality } from '@/lib/countryDisplay';
 
 function RecordDots({ record }) {
-  const items = [
-    { label: 'OW', color: '#34D399' },
-    { label: 'OD', color: 'rgba(226,234,244,0.45)' },
-    { label: 'OL', color: '#FB7185' },
-  ];
+  const tokens = useThemeStore((s) => s.tokens);
   if (!record) return null;
+  const items = [
+    { label: 'OW', color: tokens.success },
+    { label: 'OD', color: tokens.muted },
+    { label: 'OL', color: tokens.danger },
+  ];
   return (
     <View style={{ flexDirection: 'row', gap: 8 }}>
       {items.map((item) => (
@@ -28,8 +31,8 @@ function RecordDots({ record }) {
             height: 28,
             borderRadius: 14,
             borderWidth: 1,
-            borderColor: `${item.color}88`,
-            backgroundColor: `${item.color}22`,
+            borderColor: hexToRgba(item.color, 0.53),
+            backgroundColor: hexToRgba(item.color, 0.13),
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -52,6 +55,7 @@ export default function ClubHero({
   onOpenPresident,
   extraActions,
 }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const tag = club?.tag || club?.handle;
   const name = club?.name || club?.club_name || 'Club';
   const consoleLabel = formatPlatformLabel(club?.platform);
@@ -71,7 +75,7 @@ export default function ClubHero({
         height={188}
         topLeft={onBack ? <GlassIconButton icon="arrow-back" onPress={onBack} accessibilityLabel="Back" /> : null}
       />
-      <View style={{ paddingHorizontal: 16, marginTop: -112, zIndex: 10, gap: 12 }}>
+      <View style={{ paddingHorizontal: 20, marginTop: -112, zIndex: 10, gap: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 14 }}>
           <ClubIdentityCard
             imageUrl={portrait}
@@ -82,12 +86,12 @@ export default function ClubHero({
           />
           <View style={{ flex: 1, paddingBottom: 2, gap: 8 }}>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-              <Text numberOfLines={2} style={[headingStyleLg, { color: '#fff', lineHeight: 28, flexShrink: 1 }]}>
+              <Text numberOfLines={2} style={[headingStyleLg, { color: tokens.text, lineHeight: 28, flexShrink: 1 }]}>
                 {name}
               </Text>
               {tag ? (
-                <View style={{ backgroundColor: '#F5C542', paddingHorizontal: 8, paddingVertical: 3 }}>
-                  <Text style={{ color: '#1A1200', fontSize: 10, fontWeight: '900', letterSpacing: 0.8 }}>
+                <View style={{ backgroundColor: tokens.amber, paddingHorizontal: 8, paddingVertical: 3 }}>
+                  <Text style={{ color: tokens.bgDeep, fontSize: 10, fontWeight: '900', letterSpacing: 0.8 }}>
                     {String(tag).toUpperCase()}
                   </Text>
                 </View>
@@ -95,10 +99,10 @@ export default function ClubHero({
             </View>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
               {consoleLabel ? (
-                <GamerMetaPill icon="game-controller" iconColor="#00E5FF">{consoleLabel}</GamerMetaPill>
+                <GamerMetaPill icon="game-controller" iconColor={tokens.cyan}>{consoleLabel}</GamerMetaPill>
               ) : null}
               {club?.region ? (
-                <GamerMetaPill icon="globe-outline" iconColor="#00E5FF">{club.region}</GamerMetaPill>
+                <GamerMetaPill icon="globe-outline" iconColor={tokens.cyan}>{club.region}</GamerMetaPill>
               ) : null}
               {nationality.code ? (
                 <GamerMetaPill leading={<FlagMark code={nationality.code} country={nationality.label} size={12} />}>
@@ -117,18 +121,18 @@ export default function ClubHero({
                     ) : undefined
                   }
                   icon={president.avatar_url ? undefined : 'person'}
-                  iconColor="#00E5FF"
+                  iconColor={tokens.cyan}
                 >
                   {president.display_name || president.gamertag || 'President'}
                 </GamerMetaPill>
               ) : null}
               {members != null ? (
-                <GamerMetaPill icon="people" iconColor="#00E5FF">{members}</GamerMetaPill>
+                <GamerMetaPill icon="people" iconColor={tokens.cyan}>{members}</GamerMetaPill>
               ) : null}
             </View>
             <RecordDots record={record} />
             {motto ? (
-              <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 13, lineHeight: 18 }} numberOfLines={2}>
+              <Text style={{ color: tokens.textSoft, fontSize: 13, lineHeight: 18 }} numberOfLines={2}>
                 {motto}
               </Text>
             ) : null}

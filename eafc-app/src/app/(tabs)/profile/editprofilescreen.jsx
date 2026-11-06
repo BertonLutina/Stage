@@ -3,9 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
   TouchableOpacity,
   Image,
   Alert,
@@ -13,27 +10,29 @@ import {
   Modal,
   FlatList,
   Pressable,
-  StyleSheet,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { stageClient, resolveMyPlayerAndClub } from '@/api/stageClient';
 import useAuthStore from '@/store/authStore';
+import useThemeStore from '@/store/themeStore';
 import { COUNTRIES } from '@/lib/countries';
 import { PLAYER_POSITIONS } from '@/lib/stageDirectories';
 import { CONSOLE_OPTIONS, normalizeConsoleChoice } from '@/lib/platformDisplay';
-import { headingStyleLg } from '@/lib/fonts';
+import { FONT_EA_SPORTS, headingStyleLg } from '@/lib/fonts';
 import { hostedMediaUrl } from '@/lib/uploadProfileMedia';
 import {
-  GamerProfileShell,
-  GlassIconButton,
-  GamerSectionCard,
-  AMBER,
-  CYAN,
-} from '@/components/profile/gamer/GamerProfileUI';
+  Screen,
+  Card,
+  Button,
+  IconButton,
+  Chip,
+  SectionLabel,
+  TextField,
+  SelectField,
+} from '@/components/ui';
 
 const POSITIONS = PLAYER_POSITIONS.filter((p) => p !== 'All');
 const PLATFORM_OPTIONS = CONSOLE_OPTIONS;
@@ -61,6 +60,8 @@ function matchCountry(player) {
 
 export default function EditProfileScreen() {
   const router = useRouter();
+  const tokens = useThemeStore((s) => s.tokens);
+  const insets = useSafeAreaInsets();
   const { user, updateUser } = useAuthStore();
 
   const [loading, setLoading] = useState(true);
@@ -223,173 +224,251 @@ export default function EditProfileScreen() {
     }
   };
 
+  const initials = (gamertag || firstName || '?').trim().slice(0, 2);
+
   if (loading) {
     return (
-      <GamerProfileShell>
-        <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-          <View style={styles.loading}>
-            <ActivityIndicator color={AMBER} />
-          </View>
-        </SafeAreaView>
-      </GamerProfileShell>
+      <Screen scroll={false}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={tokens.cyan} />
+        </View>
+      </Screen>
     );
   }
 
+  const fieldLabel = {
+    color: tokens.muted,
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 6,
+  };
+  const chipWrap = { flexDirection: 'row', flexWrap: 'wrap', gap: 8 };
+
   return (
-    <GamerProfileShell>
-      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-          <View style={styles.header}>
-            <GlassIconButton icon="chevron-back" onPress={() => router.back()} accessibilityLabel="Back" />
-            <Text style={[headingStyleLg, styles.title]}>Edit Profile</Text>
-            <View style={{ width: 40 }} />
-          </View>
+    <Screen keyboardAvoiding style={{ gap: 16 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <IconButton icon="close" onPress={() => router.back()} accessibilityLabel="Cancel" />
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <SectionLabel>Edit Profile</SectionLabel>
+        </View>
+        <Pressable
+          onPress={save}
+          disabled={saving}
+          accessibilityRole="button"
+          accessibilityLabel="Save profile"
+          hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+          style={{ minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center', opacity: saving ? 0.5 : 1 }}
+        >
+          <Text style={{ color: tokens.cyan, fontSize: 15, fontWeight: '700' }}>Save</Text>
+        </Pressable>
+      </View>
 
-          <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-            <TouchableOpacity onPress={pickImage} style={styles.avatarWrap} accessibilityLabel="Change photo">
-              <View style={styles.avatarRing}>
-                {avatarUri ? (
-                  <Image source={{ uri: avatarUri }} style={styles.avatarImg} />
-                ) : (
-                  <Ionicons name="person" size={48} color={CYAN} />
-                )}
-              </View>
-              <View style={styles.cameraBadge}>
-                <Ionicons name="camera" size={14} color="#041018" />
-              </View>
-            </TouchableOpacity>
-            <Text style={styles.hint}>Tap to change photo</Text>
-
-            <TouchableOpacity onPress={pickBanner} style={styles.bannerWrap} accessibilityLabel="Change banner">
-              {bannerUri ? (
-                <Image source={{ uri: bannerUri }} style={styles.bannerImg} />
-              ) : (
-                <View style={styles.bannerEmpty}>
-                  <Ionicons name="image-outline" size={22} color={CYAN} />
-                  <Text style={styles.bannerEmptyText}>Tap to change banner</Text>
-                </View>
-              )}
-              <View style={[styles.cameraBadge, { right: 10, bottom: 10 }]}>
-                <Ionicons name="camera" size={14} color="#041018" />
-              </View>
-            </TouchableOpacity>
-
-            <GamerSectionCard title="Identity">
-              <View style={styles.row}>
-                <View style={{ flex: 1 }}>
-                  <Field label="First name" value={firstName} onChangeText={setFirstName} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Field label="Last name" value={lastName} onChangeText={setLastName} />
-                </View>
-              </View>
-              <Field
-                label="Gamertag"
-                value={gamertag}
-                onChangeText={setGamertag}
-                autoCapitalize="none"
-                autoCorrect={false}
-                placeholder="Your name on the pitch"
-              />
-              <Field label="Email" value={user?.email || ''} editable={false} />
-            </GamerSectionCard>
-
-            <GamerSectionCard title="On the pitch" style={{ marginTop: 14 }}>
-              <Text style={styles.label}>Country</Text>
-              <TouchableOpacity onPress={() => setCountryPicker(true)} style={styles.input} accessibilityLabel="Country">
-                <Text style={{ color: country ? '#fff' : 'rgba(255,255,255,0.35)', fontSize: 16 }}>
-                  {country?.name || 'Select country'}
-                </Text>
-              </TouchableOpacity>
-
-              <Text style={styles.label}>Main position</Text>
-              <View style={styles.chipGrid}>
-                {POSITIONS.map((p) => {
-                  const active = position === p;
-                  return (
-                    <TouchableOpacity
-                      key={p}
-                      onPress={() => {
-                        setPosition(p);
-                        if (secondaryPosition === p) setSecondaryPosition('none');
-                      }}
-                      style={[styles.chip, active && styles.chipActive]}
-                    >
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>{p}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <Text style={styles.label}>Second position</Text>
-              <View style={styles.chipGrid}>
-                <TouchableOpacity
-                  onPress={() => setSecondaryPosition('none')}
-                  style={[styles.chip, { minWidth: 72 }, secondaryPosition === 'none' && styles.chipActive]}
-                >
-                  <Text style={[styles.chipText, secondaryPosition === 'none' && styles.chipTextActive]}>None</Text>
-                </TouchableOpacity>
-                {POSITIONS.filter((p) => p !== position).map((p) => {
-                  const active = secondaryPosition === p;
-                  return (
-                    <TouchableOpacity key={p} onPress={() => setSecondaryPosition(p)} style={[styles.chip, active && styles.chipActive]}>
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>{p}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <Text style={styles.label}>Platform</Text>
-              <View style={styles.chipGrid}>
-                {PLATFORM_OPTIONS.map((p) => {
-                  const active = platform === p;
-                  return (
-                    <TouchableOpacity key={p} onPress={() => setPlatform(p)} style={[styles.chip, styles.chipWide, active && styles.chipActive]}>
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>{p}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <Field
-                label="Bio"
-                value={bio}
-                onChangeText={setBio}
-                multiline
-                placeholder="Tell us about yourself..."
-              />
-            </GamerSectionCard>
-
-            <TouchableOpacity
-              onPress={save}
-              disabled={saving}
-              activeOpacity={0.9}
-              style={[styles.saveBtn, saving && { opacity: 0.6 }]}
-              accessibilityRole="button"
-              accessibilityLabel="Save Changes"
+      <TouchableOpacity
+        onPress={pickImage}
+        accessibilityRole="button"
+        accessibilityLabel="Change photo"
+        activeOpacity={0.85}
+        style={{ alignItems: 'center', gap: 10, paddingVertical: 6 }}
+      >
+        <View
+          style={{
+            width: 96,
+            height: 96,
+            borderRadius: 26,
+            borderWidth: 2,
+            borderColor: tokens.cyan,
+            backgroundColor: tokens.border,
+            overflow: 'hidden',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {avatarUri ? (
+            <Image source={{ uri: avatarUri }} style={{ width: '100%', height: '100%' }} />
+          ) : (
+            <Text
+              numberOfLines={1}
+              style={{
+                color: tokens.cyanHi,
+                fontFamily: FONT_EA_SPORTS,
+                fontSize: 34,
+                textTransform: 'uppercase',
+              }}
             >
-              <LinearGradient colors={['#FFE566', AMBER, '#C9A227']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.saveFill}>
-                {saving ? (
-                  <ActivityIndicator color="#041018" />
-                ) : (
-                  <Text style={styles.saveText}>Save Changes</Text>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+              {initials}
+            </Text>
+          )}
+        </View>
+        <Chip label="Change photo" icon="camera-outline" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={pickBanner}
+        accessibilityRole="button"
+        accessibilityLabel="Change banner"
+        activeOpacity={0.85}
+        style={{
+          height: 110,
+          borderRadius: 16,
+          overflow: 'hidden',
+          borderWidth: 1,
+          borderColor: tokens.border,
+          backgroundColor: tokens.card,
+        }}
+      >
+        {bannerUri ? (
+          <Image source={{ uri: bannerUri }} style={{ width: '100%', height: '100%' }} />
+        ) : (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <Ionicons name="image-outline" size={22} color={tokens.cyan} />
+            <Text style={{ color: tokens.muted, fontSize: 13, fontWeight: '600' }}>Tap to change banner</Text>
+          </View>
+        )}
+        <View
+          style={{
+            position: 'absolute',
+            right: 10,
+            bottom: 10,
+            width: 28,
+            height: 28,
+            borderRadius: 14,
+            backgroundColor: tokens.cyan,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Ionicons name="camera" size={14} color={tokens.onCyan} />
+        </View>
+      </TouchableOpacity>
+
+      <SectionLabel>Identity</SectionLabel>
+      <TextField
+        label="Gamertag"
+        labelColor={tokens.muted}
+        value={gamertag}
+        onChangeText={setGamertag}
+        autoCapitalize="none"
+        autoCorrect={false}
+        placeholder="Your name on the pitch"
+      />
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <View style={{ flex: 1 }}>
+          <TextField label="First name" labelColor={tokens.muted} value={firstName} onChangeText={setFirstName} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <TextField label="Last name" labelColor={tokens.muted} value={lastName} onChangeText={setLastName} />
+        </View>
+      </View>
+      <TextField
+        label="Email"
+        labelColor={tokens.muted}
+        value={user?.email || ''}
+        editable={false}
+        style={{ color: tokens.muted }}
+      />
+      <TextField
+        label="Bio"
+        labelColor={tokens.muted}
+        value={bio}
+        onChangeText={setBio}
+        multiline
+        placeholder="Tell us about yourself..."
+        style={{ minHeight: 84 }}
+      />
+
+      <SectionLabel>On the pitch</SectionLabel>
+      <Card style={{ gap: 16 }}>
+        <SelectField
+          label="Country"
+          value={country?.name}
+          placeholder="Select country"
+          onPress={() => setCountryPicker(true)}
+        />
+
+        <View>
+          <Text style={fieldLabel}>Main position</Text>
+          <View style={chipWrap}>
+            {POSITIONS.map((p) => (
+              <Chip
+                key={p}
+                label={p}
+                active={position === p}
+                onPress={() => {
+                  setPosition(p);
+                  if (secondaryPosition === p) setSecondaryPosition('none');
+                }}
+              />
+            ))}
+          </View>
+        </View>
+
+        <View>
+          <Text style={fieldLabel}>Second position</Text>
+          <View style={chipWrap}>
+            <Chip
+              label="None"
+              active={secondaryPosition === 'none'}
+              onPress={() => setSecondaryPosition('none')}
+            />
+            {POSITIONS.filter((p) => p !== position).map((p) => (
+              <Chip
+                key={p}
+                label={p}
+                active={secondaryPosition === p}
+                onPress={() => setSecondaryPosition(p)}
+              />
+            ))}
+          </View>
+        </View>
+
+        <View>
+          <Text style={fieldLabel}>Platform</Text>
+          <View style={chipWrap}>
+            {PLATFORM_OPTIONS.map((p) => (
+              <Chip key={p} label={p} active={platform === p} onPress={() => setPlatform(p)} />
+            ))}
+          </View>
+        </View>
+      </Card>
+
+      <Button title="Save Changes" onPress={save} loading={saving} />
 
       <Modal visible={countryPicker} animationType="slide" transparent>
-        <Pressable style={styles.sheetScrim} onPress={() => setCountryPicker(false)} />
-        <View style={styles.sheet}>
-          <Text style={[headingStyleLg, { color: '#fff', fontSize: 22, marginBottom: 12 }]}>Country</Text>
+        <Pressable
+          style={{ flex: 1, backgroundColor: tokens.overlay }}
+          onPress={() => setCountryPicker(false)}
+          accessibilityLabel="Close country picker"
+        />
+        <View
+          style={{
+            maxHeight: '72%',
+            backgroundColor: tokens.bgDeep,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            borderWidth: 1,
+            borderColor: tokens.border,
+            padding: 18,
+            paddingBottom: 18 + insets.bottom,
+            gap: 12,
+          }}
+        >
+          <Text style={[headingStyleLg, { color: tokens.text, fontSize: 22 }]}>Country</Text>
           <TextInput
             value={countryQuery}
             onChangeText={setCountryQuery}
             placeholder="Search…"
-            placeholderTextColor="rgba(255,255,255,0.35)"
-            style={styles.input}
+            placeholderTextColor={tokens.muted}
+            selectionColor={tokens.cyan}
+            style={{
+              height: 50,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: tokens.border,
+              backgroundColor: tokens.card,
+              paddingHorizontal: 16,
+              color: tokens.text,
+              fontSize: 15,
+            }}
             autoFocus
           />
           <FlatList
@@ -403,143 +482,19 @@ export default function EditProfileScreen() {
                   setCountryPicker(false);
                   setCountryQuery('');
                 }}
-                style={styles.countryRow}
+                style={{
+                  minHeight: 44,
+                  justifyContent: 'center',
+                  borderBottomWidth: 1,
+                  borderBottomColor: tokens.border,
+                }}
               >
-                <Text style={{ color: '#fff', fontSize: 14 }}>{item.name}</Text>
+                <Text numberOfLines={1} style={{ color: tokens.text, fontSize: 15 }}>{item.name}</Text>
               </TouchableOpacity>
             )}
           />
         </View>
       </Modal>
-    </GamerProfileShell>
+    </Screen>
   );
 }
-
-function Field({ label, multiline, style, ...props }) {
-  return (
-    <View style={{ marginBottom: 14 }}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        accessibilityLabel={label}
-        placeholderTextColor="rgba(255,255,255,0.35)"
-        style={[styles.input, multiline && styles.textarea, style]}
-        multiline={multiline}
-        {...props}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 10,
-  },
-  title: { color: '#fff', flex: 1, textAlign: 'center', fontSize: 22 },
-  scroll: { paddingHorizontal: 16, paddingBottom: 40 },
-  avatarWrap: { alignSelf: 'center', marginTop: 8, marginBottom: 8 },
-  avatarRing: {
-    width: 108,
-    height: 108,
-    borderRadius: 54,
-    borderWidth: 2,
-    borderColor: AMBER,
-    backgroundColor: '#0A1222',
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarImg: { width: '100%', height: '100%' },
-  cameraBadge: {
-    position: 'absolute',
-    right: 2,
-    bottom: 2,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: AMBER,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  hint: {
-    color: 'rgba(255,255,255,0.55)',
-    textAlign: 'center',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  bannerWrap: {
-    height: 110,
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    backgroundColor: '#0A1222',
-    marginBottom: 18,
-  },
-  bannerImg: { width: '100%', height: '100%' },
-  bannerEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6 },
-  bannerEmptyText: { color: 'rgba(255,255,255,0.55)', fontSize: 13, fontWeight: '600' },
-  row: { flexDirection: 'row', gap: 10 },
-  label: {
-    color: 'rgba(255,255,255,0.72)',
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-  },
-  input: {
-    minHeight: 50,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: '#fff',
-    fontSize: 16,
-    justifyContent: 'center',
-  },
-  textarea: { minHeight: 96, textAlignVertical: 'top' },
-  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  chip: {
-    minWidth: 52,
-    minHeight: 40,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chipWide: { flexGrow: 1, flexBasis: '30%' },
-  chipActive: {
-    backgroundColor: 'rgba(255,214,10,0.16)',
-    borderColor: 'rgba(255,214,10,0.55)',
-  },
-  chipText: { color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '800' },
-  chipTextActive: { color: AMBER },
-  saveBtn: { marginTop: 18, borderRadius: 16, overflow: 'hidden' },
-  saveFill: { minHeight: 54, alignItems: 'center', justifyContent: 'center', borderRadius: 16 },
-  saveText: { color: '#041018', fontSize: 16, fontWeight: '900', letterSpacing: 0.4 },
-  sheetScrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' },
-  sheet: {
-    maxHeight: '72%',
-    backgroundColor: '#0B1220',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 18,
-  },
-  countryRow: {
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
-  },
-});

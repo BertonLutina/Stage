@@ -10,6 +10,7 @@ import Svg, {
   Rect,
   Stop,
 } from 'react-native-svg';
+import { STAGE_PALETTE, hexToRgba } from '@/lib/stageTheme';
 
 /** Right-leaning parallelogram: top and bottom stay level, sides slant. */
 export function parallelogramPoints(width, height, cut, ox = 0, oy = 0) {
@@ -30,8 +31,8 @@ export default function TrapeziumPhotoCard({
   width,
   height,
   imageUrl,
-  fill = '#071018',
-  edgeColor = 'rgba(245,197,66,0.55)',
+  fill = STAGE_PALETTE.bgDeep,
+  edgeColor = hexToRgba(STAGE_PALETTE.warning, 0.55),
   children,
   onPress,
   chamfer,
@@ -55,9 +56,9 @@ export default function TrapeziumPhotoCard({
             <Polygon points={shapePts} />
           </ClipPath>
           <LinearGradient id={fadeId} x1="0" y1="0.42" x2="0" y2="1">
-            <Stop offset="0" stopColor="#05070F" stopOpacity="0" />
-            <Stop offset="0.55" stopColor="#05070F" stopOpacity="0.18" />
-            <Stop offset="1" stopColor="#05070F" stopOpacity="0.9" />
+            <Stop offset="0" stopColor={STAGE_PALETTE.bgDeep} stopOpacity="0" />
+            <Stop offset="0.55" stopColor={STAGE_PALETTE.bgDeep} stopOpacity="0.18" />
+            <Stop offset="1" stopColor={STAGE_PALETTE.bgDeep} stopOpacity="0.9" />
           </LinearGradient>
         </Defs>
         <Polygon points={shapePts} fill={fill} />

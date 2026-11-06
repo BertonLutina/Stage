@@ -1,6 +1,9 @@
 import React from 'react';
-import { View, Image, Text } from 'react-native';
+import { layoutClassName } from '@/lib/layoutClassName';
+import { View } from 'react-native';
+import UiAvatar from '@/components/ui/Avatar';
 
+/** Prop-compatible wrapper around ui/Avatar: derives up to two initials from `name`. */
 export default function Avatar({ uri, name = '', size = 48, className = '' }) {
   const initials = name
     .split(' ')
@@ -9,16 +12,8 @@ export default function Avatar({ uri, name = '', size = 48, className = '' }) {
     .toUpperCase()
     .slice(0, 2);
 
-  const style = { width: size, height: size, borderRadius: size / 2 };
-
-  if (uri) {
-    return <Image source={{ uri }} style={style} className={`bg-surface ${className}`} />;
-  }
-  return (
-    <View style={style} className={`bg-surface border border-border items-center justify-center ${className}`}>
-      <Text style={{ fontSize: size * 0.35 }} className="text-primary font-bold">
-        {initials || '?'}
-      </Text>
-    </View>
-  );
+  const avatar = <UiAvatar uri={uri} initials={initials || '?'} size={size} />;
+  const layout = layoutClassName(className);
+  if (!layout) return avatar;
+  return <View className={layout}>{avatar}</View>;
 }

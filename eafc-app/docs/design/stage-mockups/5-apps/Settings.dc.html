@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+a{color:#5FE3E8;text-decoration:none}a:hover{color:#8CF5F8}
+.scr{width:390px;height:844px;position:relative;overflow:hidden;background-color:#03153F;background-image:radial-gradient(ellipse 75% 42% at 50% 78%,rgba(0,82,140,.95) 0%,rgba(0,82,140,0) 72%),radial-gradient(ellipse 90% 35% at 50% 0%,rgba(14,58,124,.9) 0%,rgba(14,58,124,0) 75%),linear-gradient(90deg,#020C30 0%,#06306A 50%,#020C30 100%);color:#EAF2FF;font-family:Inter,system-ui,sans-serif;font-size:14px}
+.pad{padding:58px 20px 110px;display:flex;flex-direction:column;gap:16px}
+.h{font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.03em;margin:0}
+.k{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#9FB3D1}
+.mut{color:#9FB3D1}
+.card{background:#132B5C;border:1px solid #234480;border-radius:16px;padding:16px}
+.row{display:flex;align-items:center;gap:12px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:14px;border:0;background:#5FE3E8;color:#07163A;font:700 15px Inter,sans-serif;width:100%}
+.btn:hover{color:#07163A;background:#8CF5F8}
+.btn2{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:14px;background:transparent;border:1px solid #5FE3E8;color:#5FE3E8;font:600 15px Inter,sans-serif;width:100%}
+.chip{display:inline-flex;align-items:center;height:34px;padding:0 14px;border-radius:999px;background:#132B5C;border:1px solid #234480;color:#C9D8EE;font:600 13px Inter,sans-serif;white-space:nowrap}
+.chip.on{background:#5FE3E8;color:#07163A;border-color:#5FE3E8}
+.av{width:44px;height:44px;border-radius:12px;background:#234480;display:flex;align-items:center;justify-content:center;font:800 16px 'Saira Condensed',sans-serif;color:#8CF5F8;flex:none}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ib{width:44px;height:44px;border-radius:12px;background:#132B5C;border:1px solid #234480;display:flex;align-items:center;justify-content:center;color:#EAF2FF;flex:none}
+.in{display:flex;flex-direction:column;gap:6px}
+.in input,.in select,.in textarea{height:50px;border-radius:12px;border:1px solid #234480;background:#07163A;color:#EAF2FF;padding:0 14px;font:500 15px Inter,sans-serif}
+.in label{font-size:12px;font-weight:600;color:#9FB3D1}
+.tabs{position:absolute;left:16px;right:16px;bottom:24px;height:64px;border-radius:22px;background:#07163A;border:1px solid #234480;display:flex;align-items:center;justify-content:space-around}
+.tab{width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#9FB3D1;border-radius:14px}
+.tab.on{color:#5FE3E8;background:#132B5C}
+.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.sep{height:1px;background:#234480}
+.sec{display:flex;justify-content:space-between;align-items:baseline}
+.ok{color:#4ADE80}.bad{color:#F87171}
+.nav{display:flex;align-items:center;gap:14px;padding:13px 16px;color:#EAF2FF;border-bottom:1px solid #234480}
+.tg{width:48px;height:28px;border-radius:14px;background:#234480;position:relative;flex:none}
+.tg span{position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#9FB3D1}
+.tg.on{background:#5FE3E8}
+.tg.on span{left:auto;right:3px;background:#07163A}
+</style>
+</helmet>
+<div class="scr">
+<div class="pad" style="gap: 12px">
+<div class="top"><a class="ib" href="Profile.dc.html" aria-label="Back"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><span class="k">Settings</span><span style="width: 44px"></span></div>
+<h1 class="h" style="font-size: 34px">Settings</h1>
+<span class="k" style="margin-top: 4px">Appearance</span>
+<div class="card" style="padding: 0">
+<div class="nav"><span style="flex: 1">Live Dark wallpaper</span><span class="tg on"><span></span></span></div>
+<div class="nav"><span style="flex: 1">Home layout</span><span class="mut" style="font-size: 13px">Compete</span><svg class="i mut" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div class="nav" style="border-bottom: 0"><span style="flex: 1">Language</span><span class="mut" style="font-size: 13px">Français</span><svg class="i mut" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg></div>
+</div>
+<span class="k" style="margin-top: 4px">Notifications</span>
+<div class="card" style="padding: 0">
+<div class="nav"><span style="flex: 1">Match reminders</span><span class="tg on"><span></span></span></div>
+<div class="nav"><span style="flex: 1">Contract offers</span><span class="tg on"><span></span></span></div>
+<div class="nav" style="border-bottom: 0"><span style="flex: 1">Club mail</span><span class="tg"><span></span></span></div>
+</div>
+<span class="k" style="margin-top: 4px">Account</span>
+<div class="card" style="padding: 0">
+<a class="nav" href="EditProfile.dc.html"><span style="flex: 1">Edit profile</span><svg class="i mut" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg></a>
+<div class="nav"><span style="flex: 1">Linked accounts</span><span class="mut" style="font-size: 13px">PSN</span><svg class="i mut" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg></div>
+<a class="nav" href="Main.dc.html" style="border-bottom: 0; color: #F87171"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"></path></svg><span style="flex: 1">Sign out</span></a>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

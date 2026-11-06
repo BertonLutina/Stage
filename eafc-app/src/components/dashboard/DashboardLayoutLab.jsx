@@ -2,19 +2,18 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { hexToRgba } from '@/lib/stageTheme';
-import { CYAN, AMBER, FutIdentityCard, useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
-import { headingStyleLg } from '@/lib/fonts';
+import { FutIdentityCard, useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
 import { getMatchOpponent } from '@/lib/dashboardData';
 import { DASHBOARD_LAYOUTS } from '@/lib/dashboardLayouts';
 import TransferWindowHomeIcon from '@/components/dashboard/TransferWindowHomeIcon';
+import { Avatar, Card, Chip, FormBadge, SectionLabel, SegmentedControl } from '@/components/ui';
 import {
   DashboardGamerStatCard,
   DashboardQuickGlance,
   DashboardFormStrip,
   DASHBOARD_CARD_RADIUS,
-  GAME_DAY_SILVER,
   SectionCard,
-  SectionTitle,
   LinkText,
   MiniBarChart,
   ObjectivesWidget,
@@ -23,6 +22,7 @@ import {
   formatDays,
   formatWhen,
   innerTileChrome,
+  sectionLabelStyle,
   tileChrome,
 } from '@/components/dashboard/CommandCenterUI';
 import PageTile from '@/components/theme/PageTile';
@@ -47,20 +47,46 @@ function HomePageTile({ vm, children }) {
   );
 }
 
-function tournamentBadge(status) {
+/** Status pill colours for a tournament, from tokens only. */
+function tournamentBadge(status, tokens) {
   const s = String(status || '').toLowerCase();
   if (['open', 'registration'].includes(s)) {
-    return { text: 'OPEN', color: '#34D399', bg: 'rgba(124,255,107,0.12)', border: 'rgba(124,255,107,0.35)' };
+    return {
+      text: 'OPEN', color: tokens.success, bg: tokens.successBg, border: hexToRgba(tokens.success, 0.35),
+    };
   }
   if (['league_phase', 'in_progress', 'group_stage', 'knockout', 'playoffs'].includes(s)) {
-    return { text: 'LIVE', color: CYAN, bg: 'rgba(0,232,255,0.12)', border: 'rgba(0,232,255,0.35)' };
+    return {
+      text: 'LIVE', color: tokens.cyan, bg: hexToRgba(tokens.cyan, 0.12), border: tokens.cyanBorder,
+    };
   }
   return {
     text: s.replace(/_/g, ' ').toUpperCase() || '—',
-    color: '#94A3B8',
-    bg: 'rgba(148,163,184,0.12)',
-    border: 'rgba(148,163,184,0.28)',
+    color: tokens.muted,
+    bg: tokens.border,
+    border: tokens.borderStrong,
   };
+}
+
+function StatusPill({ badge, style }) {
+  return (
+    <View style={[{
+      paddingHorizontal: 10, height: 24, justifyContent: 'center', borderRadius: 999,
+      borderWidth: 1, borderColor: badge.border, backgroundColor: badge.bg,
+    }, style]}
+    >
+      <Text numberOfLines={1} style={{ color: badge.color, fontSize: 10, fontWeight: '700', letterSpacing: 0.6 }}>
+        {badge.text}
+      </Text>
+    </View>
+  );
+}
+
+function initialsOf(name) {
+  const words = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return '—';
+  if (words.length === 1) return words[0].slice(0, 3);
+  return words.slice(0, 3).map((w) => w[0]).join('');
 }
 
 function GamertagTitle({ vm, style }) {
@@ -74,8 +100,10 @@ function GamertagTitle({ vm, style }) {
     }}
     >
       <Text
-        style={[headingStyleLg, { flexShrink: 1 }, style]}
+        style={[{ fontFamily: FONT_EA_SPORTS, textTransform: 'uppercase', flexShrink: 1 }, style]}
         numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
       >
         {vm.gamertag}
       </Text>
@@ -91,34 +119,15 @@ function FormPips({ items }) {
   const recent = (items || []).slice(-5);
   if (!recent.length) {
     return (
-      <Text style={{ color: tokens.faint, fontSize: 12 }}>No recent form</Text>
+      <Text style={{ color: tokens.muted, fontSize: 12 }}>No recent form</Text>
     );
   }
   return (
-    <View style={{ flexDirection: 'row', gap: 5 }}>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
       {recent.map((item, i) => {
         const key = String(item || 'draw').toLowerCase();
-        const win = key === 'win';
-        const loss = key === 'loss';
-        const color = win ? '#34D399' : loss ? '#FB7185' : tokens.muted;
-        const letter = win ? 'W' : loss ? 'L' : 'D';
-        return (
-          <View
-            key={`${letter}-${i}`}
-            style={{
-              width: 22,
-              height: 22,
-              borderRadius: 6,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: hexToRgba(color, 0.16),
-              borderWidth: 1,
-              borderColor: hexToRgba(color, 0.4),
-            }}
-          >
-            <Text style={{ color, fontSize: 10, fontWeight: '900' }}>{letter}</Text>
-          </View>
-        );
+        const letter = key === 'win' ? 'W' : key === 'loss' ? 'L' : 'D';
+        return <FormBadge key={`${letter}-${i}`} result={letter} />;
       })}
     </View>
   );
@@ -146,23 +155,23 @@ function PlayerIdentityHero({ vm }) {
         width={148}
       />
       <View style={{ flex: 1, minWidth: 0, paddingBottom: 2, gap: 8 }}>
-        <GamertagTitle vm={vm} style={{ color: tokens.text, fontSize: 22 }} />
+        <GamertagTitle vm={vm} style={{ color: tokens.text, fontSize: 28, letterSpacing: 28 * 0.03 }} />
         <TouchableOpacity
           onPress={openClub}
           activeOpacity={vm.club ? 0.85 : 1}
           disabled={!vm.club}
           accessibilityRole={vm.club ? 'button' : 'text'}
           accessibilityLabel={vm.club?.name || 'Free agent'}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44 }}
         >
           {vm.club ? <ClubCrest club={vm.club} size={28} /> : null}
-          <Text style={{ color: tokens.muted, fontSize: 13, fontWeight: '700', flex: 1 }} numberOfLines={1}>
+          <Text style={{ color: tokens.textSoft, fontSize: 14, fontWeight: '600', flex: 1 }} numberOfLines={1}>
             {vm.club?.name || 'Free agent'}
           </Text>
         </TouchableOpacity>
-        <Text style={{ color: tokens.text, fontWeight: '900', fontSize: 15 }}>
+        <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 15 }} numberOfLines={1}>
           {rankLabel}
-          <Text style={{ color: tokens.muted, fontWeight: '700' }}>
+          <Text style={{ color: tokens.muted, fontWeight: '600' }}>
             {`  ·  ${vm.wins}W ${vm.draws}D ${vm.losses}L`}
           </Text>
         </Text>
@@ -175,54 +184,71 @@ function PlayerIdentityHero({ vm }) {
 function KickoffCard({ vm }) {
   const tokens = useGamerTokens();
   const { nextMatch, opponentInfo, open } = vm;
+  const ownLogo = vm.club?.logo_url || undefined;
+  const homeLogo = opponentInfo.isHome ? ownLogo : undefined;
+  const awayLogo = opponentInfo.isHome ? undefined : ownLogo;
+  const side = nextMatch ? (opponentInfo.isHome ? 'HOME' : 'AWAY') : 'NEXT MATCH';
+
   return (
-    <TouchableOpacity
+    <Card
+      highlight
       onPress={() => open('/(tabs)/matches')}
-      activeOpacity={0.88}
-      accessibilityRole="button"
       accessibilityLabel={nextMatch ? `Next match versus ${opponentInfo.opponent}` : 'Open Game Day'}
+      style={{ borderRadius: DASHBOARD_CARD_RADIUS, gap: 14 }}
     >
-      <View style={tileChrome(tokens, { borderRadius: DASHBOARD_CARD_RADIUS })}>
-        <View style={{
-          minHeight: 58,
-          paddingHorizontal: 14,
-          paddingVertical: 12,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 12,
-        }}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <Text
+          numberOfLines={1}
+          style={[sectionLabelStyle(tokens), { color: tokens.cyan, flex: 1 }]}
         >
+          {nextMatch ? `${side} · ${formatWhen(nextMatch.scheduled_date)}` : side}
+        </Text>
+        {nextMatch?.competition ? (
+          <Chip label={String(nextMatch.competition)} />
+        ) : (
+          <Ionicons name="chevron-forward" size={18} color={tokens.muted} />
+        )}
+      </View>
+      {nextMatch ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 6 }}>
+          <View style={{ alignItems: 'center', gap: 6, width: 96 }}>
+            <Avatar initials={initialsOf(opponentInfo.home)} uri={homeLogo} size={52} />
+            <Text numberOfLines={1} style={{ color: tokens.text, fontSize: 13, fontWeight: '700' }}>
+              {opponentInfo.home}
+            </Text>
+          </View>
+          <Text style={{ color: tokens.muted, fontFamily: FONT_EA_SPORTS, fontSize: 30, textTransform: 'uppercase' }}>
+            VS
+          </Text>
+          <View style={{ alignItems: 'center', gap: 6, width: 96 }}>
+            <Avatar initials={initialsOf(opponentInfo.away)} uri={awayLogo} size={52} />
+            <Text numberOfLines={1} style={{ color: tokens.text, fontSize: 13, fontWeight: '700' }}>
+              {opponentInfo.away}
+            </Text>
+          </View>
+        </View>
+      ) : (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           {vm.club ? <ClubCrest club={vm.club} size={36} /> : (
             <View style={{
-              width: 36, height: 36, borderRadius: DASHBOARD_CARD_RADIUS, alignItems: 'center', justifyContent: 'center',
-              backgroundColor: tokens.isDark ? 'rgba(0,0,0,0.35)' : tokens.inputFill,
-              borderWidth: 1, borderColor: tokens.isDark ? 'rgba(238,243,251,0.22)' : tokens.hairline,
+              width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
+              backgroundColor: tokens.inputFill, borderWidth: 1, borderColor: tokens.border,
             }}
             >
-              <Ionicons name="football-outline" size={18} color={tokens.isDark ? GAME_DAY_SILVER : tokens.cyan} />
+              <Ionicons name="football-outline" size={18} color={tokens.textSoft} />
             </View>
           )}
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={{
-              color: tokens.isDark ? GAME_DAY_SILVER : tokens.muted,
-              fontSize: 10, fontWeight: '800', letterSpacing: 1.4, textTransform: 'uppercase',
-            }}
-            >
-              {nextMatch ? (opponentInfo.isHome ? 'HOME' : 'AWAY') : 'NEXT MATCH'}
-            </Text>
-            <Text style={{ color: tokens.text, fontWeight: '900', fontSize: 15, marginTop: 2 }} numberOfLines={1}>
-              {nextMatch ? opponentInfo.opponent : 'No fixture yet'}
+            <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 15 }} numberOfLines={1}>
+              No fixture yet
             </Text>
             <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
-              {nextMatch
-                ? `${formatWhen(nextMatch.scheduled_date)}${nextMatch.competition ? ` · ${nextMatch.competition}` : ''}`
-                : 'Open Game Day to find a match'}
+              Open Game Day to find a match
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={16} color={tokens.faint} />
         </View>
-      </View>
-    </TouchableOpacity>
+      )}
+    </Card>
   );
 }
 
@@ -231,14 +257,15 @@ function ClubBlock({ vm, compact = false }) {
   const { club, clubRank, tenure, open } = vm;
   return (
     <DashCard accent="gold">
-      <SectionTitle
-        eyebrow="SQUAD"
-        right={clubRank?.rank ? (
-          <Text style={{ color: tokens.amber, fontSize: 14, fontWeight: '900' }}>#{clubRank.rank}</Text>
-        ) : null}
-      >
-        My Club
-      </SectionTitle>
+      <View style={{ marginBottom: 14 }}>
+        <SectionLabel
+          right={clubRank?.rank ? (
+            <Text style={{ color: tokens.cyan, fontSize: 14, fontWeight: '700' }}>#{clubRank.rank}</Text>
+          ) : null}
+        >
+          My Club
+        </SectionLabel>
+      </View>
       {club ? (
         <TouchableOpacity
           onPress={() => open({ pathname: '/teams/teamprofilescreen', params: { teamId: String(club.id) } })}
@@ -249,14 +276,14 @@ function ClubBlock({ vm, compact = false }) {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <ClubCrest club={club} size={compact ? 44 : 52} />
             <View style={{ flex: 1 }}>
-              <Text style={{ color: tokens.text, fontWeight: '900', fontSize: 16, textTransform: 'uppercase' }} numberOfLines={1}>
+              <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 16 }} numberOfLines={1}>
                 {club.name}
               </Text>
-              <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 3 }}>
+              <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 3 }} numberOfLines={1}>
                 {[club.tag ? `[${club.tag}]` : null, club.region || 'Global'].filter(Boolean).join(' · ')}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={tokens.faint} />
+            <Ionicons name="chevron-forward" size={18} color={tokens.muted} />
           </View>
           {!compact && clubRank?.row ? (
             <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 12 }}>
@@ -264,26 +291,27 @@ function ClubBlock({ vm, compact = false }) {
             </Text>
           ) : null}
           {!compact && tenure?.daysAtClub != null ? (
-            <Text style={{ color: tokens.faint, fontSize: 12, marginTop: 8 }}>
+            <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 8 }}>
               {formatDays(tenure.daysAtClub)} at club
             </Text>
           ) : null}
           {tenure?.contractProgress ? (
-            <View style={{ marginTop: 12 }}>
+            <View style={{ marginTop: 14 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ color: tokens.faint, fontSize: 10, fontWeight: '800' }}>CONTRACT GAMES</Text>
-                <Text style={{ color: tokens.faint, fontSize: 10, fontWeight: '800' }}>
+                <Text style={sectionLabelStyle(tokens)}>CONTRACT GAMES</Text>
+                <Text style={{ color: tokens.text, fontSize: 12, fontWeight: '700' }}>
                   {tenure.contractProgress.gamesPlayed}/{tenure.contractProgress.maxGames}
                 </Text>
               </View>
               <View style={{
-                height: 6, borderRadius: 3, backgroundColor: tokens.inputFill, marginTop: 6, overflow: 'hidden',
+                height: 6, borderRadius: 3, backgroundColor: tokens.border, marginTop: 8, overflow: 'hidden',
               }}
               >
                 <View style={{
                   width: `${tenure.contractProgress.gamesPercent}%`,
-                  height: '100%',
-                  backgroundColor: CYAN,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: tokens.cyan,
                 }}
                 />
               </View>
@@ -292,7 +320,7 @@ function ClubBlock({ vm, compact = false }) {
         </TouchableOpacity>
       ) : (
         <View>
-          <Text style={{ color: tokens.muted, fontSize: 13, lineHeight: 19 }}>
+          <Text style={{ color: tokens.muted, fontSize: 14, lineHeight: 20 }}>
             You’re a free agent. Clubs offer contracts — wait for an offer in Inbox.
           </Text>
         </View>
@@ -304,7 +332,9 @@ function ClubBlock({ vm, compact = false }) {
 function FormBlock({ vm, stageOnly = false }) {
   return (
     <DashCard>
-      <SectionTitle eyebrow="FORM">Recent form</SectionTitle>
+      <View style={{ marginBottom: 14 }}>
+        <SectionLabel>Recent form</SectionLabel>
+      </View>
       <DashboardFormStrip label="Stage form" mode="outcome" items={vm.form?.stage} emptyLabel="No completed Stage matches yet." />
       {!stageOnly ? (
         <DashboardFormStrip label="Rating form" mode="rating" items={vm.form?.rating} emptyLabel="No match ratings tracked yet." />
@@ -318,27 +348,26 @@ function UpcomingBlock({ vm }) {
   const { upcomingMatches, player, club, open } = vm;
   if (!(upcomingMatches?.length > 1)) return null;
   return (
-    <View style={{ gap: 10 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={{ color: tokens.text, fontWeight: '900', fontSize: 18, textTransform: 'uppercase' }}>Upcoming</Text>
-        <LinkText label="Game Day" onPress={() => open('/(tabs)/matches')} />
-      </View>
+    <View style={{ gap: 12 }}>
+      <SectionLabel right={<LinkText label="Game Day" onPress={() => open('/(tabs)/matches')} />}>
+        Upcoming
+      </SectionLabel>
       {upcomingMatches.slice(1, 5).map((m, i) => {
         const opp = getMatchOpponent(m, player, club);
         return (
-          <TouchableOpacity
+          <Card
             key={m.id || i}
             onPress={() => open('/(tabs)/matches')}
-            activeOpacity={0.85}
-            style={innerTileChrome(tokens, { padding: 14, minHeight: 44 })}
+            accessibilityLabel={`${opp.home} versus ${opp.away}`}
+            style={{ gap: 4 }}
           >
-            <Text style={{ color: CYAN, fontSize: 10, fontWeight: '900', letterSpacing: 1 }}>
+            <Text numberOfLines={1} style={[sectionLabelStyle(tokens), { color: tokens.cyan }]}>
               {String(m.status).toLowerCase() === 'live' ? 'LIVE' : formatWhen(m.scheduled_date)}
             </Text>
-            <Text style={{ color: tokens.text, fontWeight: '800', marginTop: 4 }} numberOfLines={1}>
-              {opp.home} <Text style={{ color: tokens.faint, fontWeight: '500' }}>vs</Text> {opp.away}
+            <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 15 }} numberOfLines={1}>
+              {opp.home} <Text style={{ color: tokens.muted, fontWeight: '500' }}>vs</Text> {opp.away}
             </Text>
-          </TouchableOpacity>
+          </Card>
         );
       })}
     </View>
@@ -349,27 +378,25 @@ function ActivityBlock({ vm }) {
   const tokens = useGamerTokens();
   return (
     <DashCard>
-      <SectionTitle eyebrow="PERFORMANCE">Activity</SectionTitle>
-      <Text style={{ color: tokens.faint, fontSize: 10, fontWeight: '800', letterSpacing: 1.2, marginBottom: 8 }}>
+      <View style={{ marginBottom: 14 }}>
+        <SectionLabel>Activity</SectionLabel>
+      </View>
+      <Text style={[sectionLabelStyle(tokens), { marginBottom: 8 }]}>
         RATING TREND
       </Text>
       <MiniBarChart
         data={(vm.activity?.timeline || []).map((p) => ({ label: p.label, matches: p.rating }))}
         valueKey="matches"
-        color={AMBER}
+        color={tokens.warning}
         emptyLabel="No rating history yet."
       />
-      <Text style={{
-        color: tokens.faint, fontSize: 10, fontWeight: '800', letterSpacing: 1.2,
-        marginTop: 16, marginBottom: 8,
-      }}
-      >
+      <Text style={[sectionLabelStyle(tokens), { marginTop: 16, marginBottom: 8 }]}>
         WEEKLY MATCHES
       </Text>
       <MiniBarChart
         data={vm.activity?.weekly}
         valueKey="matches"
-        color={CYAN}
+        color={tokens.cyan}
         emptyLabel="No weekly activity yet."
       />
     </DashCard>
@@ -381,8 +408,10 @@ function ObjectivesBlock({ vm }) {
   if (!vm.player?.id) return null;
   return (
     <DashCard accent="gold">
-      <SectionTitle eyebrow="REWARDS">Objectives</SectionTitle>
-      <Text style={{ color: tokens.muted, fontSize: 12, marginBottom: 10 }}>
+      <View style={{ marginBottom: 10 }}>
+        <SectionLabel>Objectives</SectionLabel>
+      </View>
+      <Text style={{ color: tokens.muted, fontSize: 12, marginBottom: 14 }}>
         Daily and weekly rewards for staying active.
       </Text>
       <ObjectivesWidget playerId={vm.player.id} />
@@ -395,18 +424,17 @@ function TournamentsBlock({ vm }) {
   const { activeTournaments, open } = vm;
   return (
     <DashCard>
-      <SectionTitle
-        eyebrow="COMPETE"
-        right={<LinkText label="View all" onPress={() => open('/(tabs)/tournaments')} />}
-      >
-        Active tournaments
-      </SectionTitle>
+      <View style={{ marginBottom: 14 }}>
+        <SectionLabel right={<LinkText label="View all" onPress={() => open('/(tabs)/tournaments')} />}>
+          Active tournaments
+        </SectionLabel>
+      </View>
       {!activeTournaments?.length ? (
-        <Text style={{ color: tokens.faint, fontSize: 13 }}>No active competitions yet.</Text>
+        <Text style={{ color: tokens.muted, fontSize: 14 }}>No active competitions yet.</Text>
       ) : (
         <View style={{ gap: 8 }}>
           {activeTournaments.slice(0, 5).map((tr) => {
-            const badge = tournamentBadge(tr.status);
+            const badge = tournamentBadge(tr.status, tokens);
             return (
               <TouchableOpacity
                 key={tr.id}
@@ -421,18 +449,12 @@ function TournamentsBlock({ vm }) {
                 }}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: tokens.text, fontWeight: '800' }} numberOfLines={1}>{tr.name}</Text>
-                  <Text style={{ color: tokens.faint, fontSize: 10, marginTop: 3, textTransform: 'uppercase' }}>
+                  <Text style={{ color: tokens.text, fontWeight: '700' }} numberOfLines={1}>{tr.name}</Text>
+                  <Text style={[sectionLabelStyle(tokens), { marginTop: 3 }]} numberOfLines={1}>
                     {String(tr.type || 'tournament').replace(/_/g, ' ')}
                   </Text>
                 </View>
-                <View style={{
-                  paddingHorizontal: 8, paddingVertical: 4, borderRadius: DASHBOARD_CARD_RADIUS,
-                  borderWidth: 1, borderColor: badge.border, backgroundColor: badge.bg,
-                }}
-                >
-                  <Text style={{ color: badge.color, fontSize: 9, fontWeight: '900' }}>{badge.text}</Text>
-                </View>
+                <StatusPill badge={badge} />
               </TouchableOpacity>
             );
           })}
@@ -446,31 +468,33 @@ function LeagueBlock({ vm }) {
   const tokens = useGamerTokens();
   return (
     <DashCard accent="gold">
-      <SectionTitle
-        eyebrow="TABLE"
-        right={<LinkText label="View all" onPress={() => vm.open('/apps/competitions')} />}
-      >
-        League standings
-      </SectionTitle>
+      <View style={{ marginBottom: 14 }}>
+        <SectionLabel right={<LinkText label="View all" onPress={() => vm.open('/apps/competitions')} />}>
+          League standings
+        </SectionLabel>
+      </View>
       {!vm.leagueStandings?.length ? (
-        <Text style={{ color: tokens.faint, fontSize: 13 }}>No league place yet.</Text>
+        <Text style={{ color: tokens.muted, fontSize: 14 }}>No league place yet.</Text>
       ) : (
         <View style={{ gap: 8 }}>
           {vm.leagueStandings.slice(0, 5).map((row) => (
             <View
               key={row.id || `${row.season_id}-${row.club_id}`}
               style={{
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10,
                 ...innerTileChrome(tokens, { padding: 12 }),
               }}
             >
               <View style={{ flex: 1 }}>
-                <Text style={{ color: tokens.text, fontWeight: '800' }} numberOfLines={1}>{row.label}</Text>
-                <Text style={{ color: tokens.faint, fontSize: 11, marginTop: 3 }}>
+                <Text style={{ color: tokens.text, fontWeight: '700' }} numberOfLines={1}>{row.label}</Text>
+                <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 3 }}>
                   {row.points ?? 0} pts · {row.played ?? 0} played
                 </Text>
               </View>
-              <Text style={{ color: CYAN, fontWeight: '900', fontSize: 22 }}>
+              <Text style={{
+                color: tokens.cyan, fontFamily: FONT_EA_SPORTS, fontSize: 22, textTransform: 'uppercase',
+              }}
+              >
                 {row.position ? `#${row.position}` : '—'}
               </Text>
             </View>
@@ -495,7 +519,7 @@ function BelowFold({ vm }) {
 
 function KpiGrid({ vm }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 10 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 12 }}>
       <DashboardGamerStatCard
         label="Avg rating"
         value={formatNumber(vm.avgRating, 1)}
@@ -524,26 +548,25 @@ function KpiRow({ icon, label, value, sub }) {
     <View style={{
       flexDirection: 'row', alignItems: 'center', gap: 12,
       minHeight: 52, paddingVertical: 8,
-      borderBottomWidth: 1, borderBottomColor: tokens.hairline,
+      borderBottomWidth: 1, borderBottomColor: tokens.border,
     }}
     >
       <View style={{
-        width: 40, height: 40, borderRadius: DASHBOARD_CARD_RADIUS, alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1, borderColor: tokens.isDark ? 'rgba(238,243,251,0.22)' : tokens.hairline,
-        backgroundColor: tokens.isDark ? 'rgba(0,0,0,0.35)' : hexToRgba(tokens.amber, 0.1),
+        width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1, borderColor: tokens.border, backgroundColor: tokens.inputFill,
       }}
       >
-        <Ionicons name={icon} size={18} color={tokens.isDark ? GAME_DAY_SILVER : tokens.amber} />
+        <Ionicons name={icon} size={22} color={tokens.textSoft} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ color: tokens.muted, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 }}>
+        <Text style={sectionLabelStyle(tokens)}>
           {label}
         </Text>
         {sub ? (
           <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 2 }}>{sub}</Text>
         ) : null}
       </View>
-      <Text style={{ color: tokens.text, fontWeight: '900', fontSize: 18 }}>{value}</Text>
+      <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 18 }}>{value}</Text>
     </View>
   );
 }
@@ -565,100 +588,69 @@ function LayoutA({ vm }) {
 }
 
 function LayoutB({ vm }) {
-  const tokens = useGamerTokens();
   const [tab, setTab] = useState('overview');
   const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'club', label: 'Club' },
-    { id: 'compete', label: 'Compete' },
+    { key: 'overview', label: 'Overview' },
+    { key: 'club', label: 'Club' },
+    { key: 'compete', label: 'Compete' },
   ];
 
   return (
     <>
       <PlayerIdentityHero vm={vm} />
       <HomePageTile vm={vm}>
-      <KickoffCard vm={vm} />
+        <KickoffCard vm={vm} />
 
-      <View
-        accessibilityRole="tablist"
-        style={{
-          flexDirection: 'row', gap: 6, padding: 4, borderRadius: DASHBOARD_CARD_RADIUS,
-          backgroundColor: tokens.inputFill, borderWidth: 1, borderColor: tokens.hairline,
-        }}
-      >
-        {tabs.map((item) => {
-          const active = tab === item.id;
-          return (
-            <TouchableOpacity
-              key={item.id}
-              onPress={() => setTab(item.id)}
-              activeOpacity={0.85}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={item.label}
-              style={{
-                flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center',
-                backgroundColor: active ? 'rgba(255,255,255,0.12)' : 'transparent',
-                borderWidth: 1,
-                borderColor: active ? 'rgba(248,251,255,0.55)' : 'transparent',
-              }}
-            >
-              <Text style={{ color: active ? GAME_DAY_SILVER : tokens.muted, fontWeight: '900', fontSize: 12 }}>
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+        <SegmentedControl options={tabs} value={tab} onChange={setTab} />
 
-      {tab === 'overview' ? (
-        <>
-          <DashCard>
-            <KpiRow
-              icon="trophy-outline"
-              label="RANK"
-              value={vm.playerRank?.rank ? `#${vm.playerRank.rank}` : '—'}
-              sub={vm.rankingPoints ? `${formatNumber(vm.rankingPoints, 1)} pts` : 'Unranked'}
-            />
-            <KpiRow
-              icon="football-outline"
-              label="RECORD"
-              value={`${vm.wins}-${vm.draws}-${vm.losses}`}
-              sub={`${formatNumber(vm.winRate, 1)}% win rate`}
-            />
-            <KpiRow
-              icon="star-outline"
-              label="RATING"
-              value={formatNumber(vm.avgRating, 1)}
-              sub="Avg match rating"
-            />
-            <KpiRow
-              icon="document-text-outline"
-              label="CONTRACT"
-              value={vm.tenure?.contractProgress ? `${vm.tenure.contractProgress.gamesLeft}` : '—'}
-              sub={vm.tenure?.contractProgress ? 'games remaining' : 'No active contract'}
-            />
-          </DashCard>
-          <FormBlock vm={vm} stageOnly />
-        </>
-      ) : null}
+        {tab === 'overview' ? (
+          <>
+            <DashCard>
+              <KpiRow
+                icon="trophy-outline"
+                label="RANK"
+                value={vm.playerRank?.rank ? `#${vm.playerRank.rank}` : '—'}
+                sub={vm.rankingPoints ? `${formatNumber(vm.rankingPoints, 1)} pts` : 'Unranked'}
+              />
+              <KpiRow
+                icon="football-outline"
+                label="RECORD"
+                value={`${vm.wins}-${vm.draws}-${vm.losses}`}
+                sub={`${formatNumber(vm.winRate, 1)}% win rate`}
+              />
+              <KpiRow
+                icon="star-outline"
+                label="RATING"
+                value={formatNumber(vm.avgRating, 1)}
+                sub="Avg match rating"
+              />
+              <KpiRow
+                icon="document-text-outline"
+                label="CONTRACT"
+                value={vm.tenure?.contractProgress ? `${vm.tenure.contractProgress.gamesLeft}` : '—'}
+                sub={vm.tenure?.contractProgress ? 'games remaining' : 'No active contract'}
+              />
+            </DashCard>
+            <FormBlock vm={vm} stageOnly />
+          </>
+        ) : null}
 
-      {tab === 'club' ? (
-        <>
-          <ClubBlock vm={vm} />
-          <DashboardQuickGlance glance={vm.glance} onOpen={vm.open} />
-          <ObjectivesBlock vm={vm} />
-        </>
-      ) : null}
+        {tab === 'club' ? (
+          <>
+            <ClubBlock vm={vm} />
+            <DashboardQuickGlance glance={vm.glance} onOpen={vm.open} />
+            <ObjectivesBlock vm={vm} />
+          </>
+        ) : null}
 
-      {tab === 'compete' ? (
-        <>
-          <UpcomingBlock vm={vm} />
-          <TournamentsBlock vm={vm} />
-          <LeagueBlock vm={vm} />
-          <ActivityBlock vm={vm} />
-        </>
-      ) : null}
+        {tab === 'compete' ? (
+          <>
+            <UpcomingBlock vm={vm} />
+            <TournamentsBlock vm={vm} />
+            <LeagueBlock vm={vm} />
+            <ActivityBlock vm={vm} />
+          </>
+        ) : null}
       </HomePageTile>
     </>
   );
@@ -677,15 +669,8 @@ function ShortcutTile({ icon, label, onPress }) {
           minHeight: 72, alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12,
         }}
       >
-        <Ionicons name={icon} size={20} color={tokens.isDark ? GAME_DAY_SILVER : tokens.cyan} />
-        <Text style={{
-          color: tokens.isDark ? GAME_DAY_SILVER : tokens.text,
-          fontWeight: '900',
-          fontSize: 10,
-          letterSpacing: 1.4,
-          textTransform: 'uppercase',
-        }}
-        >
+        <Ionicons name={icon} size={22} color={tokens.textSoft} />
+        <Text style={[sectionLabelStyle(tokens), { color: tokens.textSoft }]}>
           {label}
         </Text>
       </TouchableOpacity>
@@ -698,29 +683,29 @@ function LayoutC({ vm }) {
     <>
       <PlayerIdentityHero vm={vm} />
       <HomePageTile vm={vm}>
-      <KickoffCard vm={vm} />
+        <KickoffCard vm={vm} />
 
-      <View style={{ gap: 10 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 10 }}>
-          <ShortcutTile icon="flash" label="Game Day" onPress={() => vm.open('/(tabs)/matches')} />
-          <ShortcutTile icon="trophy-outline" label="GOST" onPress={() => vm.open('/apps/competitions')} />
+        <View style={{ gap: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 12 }}>
+            <ShortcutTile icon="flash-outline" label="Game Day" onPress={() => vm.open('/(tabs)/matches')} />
+            <ShortcutTile icon="trophy-outline" label="GOST" onPress={() => vm.open('/apps/competitions')} />
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 12 }}>
+            <ShortcutTile
+              icon="shield-outline"
+              label="Club"
+              onPress={() => (vm.club
+                ? vm.open({ pathname: '/teams/teamprofilescreen', params: { teamId: String(vm.club.id) } })
+                : vm.open('/apps/inbox'))}
+            />
+            <ShortcutTile icon="mail-outline" label="Inbox" onPress={() => vm.open('/apps/inbox')} />
+          </View>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 10 }}>
-          <ShortcutTile
-            icon="shield-outline"
-            label="Club"
-            onPress={() => (vm.club
-              ? vm.open({ pathname: '/teams/teamprofilescreen', params: { teamId: String(vm.club.id) } })
-              : vm.open('/apps/inbox'))}
-          />
-          <ShortcutTile icon="mail-outline" label="Inbox" onPress={() => vm.open('/apps/inbox')} />
-        </View>
-      </View>
 
-      <FormBlock vm={vm} stageOnly />
-      <ClubBlock vm={vm} compact />
-      <DashboardQuickGlance glance={vm.glance} onOpen={vm.open} />
-      <BelowFold vm={vm} />
+        <FormBlock vm={vm} stageOnly />
+        <ClubBlock vm={vm} compact />
+        <DashboardQuickGlance glance={vm.glance} onOpen={vm.open} />
+        <BelowFold vm={vm} />
       </HomePageTile>
     </>
   );
@@ -729,77 +714,71 @@ function LayoutC({ vm }) {
 function LayoutD({ vm }) {
   const tokens = useGamerTokens();
   const liveTournament = vm.activeTournaments?.[0];
-  const badge = liveTournament ? tournamentBadge(liveTournament.status) : null;
+  const badge = liveTournament ? tournamentBadge(liveTournament.status, tokens) : null;
 
   return (
     <>
       <PlayerIdentityHero vm={vm} />
       <HomePageTile vm={vm}>
-      <KickoffCard vm={vm} />
+        <KickoffCard vm={vm} />
 
-      <FormBlock vm={vm} stageOnly />
+        <FormBlock vm={vm} stageOnly />
 
-      <View style={{ flexDirection: 'row', gap: 10 }}>
-        <View style={tileChrome(tokens, { flex: 1, minHeight: 120 })}>
-        <TouchableOpacity
-          onPress={() => (vm.club
-            ? vm.open({ pathname: '/teams/teamprofilescreen', params: { teamId: String(vm.club.id) } })
-            : vm.open('/apps/inbox'))}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel={vm.club ? vm.club.name : 'Inbox for contract offers'}
-          style={{
-            flex: 1, minHeight: 120, padding: 16, justifyContent: 'space-between',
-          }}
-        >
-          <Text style={{ color: tokens.isDark ? GAME_DAY_SILVER : tokens.amber, fontSize: 9, fontWeight: '900', letterSpacing: 2 }}>CLUB</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            {vm.club ? <ClubCrest club={vm.club} size={36} /> : null}
-            <Text style={{ color: tokens.text, fontWeight: '900', fontSize: 15, flex: 1 }} numberOfLines={2}>
-              {vm.club?.name || 'Free agent'}
-            </Text>
-          </View>
-          <Text style={{ color: tokens.muted, fontSize: 12 }}>
-            {vm.clubRank?.rank ? `Rank #${vm.clubRank.rank}` : 'Waiting for a contract offer'}
-          </Text>
-        </TouchableOpacity>
-        </View>
-        <View style={tileChrome(tokens, { flex: 1, minHeight: 120 })}>
-        <TouchableOpacity
-          onPress={() => (liveTournament
-            ? vm.open({
-              pathname: '/(tabs)/tournaments/tournamentdetailscreen',
-              params: { tournamentId: String(liveTournament.id) },
-            })
-            : vm.open('/(tabs)/tournaments'))}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel={liveTournament ? liveTournament.name : 'Open tournaments'}
-          style={{
-            flex: 1, minHeight: 120, padding: 16, justifyContent: 'space-between',
-          }}
-        >
-          <Text style={{ color: tokens.isDark ? GAME_DAY_SILVER : tokens.cyan, fontSize: 9, fontWeight: '900', letterSpacing: 2 }}>COMPETE</Text>
-          <Text style={{ color: tokens.text, fontWeight: '900', fontSize: 16 }} numberOfLines={2}>
-            {liveTournament?.name || 'No active cup'}
-          </Text>
-          {badge ? (
-            <View style={{
-              alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: DASHBOARD_CARD_RADIUS,
-              borderWidth: 1, borderColor: badge.border, backgroundColor: badge.bg,
-            }}
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <View style={tileChrome(tokens, { flex: 1, minHeight: 120 })}>
+            <TouchableOpacity
+              onPress={() => (vm.club
+                ? vm.open({ pathname: '/teams/teamprofilescreen', params: { teamId: String(vm.club.id) } })
+                : vm.open('/apps/inbox'))}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={vm.club ? vm.club.name : 'Inbox for contract offers'}
+              style={{
+                flex: 1, minHeight: 120, padding: 16, justifyContent: 'space-between',
+              }}
             >
-              <Text style={{ color: badge.color, fontSize: 9, fontWeight: '900' }}>{badge.text}</Text>
-            </View>
-          ) : (
-            <Text style={{ color: tokens.faint, fontSize: 12 }}>Browse tournaments</Text>
-          )}
-        </TouchableOpacity>
+              <Text style={sectionLabelStyle(tokens)}>CLUB</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {vm.club ? <ClubCrest club={vm.club} size={36} /> : null}
+                <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 15, flex: 1 }} numberOfLines={2}>
+                  {vm.club?.name || 'Free agent'}
+                </Text>
+              </View>
+              <Text style={{ color: tokens.muted, fontSize: 12 }} numberOfLines={2}>
+                {vm.clubRank?.rank ? `Rank #${vm.clubRank.rank}` : 'Waiting for a contract offer'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={tileChrome(tokens, { flex: 1, minHeight: 120 })}>
+            <TouchableOpacity
+              onPress={() => (liveTournament
+                ? vm.open({
+                  pathname: '/(tabs)/tournaments/tournamentdetailscreen',
+                  params: { tournamentId: String(liveTournament.id) },
+                })
+                : vm.open('/(tabs)/tournaments'))}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={liveTournament ? liveTournament.name : 'Open tournaments'}
+              style={{
+                flex: 1, minHeight: 120, padding: 16, justifyContent: 'space-between',
+              }}
+            >
+              <Text style={sectionLabelStyle(tokens)}>COMPETE</Text>
+              <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 16 }} numberOfLines={2}>
+                {liveTournament?.name || 'No active cup'}
+              </Text>
+              {badge ? (
+                <StatusPill badge={badge} style={{ alignSelf: 'flex-start' }} />
+              ) : (
+                <Text style={{ color: tokens.muted, fontSize: 12 }}>Browse tournaments</Text>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
-      <DashboardQuickGlance glance={vm.glance} onOpen={vm.open} />
-      <BelowFold vm={vm} />
+        <DashboardQuickGlance glance={vm.glance} onOpen={vm.open} />
+        <BelowFold vm={vm} />
       </HomePageTile>
     </>
   );

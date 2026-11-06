@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
-  Switch,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { stageClient } from '@/api/stageClient';
-import { AMBER } from '@/components/profile/gamer/GamerProfileUI';
+import useThemeStore from '@/store/themeStore';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
+import { Button, Chip, SectionLabel, TextField, Toggle } from '@/components/ui';
 
 function defaultEndDate() {
   const end = new Date();
@@ -23,6 +24,7 @@ function defaultStartDate() {
 }
 
 export default function RequestLoanDialog({ open, onClose, player, club, onSubmitted }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const [startDate, setStartDate] = useState(defaultStartDate);
   const [endDate, setEndDate] = useState(defaultEndDate);
   const [loanFee, setLoanFee] = useState('0');
@@ -81,113 +83,100 @@ export default function RequestLoanDialog({ open, onClose, player, club, onSubmi
 
   return (
     <Modal visible={open} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', justifyContent: 'flex-end' }}>
-        <Pressable style={{ flex: 1 }} onPress={onClose} />
-        <View style={{
-          maxHeight: '88%',
-          backgroundColor: '#071018',
-          borderTopLeftRadius: 18,
-          borderTopRightRadius: 18,
-          borderWidth: 1,
-          borderColor: 'rgba(255,214,10,0.28)',
-          padding: 16,
-        }}
-        >
-          <Text style={{ color: AMBER, fontWeight: '900', letterSpacing: 1.4, textTransform: 'uppercase' }}>
-            Request loan
-          </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.55)', marginTop: 6, marginBottom: 12 }}>
-            Propose a loan for {player?.gamertag || 'this player'}.
-          </Text>
-          <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 20 }}>
-            <Field label="Start (YYYY-MM-DD)" value={startDate} onChange={setStartDate} />
-            <Field label="End (YYYY-MM-DD)" value={endDate} onChange={setEndDate} />
-            <Field label="Loan fee (STC)" value={loanFee} onChange={setLoanFee} keyboardType="number-pad" />
-            <Field label="Your wage share %" value={loanWage} onChange={setLoanWage} keyboardType="number-pad" />
-            <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12 }}>
-              Parent club pays {parentWage}%
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '800', letterSpacing: 0.8 }}>
-                PARENT MAY RECALL
-              </Text>
-              <Switch value={recallAllowed} onValueChange={setRecallAllowed} />
-            </View>
-            {recallAllowed ? (
-              <Field label="Recall after (YYYY-MM-DD)" value={recallAfterDate} onChange={setRecallAfterDate} />
-            ) : null}
-            <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>
-              PURCHASE
-            </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {['NONE', 'OPTIONAL', 'MANDATORY'].map((id) => (
-                <Pressable
-                  key={id}
-                  onPress={() => setPurchaseType(id)}
-                  style={{
-                    paddingHorizontal: 10,
-                    paddingVertical: 8,
-                    borderWidth: 1,
-                    borderColor: purchaseType === id ? AMBER : 'rgba(255,255,255,0.18)',
-                    backgroundColor: purchaseType === id ? 'rgba(255,214,10,0.14)' : 'transparent',
-                  }}
-                >
-                  <Text style={{ color: purchaseType === id ? AMBER : '#fff', fontSize: 11, fontWeight: '800' }}>
-                    {id === 'NONE' ? 'None' : id === 'OPTIONAL' ? 'Option to buy' : 'Obligation to buy'}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-            {purchaseType !== 'NONE' ? (
-              <>
-                <Field label="Purchase price (STC)" value={purchaseOptionStc} onChange={setPurchaseOptionStc} keyboardType="number-pad" />
-                <Field label="Purchase deadline (YYYY-MM-DD)" value={purchaseOptionDeadline} onChange={setPurchaseOptionDeadline} />
-              </>
-            ) : null}
-            {submitError ? <Text style={{ color: '#fb7185' }}>{String(submitError)}</Text> : null}
-            <Pressable
-              onPress={handleSubmit}
-              disabled={submitting || !splitValid}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={{ flex: 1, backgroundColor: tokens.overlay, justifyContent: 'flex-end' }}>
+          <Pressable
+            style={{ flex: 1 }}
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          />
+          <View
+            style={{
+              maxHeight: '88%',
+              backgroundColor: tokens.bgDeep,
+              borderTopLeftRadius: 22,
+              borderTopRightRadius: 22,
+              borderWidth: 1,
+              borderColor: tokens.border,
+              padding: 20,
+            }}
+          >
+            <Text
+              numberOfLines={1}
               style={{
-                minHeight: 46,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: AMBER,
-                opacity: submitting || !splitValid ? 0.5 : 1,
+                color: tokens.text,
+                fontFamily: FONT_EA_SPORTS,
+                fontSize: 22,
+                letterSpacing: 22 * 0.03,
+                textTransform: 'uppercase',
               }}
             >
-              {submitting ? <ActivityIndicator color="#031018" /> : (
-                <Text style={{ color: '#031018', fontWeight: '900', letterSpacing: 1.2 }}>REQUEST LOAN</Text>
-              )}
-            </Pressable>
-          </ScrollView>
+              Request loan
+            </Text>
+            <Text numberOfLines={2} style={{ color: tokens.muted, fontSize: 14, marginTop: 6, marginBottom: 14 }}>
+              Propose a loan for {player?.gamertag || 'this player'}.
+            </Text>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ gap: 14, paddingBottom: 20 }}
+            >
+              <TextField label="Start (YYYY-MM-DD)" value={startDate} onChangeText={setStartDate} autoCapitalize="none" />
+              <TextField label="End (YYYY-MM-DD)" value={endDate} onChangeText={setEndDate} autoCapitalize="none" />
+              <TextField label="Loan fee (STC)" value={loanFee} onChangeText={setLoanFee} keyboardType="number-pad" autoCapitalize="none" />
+              <TextField label="Your wage share %" value={loanWage} onChangeText={setLoanWage} keyboardType="number-pad" autoCapitalize="none" />
+              <Text style={{ color: splitValid ? tokens.muted : tokens.danger, fontSize: 12 }}>
+                Parent club pays {parentWage}%
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 44 }}>
+                <Text numberOfLines={1} style={{ flex: 1, color: tokens.muted, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12 }}>
+                  PARENT MAY RECALL
+                </Text>
+                <Toggle
+                  value={recallAllowed}
+                  onValueChange={setRecallAllowed}
+                  accessibilityLabel="Parent may recall"
+                />
+              </View>
+              {recallAllowed ? (
+                <TextField label="Recall after (YYYY-MM-DD)" value={recallAfterDate} onChangeText={setRecallAfterDate} autoCapitalize="none" />
+              ) : null}
+              <SectionLabel>PURCHASE</SectionLabel>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {['NONE', 'OPTIONAL', 'MANDATORY'].map((id) => (
+                  <Chip
+                    key={id}
+                    label={id === 'NONE' ? 'None' : id === 'OPTIONAL' ? 'Option to buy' : 'Obligation to buy'}
+                    active={purchaseType === id}
+                    onPress={() => setPurchaseType(id)}
+                  />
+                ))}
+              </View>
+              {purchaseType !== 'NONE' ? (
+                <>
+                  <TextField label="Purchase price (STC)" value={purchaseOptionStc} onChangeText={setPurchaseOptionStc} keyboardType="number-pad" autoCapitalize="none" />
+                  <TextField label="Purchase deadline (YYYY-MM-DD)" value={purchaseOptionDeadline} onChangeText={setPurchaseOptionDeadline} autoCapitalize="none" />
+                </>
+              ) : null}
+              {submitError ? (
+                <Text accessibilityRole="alert" style={{ color: tokens.danger, fontSize: 13 }}>
+                  {String(submitError)}
+                </Text>
+              ) : null}
+              <Button
+                title="REQUEST LOAN"
+                onPress={handleSubmit}
+                loading={submitting}
+                disabled={!splitValid}
+              />
+            </ScrollView>
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
-  );
-}
-
-function Field({ label, value, onChange, keyboardType = 'default' }) {
-  return (
-    <View>
-      <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: '800', letterSpacing: 1, marginBottom: 6 }}>
-        {label}
-      </Text>
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        keyboardType={keyboardType}
-        autoCapitalize="none"
-        placeholderTextColor="rgba(255,255,255,0.25)"
-        style={{
-          borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.16)',
-          backgroundColor: 'rgba(0,0,0,0.4)',
-          color: '#fff',
-          paddingHorizontal: 12,
-          paddingVertical: 10,
-        }}
-      />
-    </View>
   );
 }

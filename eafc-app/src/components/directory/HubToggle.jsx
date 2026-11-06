@@ -1,34 +1,42 @@
 import React from 'react';
-import { Text, TouchableOpacity } from 'react-native';
+import { Pressable, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { headingStyleSm } from '@/lib/fonts';
-import { SILVER } from '@/components/transfer/transferHubTheme';
+import useThemeStore from '@/store/themeStore';
+import { CHIP_HEIGHT, CHIP_RADIUS } from '@/components/ui/metrics';
 
+/** Stage chip (34 high, pill) with an icon and an optional trailing count. */
 export default function HubToggle({ label, icon, active, badge, onPress }) {
+  const tokens = useThemeStore((s) => s.tokens);
+  const fg = active ? tokens.onCyan : tokens.textSoft;
+
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
-      activeOpacity={0.85}
-      style={{
+      accessibilityRole="button"
+      accessibilityState={{ selected: Boolean(active) }}
+      hitSlop={{ top: 5, bottom: 5 }}
+      style={({ pressed }) => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        minHeight: 36,
-        paddingHorizontal: 12,
+        height: CHIP_HEIGHT,
+        paddingHorizontal: 14,
+        borderRadius: CHIP_RADIUS,
         borderWidth: 1,
-        borderColor: active ? 'rgba(248,251,255,0.55)' : 'rgba(255,255,255,0.12)',
-        backgroundColor: active ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.35)',
-      }}
+        borderColor: active ? tokens.cyan : tokens.border,
+        backgroundColor: active ? tokens.cyan : tokens.card,
+        opacity: pressed ? 0.85 : 1,
+      })}
     >
-      <Ionicons name={icon} size={14} color={active ? SILVER : 'rgba(255,255,255,0.5)'} />
-      <Text style={[headingStyleSm, { fontSize: 11, letterSpacing: 1.6, color: active ? SILVER : 'rgba(255,255,255,0.5)' }]}>
+      {icon ? <Ionicons name={icon} size={16} color={fg} /> : null}
+      <Text numberOfLines={1} style={{ color: fg, fontSize: 13, fontWeight: '600', flexShrink: 1 }}>
         {label}
       </Text>
       {badge > 0 ? (
-        <Text style={{ color: active ? SILVER : 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '800' }}>
+        <Text style={{ color: fg, fontSize: 12, fontWeight: '600', opacity: 0.8 }}>
           {badge}
         </Text>
       ) : null}
-    </TouchableOpacity>
+    </Pressable>
   );
 }

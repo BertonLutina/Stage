@@ -20,16 +20,20 @@ describe('page walkthroughs', () => {
     expect(getPageWalkthrough('/auth/onboarding', 'en')).toBeNull();
   });
 
-  test('guide chrome uses Game Day silver tiles, not cyan pills', () => {
+  test('guide chrome uses Stage tokens and primitives, not Game Day silver tiles or cyan pills', () => {
     const src = require('fs').readFileSync(
       require('path').resolve(__dirname, '../../components/onboarding/PageWalkthrough.jsx'),
       'utf8',
     );
-    expect(src).toMatch(/GAME_DAY_SILVER/);
-    expect(src).toMatch(/TILE_BORDER/);
-    expect(src).toMatch(/borderRadius: CARD_RADIUS/);
+    expect(src).toMatch(/useThemeStore/);
+    expect(src).toMatch(/tokens\.card\b/);
+    expect(src).toMatch(/tokens\.border\b/);
+    expect(src).toMatch(/tokens\.cardRadius/);
+    expect(src).toMatch(/<IconButton[^>]*accessibilityLabel="Close guide"/);
+    expect(src).not.toMatch(/GAME_DAY_SILVER|TILE_BORDER|TILE_FILL/);
     expect(src).not.toMatch(/borderRadius: 999/);
     expect(src).not.toMatch(/backgroundColor: CYAN/);
+    expect(src).not.toMatch(/#[0-9A-Fa-f]{6}\b/);
   });
 
   test('inbox path tells the user where to accept contracts and loans', () => {

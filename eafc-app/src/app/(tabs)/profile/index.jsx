@@ -5,6 +5,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import useMyStageIdentities from '@/hooks/useMyStageIdentities';
 import ProfileScreen from './profilescreen';
 import { GamerProfileShell } from '@/components/profile/gamer/GamerProfileUI';
+import useThemeStore from '@/store/themeStore';
+import { guideFabClearance } from '@/components/ui/metrics';
 
 /**
  * Profile hub — player surface only.
@@ -14,6 +16,7 @@ import { GamerProfileShell } from '@/components/profile/gamer/GamerProfileUI';
 export default function ProfileIndex() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const tokens = useThemeStore((st) => st.tokens);
   const { tab } = useLocalSearchParams();
   const identities = useMyStageIdentities();
 
@@ -32,7 +35,7 @@ export default function ProfileIndex() {
     return (
       <GamerProfileShell>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color="#00F0FF" />
+          <ActivityIndicator color={tokens.cyan} />
         </View>
       </GamerProfileShell>
     );
@@ -47,7 +50,7 @@ export default function ProfileIndex() {
   return (
     <GamerProfileShell>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: 88, backgroundColor: 'transparent' }}>
+      <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: guideFabClearance(insets.bottom), backgroundColor: 'transparent' }}>
         <ProfileScreen
           embedded
           player={identities.player}

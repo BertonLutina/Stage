@@ -5,18 +5,26 @@ import {
   gameDayTileImageLayout,
   hasCustomGameDayTileBackground,
 } from '@/lib/gameDayTileBackgrounds';
+import { STAGE_PALETTE, hexToRgba } from '@/lib/stageTheme';
+
+/** Scrims over a player's photo: bgDeep at three stops keeps text readable on any image. */
+const scrim = (top, mid, bottom) => [
+  hexToRgba(STAGE_PALETTE.bgDeep, top),
+  hexToRgba(STAGE_PALETTE.bgDeep, mid),
+  hexToRgba(STAGE_PALETTE.bgDeep, bottom),
+];
 
 const OVERLAY = {
   panel: {
-    custom: ['rgba(0,0,0,0.72)', 'rgba(0,0,0,0.58)', 'rgba(0,0,0,0.74)'],
-    default: ['rgba(24,30,40,0.72)', 'rgba(7,7,11,0.88)'],
+    custom: scrim(0.72, 0.58, 0.74),
+    default: [hexToRgba(STAGE_PALETTE.card, 0.72), hexToRgba(STAGE_PALETTE.bgDeep, 0.88)],
   },
   card: {
-    custom: ['rgba(0,0,0,0.68)', 'rgba(0,0,0,0.54)', 'rgba(0,0,0,0.72)'],
-    default: ['rgba(25,31,42,0.82)', 'rgba(4,5,9,0.68)', 'rgba(33,39,50,0.82)'],
+    custom: scrim(0.68, 0.54, 0.72),
+    default: scrim(0.82, 0.68, 0.82),
   },
   arena: {
-    custom: ['rgba(0,0,0,0.62)', 'rgba(0,0,0,0.50)', 'rgba(0,0,0,0.68)'],
+    custom: scrim(0.62, 0.5, 0.68),
     default: null,
   },
 };

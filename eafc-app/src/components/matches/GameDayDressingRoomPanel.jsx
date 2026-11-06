@@ -1,6 +1,8 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import { CYAN } from '@/components/profile/gamer/GamerProfileUI';
+import useThemeStore from '@/store/themeStore';
+import { TILE_FILL_LIVE, sectionLabelStyle, tileChrome } from '@/components/dashboard/CommandCenterUI';
+import { hexToRgba } from '@/lib/stageTheme';
 import GameDayDressingRoom from './GameDayDressingRoom';
 import GameDayTileBackgroundLayers from './GameDayTileBackgroundLayers';
 import GameDayTileMenuButton from './GameDayTileMenuButton';
@@ -15,33 +17,27 @@ export default function GameDayDressingRoomPanel({
   onChangeBackground,
   onSeatChange,
 }) {
+  const tokens = useThemeStore((st) => st.tokens);
   const customBg = hasCustomGameDayTileBackground(backgroundConfig);
+  // A photo background needs a translucent veil so it shows through; otherwise the normal card fill.
+  const veil = tokens.live ? TILE_FILL_LIVE : hexToRgba(tokens.bgDeep, 0.55);
 
   return (
-    <View style={{
-      overflow: 'hidden',
-      borderWidth: 1,
-      borderColor: 'rgba(238,243,251,0.28)',
-      backgroundColor: customBg ? 'rgba(0,0,0,0.4)' : 'rgba(23,29,39,0.9)',
-      padding: 14,
-    }}
-    >
+    <View style={[tileChrome(tokens, customBg ? { backgroundColor: veil } : {}), { padding: 16 }]}>
       <GameDayTileBackgroundLayers config={backgroundConfig} variant="card" />
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: '#F8FBFF', fontSize: 11, fontWeight: '900', letterSpacing: 2, textTransform: 'uppercase' }}>
-            Dressing Room
-          </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 4 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={sectionLabelStyle(tokens)}>Dressing Room</Text>
+          <Text style={{ color: tokens.muted, fontSize: 13, marginTop: 4 }}>
             Available players take a seat here before kickoff so they can be featured in the game.
           </Text>
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'flex-end', maxWidth: 168 }}>
-          <View style={countPill}>
-            <Text style={countPillText}>Home {dressingCounts.home}</Text>
+          <View style={[countPill(tokens.borderStrong, hexToRgba(tokens.text, 0.08))]}>
+            <Text style={[countPillText, { color: tokens.textSoft }]}>Home {dressingCounts.home}</Text>
           </View>
-          <View style={[countPill, { borderColor: 'rgba(142,238,255,0.35)', backgroundColor: 'rgba(142,238,255,0.1)' }]}>
-            <Text style={[countPillText, { color: CYAN }]}>Away {dressingCounts.away}</Text>
+          <View style={countPill(hexToRgba(tokens.cyan, 0.4), hexToRgba(tokens.cyan, 0.14))}>
+            <Text style={[countPillText, { color: tokens.cyan }]}>Away {dressingCounts.away}</Text>
           </View>
           <GameDayTileMenuButton
             onPress={onChangeBackground}
@@ -60,18 +56,17 @@ export default function GameDayDressingRoomPanel({
   );
 }
 
-const countPill = {
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.2)',
-  backgroundColor: 'rgba(255,255,255,0.1)',
+const countPill = (borderColor, backgroundColor) => ({
+  height: 26,
+  justifyContent: 'center',
   paddingHorizontal: 10,
-  paddingVertical: 4,
-};
+  borderRadius: 999,
+  borderWidth: 1,
+  borderColor,
+  backgroundColor,
+});
 
 const countPillText = {
-  color: 'rgba(255,255,255,0.8)',
-  fontSize: 10,
-  fontWeight: '900',
-  letterSpacing: 1,
-  textTransform: 'uppercase',
+  fontSize: 11,
+  fontWeight: '600',
 };

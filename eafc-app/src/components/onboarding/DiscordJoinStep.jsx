@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, TouchableOpacity, Linking } from 'react-native';
-import STText from '../common/STText';
+import { View, Linking } from 'react-native';
+import { Button } from '@/components/ui';
 import { DISCORD_INVITE_URL } from '../../lib/discordConfig';
-import { onboardingStyles as s } from './onboardingStyles';
+import { StepHeading, TextLink } from './OnboardingParts';
+import { STEP_GAP } from './onboardingStyles';
 
 export default function DiscordJoinStep({ onSkip, onContinue }) {
   const openDiscord = async () => {
@@ -14,26 +15,15 @@ export default function DiscordJoinStep({ onSkip, onContinue }) {
   };
 
   return (
-    <View>
-      <STText style={s.title}>Find your people</STText>
-      <STText style={s.subtitle}>
-        Discord is where clubs recruit and leagues drop news. You can join later from Community.
-      </STText>
+    <View style={{ gap: STEP_GAP }}>
+      <StepHeading
+        title="Find your people"
+        subtitle="Discord is where clubs recruit and leagues drop news. You can join later from Community."
+      />
 
-      <TouchableOpacity
-        onPress={openDiscord}
-        style={[s.primaryBtn, { backgroundColor: '#5865F2' }]}
-      >
-        <STText style={[s.primaryBtnText, { color: '#FFFFFF' }]}>Join Discord</STText>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={onContinue} style={s.primaryBtn}>
-        <STText style={s.primaryBtnText}>Continue to STAGE</STText>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={onSkip} style={s.ghostBtn}>
-        <STText style={s.ghostBtnText}>Skip for now</STText>
-      </TouchableOpacity>
+      <Button title="Join Discord" variant="secondary" icon="logo-discord" onPress={openDiscord} />
+      <Button title="Continue to STAGE" onPress={onContinue} />
+      <TextLink title="Skip for now" onPress={onSkip} />
     </View>
   );
 }

@@ -2,21 +2,17 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
-  ScrollView,
   StatusBar,
   Text,
-  TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { resolveMyPlayerAndClub } from '@/api/stageClient';
-import {
-  GamerProfileShell,
-  GlassIconButton,
-} from '@/components/profile/gamer/GamerProfileUI';
-import { FUT, GAME_DAY_SILVER, SectionCard } from '@/components/dashboard/CommandCenterUI';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import useThemeStore from '@/store/themeStore';
+import { guideFabClearanceStack } from '@/components/ui/metrics';
+import { Button, Card, IconButton, Screen, TextField } from '@/components/ui';
+import RegistrationStatusPill from '@/components/apps/RegistrationStatusPill';
 import PageTile, { PageTitle } from '@/components/theme/PageTile';
 import { REGIONS } from '@/lib/qualificationConfig';
 import { applyForLeague, ACTIVE_STATUSES } from '@/lib/registrationEngine';
@@ -25,6 +21,8 @@ import { entityHasStagePlus } from '@/lib/subscriptionUtils';
 
 export default function SeasonRegisterScreen() {
   const router = useRouter();
+  const tokens = useThemeStore((s) => s.tokens);
+  const insets = useSafeAreaInsets();
   const [myClub, setMyClub] = useState(null);
   const [presidentClub, setPresidentClub] = useState(null);
   const [user, setUser] = useState(null);
@@ -96,107 +94,116 @@ export default function SeasonRegisterScreen() {
   };
 
   return (
-    <GamerProfileShell>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 }}>
-          <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
-        </View>
-        {loading ? (
-          <ActivityIndicator color={GAME_DAY_SILVER} style={{ marginTop: 40 }} />
-        ) : (
-          <ScrollView
-            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, gap: 10 }}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={GAME_DAY_SILVER} />}
+    <Screen
+      tabBar={false}
+      scroll={!loading}
+      style={{ paddingBottom: guideFabClearanceStack(insets.bottom) }}
+      keyboardAvoiding
+      refreshControl={loading ? undefined : (
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => { setRefreshing(true); load(); }}
+          tintColor={tokens.cyan}
+          colors={[tokens.cyan]}
+        />
+      )}
+    >
+      <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
+        <IconButton icon="arrow-back" accessibilityLabel="Back" onPress={() => router.back()} />
+      </View>
+      {loading ? (
+        <ActivityIndicator color={tokens.cyan} style={{ marginTop: 40 }} />
+      ) : (
+        <>
+          <PageTitle
+            title="REGISTER"
+            subtitle="Regional leagues"
+            padded={false}
+          />
+          <PageTile
+            tileKey="competitions"
+            tileTitle="REGISTER"
+            contentStyle={{ paddingHorizontal: 12, gap: 14 }}
           >
-            <PageTitle
-              title="REGISTER"
-              subtitle="Regional leagues"
-              padded={false}
-            />
-            <PageTile
-              tileKey="competitions"
-              tileTitle="REGISTER"
-              contentStyle={{ paddingHorizontal: 12, gap: 10 }}
-            >
             {!registrationClub ? (
-              <SectionCard>
-                <Text style={{ color: 'rgba(255,255,255,0.55)' }}>
+              <Card>
+                <Text style={{ color: tokens.muted, fontSize: 14, lineHeight: 20 }}>
                   {myClub
                     ? 'Only the club president can apply for a regional league.'
                     : 'You need a club to apply for a regional league.'}
                 </Text>
-              </SectionCard>
+              </Card>
             ) : null}
             {registrationClub && !plusOk && !isAdmin ? (
-              <SectionCard>
-                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }}>
+              <Card style={{ gap: 12 }}>
+                <Text style={{ color: tokens.textSoft, fontSize: 14, lineHeight: 20 }}>
                   STAGE Plus is required to enter STAGE regional leagues and official competitions.
                 </Text>
-                <TouchableOpacity onPress={() => router.push('/apps/store')} style={{ marginTop: 8 }}>
-                  <Text style={{ color: GAME_DAY_SILVER, fontWeight: '800' }}>Open Store</Text>
-                </TouchableOpacity>
-              </SectionCard>
+                <Button
+                  title="Open Store"
+                  variant="secondary"
+                  icon="storefront-outline"
+                  onPress={() => router.push('/apps/store')}
+                />
+              </Card>
             ) : null}
-            {error ? <Text style={{ color: FUT.rose, fontSize: 12 }}>{error}</Text> : null}
+            {error ? (
+              <Text accessibilityRole="alert" style={{ color: tokens.danger, fontSize: 13 }}>{error}</Text>
+            ) : null}
             {REGIONS.map((region) => {
               const app = appByRegion[region.slug];
               return (
-                <SectionCard key={region.slug}>
-                  <Text style={{ color: '#fff', fontWeight: '900' }}>{region.name}</Text>
+                <Card key={region.slug} style={{ gap: 12 }}>
+                  <Text
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    style={{ color: tokens.text, fontSize: 16, fontWeight: '700' }}
+                  >
+                    {region.name}
+                  </Text>
                   {app ? (
-                    <Text style={{ color: GAME_DAY_SILVER, marginTop: 6, fontSize: 12, fontWeight: '800' }}>
-                      {String(app.status).toUpperCase()}
-                    </Text>
+                    <RegistrationStatusPill status={app.status} />
                   ) : canApply ? (
-                    <TouchableOpacity onPress={() => setSelected(region)} style={{ marginTop: 8 }}>
-                      <Text style={{ color: GAME_DAY_SILVER, fontWeight: '800' }}>Apply</Text>
-                    </TouchableOpacity>
+                    <Button
+                      title="Apply"
+                      variant="secondary"
+                      accessibilityLabel={`Apply for ${region.name}`}
+                      onPress={() => setSelected(region)}
+                    />
                   ) : (
-                    <Text style={{ color: 'rgba(255,255,255,0.35)', marginTop: 6, fontSize: 12 }}>
+                    <Text style={{ color: tokens.muted, fontSize: 13 }}>
                       Registration locked
                     </Text>
                   )}
-                </SectionCard>
+                </Card>
               );
             })}
             {selected ? (
-              <SectionCard>
-                <Text style={{ color: '#fff', fontWeight: '800' }}>Apply · {selected.name}</Text>
-                <TextInput
+              <Card highlight style={{ gap: 12 }}>
+                <Text
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                  style={{ color: tokens.text, fontSize: 16, fontWeight: '700' }}
+                >
+                  {`Apply · ${selected.name}`}
+                </Text>
+                <TextField
+                  accessibilityLabel="Note to admin"
                   value={note}
                   onChangeText={setNote}
                   placeholder="Note to admin (optional)"
-                  placeholderTextColor="rgba(255,255,255,0.3)"
-                  style={{
-                    marginTop: 10,
-                    borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.12)',
-                    borderRadius: 12,
-                    color: '#fff',
-                    padding: 10,
-                  }}
                 />
-                <TouchableOpacity
+                <Button
+                  title="Send application"
                   onPress={submit}
-                  disabled={busy}
-                  style={{
-                    backgroundColor: 'rgba(255,255,255,0.12)',
-                    borderWidth: 1,
-                    borderColor: 'rgba(248,251,255,0.55)',
-                    paddingVertical: 12,
-                    marginTop: 10,
-                    alignItems: 'center',
-                  }}
-                >
-                  {busy ? <ActivityIndicator color={GAME_DAY_SILVER} /> : <Text style={{ color: GAME_DAY_SILVER, fontWeight: '900' }}>Send application</Text>}
-                </TouchableOpacity>
-              </SectionCard>
+                  loading={busy}
+                />
+              </Card>
             ) : null}
-            </PageTile>
-          </ScrollView>
-        )}
-      </SafeAreaView>
-    </GamerProfileShell>
+          </PageTile>
+        </>
+      )}
+    </Screen>
   );
 }

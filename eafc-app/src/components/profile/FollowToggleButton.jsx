@@ -1,15 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { stageClient, resolveMyPlayerAndClub } from '@/api/stageClient';
 import useAuthStore from '@/store/authStore';
 import { findMyFollow, isSelfFollow, toggleFollow } from '@/lib/followTarget';
-import { AMBER, CYAN } from '@/components/profile/gamer/GamerProfileUI';
-
-const ACCENTS = {
-  cyan: { fill: ['#00F0FF', '#00C2B3'], text: '#041018', outline: CYAN },
-  amber: { fill: ['#FFD60A', '#C9A227'], text: '#1A1200', outline: AMBER },
-};
+import useThemeStore from '@/store/themeStore';
 
 export default function FollowToggleButton({
   targetType,
@@ -20,11 +14,11 @@ export default function FollowToggleButton({
   compact = false,
 }) {
   const { user } = useAuthStore();
+  const tokens = useThemeStore((st) => st.tokens);
   const [follow, setFollow] = useState(null);
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
   const [self, setSelf] = useState(false);
-  const palette = ACCENTS[accent] || ACCENTS.cyan;
 
   useEffect(() => {
     let cancelled = false;
@@ -91,6 +85,7 @@ export default function FollowToggleButton({
 
   const following = Boolean(follow?.id);
   const label = following ? 'Unfollow' : 'Follow';
+  const accentColor = accent === 'amber' ? tokens.amber : tokens.cyan;
 
   return (
     <TouchableOpacity
@@ -105,53 +100,41 @@ export default function FollowToggleButton({
       {following ? (
         <View
           style={{
-            minHeight: 44,
-            paddingVertical: 13,
-            borderRadius: 12,
+            height: 52,
+            borderRadius: 14,
             alignItems: 'center',
             justifyContent: 'center',
             borderWidth: 1,
-            borderColor: palette.outline,
-            backgroundColor: 'rgba(0,0,0,0.4)',
+            borderColor: accentColor,
+            backgroundColor: 'transparent',
           }}
         >
           {busy ? (
-            <ActivityIndicator color={palette.outline} />
+            <ActivityIndicator color={accentColor} />
           ) : (
-            <Text style={{
-              color: '#fff',
-              fontSize: 12,
-              fontWeight: '900',
-              letterSpacing: 1.4,
-              textTransform: 'uppercase',
-            }}
-            >
+            <Text style={{ color: accentColor, fontSize: 15, fontWeight: '600' }}>
               {label}
             </Text>
           )}
         </View>
       ) : (
-        <LinearGradient
-          colors={palette.fill}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ paddingVertical: 13, borderRadius: 12, alignItems: 'center', justifyContent: 'center', minHeight: 44 }}
+        <View
+          style={{
+            height: 52,
+            borderRadius: 14,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: accentColor,
+          }}
         >
           {busy ? (
-            <ActivityIndicator color={palette.text} />
+            <ActivityIndicator color={tokens.onCyan} />
           ) : (
-            <Text style={{
-              color: palette.text,
-              fontSize: 12,
-              fontWeight: '900',
-              letterSpacing: 1.4,
-              textTransform: 'uppercase',
-            }}
-            >
+            <Text style={{ color: tokens.onCyan, fontSize: 15, fontWeight: '700' }}>
               {label}
             </Text>
           )}
-        </LinearGradient>
+        </View>
       )}
     </TouchableOpacity>
   );

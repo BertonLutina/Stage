@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import WebView from 'react-native-webview';
+import useThemeStore from '@/store/themeStore';
 
 function getEmbedUrl(url, source) {
   if (!url) return null;
@@ -23,14 +24,32 @@ function getEmbedUrl(url, source) {
   return url;
 }
 
-export default function VideoPlayer({ url, source, height = 220 }) {
+/**
+ * Embedded video. `radius` defaults to 12; pass 0 for an edge-to-edge player.
+ */
+export default function VideoPlayer({ url, source, height = 220, radius = 12 }) {
+  const tokens = useThemeStore((st) => st.tokens);
   const embedUrl = getEmbedUrl(url, source);
-  if (!embedUrl) return <View style={{ height }} className="bg-surface rounded-xl items-center justify-center"><Text className="text-muted">No video</Text></View>;
+  if (!embedUrl) {
+    return (
+      <View
+        style={{
+          height,
+          borderRadius: radius,
+          backgroundColor: tokens.bgDeep,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Text style={{ color: tokens.muted }}>No video</Text>
+      </View>
+    );
+  }
   return (
-    <View style={{ height }} className="rounded-xl overflow-hidden bg-dark">
+    <View style={{ height, borderRadius: radius, overflow: 'hidden', backgroundColor: tokens.bgDeep }}>
       <WebView
         source={{ uri: embedUrl }}
-        style={{ flex: 1, backgroundColor: '#0F0F0F' }}
+        style={{ flex: 1, backgroundColor: tokens.bgDeep }}
         allowsFullscreenVideo
         mediaPlaybackRequiresUserAction={false}
         javaScriptEnabled

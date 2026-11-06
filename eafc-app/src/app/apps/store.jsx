@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Text, View } from 'react-native';
+import { Alert, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import useThemeStore from '@/store/themeStore';
+import { Card } from '@/components/ui';
 import AppDirectoryScreen, { DirectoryRow, FilterChips } from '@/components/apps/AppDirectoryScreen';
-import { CYAN } from '@/components/profile/gamer/GamerProfileUI';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
 import { entityHasStagePlus } from '@/lib/subscriptionUtils';
 import {
   CREDIT_PACKS,
@@ -19,6 +21,7 @@ import {
 
 export default function StoreScreen() {
   const router = useRouter();
+  const tokens = useThemeStore((s) => s.tokens);
   const returnParams = useLocalSearchParams();
   const handledReturn = useRef(false);
   const [store, setStore] = useState(null);
@@ -202,26 +205,35 @@ export default function StoreScreen() {
       emptyIcon="bag-outline"
       emptyText="Store unavailable"
       ListHeaderComponent={(
-        <View style={{
-          borderRadius: 2,
-          borderWidth: 1,
-          borderColor: 'rgba(0,240,255,0.25)',
-          backgroundColor: 'rgba(0,240,255,0.07)',
-          padding: 16,
-          marginBottom: 6,
-        }}
-        >
-          <Text style={{ color: CYAN, fontSize: 11, fontWeight: '900' }}>
+        <Card highlight style={{ marginBottom: 6, gap: 6 }}>
+          <Text
+            numberOfLines={1}
+            style={{
+              color: tokens.cyan,
+              fontSize: 11,
+              fontWeight: '600',
+              letterSpacing: 11 * 0.12,
+              textTransform: 'uppercase',
+            }}
+          >
             {config.name || 'STAGE Plus'}
           </Text>
-          <Text style={{ color: '#fff', fontWeight: '800', marginTop: 6 }}>
+          <Text
+            style={{
+              color: tokens.text,
+              fontFamily: FONT_EA_SPORTS,
+              fontSize: 22,
+              letterSpacing: 22 * 0.03,
+              textTransform: 'uppercase',
+            }}
+          >
             {config.headline || 'One membership for serious competitors'}
           </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 6, lineHeight: 18 }}>
+          <Text style={{ color: tokens.muted, fontSize: 13, lineHeight: 19 }}>
             {config.description || 'Unlock official competitions, custom player card backgrounds, club stats tile backgrounds, uploads, and a monthly credit refresh.'}
           </Text>
           {plusActive ? (
-            <Text style={{ color: CYAN, fontSize: 12, fontWeight: '800', marginTop: 10 }}>
+            <Text style={{ color: tokens.success, fontSize: 13, fontWeight: '700', marginTop: 6 }}>
               {plusCancelling && expiresLabel
                 ? `Active until ${expiresLabel} · renewal off`
                 : expiresLabel
@@ -230,12 +242,12 @@ export default function StoreScreen() {
             </Text>
           ) : null}
           {message ? (
-            <Text style={{ color: CYAN, fontSize: 12, marginTop: 10 }}>{message}</Text>
+            <Text accessibilityRole="alert" style={{ color: tokens.cyan, fontSize: 13, marginTop: 6 }}>{message}</Text>
           ) : null}
           {error ? (
-            <Text style={{ color: '#ff8fa3', fontSize: 12, marginTop: 10 }}>{error}</Text>
+            <Text accessibilityRole="alert" style={{ color: tokens.danger, fontSize: 13, marginTop: 6 }}>{error}</Text>
           ) : null}
-        </View>
+        </Card>
       )}
       renderItem={({ item }) => (
         tab === 'plus' ? (

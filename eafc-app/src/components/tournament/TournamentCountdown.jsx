@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import STText from '../common/STText';
+import useThemeStore from '@/store/themeStore';
 
 export default function TournamentCountdown({ startDate, compact = false }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const [timeLeft, setTimeLeft] = useState(null);
 
   useEffect(() => {
@@ -35,13 +37,19 @@ export default function TournamentCountdown({ startDate, compact = false }) {
   ];
 
   return (
-    <View style={[styles.wrap, compact && styles.wrapCompact]}>
-      <STText style={styles.label}>Starts in</STText>
+    <View
+      style={[
+        styles.wrap,
+        compact && styles.wrapCompact,
+        { backgroundColor: tokens.bgDeep, borderColor: tokens.border },
+      ]}
+    >
+      <STText style={[styles.label, { color: tokens.muted }]}>Starts in</STText>
       <View style={styles.row}>
         {parts.map(({ v, label }) => (
           <View key={label} style={styles.unit}>
             <STText style={styles.value}>{String(v).padStart(2, '0')}</STText>
-            <STText style={styles.unitLabel}>{label}</STText>
+            <STText style={[styles.unitLabel, { color: tokens.muted }]}>{label}</STText>
           </View>
         ))}
       </View>
@@ -53,20 +61,18 @@ const styles = StyleSheet.create({
   wrap: {
     marginTop: 10,
     padding: 10,
-    backgroundColor: 'rgba(238,243,251,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(238,243,251,0.22)',
+    borderRadius: 12,
   },
   wrapCompact: {
-    marginTop: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    marginTop: 0,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
   label: {
-    color: '#EEF3FB',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.5,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 11 * 0.12,
     textTransform: 'uppercase',
     marginBottom: 4,
   },
@@ -80,13 +86,11 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   value: {
-    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: '700',
     fontVariant: ['tabular-nums'],
   },
   unitLabel: {
-    color: 'rgba(255,255,255,0.45)',
     fontSize: 11,
   },
 });

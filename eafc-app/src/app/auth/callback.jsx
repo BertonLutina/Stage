@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { View, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import STText from '../../components/common/STText';
+import useThemeStore from '@/store/themeStore';
+import { Screen } from '@/components/ui';
 import useAuthStore from '../../store/authStore';
 
 export default function AuthCallbackScreen() {
@@ -9,6 +10,7 @@ export default function AuthCallbackScreen() {
   const router = useRouter();
   const { setUserFromOAuth } = useAuthStore();
   const [status, setStatus] = useState('processing');
+  const tokens = useThemeStore((s) => s.tokens);
 
   useEffect(() => {
     const safeParams = params && typeof params === 'object' ? params : {};
@@ -52,10 +54,12 @@ export default function AuthCallbackScreen() {
   }, [params]);
 
   return (
-    <View className="flex-1 items-center justify-center px-6">
-      <STText className="text-white text-center">
-        {status === 'processing' ? 'Signing you in...' : status === 'error' ? 'Something went wrong. Redirecting...' : 'Success!'}
-      </STText>
-    </View>
+    <Screen scroll={false} tabBar={false}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: status === 'error' ? tokens.danger : tokens.text, fontSize: 15, textAlign: 'center' }}>
+          {status === 'processing' ? 'Signing you in...' : status === 'error' ? 'Something went wrong. Redirecting...' : 'Success!'}
+        </Text>
+      </View>
+    </Screen>
   );
 }

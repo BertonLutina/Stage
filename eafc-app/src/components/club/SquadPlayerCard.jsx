@@ -9,6 +9,10 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import useThemeStore from '@/store/themeStore';
+import { hexToRgba } from '@/lib/stageTheme';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
+import Card from '@/components/ui/Card';
 import FlagMark from '@/components/common/FlagMark';
 import { getPlayerNationality } from '@/lib/countryDisplay';
 import {
@@ -23,8 +27,18 @@ import { formatPlatformLabel } from '@/lib/platformDisplay';
 
 function StatusPill({ label, color }) {
   return (
-    <View style={{ borderWidth: 1, borderColor: `${color}55`, backgroundColor: `${color}18`, paddingHorizontal: 6, paddingVertical: 3 }}>
-      <Text style={{ color, fontSize: 9, fontWeight: '900', letterSpacing: 0.8, textTransform: 'uppercase' }} numberOfLines={1}>
+    <View
+      style={{
+        borderWidth: 1,
+        borderColor: hexToRgba(color, 0.4),
+        backgroundColor: hexToRgba(color, 0.12),
+        borderRadius: 999,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        flexShrink: 1,
+      }}
+    >
+      <Text style={{ color, fontSize: 10, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase' }} numberOfLines={1}>
         {label}
       </Text>
     </View>
@@ -32,6 +46,7 @@ function StatusPill({ label, color }) {
 }
 
 function DataRow({ label, children }) {
+  const tokens = useThemeStore((s) => s.tokens);
   return (
     <View
       style={{
@@ -39,18 +54,35 @@ function DataRow({ label, children }) {
         alignItems: 'center',
         justifyContent: 'space-between',
         borderTopWidth: 1,
-        borderTopColor: 'rgba(255,255,255,0.08)',
-        paddingHorizontal: 12,
-        paddingVertical: 9,
+        borderTopColor: tokens.border,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
         gap: 10,
       }}
     >
-      <Text style={{ color: 'rgba(255,255,255,0.42)', fontSize: 9, fontWeight: '800', letterSpacing: 1.3, textTransform: 'uppercase' }}>
+      <Text style={{ color: tokens.muted, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12, textTransform: 'uppercase' }}>
         {label}
       </Text>
       {children}
     </View>
   );
+}
+
+/** Contract / availability summaries come with legacy colours; map their keys onto Stage tokens. */
+function toneFor(tokens, key, fallback) {
+  switch (key) {
+    case 'trial': return tokens.cyan;
+    case 'expiring':
+    case 'maybe': return tokens.warning;
+    case 'pending': return tokens.amber;
+    case 'active':
+    case 'available': return tokens.success;
+    case 'unavailable': return tokens.danger;
+    case 'none':
+    case 'no_match':
+    case 'no_response': return tokens.muted;
+    default: return fallback || tokens.muted;
+  }
 }
 
 function presentMenu(title, message, actions) {
@@ -84,6 +116,7 @@ export default function SquadPlayerCard({
   menuActions = [],
   onOpenProfile,
 }) {
+  const tokens = useThemeStore((st) => st.tokens);
   const role = getPrimaryRole(player);
   const roleLabel = clubRoleLabel(role);
   const ovr = formatOvr(player?.overall_rating ?? player?.ovr);
@@ -103,87 +136,79 @@ export default function SquadPlayerCard({
 
   return (
     <TouchableOpacity activeOpacity={0.9} onPress={onOpenProfile} accessibilityRole="button">
-      <View
-        style={{
-          borderWidth: 1,
-          borderColor: 'rgba(245,197,66,0.28)',
-          backgroundColor: '#071018',
-          overflow: 'hidden',
-        }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingHorizontal: 12, paddingVertical: 12 }}>
+      <Card style={{ padding: 0, overflow: 'hidden' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingHorizontal: 16, paddingVertical: 14 }}>
           <View
             style={{
               width: 52,
               height: 52,
+              borderRadius: 12,
               overflow: 'hidden',
-              backgroundColor: '#101827',
+              backgroundColor: tokens.border,
               alignItems: 'center',
               justifyContent: 'center',
-              borderWidth: 1,
-              borderColor: 'rgba(245,197,66,0.35)',
             }}
           >
             {player?.avatar_url ? (
               <Image source={{ uri: player.avatar_url }} style={{ width: 52, height: 52 }} />
             ) : (
-              <Text style={{ color: '#F5C542', fontWeight: '900', fontSize: 16 }}>
+              <Text style={{ color: tokens.cyanHi, fontFamily: FONT_EA_SPORTS, fontSize: 19, textTransform: 'uppercase' }}>
                 {String(player?.gamertag || '?').slice(0, 2).toUpperCase()}
               </Text>
             )}
           </View>
           <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
-            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, letterSpacing: 0.4 }} numberOfLines={1}>
+            <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 16 }} numberOfLines={1}>
               {player?.gamertag || player?.display_name || 'Player'}
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-              <StatusPill label={roleLabel} color="#00E5FF" />
-              {consoleLabel ? <StatusPill label={consoleLabel} color="#F5C542" /> : null}
+              <StatusPill label={roleLabel} color={tokens.cyan} />
+              {consoleLabel ? <StatusPill label={consoleLabel} color={tokens.amber} /> : null}
             </View>
           </View>
-          <View style={{ alignItems: 'flex-end', gap: 4 }}>
-            <Text style={{ color: '#F5C542', fontWeight: '900', fontSize: 22, lineHeight: 24 }}>{ovr}</Text>
-            <Text style={{ color: 'rgba(245,197,66,0.55)', fontSize: 9, fontWeight: '900', letterSpacing: 1 }}>OVR</Text>
+          <View style={{ alignItems: 'flex-end', gap: 2 }}>
+            <Text style={{ color: tokens.text, fontFamily: FONT_EA_SPORTS, fontSize: 22, lineHeight: 24 }}>{ovr}</Text>
+            <Text style={{ color: tokens.muted, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12 }}>OVR</Text>
             {menuActions.length ? (
               <TouchableOpacity
                 onPress={openMenu}
                 hitSlop={12}
                 accessibilityRole="button"
                 accessibilityLabel="Player actions"
-                style={{ minWidth: 44, minHeight: 36, alignItems: 'center', justifyContent: 'center' }}
+                style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
               >
-                <Ionicons name="ellipsis-vertical" size={18} color="rgba(255,255,255,0.55)" />
+                <Ionicons name="ellipsis-vertical" size={20} color={tokens.muted} />
               </TouchableOpacity>
             ) : null}
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)' }}>
-          <View style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 9, borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.08)' }}>
-            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '800', letterSpacing: 1.2, textTransform: 'uppercase' }}>Primary</Text>
-            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 13, marginTop: 2 }}>{primaryPos}</Text>
+        <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: tokens.border }}>
+          <View style={{ flex: 1, paddingHorizontal: 16, paddingVertical: 10, borderRightWidth: 1, borderRightColor: tokens.border }}>
+            <Text style={{ color: tokens.muted, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12, textTransform: 'uppercase' }}>Primary</Text>
+            <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 14, marginTop: 2 }}>{primaryPos}</Text>
           </View>
-          <View style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 9 }}>
-            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '800', letterSpacing: 1.2, textTransform: 'uppercase' }}>Secondary</Text>
-            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 13, marginTop: 2 }}>{secondaryPos}</Text>
+          <View style={{ flex: 1, paddingHorizontal: 16, paddingVertical: 10 }}>
+            <Text style={{ color: tokens.muted, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12, textTransform: 'uppercase' }}>Secondary</Text>
+            <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 14, marginTop: 2 }}>{secondaryPos}</Text>
           </View>
         </View>
 
         <DataRow label="Contract">
-          <StatusPill label={contractSummary.label} color={contractSummary.color} />
+          <StatusPill label={contractSummary.label} color={toneFor(tokens, contractSummary.key, contractSummary.color)} />
         </DataRow>
         <DataRow label="Next match">
-          <StatusPill label={availabilitySummary.label} color={availabilitySummary.color} />
+          <StatusPill label={availabilitySummary.label} color={toneFor(tokens, availabilitySummary.key, availabilitySummary.color)} />
         </DataRow>
         <DataRow label="Nationality">
           {nationality.code ? (
             <FlagMark code={nationality.code} country={nationality.label} size={22} accessibilityLabel="National flag" />
           ) : (
-            <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11 }}>--</Text>
+            <Text style={{ color: tokens.muted, fontSize: 12 }}>--</Text>
           )}
         </DataRow>
 
-        <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(0,0,0,0.28)' }}>
+        <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: tokens.border, backgroundColor: hexToRgba(tokens.bgDeep, 0.5) }}>
           {[
             ['AVG', formatClubRating(clubStats?.avgRating)],
             ['G', String(clubStats?.goals ?? 0)],
@@ -197,15 +222,15 @@ export default function SquadPlayerCard({
                 alignItems: 'center',
                 paddingVertical: 10,
                 borderRightWidth: index < 3 ? 1 : 0,
-                borderRightColor: 'rgba(255,255,255,0.08)',
+                borderRightColor: tokens.border,
               }}
             >
-              <Text style={{ color: 'rgba(255,255,255,0.38)', fontSize: 9, fontWeight: '900', letterSpacing: 1.2 }}>{label}</Text>
-              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15, marginTop: 2 }}>{value}</Text>
+              <Text style={{ color: tokens.muted, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12 }}>{label}</Text>
+              <Text style={{ color: tokens.text, fontFamily: FONT_EA_SPORTS, fontSize: 17, marginTop: 2 }}>{value}</Text>
             </View>
           ))}
         </View>
-      </View>
+      </Card>
     </TouchableOpacity>
   );
 }

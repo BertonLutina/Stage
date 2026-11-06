@@ -1,13 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
-import STText from '../common/STText';
+import { View, ActivityIndicator } from 'react-native';
+import useThemeStore from '@/store/themeStore';
+import { Button, TextField } from '@/components/ui';
 import { stageClient } from '../../api/stageClient';
-import { SettingsListbox } from '../settings/SettingsListbox';
-import { onboardingStyles as s } from './onboardingStyles';
+import { FormError, OnboardingSelect, StepHeading, TextLink } from './OnboardingParts';
+import { STEP_GAP } from './onboardingStyles';
 
 const PLATFORMS = ['PlayStation', 'Xbox', 'PC', 'EA', 'Discord'];
 
 export default function IdentityClaimSetup({ player, onComplete }) {
+  const tokens = useThemeStore((st) => st.tokens);
   const [claim, setClaim] = useState(null);
   const [platform, setPlatform] = useState(player?.platform || 'PlayStation');
   const [platformHandle, setPlatformHandle] = useState(player?.gamertag || '');
@@ -104,39 +106,35 @@ export default function IdentityClaimSetup({ player, onComplete }) {
   if (loading) {
     return (
       <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-        <ActivityIndicator color="#fff" />
+        <ActivityIndicator color={tokens.cyan} />
       </View>
     );
   }
 
   if (Number(player?.is_verified) === 1 || claim?.status === 'pending' || claim?.status === 'approved') {
     return (
-      <View>
-        <STText style={s.title}>
-          {Number(player?.is_verified) === 1 || claim?.status === 'approved'
+      <View style={{ gap: STEP_GAP }}>
+        <StepHeading
+          title={Number(player?.is_verified) === 1 || claim?.status === 'approved'
             ? 'You are verified'
             : 'Claim is in'}
-        </STText>
-        <STText style={s.subtitle}>
-          {Number(player?.is_verified) === 1 || claim?.status === 'approved'
+          subtitle={Number(player?.is_verified) === 1 || claim?.status === 'approved'
             ? 'Your player identity is linked.'
             : 'STAGE will review it. You can keep going now.'}
-        </STText>
-        <TouchableOpacity onPress={() => onComplete?.(claim)} style={s.primaryBtn}>
-          <STText style={s.primaryBtnText}>Continue</STText>
-        </TouchableOpacity>
+        />
+        <Button title="Continue" onPress={() => onComplete?.(claim)} />
       </View>
     );
   }
 
   return (
-    <View>
-      <STText style={s.title}>Prove it is you</STText>
-      <STText style={s.subtitle}>
-        Link the handle you play with. Skip if you want to do this later.
-      </STText>
+    <View style={{ gap: STEP_GAP }}>
+      <StepHeading
+        title="Prove it is you"
+        subtitle="Link the handle you play with. Skip if you want to do this later."
+      />
 
-      <SettingsListbox
+      <OnboardingSelect
         label="Platform"
         value={platform}
         placeholder="Select platform"
@@ -145,73 +143,56 @@ export default function IdentityClaimSetup({ player, onComplete }) {
         onChange={(id) => setPlatform(id)}
       />
 
-      <STText style={s.label}>Online ID</STText>
-      <TextInput
+      <TextField
+        label="Online ID"
         value={platformHandle}
         onChangeText={setPlatformHandle}
         placeholder="PSN / Xbox / Steam / EA"
-        placeholderTextColor="rgba(255,255,255,0.35)"
-        style={s.input}
         autoCapitalize="none"
         autoCorrect={false}
       />
 
-      <STText style={s.label}>EA ID</STText>
-      <TextInput
+      <TextField
+        label="EA ID"
         value={eaId}
         onChangeText={setEaId}
         placeholder="Optional"
-        placeholderTextColor="rgba(255,255,255,0.35)"
-        style={s.input}
         autoCapitalize="none"
         autoCorrect={false}
       />
 
-      <STText style={s.label}>Your OVR</STText>
-      <TextInput
+      <TextField
+        label="Your OVR"
         value={String(overallRating)}
         onChangeText={(v) => setOverallRating(clampOvr(v))}
         keyboardType="number-pad"
-        style={s.input}
       />
 
-      <STText style={s.label}>Discord</STText>
-      <TextInput
+      <TextField
+        label="Discord"
         value={discordHandle}
         onChangeText={setDiscordHandle}
         placeholder="Optional"
-        placeholderTextColor="rgba(255,255,255,0.35)"
-        style={s.input}
         autoCapitalize="none"
         autoCorrect={false}
       />
 
       {showNotes ? (
-        <>
-          <STText style={s.label}>Note for reviewers</STText>
-          <TextInput
-            value={notes}
-            onChangeText={setNotes}
-            placeholder="Optional"
-            placeholderTextColor="rgba(255,255,255,0.35)"
-            style={[s.input, { minHeight: 72, textAlignVertical: 'top' }]}
-            multiline
-          />
-        </>
+        <TextField
+          label="Note for reviewers"
+          value={notes}
+          onChangeText={setNotes}
+          placeholder="Optional"
+          multiline
+        />
       ) : (
-        <TouchableOpacity onPress={() => setShowNotes(true)} style={s.ghostBtn}>
-          <STText style={s.ghostBtnText}>Add a note</STText>
-        </TouchableOpacity>
+        <TextLink title="Add a note" onPress={() => setShowNotes(true)} />
       )}
 
-      {error ? <STText style={s.error}>{error}</STText> : null}
+      <FormError>{error}</FormError>
 
-      <TouchableOpacity onPress={submitClaim} disabled={saving} style={[s.primaryBtn, saving && { opacity: 0.55 }]}>
-        {saving ? <ActivityIndicator color="#041018" /> : <STText style={s.primaryBtnText}>Submit claim</STText>}
-      </TouchableOpacity>
-      <TouchableOpacity onPress={skipForNow} disabled={saving} style={s.ghostBtn}>
-        <STText style={s.ghostBtnText}>Skip for now</STText>
-      </TouchableOpacity>
+      <Button title="Submit claim" onPress={submitClaim} loading={saving} />
+      <TextLink title="Skip for now" onPress={skipForNow} disabled={saving} />
     </View>
   );
 }

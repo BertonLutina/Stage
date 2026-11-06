@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
+import { Text, View } from 'react-native';
+import useThemeStore from '@/store/themeStore';
+import { Button } from '@/components/ui';
 import { stageClient } from '@/api/stageClient';
 import { getEffectiveInboxActionType, parseInboxMetadata } from '@/lib/inboxHelpers';
 import { formatSTC } from '@/lib/stageDirectories';
-import { AMBER } from '@/components/profile/gamer/GamerProfileUI';
-import { FUT } from '@/components/dashboard/CommandCenterUI';
 
 function loanIdFrom(message) {
   const metadata = parseInboxMetadata(message);
@@ -16,9 +16,10 @@ async function postLoan(loanId, path) {
 }
 
 function LoanLine({ label, value }) {
+  const tokens = useThemeStore((st) => st.tokens);
   return (
-    <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, lineHeight: 20 }}>
-      {label}: {value || '—'}
+    <Text style={{ color: tokens.muted, fontSize: 13, lineHeight: 20 }}>
+      {label}: <Text style={{ color: tokens.text, fontWeight: '600' }}>{value || '—'}</Text>
     </Text>
   );
 }
@@ -26,29 +27,16 @@ function LoanLine({ label, value }) {
 function LoanButtons({ acting, onAccept, onReject, acceptLabel, rejectLabel }) {
   return (
     <View style={{ gap: 8, marginTop: 10 }}>
-      <TouchableOpacity
-        onPress={onAccept}
-        disabled={acting}
-        style={{ minHeight: 42, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(124,255,107,0.16)', borderWidth: 1, borderColor: 'rgba(124,255,107,0.4)' }}
-      >
-        {acting ? <ActivityIndicator color={FUT.lime} /> : (
-          <Text style={{ color: FUT.lime, fontWeight: '900', letterSpacing: 0.8 }}>{acceptLabel}</Text>
-        )}
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={onReject}
-        disabled={acting}
-        style={{ minHeight: 42, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,77,109,0.12)', borderWidth: 1, borderColor: 'rgba(255,77,109,0.35)' }}
-      >
-        {acting ? <ActivityIndicator color={FUT.rose} /> : (
-          <Text style={{ color: FUT.rose, fontWeight: '900', letterSpacing: 0.8 }}>{rejectLabel}</Text>
-        )}
-      </TouchableOpacity>
+      <Button title={acceptLabel} loading={acting} onPress={onAccept} />
+      <Button title={rejectLabel} variant="danger" loading={acting} onPress={onReject} />
     </View>
   );
 }
 
 export default function InboxLoanCard({ message, onActioned }) {
+  const tokens = useThemeStore((st) => st.tokens);
+  const card = loanCardStyle(tokens);
+  const kicker = loanKickerStyle(tokens);
   const [loan, setLoan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
@@ -83,7 +71,7 @@ export default function InboxLoanCard({ message, onActioned }) {
     }
   }
 
-  if (loading) return <Text style={{ color: 'rgba(255,255,255,0.5)' }}>Loading loan…</Text>;
+  if (loading) return <Text style={{ color: tokens.muted }}>Loading loan…</Text>;
 
   const status = String(loan?.status || '').toUpperCase();
   const parentName = metadata.parent_club_name || loan?.parent_club_name;
@@ -95,14 +83,14 @@ export default function InboxLoanCard({ message, onActioned }) {
         <Text style={kicker}>{type === 'loan_recalled' ? 'Loan recalled' : 'Loan ended early'}</Text>
         <LoanLine label="From" value={parentName} />
         <LoanLine label="To" value={loanName} />
-        <Text style={{ color: 'rgba(255,255,255,0.5)', marginTop: 8 }}>
+        <Text style={{ color: tokens.muted, marginTop: 8 }}>
           Playing rights have returned to the parent club. No response is required.
         </Text>
       </View>
     );
   }
 
-  if (!loan) return <Text style={{ color: 'rgba(255,255,255,0.5)' }}>Loan proposal not found.</Text>;
+  if (!loan) return <Text style={{ color: tokens.muted }}>Loan proposal not found.</Text>;
 
   if (type === 'loan_early_end') {
     const pending = status === 'ACTIVE' && Boolean(loan.early_end_proposed_by_club_id);
@@ -111,7 +99,7 @@ export default function InboxLoanCard({ message, onActioned }) {
         <Text style={kicker}>Early return request</Text>
         <LoanLine label="From" value={parentName} />
         <LoanLine label="To" value={loanName} />
-        {error ? <Text style={{ color: FUT.rose }}>{String(error)}</Text> : null}
+        {error ? <Text style={{ color: tokens.danger }}>{String(error)}</Text> : null}
         {pending ? (
           <LoanButtons
             acting={acting}
@@ -120,7 +108,7 @@ export default function InboxLoanCard({ message, onActioned }) {
             acceptLabel="ACCEPT RETURN"
             rejectLabel="REJECT"
           />
-        ) : <Text style={{ color: 'rgba(255,255,255,0.5)' }}>{loan.status}</Text>}
+        ) : <Text style={{ color: tokens.muted }}>{loan.status}</Text>}
       </View>
     );
   }
@@ -134,10 +122,10 @@ export default function InboxLoanCard({ message, onActioned }) {
         <LoanLine label="To" value={loanName} />
         <LoanLine label="Purchase fee" value={`${formatSTC(loan.purchase_option_stc || 0)} STC`} />
         <LoanLine label="Weekly salary" value={`${formatSTC(loan.purchase_salary_stc || 0)} STC`} />
-        <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>
+        <Text style={{ color: tokens.textSoft, fontSize: 13 }}>
           {days > 0 ? `Contract length: ${days} days` : 'Contract runs to the end of the current deal'}
         </Text>
-        {error ? <Text style={{ color: FUT.rose }}>{String(error)}</Text> : null}
+        {error ? <Text style={{ color: tokens.danger }}>{String(error)}</Text> : null}
         {canDecide ? (
           <LoanButtons
             acting={acting}
@@ -146,7 +134,7 @@ export default function InboxLoanCard({ message, onActioned }) {
             acceptLabel="ACCEPT TRANSFER"
             rejectLabel="REJECT AND STAY ON LOAN"
           />
-        ) : <Text style={{ color: 'rgba(255,255,255,0.5)' }}>{loan.status}</Text>}
+        ) : <Text style={{ color: tokens.muted }}>{loan.status}</Text>}
       </View>
     );
   }
@@ -170,7 +158,7 @@ export default function InboxLoanCard({ message, onActioned }) {
           value={`${formatSTC(loan.purchase_option_stc || 0)} STC`}
         />
       ) : null}
-      {error ? <Text style={{ color: FUT.rose }}>{String(error)}</Text> : null}
+      {error ? <Text style={{ color: tokens.danger }}>{String(error)}</Text> : null}
       {canDecide ? (
         <LoanButtons
           acting={acting}
@@ -179,26 +167,26 @@ export default function InboxLoanCard({ message, onActioned }) {
           acceptLabel="ACCEPT LOAN"
           rejectLabel="REJECT LOAN"
         />
-      ) : <Text style={{ color: 'rgba(255,255,255,0.5)' }}>{loan.status}</Text>}
+      ) : <Text style={{ color: tokens.muted }}>{loan.status}</Text>}
     </View>
   );
 }
 
-const card = {
+const loanCardStyle = (tokens) => ({
   marginTop: 14,
   padding: 14,
-  borderRadius: 2,
+  borderRadius: 12,
   borderWidth: 1,
-  borderColor: 'rgba(255,214,10,0.22)',
-  backgroundColor: 'rgba(0,0,0,0.28)',
+  borderColor: tokens.border,
+  backgroundColor: tokens.bgDeep,
   gap: 4,
-};
+});
 
-const kicker = {
-  color: AMBER,
+const loanKickerStyle = (tokens) => ({
+  color: tokens.warning,
   fontSize: 11,
-  fontWeight: '900',
-  letterSpacing: 1.2,
+  fontWeight: '600',
+  letterSpacing: 11 * 0.12,
   textTransform: 'uppercase',
   marginBottom: 6,
-};
+});

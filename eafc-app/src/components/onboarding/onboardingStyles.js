@@ -1,173 +1,54 @@
-import { StyleSheet } from 'react-native';
+import { useMemo } from 'react';
+import useThemeStore from '@/store/themeStore';
+import { headingStyle } from '@/lib/fonts';
 
-export const ONB = {
-  bg: '#05070F',
-  pitch: '#07121F',
-  cyan: '#00F0FF',
-  amber: '#FFD60A',
-  ink: '#041018',
-  text: '#FFFFFF',
-  muted: 'rgba(255,255,255,0.58)',
-  faint: 'rgba(255,255,255,0.38)',
-  line: 'rgba(255,255,255,0.10)',
-  fill: 'rgba(255,255,255,0.06)',
-};
+/** Page gutter between stacked fields / blocks in an onboarding step. */
+export const STEP_GAP = 16;
 
-export const onboardingStyles = StyleSheet.create({
-  title: {
-    color: ONB.text,
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: -0.4,
-    lineHeight: 34,
-    marginBottom: 8,
-  },
-  subtitle: {
-    color: ONB.muted,
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: 22,
-  },
-  label: {
-    color: ONB.faint,
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  input: {
-    width: '100%',
-    minHeight: 52,
-    backgroundColor: ONB.fill,
-    borderWidth: 1,
-    borderColor: ONB.line,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    color: ONB.text,
-    fontSize: 16,
-    marginBottom: 16,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
-  chip: {
-    minHeight: 44,
-    minWidth: 44,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 14,
-    backgroundColor: ONB.fill,
-    borderWidth: 1,
-    borderColor: ONB.line,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chipActive: {
-    backgroundColor: 'rgba(0,240,255,0.16)',
-    borderColor: 'rgba(0,240,255,0.55)',
-  },
-  chipText: {
-    color: 'rgba(255,255,255,0.72)',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  chipTextActive: {
-    color: ONB.cyan,
-  },
-  primaryBtn: {
-    width: '100%',
-    minHeight: 54,
-    backgroundColor: ONB.cyan,
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  primaryBtnText: {
-    color: ONB.ink,
-    fontSize: 16,
-    fontWeight: '900',
-    letterSpacing: 0.2,
-  },
-  ghostBtn: {
-    width: '100%',
-    minHeight: 48,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-  },
-  ghostBtnText: {
-    color: ONB.muted,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  error: {
-    color: '#FB7185',
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 10,
-  },
-  roleCard: {
-    width: '100%',
-    minHeight: 132,
-    backgroundColor: ONB.fill,
-    borderWidth: 1,
-    borderColor: ONB.line,
-    borderRadius: 22,
-    padding: 20,
-    marginBottom: 12,
-    justifyContent: 'flex-end',
-  },
-  roleTitle: {
-    color: ONB.text,
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-    marginBottom: 6,
-  },
-  roleDesc: {
-    color: ONB.muted,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  tileGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
-  tile: {
-    width: '23%',
-    minHeight: 48,
-    borderRadius: 14,
-    backgroundColor: ONB.fill,
-    borderWidth: 1,
-    borderColor: ONB.line,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tileWide: {
-    flexGrow: 1,
-    flexBasis: '30%',
-    minHeight: 56,
-    borderRadius: 16,
-    backgroundColor: ONB.fill,
-    borderWidth: 1,
-    borderColor: ONB.line,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-  },
-  sheet: {
-    maxHeight: '72%',
-    backgroundColor: '#0B1220',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 18,
-  },
-});
+/**
+ * Token-driven text styles shared by the onboarding steps. Colours come from the
+ * Stage theme tokens (so Live Dark keeps working), never from literals.
+ */
+export function useOnboardingStyles() {
+  const tokens = useThemeStore((s) => s.tokens);
+
+  return useMemo(() => ({
+    title: {
+      ...headingStyle,
+      color: tokens.text,
+      fontSize: 38,
+      lineHeight: 42,
+      letterSpacing: 38 * 0.03,
+    },
+    subtitle: {
+      color: tokens.muted,
+      fontSize: 15,
+      lineHeight: 22,
+    },
+    hint: {
+      color: tokens.muted,
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    error: {
+      color: tokens.danger,
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    linkText: {
+      color: tokens.cyan,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    cardTitle: {
+      color: tokens.text,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    cardBody: {
+      color: tokens.muted,
+      fontSize: 13,
+      lineHeight: 18,
+    },
+  }), [tokens]);
+}

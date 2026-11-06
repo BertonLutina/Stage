@@ -10,13 +10,22 @@ import {
   getClubStatValue,
 } from '@/lib/clubPlayerStats';
 import { entityHasStagePlus } from '@/lib/subscriptionUtils';
+import useThemeStore from '@/store/themeStore';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
+import Card from '@/components/ui/Card';
 import { EmptyTabPanel } from '@/components/profile/gamer/GamerProfileUI';
 
 function LeaderboardCard({ title, label, rows, stat }) {
+  const tokens = useThemeStore((st) => st.tokens);
   return (
-    <View style={{ borderRadius: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(0,0,0,0.25)', overflow: 'hidden' }}>
-      <View style={{ borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 14, paddingVertical: 12 }}>
-        <Text style={{ color: '#fff', fontWeight: '900', fontSize: 13, letterSpacing: 0.8, textTransform: 'uppercase' }}>{title}</Text>
+    <Card style={{ padding: 0, overflow: 'hidden' }}>
+      <View style={{ borderBottomWidth: 1, borderBottomColor: tokens.border, paddingHorizontal: 16, paddingVertical: 12 }}>
+        <Text
+          numberOfLines={1}
+          style={{ color: tokens.muted, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12, textTransform: 'uppercase' }}
+        >
+          {title}
+        </Text>
       </View>
       {rows.length ? rows.map(({ player, value }, index) => (
         <View
@@ -25,28 +34,29 @@ function LeaderboardCard({ title, label, rows, stat }) {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            paddingHorizontal: 14,
+            minHeight: 44,
+            paddingHorizontal: 16,
             paddingVertical: 10,
             borderTopWidth: index ? 1 : 0,
-            borderTopColor: 'rgba(255,255,255,0.05)',
+            borderTopColor: tokens.border,
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-            <Text style={{ color: 'rgba(0,229,255,0.75)', fontWeight: '900', width: 18 }}>{index + 1}</Text>
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13, flex: 1 }} numberOfLines={1}>
+            <Text style={{ color: tokens.cyan, fontFamily: FONT_EA_SPORTS, fontSize: 14, width: 22 }}>{index + 1}</Text>
+            <Text style={{ color: tokens.text, fontWeight: '600', fontSize: 14, flex: 1 }} numberOfLines={1}>
               {player.gamertag || player.display_name || 'Player'}
             </Text>
           </View>
-          <Text style={{ color: '#F5C542', fontWeight: '900', fontSize: 14 }}>
+          <Text style={{ color: tokens.amber, fontWeight: '700', fontSize: 14 }}>
             {stat === 'rating' ? formatClubRating(value) : String(Math.round(Number(value) || 0))} {label}
           </Text>
         </View>
       )) : (
         <View style={{ padding: 16 }}>
-          <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12 }}>No club stats yet.</Text>
+          <Text style={{ color: tokens.muted, fontSize: 13 }}>No club stats yet.</Text>
         </View>
       )}
-    </View>
+    </Card>
   );
 }
 
@@ -54,6 +64,7 @@ export default function ClubStatsPanel({ clubId, players = [], myPlayer, canCust
   const [statRows, setStatRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const canUseBackgrounds = entityHasStagePlus(myPlayer);
+  const tokens = useThemeStore((st) => st.tokens);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,12 +94,12 @@ export default function ClubStatsPanel({ clubId, players = [], myPlayer, canCust
   return (
     <View style={{ gap: 14 }}>
       <View>
-        <Text style={{ color: 'rgba(0,229,255,0.7)', fontSize: 10, fontWeight: '900', letterSpacing: 2, textTransform: 'uppercase' }}>Club Stats</Text>
-        <Text style={{ color: '#fff', fontWeight: '900', fontSize: 22, letterSpacing: 0.6, textTransform: 'uppercase', marginTop: 2 }}>Leaderboards</Text>
+        <Text style={{ color: tokens.muted, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12, textTransform: 'uppercase' }}>Club Stats</Text>
+        <Text style={{ color: tokens.text, fontFamily: FONT_EA_SPORTS, fontSize: 22, letterSpacing: 22 * 0.03, textTransform: 'uppercase', marginTop: 2 }}>Leaderboards</Text>
       </View>
       {canCustomize && !canUseBackgrounds ? (
-        <View style={{ borderRadius: 2, borderWidth: 1, borderColor: 'rgba(245,197,66,0.25)', backgroundColor: 'rgba(245,197,66,0.08)', padding: 12 }}>
-          <Text style={{ color: '#F5C542', fontSize: 12, fontWeight: '800' }}>
+        <View style={{ borderRadius: 12, borderWidth: 1, borderColor: tokens.warningBorder, backgroundColor: tokens.warningBg, padding: 12 }}>
+          <Text style={{ color: tokens.warning, fontSize: 13, fontWeight: '600' }}>
             Stage+ unlocks custom stats tile backgrounds on web and mobile.
           </Text>
         </View>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Group stage</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+a{color:#5FE3E8;text-decoration:none}a:hover{color:#8CF5F8}
+.scr{width:390px;height:844px;position:relative;overflow:hidden;background-color:#03153F;background-image:radial-gradient(ellipse 75% 42% at 50% 78%,rgba(0,82,140,.95) 0%,rgba(0,82,140,0) 72%),radial-gradient(ellipse 90% 35% at 50% 0%,rgba(14,58,124,.9) 0%,rgba(14,58,124,0) 75%),linear-gradient(90deg,#020C30 0%,#06306A 50%,#020C30 100%);color:#EAF2FF;font-family:Inter,system-ui,sans-serif;font-size:14px}
+.pad{padding:58px 20px 110px;display:flex;flex-direction:column;gap:16px}
+.h{font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.03em;margin:0}
+.k{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#9FB3D1}
+.mut{color:#9FB3D1}
+.card{background:#132B5C;border:1px solid #234480;border-radius:16px;padding:16px}
+.row{display:flex;align-items:center;gap:12px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:14px;border:0;background:#5FE3E8;color:#07163A;font:700 15px Inter,sans-serif;width:100%}
+.btn:hover{color:#07163A;background:#8CF5F8}
+.btn2{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:14px;background:transparent;border:1px solid #5FE3E8;color:#5FE3E8;font:600 15px Inter,sans-serif;width:100%}
+.chip{display:inline-flex;align-items:center;height:34px;padding:0 14px;border-radius:999px;background:#132B5C;border:1px solid #234480;color:#C9D8EE;font:600 13px Inter,sans-serif;white-space:nowrap}
+.chip.on{background:#5FE3E8;color:#07163A;border-color:#5FE3E8}
+.av{width:44px;height:44px;border-radius:12px;background:#234480;display:flex;align-items:center;justify-content:center;font:800 16px 'Saira Condensed',sans-serif;color:#8CF5F8;flex:none}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ib{width:44px;height:44px;border-radius:12px;background:#132B5C;border:1px solid #234480;display:flex;align-items:center;justify-content:center;color:#EAF2FF;flex:none}
+.in{display:flex;flex-direction:column;gap:6px}
+.in input,.in select,.in textarea{height:50px;border-radius:12px;border:1px solid #234480;background:#07163A;color:#EAF2FF;padding:0 14px;font:500 15px Inter,sans-serif}
+.in label{font-size:12px;font-weight:600;color:#9FB3D1}
+.tabs{position:absolute;left:16px;right:16px;bottom:24px;height:64px;border-radius:22px;background:#07163A;border:1px solid #234480;display:flex;align-items:center;justify-content:space-around}
+.tab{width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#9FB3D1;border-radius:14px}
+.tab.on{color:#5FE3E8;background:#132B5C}
+.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.sep{height:1px;background:#234480}
+.sec{display:flex;justify-content:space-between;align-items:baseline}
+.ok{color:#4ADE80}.bad{color:#F87171}
+.gt{display:grid;grid-template-columns:20px minmax(0,1fr) 28px 28px 34px;gap:6px;align-items:center;font-size:13px;padding:9px 0;border-bottom:1px solid #234480}
+.gt span{text-align:center}
+.gt.hd{font-size:11px;font-weight:600;color:#9FB3D1;letter-spacing:.08em;padding-top:0}
+.q{width:4px;height:18px;border-radius:2px;background:#5FE3E8}
+</style>
+</helmet>
+<div class="scr">
+<div class="pad" style="gap: 14px">
+<div class="top"><a class="ib" href="TournamentDetail.dc.html" aria-label="Back"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><span class="k">Autumn Champions Cup</span><span style="width: 44px"></span></div>
+<h1 class="h" style="font-size: 34px">Group stage</h1>
+<div class="row" style="gap: 8px"><span class="chip">Group A</span><span class="chip on">Group B</span><span class="chip">Group C</span><span class="chip">Group D</span></div>
+<div class="card" style="padding: 14px 16px 6px">
+<div class="sec" style="margin-bottom: 10px"><b>Group B</b><span class="mut" style="font-size: 12px">Matchday 2 of 3</span></div>
+<div class="gt hd"><span>#</span><span style="text-align: left">CLUB</span><span>P</span><span>GD</span><span>PTS</span></div>
+<div class="gt"><span class="q"></span><b style="text-align: left">Night Owls FC</b><span>2</span><span>+4</span><b style="text-align: center">6</b></div>
+<div class="gt"><span class="q"></span><span style="text-align: left">Blue Comets</span><span>2</span><span>+2</span><b style="text-align: center">4</b></div>
+<div class="gt"><span class="mut">3</span><span style="text-align: left">Red Foxes</span><span>2</span><span>-1</span><b style="text-align: center">1</b></div>
+<div class="gt" style="border-bottom: 0"><span class="mut">4</span><span style="text-align: left">Iron Wolves</span><span>2</span><span>-5</span><b style="text-align: center">0</b></div>
+</div>
+<div class="row mut" style="font-size: 12px; gap: 8px"><span class="q"></span>Top 2 qualify for the knockout stage</div>
+<span class="k">Group B matches</span>
+<a class="card top" href="MatchDetail.dc.html" style="color: #EAF2FF; padding: 12px 16px"><span style="flex: 1">Night Owls</span><b class="h" style="font-size: 20px">3 – 1</b><span style="flex: 1; text-align: right">Red Foxes</span></a>
+<a class="card top" href="MatchDetail.dc.html" style="color: #EAF2FF; padding: 12px 16px"><span style="flex: 1">Blue Comets</span><b class="h" style="font-size: 20px">2 – 0</b><span style="flex: 1; text-align: right">Iron Wolves</span></a>
+<a class="card top" href="MatchDetail.dc.html" style="color: #EAF2FF; padding: 12px 16px; border-color: #2CCFD6"><span style="flex: 1">Blue Comets</span><span class="chip on" style="height: 26px; font-size: 11px">Sat 20:30</span><span style="flex: 1; text-align: right">Night Owls</span></a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-import { goBackInPlace } from '../../lib/navigationBack';
+import { goBackInPlace, goBackOr } from '../../lib/navigationBack';
 
 function read(rel) {
   return fs.readFileSync(path.join(__dirname, rel), 'utf8');
@@ -38,5 +38,24 @@ describe('back stays on the current flow', () => {
     expect(goBackInPlace(router)).toBe('stay');
     expect(back).not.toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalled();
+  });
+
+  test('goBackOr pops when there is history', () => {
+    const router = { canGoBack: jest.fn(() => true), back: jest.fn(), replace: jest.fn() };
+    expect(goBackOr(router, '/apps')).toBe('back');
+    expect(router.back).toHaveBeenCalledTimes(1);
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  test('goBackOr replaces with the fallback when there is no history', () => {
+    const router = { canGoBack: jest.fn(() => false), back: jest.fn(), replace: jest.fn() };
+    expect(goBackOr(router, '/apps')).toBe('replaced');
+    expect(router.back).not.toHaveBeenCalled();
+    expect(router.replace).toHaveBeenCalledWith('/apps');
+  });
+
+  test('goBackOr tolerates a router without canGoBack or replace', () => {
+    expect(goBackOr({}, '/apps')).toBe('replaced');
+    expect(goBackOr(undefined, '/apps')).toBe('replaced');
   });
 });

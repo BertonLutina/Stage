@@ -23,7 +23,7 @@ export default function PlayerTransferHistory({ playerId }) {
       {!playerId || rows.length === 0 ? (
         <View style={{ alignItems: 'center', paddingVertical: 18, gap: 8 }}>
           <Ionicons name="time-outline" size={22} color={tokens.faint} />
-          <Text style={{ color: tokens.muted, fontSize: 13, fontWeight: '800', letterSpacing: 1.2, textTransform: 'uppercase' }}>
+          <Text style={{ color: tokens.muted, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12, textTransform: 'uppercase' }}>
             {CAREER_LABELS.noTransfers}
           </Text>
           <Text style={{ color: tokens.faint, fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
@@ -41,25 +41,25 @@ export default function PlayerTransferHistory({ playerId }) {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: 12,
-                borderRadius: 6,
+                borderRadius: 12,
                 borderWidth: 1,
-                borderColor: tokens.hairline,
+                borderColor: tokens.border,
                 backgroundColor: tokens.inputFill,
                 paddingHorizontal: 12,
                 paddingVertical: 10,
               }}
             >
               <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={{ color: tokens.text, fontSize: 13, fontWeight: '700' }} numberOfLines={1}>
+                <Text style={{ color: tokens.text, fontSize: 14, fontWeight: '600' }} numberOfLines={1}>
                   {row.from_club_name || 'Academy / Free'} → {row.to_club_name || 'Unknown'}
                 </Text>
-                <Text style={{ color: tokens.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1.2, textTransform: 'uppercase', marginTop: 3 }}>
+                <Text style={{ color: tokens.muted, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12, textTransform: 'uppercase', marginTop: 3 }}>
                   {(row.transfer_date || row.published_at || '').slice(0, 4) || '—'}
                   {' · '}
                   {row.deal_type_label || row.deal_type || 'Transfer'}
                 </Text>
               </View>
-              <Text style={{ color: tokens.cyan, fontSize: 13, fontWeight: '900' }}>
+              <Text style={{ color: tokens.cyan, fontSize: 14, fontWeight: '700' }}>
                 {formatCareerFee(row.transfer_fee, row.currency)}
               </Text>
             </View>

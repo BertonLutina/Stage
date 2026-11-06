@@ -33,13 +33,13 @@ describe('Home identity plate', () => {
     });
   });
 
-  test('cards under the player identity plate use a 2px radius', () => {
+  test('cards under the player identity plate use the Stage 16px radius', () => {
     const theme = readRepoFile('lib/stageTheme.js');
     const ui = readRepoFile('components/dashboard/CommandCenterUI.jsx');
-    expect(theme).toMatch(/export const CARD_RADIUS = 2/);
+    expect(theme).toMatch(/export const CARD_RADIUS = 16/);
     expect(ui).toMatch(/export const DASHBOARD_CARD_RADIUS = CARD_RADIUS/);
-    expect(ui).toMatch(/export const TILE_BORDER = 'rgba\(238,243,251,0\.22\)'/);
-    expect(ui).toMatch(/export const TILE_FILL_LIVE = 'rgba\(0,0,0,0\.4\)'/);
+    expect(ui).toMatch(/export const TILE_BORDER = STAGE_PALETTE\.border/);
+    expect(ui).toMatch(/export const TILE_FILL_LIVE = 'rgba\(19,43,92,0\.62\)'/);
     expect(ui).toMatch(/function SectionCard[\s\S]*tileChrome\(/);
     expect(lab).toMatch(/function DashCard/);
     expect(lab).toMatch(/radius=\{DASHBOARD_CARD_RADIUS\}/);

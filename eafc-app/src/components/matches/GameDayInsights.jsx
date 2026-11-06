@@ -14,10 +14,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { stageClient } from '@/api/stageClient';
 import { penaltyOutcome } from '@/lib/penaltyOutcome';
-import { CYAN } from '@/components/profile/gamer/GamerProfileUI';
-import { FUT, SectionCard, SectionTitle } from '@/components/dashboard/CommandCenterUI';
+import useThemeStore from '@/store/themeStore';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
+import { hexToRgba } from '@/lib/stageTheme';
+import { Card, Chip, SectionLabel } from '@/components/ui';
+import { MIN_TOUCH } from '@/components/ui/metrics';
 
-const TAP = 44;
+const TAP = MIN_TOUCH;
 
 function readError(error, feature) {
   return error?.status === 404
@@ -27,6 +30,8 @@ function readError(error, feature) {
 
 export default function GameDayInsights({ game }) {
   const router = useRouter();
+  const tokens = useThemeStore((st) => st.tokens);
+  const styles = makeStyles(tokens);
   const [scope, setScope] = useState('all');
   const [history, setHistory] = useState(null);
   const [historyError, setHistoryError] = useState('');
@@ -138,43 +143,47 @@ export default function GameDayInsights({ game }) {
   const total = Math.max(1, Number(history?.total) || 1);
 
   return (
-    <View style={{ gap: 12 }}>
-      <SectionCard>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <SectionTitle>Head-to-Head</SectionTitle>
-          <View style={{ flexDirection: 'row', gap: 6 }}>
-            {['all', 'same'].map((value) => (
-              <TouchableOpacity
-                key={value}
-                onPress={() => { setScope(value); setOffset(0); }}
-                style={[styles.chip, scope === value && styles.chipActive]}
-              >
-                <Text style={[styles.chipText, scope === value && { color: CYAN }]}>
-                  {value === 'all' ? 'All' : 'Same'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+    <View style={{ gap: 16 }}>
+      <Card style={{ gap: 12 }}>
+        <SectionLabel
+          right={(
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {['all', 'same'].map((value) => (
+                <Chip
+                  key={value}
+                  label={value === 'all' ? 'All' : 'Same'}
+                  active={scope === value}
+                  onPress={() => { setScope(value); setOffset(0); }}
+                />
+              ))}
+            </View>
+          )}
+        >
+          Head-to-Head
+        </SectionLabel>
 
         {historyError ? (
           <Text style={styles.error}>{historyError}</Text>
         ) : !history ? (
-          <ActivityIndicator color={CYAN} style={{ marginVertical: 16 }} />
+          <ActivityIndicator color={tokens.cyan} style={{ marginVertical: 16 }} />
         ) : (
-          <View style={{ marginTop: 12, gap: 12 }}>
+          <View style={{ gap: 14 }}>
             <Text style={styles.meta}>{history.chronology || 'Previous meetings'}</Text>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
               <Stat label={home} value={history.homeWins} caption="Wins" />
               <Stat label="Draws" value={history.draws} caption="" />
               <Stat label={away} value={history.awayWins} caption="Wins" />
             </View>
             {history.total ? (
               <>
-                <View style={{ flexDirection: 'row', height: 6, borderRadius: 3, overflow: 'hidden' }}>
-                  <View style={{ flex: history.homeWins / total, backgroundColor: CYAN }} />
-                  <View style={{ flex: history.draws / total, backgroundColor: '#94a3b8' }} />
-                  <View style={{ flex: history.awayWins / total, backgroundColor: FUT.rose }} />
+                <View style={{ flexDirection: 'row', gap: 4, height: 6 }}>
+                  {[
+                    [history.homeWins, tokens.cyan, 'home'],
+                    [history.draws, tokens.muted, 'draws'],
+                    [history.awayWins, tokens.borderStrong, 'away'],
+                  ].filter(([count]) => Number(count) > 0).map(([count, color, key]) => (
+                    <View key={key} style={{ flex: count / total, backgroundColor: color, borderRadius: 3 }} />
+                  ))}
                 </View>
                 {(history.meetings || []).map((m) => {
                   const pens = penaltyOutcome(m);
@@ -185,13 +194,14 @@ export default function GameDayInsights({ game }) {
                         pathname: '/(tabs)/matches/matchdetailscreen',
                         params: { matchId: m.id },
                       })}
+                      accessibilityRole="button"
                       style={styles.meeting}
                     >
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                         <Text style={styles.meetingName} numberOfLines={1}>
                           {m.home_club_name || m.home_player_name}
                         </Text>
-                        <Text style={{ color: '#fff', fontWeight: '900' }}>
+                        <Text style={styles.meetingScore}>
                           {m.home_score} - {m.away_score}
                         </Text>
                         <Text style={[styles.meetingName, { textAlign: 'right' }]} numberOfLines={1}>
@@ -205,7 +215,7 @@ export default function GameDayInsights({ game }) {
                           m.status === 'forfeit' ? 'Forfeit' : null,
                         ].filter(Boolean).join(' · ')}
                       </Text>
-                      {pens ? <Text style={{ color: CYAN, fontSize: 11, marginTop: 2 }}>{pens}</Text> : null}
+                      {pens ? <Text style={{ color: tokens.cyan, fontSize: 12, marginTop: 2 }}>{pens}</Text> : null}
                     </TouchableOpacity>
                   );
                 })}
@@ -213,18 +223,20 @@ export default function GameDayInsights({ game }) {
                   <TouchableOpacity
                     disabled={offset === 0}
                     onPress={() => setOffset((n) => Math.max(0, n - 5))}
+                    accessibilityRole="button"
                     style={[styles.nav, offset === 0 && { opacity: 0.35 }]}
                   >
-                    <Ionicons name="chevron-back" size={16} color={CYAN} />
+                    <Ionicons name="chevron-back" size={18} color={tokens.cyan} />
                     <Text style={styles.navText}>Previous</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     disabled={offset + 5 >= history.total}
                     onPress={() => setOffset((n) => n + 5)}
+                    accessibilityRole="button"
                     style={[styles.nav, offset + 5 >= history.total && { opacity: 0.35 }]}
                   >
                     <Text style={styles.navText}>Next</Text>
-                    <Ionicons name="chevron-forward" size={16} color={CYAN} />
+                    <Ionicons name="chevron-forward" size={18} color={tokens.cyan} />
                   </TouchableOpacity>
                 </View>
               </>
@@ -233,35 +245,36 @@ export default function GameDayInsights({ game }) {
             )}
           </View>
         )}
-      </SectionCard>
+      </Card>
 
-      <SectionCard>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <SectionTitle>Highlights</SectionTitle>
-          {media?.can_upload ? (
-            <TouchableOpacity onPress={publish} disabled={busy} style={styles.nav}>
-              <Ionicons name="image-outline" size={18} color={CYAN} />
+      <Card style={{ gap: 12 }}>
+        <SectionLabel
+          right={media?.can_upload ? (
+            <TouchableOpacity onPress={publish} disabled={busy} accessibilityRole="button" style={styles.nav}>
+              <Ionicons name="image-outline" size={18} color={tokens.cyan} />
               <Text style={styles.navText}>{busy ? 'Uploading…' : 'Upload'}</Text>
             </TouchableOpacity>
           ) : null}
-        </View>
-        <Text style={[styles.meta, { marginTop: 6 }]}>Published match screenshots</Text>
+        >
+          Highlights
+        </SectionLabel>
+        <Text style={styles.meta}>Published match screenshots</Text>
         {mediaError ? (
-          <TouchableOpacity onPress={() => setRevision((n) => n + 1)}>
+          <TouchableOpacity onPress={() => setRevision((n) => n + 1)} accessibilityRole="button" style={{ minHeight: TAP, justifyContent: 'center' }}>
             <Text style={styles.error}>{mediaError} · Retry</Text>
           </TouchableOpacity>
         ) : !media ? (
-          <ActivityIndicator color={CYAN} style={{ marginVertical: 16 }} />
+          <ActivityIndicator color={tokens.cyan} style={{ marginVertical: 16 }} />
         ) : !current ? (
           <Text style={[styles.meta, { paddingVertical: 20, textAlign: 'center' }]}>
             No published screenshots for this match.
           </Text>
         ) : (
-          <View style={{ marginTop: 12, gap: 10 }}>
-            <Pressable onPress={() => setViewer(true)}>
+          <View style={{ gap: 10 }}>
+            <Pressable onPress={() => setViewer(true)} accessibilityRole="imagebutton" accessibilityLabel="Open screenshot">
               <Image
                 source={{ uri: current.image_url }}
-                style={{ width: '100%', aspectRatio: 16 / 9, backgroundColor: 'rgba(0,0,0,0.35)' }}
+                style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 12, backgroundColor: tokens.bgDeep }}
                 resizeMode="contain"
               />
             </Pressable>
@@ -271,27 +284,37 @@ export default function GameDayInsights({ game }) {
                 <TouchableOpacity
                   disabled={image === 0}
                   onPress={() => setImage((n) => n - 1)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Previous screenshot"
                   style={[styles.iconBtn, image === 0 && { opacity: 0.35 }]}
                 >
-                  <Ionicons name="chevron-back" size={18} color={CYAN} />
+                  <Ionicons name="chevron-back" size={20} color={tokens.cyan} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   disabled={image >= items.length - 1}
                   onPress={() => setImage((n) => n + 1)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Next screenshot"
                   style={[styles.iconBtn, image >= items.length - 1 && { opacity: 0.35 }]}
                 >
-                  <Ionicons name="chevron-forward" size={18} color={CYAN} />
+                  <Ionicons name="chevron-forward" size={20} color={tokens.cyan} />
                 </TouchableOpacity>
                 {current.can_remove ? (
-                  <TouchableOpacity disabled={busy} onPress={() => remove(current)} style={styles.iconBtn}>
-                    <Ionicons name="trash-outline" size={16} color={FUT.rose} />
+                  <TouchableOpacity
+                    disabled={busy}
+                    onPress={() => remove(current)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Remove screenshot"
+                    style={styles.iconBtn}
+                  >
+                    <Ionicons name="trash-outline" size={20} color={tokens.danger} />
                   </TouchableOpacity>
                 ) : null}
               </View>
             </View>
           </View>
         )}
-      </SectionCard>
+      </Card>
 
       <Modal visible={viewer && Boolean(current)} transparent animationType="fade" onRequestClose={() => setViewer(false)}>
         <Pressable style={styles.backdrop} onPress={() => setViewer(false)} />
@@ -303,7 +326,7 @@ export default function GameDayInsights({ game }) {
               resizeMode="contain"
             />
           ) : null}
-          <TouchableOpacity onPress={() => setViewer(false)} style={[styles.nav, { alignSelf: 'center', marginTop: 12 }]}>
+          <TouchableOpacity onPress={() => setViewer(false)} accessibilityRole="button" style={[styles.nav, { alignSelf: 'center', marginTop: 12 }]}>
             <Text style={styles.navText}>Close</Text>
           </TouchableOpacity>
         </View>
@@ -313,38 +336,31 @@ export default function GameDayInsights({ game }) {
 }
 
 function Stat({ label, value, caption }) {
+  const tokens = useThemeStore((st) => st.tokens);
   return (
     <View style={{ flex: 1, alignItems: 'center', minWidth: 0 }}>
-      <Text style={styles.meetingName} numberOfLines={1}>{label}</Text>
-      <Text style={{ color: '#fff', fontSize: 28, fontWeight: '900', marginTop: 4 }}>{value ?? 0}</Text>
-      {caption ? <Text style={styles.meta}>{caption}</Text> : null}
+      <Text numberOfLines={1} style={{ color: tokens.muted, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12, textTransform: 'uppercase', maxWidth: '100%' }}>
+        {label}
+      </Text>
+      <Text style={{ color: tokens.text, fontFamily: FONT_EA_SPORTS, fontSize: 28, letterSpacing: 28 * 0.03, marginTop: 4 }}>
+        {value ?? 0}
+      </Text>
+      {caption ? <Text style={{ color: tokens.muted, fontSize: 12 }}>{caption}</Text> : null}
     </View>
   );
 }
 
-const styles = {
-  chip: {
-    minHeight: 32,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    justifyContent: 'center',
-  },
-  chipActive: {
-    borderColor: 'rgba(0,232,255,0.45)',
-    backgroundColor: 'rgba(0,232,255,0.12)',
-  },
-  chipText: { color: 'rgba(255,255,255,0.55)', fontSize: 11, fontWeight: '800' },
-  meta: { color: 'rgba(255,255,255,0.5)', fontSize: 11 },
-  error: { color: FUT.rose, fontSize: 12, marginTop: 10 },
+const makeStyles = (tokens) => ({
+  meta: { color: tokens.muted, fontSize: 12 },
+  error: { color: tokens.danger, fontSize: 13 },
   meeting: {
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
+    borderTopColor: tokens.border,
     minHeight: TAP,
   },
-  meetingName: { color: 'rgba(255,255,255,0.75)', fontSize: 11, flex: 1 },
+  meetingName: { color: tokens.textSoft, fontSize: 13, flex: 1 },
+  meetingScore: { color: tokens.text, fontFamily: FONT_EA_SPORTS, fontSize: 16, letterSpacing: 16 * 0.03 },
   nav: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -352,21 +368,21 @@ const styles = {
     minHeight: TAP,
     paddingHorizontal: 4,
   },
-  navText: { color: CYAN, fontSize: 12, fontWeight: '800' },
+  navText: { color: tokens.cyan, fontSize: 13, fontWeight: '600' },
   iconBtn: {
     width: TAP,
     height: TAP,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
+  backdrop: { flex: 1, backgroundColor: hexToRgba(tokens.bgDeep, 0.85) },
   viewer: {
     marginHorizontal: 16,
     marginBottom: 40,
     padding: 12,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(0,232,255,0.25)',
-    backgroundColor: '#0A1222',
+    borderColor: tokens.border,
+    backgroundColor: tokens.bgDeep,
   },
-};
+});

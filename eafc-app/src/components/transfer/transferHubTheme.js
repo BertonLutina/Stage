@@ -1,7 +1,20 @@
-import { GAME_DAY_SILVER, TILE_BORDER } from '@/components/dashboard/CommandCenterUI';
+import { hexToRgba } from '@/lib/stageTheme';
 
-export const SILVER = GAME_DAY_SILVER;
-export const TILE_HAIRLINE = TILE_BORDER;
-export const FRAME_FOCUSED = ['#F4F7FC', '#C9D2DE', '#8E98A8'];
-export const FRAME_IDLE = ['rgba(238,243,251,0.45)', 'rgba(238,243,251,0.16)', 'rgba(238,243,251,0.08)'];
-export const OVR_BADGE = ['#F4F7FC', '#D5DCE6', '#A8B2C0'];
+/**
+ * Transfer hub chrome derived from the Stage tokens. The hub used to carry its own
+ * silver palette; it now shares the cyan frames of the directory photo cards.
+ */
+export function transferHubTheme(tokens) {
+  return {
+    accent: tokens.cyan,
+    hairline: tokens.border,
+    frameFocused: [tokens.cyanHi, tokens.cyan, tokens.aqua],
+    frameIdle: [
+      hexToRgba(tokens.cyan, 0.45),
+      hexToRgba(tokens.cyan, 0.16),
+      hexToRgba(tokens.cyan, 0.08),
+    ],
+    ovrBadge: [tokens.cyanHi, tokens.cyan],
+    photoShade: ['transparent', hexToRgba(tokens.bgDeep, 0.18), hexToRgba(tokens.bgDeep, 0.88)],
+  };
+}

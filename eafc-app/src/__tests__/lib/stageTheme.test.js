@@ -8,6 +8,7 @@ import {
   writeStageThemeId,
   MARINE,
   PAPER,
+  CARD_RADIUS,
 } from '../../lib/stageTheme';
 
 function mockLocalStorage() {
@@ -27,12 +28,54 @@ describe('stage theme palettes', () => {
   test('defaults to dark gamer shell', () => {
     const theme = readStageTheme();
     expect(theme.id).toBe('theme-dark');
-    expect(theme.primary).toBe('#00F0FF');
-    expect(theme.bg).toBe('#05070F');
+    expect(theme.primary).toBe('#5FE3E8');
+    expect(theme.cyan).toBe('#5FE3E8');
+    expect(theme.bg).toBe('#03153F');
     expect(theme.text).toBe(PAPER);
+    expect(theme.muted).toBe('#9FB3D1');
     expect(theme.isDark).toBe(true);
     expect(theme.live).toBe(false);
-    expect(theme.cardRadius).toBe(2);
+    expect(theme.cardRadius).toBe(16);
+    expect(CARD_RADIUS).toBe(16);
+  });
+
+  test('exposes the Stage design tokens verbatim', () => {
+    const theme = readStageTheme();
+    expect(PAPER).toBe('#EAF2FF');
+    expect(MARINE).toBe('#07163A');
+    expect(theme.bgDeep).toBe('#07163A');
+    expect(theme.card).toBe('#132B5C');
+    expect(theme.cardHi).toBe('#16346B');
+    expect(theme.border).toBe('#234480');
+    expect(theme.borderStrong).toBe('#4A6AA5');
+    expect(theme.textSoft).toBe('#C9D8EE');
+    expect(theme.cyanHi).toBe('#8CF5F8');
+    expect(theme.aqua).toBe('#2CCFD6');
+    expect(theme.onCyan).toBe('#07163A');
+    expect(theme.success).toBe('#4ADE80');
+    expect(theme.successBg).toBe('#14532D');
+    expect(theme.danger).toBe('#F87171');
+    expect(theme.dangerBg).toBe('#5B1A1A');
+    expect(theme.warning).toBe('#FBBF24');
+    expect(theme.warningBg).toBe('#2A2418');
+    expect(theme.warningBorder).toBe('#B45309');
+  });
+
+  test('legacy keys are re-derived from the new palette', () => {
+    const theme = readStageTheme();
+    expect(theme.hairline).toBe(theme.border);
+    expect(theme.inputFill).toBe(theme.bgDeep);
+    expect(theme.inputBorder).toBe(theme.border);
+    expect(theme.amber).toBe(theme.warning);
+    expect(theme.cardSolid).toBe('#132B5C');
+    expect(theme.wash.every((c) => c === 'transparent')).toBe(true);
+  });
+
+  test('text and accent colours meet contrast on the new surfaces', () => {
+    const theme = readStageTheme();
+    expect(contrastRatio(theme.muted, theme.card)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(theme.text, theme.bg)).toBeGreaterThanOrEqual(7);
+    expect(contrastRatio(theme.onCyan, theme.cyan)).toBeGreaterThanOrEqual(7);
   });
 
   test('only keeps dark and live dark', () => {
@@ -48,9 +91,9 @@ describe('stage theme palettes', () => {
   });
 
   test('dark backgrounds get paper text and light backgrounds get marine ink', () => {
-    expect(isDarkHex('#05070F')).toBe(true);
+    expect(isDarkHex('#0A1F4A')).toBe(true);
     expect(isDarkHex('#FFFFFF')).toBe(false);
-    expect(contrastTextFor('#05070F')).toBe(PAPER);
+    expect(contrastTextFor('#0A1F4A')).toBe(PAPER);
     expect(contrastTextFor('#FFFFFF')).toBe(MARINE);
   });
 
@@ -61,11 +104,13 @@ describe('stage theme palettes', () => {
     expect(theme.live).toBe(true);
     expect(theme.isDark).toBe(true);
     expect(theme.text).toBe(PAPER);
-    expect(theme.cyan).toBe('#00F0FF');
-    expect(theme.hairline).toBe('rgba(226,234,244,0.16)');
-    expect(theme.glass).toBe('rgba(8,12,24,0.58)');
-    expect(theme.card).toBe('rgba(10,18,32,0.62)');
-    expect(theme.cyanBorder).toBe('rgba(0,240,255,0.38)');
+    expect(theme.cyan).toBe('#5FE3E8');
+    expect(theme.hairline).toBe('#234480');
+    expect(theme.glass).toMatch(/^rgba\(19,43,92,/);
+    expect(theme.card).toMatch(/^rgba\(19,43,92,/);
+    expect(theme.cardHi).toMatch(/^rgba\(19,43,92,/);
+    expect(theme.card).toBe('rgba(19,43,92,0.62)');
+    expect(theme.cyanBorder).toBe('rgba(95,227,232,0.38)');
     expect(contrastRatio(PAPER, '#02060D')).toBeGreaterThanOrEqual(12);
   });
 
@@ -79,6 +124,6 @@ describe('stage theme palettes', () => {
   test('dark HUD text is floodlight, not white, and still AA on night', () => {
     expect(PAPER.toUpperCase()).not.toBe('#FFFFFF');
     expect(PAPER.toUpperCase()).not.toBe('#F4F7FB');
-    expect(contrastRatio(PAPER, '#05070F')).toBeGreaterThanOrEqual(12);
+    expect(contrastRatio(PAPER, '#0A1F4A')).toBeGreaterThanOrEqual(12);
   });
 });

@@ -6,7 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { stageClient } from '@/api/stageClient';
 import VideoPlayer from '@/components/common/VideoPlayer';
-import { CYAN } from '@/components/profile/gamer/GamerProfileUI';
+import { useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
+import { hexToRgba } from '@/lib/stageTheme';
 import { headingStyle } from '@/lib/fonts';
 import {
   SHOWCASE_POSITIONS,
@@ -25,6 +26,7 @@ function fileNameFromUri(uri = '') {
 }
 
 export default function PlayerShowcase({ player, canEdit = false, onChanged }) {
+  const tokens = useGamerTokens();
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -170,7 +172,7 @@ export default function PlayerShowcase({ player, canEdit = false, onChanged }) {
   if (loading) {
     return (
       <View style={{ paddingVertical: 28, alignItems: 'center' }}>
-        <ActivityIndicator color={CYAN} />
+        <ActivityIndicator color={tokens.cyan} />
       </View>
     );
   }
@@ -182,10 +184,10 @@ export default function PlayerShowcase({ player, canEdit = false, onChanged }) {
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Ionicons name="videocam" size={16} color={CYAN} />
-            <Text style={[headingStyle, { color: '#fff', fontSize: 16 }]}>Showcase</Text>
+            <Ionicons name="videocam-outline" size={22} color={tokens.cyan} />
+            <Text style={[headingStyle, { color: tokens.text, fontSize: 18, letterSpacing: 18 * 0.03 }]}>Showcase</Text>
           </View>
-          <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 6, lineHeight: 17 }}>
+          <Text style={{ color: tokens.muted, fontSize: 13, marginTop: 6, lineHeight: 18 }}>
             {canEdit
               ? 'Publish clips of how you play so clubs can find you. You own these — a scout can only watch them.'
               : 'Clips this player published for clubs to watch.'}
@@ -194,35 +196,36 @@ export default function PlayerShowcase({ player, canEdit = false, onChanged }) {
 
         {showPosition ? (
           <View style={{ minWidth: 118 }}>
-            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '800', letterSpacing: 1.2, marginBottom: 6 }}>
+            <Text numberOfLines={1} style={{ color: tokens.muted, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12, marginBottom: 6 }}>
               PREFERRED POSITION
             </Text>
             {canEdit ? (
               <TouchableOpacity
                 onPress={() => setShowPositions(true)}
                 style={{
+                  minHeight: 44,
+                  justifyContent: 'center',
                   borderWidth: 1,
-                  borderColor: 'rgba(0,240,255,0.28)',
-                  backgroundColor: 'rgba(0,0,0,0.28)',
-                  borderRadius: 10,
-                  paddingHorizontal: 10,
-                  paddingVertical: 9,
+                  borderColor: tokens.cyanBorder,
+                  backgroundColor: tokens.inputFill,
+                  borderRadius: 12,
+                  paddingHorizontal: 12,
                 }}
               >
-                <Text style={{ color: position ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '800' }}>
+                <Text numberOfLines={1} style={{ color: position ? tokens.text : tokens.muted, fontSize: 13, fontWeight: '600' }}>
                   {position || 'Pick a position'}
                 </Text>
               </TouchableOpacity>
             ) : (
               <View style={{
                 borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.12)',
-                borderRadius: 10,
-                paddingHorizontal: 10,
-                paddingVertical: 9,
+                borderColor: tokens.border,
+                borderRadius: 12,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
               }}
               >
-                <Text style={{ color: '#fff', fontWeight: '800' }}>{position}</Text>
+                <Text numberOfLines={1} style={{ color: tokens.text, fontWeight: '600' }}>{position}</Text>
               </View>
             )}
           </View>
@@ -231,15 +234,15 @@ export default function PlayerShowcase({ player, canEdit = false, onChanged }) {
 
       {error ? (
         <View style={{
-          backgroundColor: 'rgba(255,77,109,0.12)',
+          backgroundColor: tokens.live ? hexToRgba(tokens.danger, 0.14) : tokens.dangerBg,
           borderWidth: 1,
-          borderColor: 'rgba(255,77,109,0.35)',
+          borderColor: hexToRgba(tokens.danger, 0.5),
           borderRadius: 12,
           paddingHorizontal: 12,
           paddingVertical: 10,
         }}
         >
-          <Text style={{ color: '#FF4D6D', fontSize: 12, fontWeight: '700' }}>{error}</Text>
+          <Text style={{ color: tokens.danger, fontSize: 13, fontWeight: '600' }}>{error}</Text>
         </View>
       ) : null}
 
@@ -247,14 +250,14 @@ export default function PlayerShowcase({ player, canEdit = false, onChanged }) {
         <View style={{
           borderWidth: 1,
           borderStyle: 'dashed',
-          borderColor: 'rgba(255,255,255,0.16)',
-          borderRadius: 2,
+          borderColor: tokens.borderStrong,
+          borderRadius: 16,
           paddingVertical: 28,
           paddingHorizontal: 16,
           alignItems: 'center',
         }}
         >
-          <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, textAlign: 'center' }}>
+          <Text style={{ color: tokens.muted, fontSize: 14, textAlign: 'center' }}>
             {canEdit
               ? 'No clips yet. Add one below so clubs can scout you.'
               : 'No clips published yet.'}
@@ -269,27 +272,34 @@ export default function PlayerShowcase({ player, canEdit = false, onChanged }) {
                 activeOpacity={0.88}
                 style={{
                   height: 168,
-                  borderRadius: 2,
+                  borderRadius: 16,
                   overflow: 'hidden',
-                  backgroundColor: '#000',
+                  backgroundColor: tokens.bgDeep,
                   borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.1)',
+                  borderColor: tokens.border,
                   alignItems: 'center',
                   justifyContent: 'center',
+                  paddingHorizontal: 16,
                 }}
               >
-                <Ionicons name="play-circle" size={48} color="rgba(255,255,255,0.9)" />
-                <Text style={{ color: '#fff', fontWeight: '800', marginTop: 8 }} numberOfLines={1}>
+                <Ionicons name="play-circle" size={48} color={tokens.cyan} />
+                <Text style={{ color: tokens.text, fontWeight: '700', marginTop: 8 }} numberOfLines={1}>
                   {video.title || 'Untitled clip'}
                 </Text>
               </TouchableOpacity>
               {canEdit ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, flex: 1 }} numberOfLines={1}>
+                  <Text style={{ color: tokens.muted, fontSize: 13, flex: 1 }} numberOfLines={1}>
                     {video.title || 'Untitled clip'}
                   </Text>
-                  <TouchableOpacity onPress={() => removeVideo(video)} hitSlop={8}>
-                    <Ionicons name="trash-outline" size={16} color="rgba(255,255,255,0.45)" />
+                  <TouchableOpacity
+                    onPress={() => removeVideo(video)}
+                    hitSlop={12}
+                    accessibilityRole="button"
+                    accessibilityLabel="Remove clip"
+                    style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <Ionicons name="trash-outline" size={20} color={tokens.muted} />
                   </TouchableOpacity>
                 </View>
               ) : null}
@@ -300,28 +310,29 @@ export default function PlayerShowcase({ player, canEdit = false, onChanged }) {
 
       {canEdit ? (
         <View style={{
-          borderRadius: 2,
+          borderRadius: 16,
           borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.1)',
-          backgroundColor: 'rgba(255,255,255,0.04)',
-          padding: 12,
-          gap: 10,
+          borderColor: tokens.border,
+          backgroundColor: tokens.card,
+          padding: 16,
+          gap: 12,
         }}
         >
           <TextInput
             value={title}
             onChangeText={setTitle}
             placeholder="Highlight title"
-            placeholderTextColor="rgba(255,255,255,0.35)"
+            placeholderTextColor={tokens.faint}
             maxLength={120}
             style={{
-              color: '#fff',
+              color: tokens.text,
+              height: 50,
               borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.12)',
-              borderRadius: 10,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
-              fontSize: 14,
+              borderColor: tokens.inputBorder,
+              backgroundColor: tokens.inputFill,
+              borderRadius: 12,
+              paddingHorizontal: 14,
+              fontSize: 15,
             }}
           />
           <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -329,19 +340,19 @@ export default function PlayerShowcase({ player, canEdit = false, onChanged }) {
               onPress={pickClip}
               style={{
                 flex: 1,
-                minHeight: 44,
-                borderRadius: 10,
+                minHeight: 50,
+                borderRadius: 12,
                 borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.14)',
-                backgroundColor: 'rgba(0,0,0,0.28)',
+                borderColor: tokens.inputBorder,
+                backgroundColor: tokens.inputFill,
                 paddingHorizontal: 12,
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 8,
               }}
             >
-              <Ionicons name="cloud-upload-outline" size={16} color="rgba(255,255,255,0.55)" />
-              <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, flex: 1 }} numberOfLines={1}>
+              <Ionicons name="cloud-upload-outline" size={20} color={tokens.muted} />
+              <Text style={{ color: tokens.muted, fontSize: 13, flex: 1 }} numberOfLines={1}>
                 {picked ? picked.fileName : 'Choose a video from your device'}
               </Text>
             </TouchableOpacity>
@@ -350,21 +361,22 @@ export default function PlayerShowcase({ player, canEdit = false, onChanged }) {
               disabled={!title.trim() || !picked || adding}
               style={{
                 minWidth: 78,
-                borderRadius: 10,
-                backgroundColor: (!title.trim() || !picked || adding) ? 'rgba(0,240,255,0.25)' : CYAN,
+                minHeight: 50,
+                borderRadius: 12,
+                backgroundColor: (!title.trim() || !picked || adding) ? hexToRgba(tokens.cyan, 0.25) : tokens.cyan,
                 alignItems: 'center',
                 justifyContent: 'center',
                 paddingHorizontal: 12,
               }}
             >
               {adding ? (
-                <ActivityIndicator color="#031018" />
+                <ActivityIndicator color={tokens.onCyan} />
               ) : (
-                <Text style={{ color: '#031018', fontWeight: '900', fontSize: 12 }}>+ Add</Text>
+                <Text style={{ color: tokens.onCyan, fontWeight: '700', fontSize: 14 }}>+ Add</Text>
               )}
             </TouchableOpacity>
           </View>
-          <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, lineHeight: 16 }}>
+          <Text style={{ color: tokens.muted, fontSize: 12, lineHeight: 17 }}>
             {picked
               ? `Ready · ${picked.duration.toFixed(1)}s`
               : `Upload a local video clip, ${MAX_SHOWCASE_SECONDS} seconds max, ${MAX_SHOWCASE_MB} MB max. MP4, M4V, WebM, MOV, or OGV. No links.`}
@@ -373,28 +385,31 @@ export default function PlayerShowcase({ player, canEdit = false, onChanged }) {
       ) : null}
 
       <Modal visible={showPositions} transparent animationType="fade" onRequestClose={() => setShowPositions(false)}>
-        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'flex-end' }} activeOpacity={1} onPress={() => setShowPositions(false)}>
+        <TouchableOpacity style={{ flex: 1, backgroundColor: hexToRgba(tokens.bgDeep, 0.75), justifyContent: 'flex-end' }} activeOpacity={1} onPress={() => setShowPositions(false)}>
           <View style={{
-            backgroundColor: '#0A1222',
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-            padding: 16,
+            backgroundColor: tokens.bgDeep,
+            borderTopLeftRadius: 22,
+            borderTopRightRadius: 22,
+            borderWidth: 1,
+            borderColor: tokens.border,
+            padding: 20,
             maxHeight: '55%',
           }}
           >
-            <Text style={{ color: '#fff', fontWeight: '900', marginBottom: 12 }}>Preferred position</Text>
+            <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 16, marginBottom: 12 }}>Preferred position</Text>
             <ScrollView>
               {SHOWCASE_POSITIONS.map((pos) => (
                 <TouchableOpacity
                   key={pos}
                   onPress={() => savePosition(pos)}
                   style={{
-                    paddingVertical: 12,
+                    minHeight: 44,
+                    justifyContent: 'center',
                     borderBottomWidth: 1,
-                    borderBottomColor: 'rgba(255,255,255,0.08)',
+                    borderBottomColor: tokens.border,
                   }}
                 >
-                  <Text style={{ color: pos === position ? CYAN : '#fff', fontWeight: '800' }}>{pos}</Text>
+                  <Text style={{ color: pos === position ? tokens.cyan : tokens.text, fontWeight: '600' }}>{pos}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -403,12 +418,18 @@ export default function PlayerShowcase({ player, canEdit = false, onChanged }) {
       </Modal>
 
       <Modal visible={Boolean(watching)} transparent animationType="slide" onRequestClose={() => setWatching(null)}>
-        <View style={{ flex: 1, backgroundColor: '#000' }}>
+        <View style={{ flex: 1, backgroundColor: tokens.bgDeep }}>
           <View style={{ paddingTop: 54, paddingHorizontal: 16, paddingBottom: 12, flexDirection: 'row', alignItems: 'center' }}>
-            <TouchableOpacity onPress={() => setWatching(null)} hitSlop={10}>
-              <Ionicons name="close" size={22} color="#fff" />
+            <TouchableOpacity
+              onPress={() => setWatching(null)}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Ionicons name="close" size={22} color={tokens.text} />
             </TouchableOpacity>
-            <Text style={{ color: '#fff', fontWeight: '800', marginLeft: 12, flex: 1 }} numberOfLines={1}>
+            <Text style={{ color: tokens.text, fontWeight: '700', marginLeft: 12, flex: 1 }} numberOfLines={1}>
               {watching?.title || 'Untitled clip'}
             </Text>
           </View>

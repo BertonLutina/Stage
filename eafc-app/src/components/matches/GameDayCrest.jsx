@@ -9,6 +9,7 @@ import Svg, {
   Stop,
   Text as SvgText,
 } from 'react-native-svg';
+import useThemeStore from '@/store/themeStore';
 import { clubInitials } from '@/lib/gameDayPresentation';
 
 /** Matches web GameDayCrest: polygon(12% 0, 100% 0, 88% 100%, 0 100%). */
@@ -32,6 +33,7 @@ export default function GameDayCrest({ name, imageUrl, size = 'lg', glow = false
     ? { w: size, h: Math.round(size * 0.88), font: Math.round(size * 0.22) }
     : (SIZES[size] || SIZES.lg);
   const { w, h, font } = dims;
+  const tokens = useThemeStore((st) => st.tokens);
   const initials = clubInitials(name);
   const rawId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const clipId = `gd-crest-${rawId}`;
@@ -42,7 +44,7 @@ export default function GameDayCrest({ name, imageUrl, size = 'lg', glow = false
       style={{
         width: w,
         height: h,
-        shadowColor: glow ? '#EEF3FB' : 'transparent',
+        shadowColor: glow ? tokens.cyanHi : 'transparent',
         shadowOpacity: glow ? 0.55 : 0,
         shadowRadius: glow ? 16 : 0,
         shadowOffset: { width: 0, height: 0 },
@@ -52,16 +54,16 @@ export default function GameDayCrest({ name, imageUrl, size = 'lg', glow = false
       <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
         <Defs>
           <LinearGradient id={fillId} x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor="#FFFFFF" />
-            <Stop offset="0.45" stopColor="#8EEEFF" />
-            <Stop offset="1" stopColor="#AEB8C6" />
+            <Stop offset="0" stopColor={tokens.text} />
+            <Stop offset="0.45" stopColor={tokens.cyanHi} />
+            <Stop offset="1" stopColor={tokens.borderStrong} />
           </LinearGradient>
           <ClipPath id={clipId}>
             <Polygon points={trapPoints(w, h, 2)} />
           </ClipPath>
         </Defs>
         <Polygon points={trapPoints(w, h, 0)} fill={`url(#${fillId})`} />
-        <Polygon points={trapPoints(w, h, 2)} fill="#111827" />
+        <Polygon points={trapPoints(w, h, 2)} fill={tokens.bgDeep} />
         {imageUrl ? (
           <SvgImage
             href={imageUrl}
@@ -77,7 +79,7 @@ export default function GameDayCrest({ name, imageUrl, size = 'lg', glow = false
             x={w / 2}
             y={h / 2 + font * 0.35}
             textAnchor="middle"
-            fill="#EEF3FB"
+            fill={tokens.text}
             fontSize={initials.length > 2 ? font * 0.78 : font}
             fontWeight="bold"
             clipPath={`url(#${clipId})`}

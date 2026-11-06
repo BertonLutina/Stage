@@ -1,10 +1,12 @@
 import React from 'react';
-import { View, Text, Switch, TouchableOpacity, Linking } from 'react-native';
-import { useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
+import { View, Text, Linking } from 'react-native';
+import useThemeStore from '@/store/themeStore';
+import { Button, Toggle } from '@/components/ui';
+import { SettingsRow } from '@/components/settings/SettingsRows';
 import SettingsSection from '@/components/settings/SettingsSection';
 
 function PushToggleBody({ status, busy, onToggle }) {
-  const tokens = useGamerTokens();
+  const tokens = useThemeStore((s) => s.tokens);
   const configured = Boolean(status?.configured);
   const permission = Boolean(status?.permission);
   const optedIn = Boolean(status?.optedIn);
@@ -19,43 +21,30 @@ function PushToggleBody({ status, busy, onToggle }) {
   }
 
   return (
-    <>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <View style={{ flex: 1, paddingRight: 8 }}>
-          <Text style={{ color: tokens.text, fontWeight: '700' }}>Lock screen & banners</Text>
-          <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 3, lineHeight: 16 }}>
-            {permission
-              ? (optedIn ? 'Phone push is on.' : 'Permission granted, push is opted out.')
-              : 'STAGE does not have notification permission on this phone.'}
-          </Text>
-        </View>
-        <Switch
-          value={phoneOn}
-          disabled={busy}
-          onValueChange={onToggle}
-          trackColor={{ false: tokens.hairline, true: tokens.cyan }}
-          thumbColor={tokens.isDark ? '#fff' : '#F4F7FB'}
-        />
-      </View>
+    <View style={{ gap: 12 }}>
+      <SettingsRow
+        title="Lock screen & banners"
+        subtitle={permission
+          ? (optedIn ? 'Phone push is on.' : 'Permission granted, push is opted out.')
+          : 'STAGE does not have notification permission on this phone.'}
+        right={(
+          <Toggle
+            value={phoneOn}
+            disabled={Boolean(busy)}
+            onValueChange={onToggle}
+            accessibilityLabel="Lock screen & banners"
+          />
+        )}
+      />
       {!permission ? (
-        <TouchableOpacity
-          onPress={() => Linking.openSettings()}
-          accessibilityRole="button"
+        <Button
+          title="Open phone settings"
+          variant="secondary"
           accessibilityLabel="Open phone notification settings"
-          style={{
-            marginTop: 12,
-            minHeight: 44,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: tokens.cyanBorder,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Text style={{ color: tokens.cyan, fontWeight: '800' }}>Open phone settings</Text>
-        </TouchableOpacity>
+          onPress={() => Linking.openSettings()}
+        />
       ) : null}
-    </>
+    </View>
   );
 }
 

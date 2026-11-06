@@ -9,3 +9,13 @@ export function goBackInPlace(router) {
   }
   return 'stay';
 }
+
+/** Pop one screen; with no history (deep link, restored session) replace with `fallbackHref` instead. */
+export function goBackOr(router, fallbackHref) {
+  if (router && typeof router.canGoBack === 'function' && router.canGoBack()) {
+    router.back();
+    return 'back';
+  }
+  router?.replace?.(fallbackHref);
+  return 'replaced';
+}

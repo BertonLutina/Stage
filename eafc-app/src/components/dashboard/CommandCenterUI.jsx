@@ -1,78 +1,40 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, Image, TextInput, ActivityIndicator, Animated, Easing,
+  View, Text, TouchableOpacity, Image, ActivityIndicator,
 } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient as SvgGrad, Stop } from 'react-native-svg';
-import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { stageClient } from '@/api/stageClient';
-import { headingStyle } from '@/lib/fonts';
+import { headingStyle, FONT_EA_SPORTS } from '@/lib/fonts';
 import useThemeStore from '@/store/themeStore';
-import { CARD_RADIUS, hexToRgba } from '@/lib/stageTheme';
+import { CARD_RADIUS, STAGE_PALETTE, hexToRgba } from '@/lib/stageTheme';
 import LiveGlass from '@/components/theme/LiveGlass';
+import { FormBadge, TextField, Button } from '@/components/ui';
 
-/** EA FC night palette */
+/** Stage palette (names kept for existing call sites) */
 export const FUT = {
-  void: '#03060D',
-  panel: '#0A1222',
-  cyan: '#00E8FF',
-  gold: '#FFD24A',
-  lime: '#7CFF6B',
-  rose: '#FF4D6D',
-  ink: 'rgba(3,6,13,0.92)',
+  void: STAGE_PALETTE.bgDeep,
+  panel: STAGE_PALETTE.card,
+  cyan: STAGE_PALETTE.cyan,
+  gold: STAGE_PALETTE.warning,
+  lime: STAGE_PALETTE.success,
+  rose: STAGE_PALETTE.danger,
+  ink: hexToRgba(STAGE_PALETTE.bgDeep, 0.92),
 };
 
-const ACCENTS = {
-  cyan: {
-    border: 'rgba(0,232,255,0.45)',
-    colors: ['rgba(0,232,255,0.28)', 'rgba(0,80,120,0.12)', 'rgba(3,6,13,0.4)'],
-    tint: FUT.cyan,
-    glow: 'rgba(0,232,255,0.35)',
-  },
-  gold: {
-    border: 'rgba(255,210,74,0.5)',
-    colors: ['rgba(255,210,74,0.32)', 'rgba(180,100,20,0.14)', 'rgba(3,6,13,0.4)'],
-    tint: FUT.gold,
-    glow: 'rgba(255,210,74,0.35)',
-  },
-  green: {
-    border: 'rgba(124,255,107,0.4)',
-    colors: ['rgba(124,255,107,0.22)', 'rgba(20,120,60,0.12)', 'rgba(3,6,13,0.4)'],
-    tint: FUT.lime,
-    glow: 'rgba(124,255,107,0.3)',
-  },
-  violet: {
-    border: 'rgba(0,180,255,0.35)',
-    colors: ['rgba(40,100,255,0.22)', 'rgba(0,200,255,0.1)', 'rgba(3,6,13,0.4)'],
-    tint: '#6EC8FF',
-    glow: 'rgba(80,160,255,0.3)',
-  },
-  rose: {
-    border: 'rgba(255,77,109,0.45)',
-    colors: ['rgba(255,77,109,0.24)', 'rgba(120,20,40,0.14)', 'rgba(3,6,13,0.4)'],
-    tint: FUT.rose,
-    glow: 'rgba(255,77,109,0.3)',
-  },
+/** Accent names keep their old meaning; each maps onto a Stage token. */
+const ACCENT_TOKEN = {
+  cyan: 'cyan',
+  gold: 'warning',
+  green: 'success',
+  violet: 'aqua',
+  rose: 'danger',
 };
 
 function useAccent(name = 'cyan') {
   const tokens = useThemeStore((s) => s.tokens);
-  const dark = ACCENTS[name] || ACCENTS.cyan;
-  if (tokens.live) {
-    return {
-      ...dark,
-      colors: [dark.colors[0], dark.colors[1], 'rgba(10,18,32,0.28)'],
-    };
-  }
-  if (tokens.isDark) return dark;
-  const tint = name === 'gold' ? tokens.amber : name === 'rose' ? FUT.rose : name === 'green' ? '#15803D' : tokens.cyan;
-  const border = name === 'gold' ? tokens.amberBorder : name === 'rose' ? 'rgba(255,77,109,0.4)' : tokens.cyanBorder;
-  return {
-    border,
-    colors: [hexToRgba(tint, 0.14), tokens.cardSolid],
-    tint,
-    glow: tint,
-  };
+  const tint = tokens[ACCENT_TOKEN[name] || 'cyan'];
+  return { tint, border: hexToRgba(tint, 0.45) };
 }
 
 export function formatNumber(value, digits = 0) {
@@ -99,37 +61,19 @@ export function formatWhen(dateStr) {
   );
 }
 
+/** Flat Stage panel (the old pitch gradient and hairlines are gone). Live Dark keeps the glass. */
 export function PitchAtmosphere({ children, style }) {
   const tokens = useThemeStore((s) => s.tokens);
   return (
-    <LiveGlass style={[{ borderRadius: CARD_RADIUS }, style]} intensity={36}>
-      <LinearGradient
-        colors={tokens.live
-          ? ['rgba(12,20,36,0.55)', 'rgba(10,18,32,0.42)', 'rgba(6,10,20,0.28)']
-          : [tokens.cardSolid, '#0A1A30', tokens.bg]}
-        start={{ x: 0.15, y: 0 }}
-        end={{ x: 0.9, y: 1 }}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-      />
-      <LinearGradient
-        colors={tokens.wash}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-      />
-      {Array.from({ length: 7 }).map((_, i) => (
-        <View
-          key={`h-${i}`}
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: `${12 + i * 12}%`,
-            height: 1,
-            backgroundColor: tokens.isDark ? 'rgba(0,232,255,0.06)' : hexToRgba(tokens.amber, 0.14),
-          }}
-        />
-      ))}
+    <LiveGlass
+      style={[{
+        borderRadius: CARD_RADIUS,
+        borderWidth: 1,
+        borderColor: tokens.border,
+        backgroundColor: tokens.live ? 'transparent' : tokens.card,
+      }, style]}
+      intensity={36}
+    >
       {children}
     </LiveGlass>
   );
@@ -139,44 +83,38 @@ export function PitchAtmosphere({ children, style }) {
 export const DASHBOARD_CARD_RADIUS = CARD_RADIUS;
 
 /** Game Day MATCH SCREENS tile chrome — dashboard widgets reuse this. */
-export const GAME_DAY_SILVER = '#EEF3FB';
-export const TILE_BORDER = 'rgba(238,243,251,0.22)';
-export const TILE_BORDER_HOT = 'rgba(238,243,251,0.4)';
-export const TILE_FILL = 'rgba(17,24,39,0.88)';
-export const TILE_FILL_INNER = 'rgba(0,0,0,0.35)';
+export const GAME_DAY_SILVER = STAGE_PALETTE.textSoft;
+export const TILE_BORDER = STAGE_PALETTE.border;
+export const TILE_BORDER_HOT = STAGE_PALETTE.borderStrong;
+export const TILE_FILL = STAGE_PALETTE.card;
+export const TILE_FILL_INNER = STAGE_PALETTE.bgDeep;
 /** Over a Live Dark photo — same as Game Day MATCH SCREENS with a tile background. */
-export const TILE_FILL_LIVE = 'rgba(0,0,0,0.4)';
-export const TILE_FILL_LIVE_INNER = 'rgba(0,0,0,0.28)';
+export const TILE_FILL_LIVE = 'rgba(19,43,92,0.62)';
+export const TILE_FILL_LIVE_INNER = 'rgba(7,22,58,0.55)';
 
 export function tileChrome(tokens, extra = {}) {
-  const dark = !tokens || tokens.isDark !== false;
   const live = tokens?.live === true;
   return {
     overflow: 'hidden',
     borderRadius: CARD_RADIUS,
     borderWidth: 1,
-    borderColor: dark ? TILE_BORDER : (tokens.hairline || TILE_BORDER),
-    backgroundColor: live
-      ? TILE_FILL_LIVE
-      : dark ? TILE_FILL : (tokens.cardSolid || TILE_FILL),
+    borderColor: tokens?.border || TILE_BORDER,
+    backgroundColor: live ? TILE_FILL_LIVE : (tokens?.card || TILE_FILL),
     ...extra,
   };
 }
 
 export function innerTileChrome(tokens, extra = {}) {
   const live = tokens?.live === true;
-  const dark = !tokens || tokens.isDark !== false;
   return tileChrome(tokens, {
-    backgroundColor: live
-      ? TILE_FILL_LIVE_INNER
-      : dark ? TILE_FILL_INNER : (tokens.inputFill || TILE_FILL_INNER),
+    backgroundColor: live ? TILE_FILL_LIVE_INNER : (tokens?.inputFill || TILE_FILL_INNER),
     ...extra,
   });
 }
 
 export function SectionCard({ children, style, accent = 'cyan', radius = CARD_RADIUS }) {
   const tokens = useThemeStore((s) => s.tokens);
-  const borderColor = accent === 'rose' ? 'rgba(255,77,109,0.4)' : undefined;
+  const borderColor = accent === 'rose' ? hexToRgba(tokens.danger, 0.5) : undefined;
   return (
     <View style={[tileChrome(tokens, { borderRadius: radius, ...(borderColor ? { borderColor } : {}) }), style]}>
       <View style={{ padding: 16 }}>
@@ -186,31 +124,32 @@ export function SectionCard({ children, style, accent = 'cyan', radius = CARD_RA
   );
 }
 
+/** Section label style shared by the dashboard: 11px / 600 / uppercase / 0.12em / muted. */
+export function sectionLabelStyle(tokens) {
+  return {
+    color: tokens.muted,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 11 * 0.12,
+    textTransform: 'uppercase',
+  };
+}
+
 export function SectionTitle({ children, right, eyebrow }) {
   const tokens = useThemeStore((s) => s.tokens);
-  const silver = tokens.isDark ? GAME_DAY_SILVER : tokens.muted;
   return (
-    <View style={{ marginBottom: 16 }}>
+    <View style={{ marginBottom: 14 }}>
       {eyebrow ? (
-        <Text style={{
-          color: silver,
-          fontSize: 11,
-          fontWeight: '900',
-          letterSpacing: 2,
-          marginBottom: 4,
-          textTransform: 'uppercase',
-        }}
-        >
+        <Text numberOfLines={1} style={[sectionLabelStyle(tokens), { marginBottom: 4 }]}>
           {eyebrow}
         </Text>
       ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <Text style={[headingStyle, { color: tokens.text, flex: 1 }]}>
+        <Text style={[headingStyle, { color: tokens.text, flex: 1, letterSpacing: headingStyle.fontSize * 0.03 }]}>
           {children}
         </Text>
         {right}
       </View>
-      <View style={{ height: 1, width: 72, marginTop: 8, backgroundColor: tokens.isDark ? TILE_BORDER : tokens.hairline }} />
     </View>
   );
 }
@@ -218,8 +157,13 @@ export function SectionTitle({ children, right, eyebrow }) {
 export function LinkText({ label, onPress }) {
   const tokens = useThemeStore((s) => s.tokens);
   return (
-    <TouchableOpacity onPress={onPress} hitSlop={8}>
-      <Text style={{ color: tokens.cyan, fontSize: 10, fontWeight: '900', letterSpacing: 1.4, textTransform: 'uppercase' }}>
+    <TouchableOpacity
+      onPress={onPress}
+      hitSlop={{ top: 14, bottom: 14, left: 8, right: 8 }}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <Text style={{ color: tokens.cyan, fontSize: 12, fontWeight: '600' }}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -229,53 +173,23 @@ export function LinkText({ label, onPress }) {
 export function DashboardRankRing({ rank, winRate, size = 92 }) {
   const tokens = useThemeStore((s) => s.tokens);
   const pct = Math.min(100, Math.max(0, Number(winRate) || 0));
-  const r = (size - 12) / 2;
+  const stroke = 8;
+  const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
   const offset = circ - (pct / 100) * circ;
   const cx = size / 2;
-  const pulse = useRef(new Animated.Value(0.55)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0.45, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [pulse]);
 
   return (
     <View style={{ width: size, height: size }}>
-      <Animated.View
-        style={{
-          position: 'absolute',
-          top: -6,
-          left: -6,
-          right: -6,
-          bottom: -6,
-          borderRadius: size,
-          backgroundColor: 'rgba(0,232,255,0.18)',
-          opacity: pulse,
-        }}
-      />
       <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
-        <Defs>
-          <SvgGrad id="rankGradFut" x1="0%" y1="0%" x2="100%" y2="0%">
-            <Stop offset="0%" stopColor="#00E8FF" />
-            <Stop offset="55%" stopColor="#7CFF6B" />
-            <Stop offset="100%" stopColor="#FFD24A" />
-          </SvgGrad>
-        </Defs>
-        <Circle cx={cx} cy={cx} r={r} fill={tokens.live ? 'rgba(10,18,32,0.55)' : 'rgba(3,6,13,0.85)'} stroke="rgba(255,255,255,0.08)" strokeWidth="8" />
+        <Circle cx={cx} cy={cx} r={r} fill="none" stroke={tokens.border} strokeWidth={stroke} />
         <Circle
           cx={cx}
           cy={cx}
           r={r}
           fill="none"
-          stroke="url(#rankGradFut)"
-          strokeWidth="8"
+          stroke={tokens.cyan}
+          strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={`${circ}`}
           strokeDashoffset={offset}
@@ -285,9 +199,14 @@ export function DashboardRankRing({ rank, winRate, size = 92 }) {
         position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center',
       }}
       >
-        <Text style={{ color: FUT.gold, fontSize: 9, fontWeight: '900', letterSpacing: 1.5 }}>RANK</Text>
-        <Text style={{ color: '#fff', fontWeight: '900', fontSize: 22, marginTop: 1 }}>{rank ? `#${rank}` : '—'}</Text>
-        <Text style={{ color: FUT.cyan, fontSize: 10, fontWeight: '900', marginTop: 2 }}>{pct}% WR</Text>
+        <Text style={[sectionLabelStyle(tokens), { fontSize: 9, letterSpacing: 9 * 0.12 }]}>RANK</Text>
+        <Text style={{
+          color: tokens.text, fontFamily: FONT_EA_SPORTS, fontSize: 22, marginTop: 1, textTransform: 'uppercase',
+        }}
+        >
+          {rank ? `#${rank}` : '—'}
+        </Text>
+        <Text style={{ color: tokens.cyan, fontSize: 10, fontWeight: '600', marginTop: 2 }}>{pct}% WR</Text>
       </View>
     </View>
   );
@@ -297,26 +216,22 @@ export function DashboardGamerStatCard({ label, value, sub, accent = 'cyan', ico
   const tokens = useThemeStore((s) => s.tokens);
   const a = useAccent(accent);
   return (
-    <View style={tileChrome(tokens, { flex: 1, minHeight: 118 })}>
-      <View style={{ flex: 1, padding: 13, minHeight: 118, justifyContent: 'flex-start' }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          {icon ? <Ionicons name={icon} size={15} color={tokens.isDark ? GAME_DAY_SILVER : a.tint} /> : <View />}
-          <View style={{
-            width: 6, height: 6, borderRadius: CARD_RADIUS, backgroundColor: tokens.isDark ? GAME_DAY_SILVER : a.tint, opacity: 0.7,
-          }}
-          />
+    <View style={tileChrome(tokens, { flex: 1 })}>
+      <View style={{ flex: 1, padding: 16, gap: 6 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+          <Text numberOfLines={1} style={[sectionLabelStyle(tokens), { flexShrink: 1 }]}>
+            {label}
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            {icon ? <Ionicons name={icon} size={16} color={a.tint} /> : null}
+            <View style={{
+              width: 6, height: 6, borderRadius: 3, backgroundColor: a.tint,
+            }}
+            />
+          </View>
         </View>
-        <Text style={{
-          color: tokens.muted, fontSize: 9, fontWeight: '900', letterSpacing: 1.6,
-          textTransform: 'uppercase', marginTop: 8,
-        }}
-        >
-          {label}
-        </Text>
         <Text
-          style={{
-            color: tokens.text, fontWeight: '900', fontSize: 20, marginTop: 6, letterSpacing: -0.5,
-          }}
+          style={{ color: tokens.text, fontWeight: '700', fontSize: 16 }}
           numberOfLines={2}
           adjustsFontSizeToFit
           minimumFontScale={0.72}
@@ -324,7 +239,7 @@ export function DashboardGamerStatCard({ label, value, sub, accent = 'cyan', ico
           {value}
         </Text>
         {sub ? (
-          <Text style={{ color: tokens.muted, fontSize: 10, marginTop: 4, fontWeight: '600' }} numberOfLines={2}>
+          <Text style={{ color: tokens.muted, fontSize: 12 }} numberOfLines={2}>
             {sub}
           </Text>
         ) : null}
@@ -348,9 +263,9 @@ export function DashboardQuickGlance({ glance, onOpen }) {
     { id: 'alerts', label: 'Alerts', value: unreadTotal, icon: 'notifications', href: '/apps/inbox', accent: 'rose', hot: unreadTotal > 0 },
   ];
   return (
-    <View style={{ gap: 10 }}>
+    <View style={{ gap: 12 }}>
       {[0, 2].map((start) => (
-        <View key={tiles[start].id} style={{ flexDirection: 'row', alignItems: 'stretch', gap: 10 }}>
+        <View key={tiles[start].id} style={{ flexDirection: 'row', alignItems: 'stretch', gap: 12 }}>
           {tiles.slice(start, start + 2).map((t) => {
             const a = packs[t.accent] || cyan;
             return (
@@ -358,29 +273,36 @@ export function DashboardQuickGlance({ glance, onOpen }) {
                 key={t.id}
                 onPress={() => onOpen?.(t.href)}
                 activeOpacity={0.88}
+                accessibilityRole="button"
+                accessibilityLabel={`${t.label} ${t.value}`}
                 style={{ flex: 1 }}
               >
                 <View
                   style={tileChrome(tokens, {
                     flex: 1,
                     minHeight: 72,
-                    ...(t.hot ? { borderColor: TILE_BORDER_HOT } : {}),
+                    ...(t.hot ? { borderColor: tokens.borderStrong } : {}),
                   })}
                 >
-                  <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 11, padding: 13, minHeight: 72 }}>
+                  <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, minHeight: 72 }}>
                     <View style={{
-                      width: 42, height: 42, borderRadius: CARD_RADIUS, alignItems: 'center', justifyContent: 'center',
-                      backgroundColor: tokens.live ? TILE_FILL_LIVE_INNER : (tokens.isDark ? TILE_FILL_INNER : tokens.inputFill),
-                      borderWidth: 1, borderColor: t.hot ? TILE_BORDER_HOT : TILE_BORDER,
+                      width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
+                      backgroundColor: tokens.live ? TILE_FILL_LIVE_INNER : tokens.inputFill,
+                      borderWidth: 1, borderColor: t.hot ? tokens.borderStrong : tokens.border,
                     }}
                     >
-                      <Ionicons name={t.icon} size={18} color={t.hot ? a.tint : (tokens.isDark ? GAME_DAY_SILVER : a.tint)} />
+                      <Ionicons name={`${t.icon}-outline`} size={22} color={t.hot ? a.tint : tokens.textSoft} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={{ color: tokens.muted, fontSize: 9, fontWeight: '900', letterSpacing: 1.5 }}>
+                      <Text numberOfLines={1} style={sectionLabelStyle(tokens)}>
                         {t.label}
                       </Text>
-                      <Text style={{ color: tokens.text, fontWeight: '900', fontSize: 20, marginTop: 2 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                      <Text
+                        style={{ color: tokens.text, fontWeight: '700', fontSize: 20, marginTop: 2 }}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.7}
+                      >
                         {t.value}
                       </Text>
                     </View>
@@ -395,32 +317,20 @@ export function DashboardQuickGlance({ glance, onOpen }) {
   );
 }
 
+/** Rating tile: tokens only, banded like the old gold / lime / cyan / neutral scale. */
 function ratingStyle(value, tokens) {
-  if (value >= 8) return { bg: tokens.isDark ? FUT.gold : tokens.amber, color: tokens.isDark ? '#111' : '#F8FAFC', border: tokens.amber };
-  if (value >= 7) return { bg: tokens.isDark ? FUT.lime : '#15803D', color: '#F8FAFC', border: tokens.isDark ? FUT.lime : '#15803D' };
-  if (value >= 6) return { bg: tokens.cyan, color: tokens.isDark ? '#031018' : '#F8FAFC', border: tokens.cyan };
-  return {
-    bg: tokens.inputFill,
-    color: tokens.muted,
-    border: tokens.hairline,
-  };
+  if (value >= 8) return { bg: tokens.warning, color: tokens.onCyan };
+  if (value >= 7) return { bg: tokens.successBg, color: tokens.success };
+  if (value >= 6) return { bg: tokens.cyan, color: tokens.onCyan };
+  return { bg: tokens.border, color: tokens.muted };
 }
 
-function outcomeStyle(item, tokens) {
+/** Outcome strings from the dashboard loader become FormBadge results. */
+function outcomeResult(item) {
   const key = String(item || 'draw').toLowerCase();
-  if (key === 'win') {
-    return tokens.isDark
-      ? { bg: 'rgba(124,255,107,0.18)', color: FUT.lime, border: 'rgba(124,255,107,0.45)', letter: 'W' }
-      : { bg: 'rgba(21,128,61,0.16)', color: '#15803D', border: 'rgba(21,128,61,0.4)', letter: 'W' };
-  }
-  if (key === 'loss') {
-    return tokens.isDark
-      ? { bg: 'rgba(255,77,109,0.16)', color: FUT.rose, border: 'rgba(255,77,109,0.4)', letter: 'L' }
-      : { bg: 'rgba(185,28,28,0.12)', color: '#B91C1C', border: 'rgba(185,28,28,0.35)', letter: 'L' };
-  }
-  return tokens.isDark
-    ? { bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.55)', border: 'rgba(255,255,255,0.18)', letter: 'D' }
-    : { bg: tokens.inputFill, color: tokens.muted, border: tokens.hairline, letter: 'D' };
+  if (key === 'win') return 'W';
+  if (key === 'loss') return 'L';
+  return 'D';
 }
 
 export function DashboardFormStrip({ label, mode = 'outcome', items = [], emptyLabel }) {
@@ -428,38 +338,29 @@ export function DashboardFormStrip({ label, mode = 'outcome', items = [], emptyL
   if (!items?.length) {
     return (
       <View style={{ marginBottom: 10 }}>
-        {label ? <Text style={[styles.stripLabel, { color: tokens.muted, marginBottom: 8 }]}>{label}</Text> : null}
+        {label ? <Text style={[styles.stripLabel, sectionLabelStyle(tokens)]}>{label}</Text> : null}
         {emptyLabel ? <Text style={{ color: tokens.muted, fontSize: 12 }}>{emptyLabel}</Text> : null}
       </View>
     );
   }
   return (
     <View style={{ marginBottom: 10 }}>
-      {label ? <Text style={[styles.stripLabel, { color: tokens.muted }]}>{label}</Text> : null}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
+      {label ? <Text style={[styles.stripLabel, sectionLabelStyle(tokens)]}>{label}</Text> : null}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {items.map((item, i) => {
           if (mode === 'rating') {
             const s = ratingStyle(item, tokens);
             return (
               <View key={`${item}-${i}`} style={{
-                width: 38, height: 38, borderRadius: CARD_RADIUS, borderWidth: 1, borderColor: s.border,
-                backgroundColor: s.bg, alignItems: 'center', justifyContent: 'center',
+                width: 38, height: 38, borderRadius: 12, backgroundColor: s.bg,
+                alignItems: 'center', justifyContent: 'center',
               }}
               >
-                <Text style={{ color: s.color, fontWeight: '900', fontSize: 11 }}>{Number(item).toFixed(1)}</Text>
+                <Text style={{ color: s.color, fontWeight: '700', fontSize: 12 }}>{Number(item).toFixed(1)}</Text>
               </View>
             );
           }
-          const o = outcomeStyle(item, tokens);
-          return (
-            <View key={`${item}-${i}`} style={{
-              width: 38, height: 38, borderRadius: CARD_RADIUS, borderWidth: 1, borderColor: o.border,
-              backgroundColor: o.bg, alignItems: 'center', justifyContent: 'center',
-            }}
-            >
-              <Text style={{ color: o.color, fontWeight: '900', fontSize: 13 }}>{o.letter}</Text>
-            </View>
-          );
+          return <FormBadge key={`${item}-${i}`} result={outcomeResult(item)} />;
         })}
       </View>
     </View>
@@ -483,13 +384,11 @@ export function MiniBarChart({ data = [], valueKey = 'matches', color = FUT.cyan
         const h = Math.max(6, (v / max) * 70);
         return (
           <View key={`${d.label}-${i}`} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end' }}>
-            <LinearGradient
-              colors={[color, 'rgba(255,255,255,0.08)']}
-              style={{
-                width: '72%', height: h, borderRadius: CARD_RADIUS,
-              }}
+            <View style={{
+              width: '72%', height: h, borderRadius: 6, backgroundColor: color,
+            }}
             />
-            <Text style={{ color: tokens.faint, fontSize: 8, marginTop: 5, fontWeight: '700' }} numberOfLines={1}>
+            <Text style={{ color: tokens.muted, fontSize: 9, marginTop: 5, fontWeight: '600' }} numberOfLines={1}>
               {d.label}
             </Text>
           </View>
@@ -539,12 +438,12 @@ export function ObjectivesWidget({ playerId }) {
   };
 
   if (!playerId) return null;
-  if (loading) return <ActivityIndicator color={FUT.cyan} />;
-  if (error) return <Text style={{ color: FUT.rose, fontSize: 12 }}>{error}</Text>;
+  if (loading) return <ActivityIndicator color={tokens.cyan} />;
+  if (error) return <Text style={{ color: tokens.danger, fontSize: 12 }}>{error}</Text>;
   if (!items.length) return <Text style={{ color: tokens.muted, fontSize: 12 }}>No open objectives.</Text>;
 
   return (
-    <View style={{ gap: 9 }}>
+    <View style={{ gap: 16 }}>
       {items.slice(0, 6).map((item) => {
         const title = item.title || item.objective_title || item.name || 'Objective';
         const progress = Number(item.progress ?? item.current_value ?? 0);
@@ -552,38 +451,50 @@ export function ObjectivesWidget({ playerId }) {
         const done = item.claimed || item.status === 'claimed';
         const claimable = !done && (item.completed || progress >= target);
         const pct = Math.min(100, Math.round((progress / target) * 100));
+        const finished = done || claimable;
         return (
-          <View
-            key={item.id}
-            style={innerTileChrome(tokens, { padding: 12 })}
-          >
-            <Text style={{ color: tokens.text, fontWeight: '800', fontSize: 13 }}>{title}</Text>
-            <Text style={{ color: tokens.muted, fontSize: 11, marginTop: 3 }}>
-              {progress}/{target} · {String(item.scope || 'daily').toUpperCase()}
-            </Text>
-            <View style={{
-              height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.08)', marginTop: 10, overflow: 'hidden',
-            }}
-            >
-              <LinearGradient
-                colors={[FUT.cyan, FUT.gold]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={{ width: `${pct}%`, height: '100%' }}
+          <View key={item.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            {finished ? (
+              <Ionicons name="checkmark-outline" size={22} color={tokens.success} />
+            ) : (
+              <View style={{
+                width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: tokens.borderStrong,
+              }}
               />
+            )}
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text
+                style={{ color: finished && done ? tokens.muted : tokens.text, fontWeight: '600', fontSize: 14 }}
+                numberOfLines={2}
+              >
+                {title}
+              </Text>
+              <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
+                {progress}/{target} · {String(item.scope || 'daily').toUpperCase()}
+              </Text>
+              <View style={{
+                height: 6, borderRadius: 3, backgroundColor: tokens.border, marginTop: 8, overflow: 'hidden',
+              }}
+              >
+                <View style={{ width: `${pct}%`, height: 6, borderRadius: 3, backgroundColor: tokens.cyan }} />
+              </View>
             </View>
             {claimable ? (
               <TouchableOpacity
                 onPress={() => claim(item.id)}
                 disabled={claimingId === item.id}
+                accessibilityRole="button"
+                accessibilityLabel={`Claim reward for ${title}`}
+                hitSlop={{ top: 5, bottom: 5 }}
                 style={{
-                  marginTop: 11, minHeight: 40, borderRadius: CARD_RADIUS, alignItems: 'center', justifyContent: 'center',
-                  backgroundColor: 'rgba(255,210,74,0.16)', borderWidth: 1, borderColor: TILE_BORDER_HOT,
+                  height: 34, minWidth: 44, borderRadius: 999, paddingHorizontal: 14,
+                  alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: tokens.cyan, borderWidth: 1, borderColor: tokens.cyan,
                 }}
               >
                 {claimingId === item.id
-                  ? <ActivityIndicator color={FUT.gold} size="small" />
-                  : <Text style={{ color: FUT.gold, fontWeight: '900', fontSize: 12, letterSpacing: 1 }}>CLAIM REWARD</Text>}
+                  ? <ActivityIndicator color={tokens.onCyan} size="small" />
+                  : <Text style={{ color: tokens.onCyan, fontWeight: '700', fontSize: 12 }} numberOfLines={1}>CLAIM REWARD</Text>}
               </TouchableOpacity>
             ) : null}
           </View>
@@ -627,13 +538,16 @@ export function EafcClubPanel({ player, eafcSummary, onRefresh }) {
   };
 
   return (
-    <View style={{ gap: 10 }}>
+    <View style={{ gap: 12 }}>
       {eafcSummary?.clubName ? (
         <View
           style={innerTileChrome(tokens, { padding: 14 })}
         >
-          <Text style={{ color: FUT.gold, fontSize: 10, fontWeight: '900', letterSpacing: 2 }}>LINKED PRO CLUB</Text>
-          <Text style={{ color: tokens.text, fontWeight: '900', fontSize: 18, marginTop: 6, textTransform: 'uppercase' }}>
+          <Text style={sectionLabelStyle(tokens)}>LINKED PRO CLUB</Text>
+          <Text
+            style={{ color: tokens.text, fontFamily: FONT_EA_SPORTS, fontSize: 18, marginTop: 6, textTransform: 'uppercase' }}
+            numberOfLines={1}
+          >
             {eafcSummary.clubName}
           </Text>
           <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 4 }}>ID {eafcSummary.clubId}</Text>
@@ -641,28 +555,36 @@ export function EafcClubPanel({ player, eafcSummary, onRefresh }) {
       ) : (
         <Text style={{ color: tokens.muted, fontSize: 12 }}>Link your EA FC Pro Club to show club form here.</Text>
       )}
-      <TextInput
+      <TextField
         value={clubName}
         onChangeText={setClubName}
         placeholder="Pro Club name"
-        placeholderTextColor={tokens.faint}
-        style={[styles.input, { color: tokens.text, borderColor: tokens.cyanBorder, backgroundColor: tokens.inputFill }]}
       />
-      <TextInput
+      <TextField
         value={String(clubId || '')}
         onChangeText={setClubId}
         placeholder="Club ID"
-        placeholderTextColor={tokens.faint}
-        style={[styles.input, { color: tokens.text, borderColor: tokens.cyanBorder, backgroundColor: tokens.inputFill }]}
       />
       <View style={{ flexDirection: 'row', gap: 8 }}>
-        <TouchableOpacity onPress={save} disabled={busy} style={[styles.btn, { flex: 1, backgroundColor: 'rgba(0,232,255,0.14)', borderColor: 'rgba(0,232,255,0.4)' }]}>
-          <Text style={{ color: FUT.cyan, fontWeight: '900' }}>{busy ? '…' : 'SAVE LINK'}</Text>
-        </TouchableOpacity>
+        <View style={{ flex: 1 }}>
+          <Button
+            title={busy ? '…' : 'SAVE LINK'}
+            variant="secondary"
+            onPress={save}
+            disabled={busy}
+            accessibilityLabel="Save link"
+          />
+        </View>
         {eafcSummary?.clubId ? (
-          <TouchableOpacity onPress={unlink} disabled={busy} style={[styles.btn, { borderColor: 'rgba(255,77,109,0.4)', backgroundColor: 'rgba(255,77,109,0.1)' }]}>
-            <Text style={{ color: FUT.rose, fontWeight: '900' }}>UNLINK</Text>
-          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Button
+              title="UNLINK"
+              variant="danger"
+              onPress={unlink}
+              disabled={busy}
+              accessibilityLabel="Unlink"
+            />
+          </View>
         ) : null}
       </View>
     </View>
@@ -674,45 +596,20 @@ export function ClubCrest({ club, size = 52 }) {
   return (
     <View style={{
       width: size, height: size, borderRadius: 16, overflow: 'hidden',
-      borderWidth: 1.5, borderColor: tokens.amberBorder,
-      backgroundColor: tokens.live ? 'transparent' : tokens.cardSolid,
+      borderWidth: 1, borderColor: tokens.border,
+      backgroundColor: tokens.live ? 'transparent' : tokens.card,
       alignItems: 'center', justifyContent: 'center',
-      shadowColor: tokens.amber, shadowOpacity: tokens.isDark ? 0.35 : 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 4 },
     }}
     >
       {club?.logo_url
         ? <Image source={{ uri: club.logo_url }} style={{ width: size, height: size }} />
-        : <Ionicons name="shield" size={size * 0.4} color={FUT.gold} />}
+        : <Ionicons name="shield-outline" size={size * 0.44} color={tokens.warning} />}
     </View>
   );
 }
 
 const styles = {
   stripLabel: {
-    color: 'rgba(255,255,255,0.42)',
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.8,
-    textTransform: 'uppercase',
     marginBottom: 8,
-  },
-  input: {
-    borderRadius: CARD_RADIUS,
-    borderWidth: 1,
-    borderColor: TILE_BORDER,
-    backgroundColor: TILE_FILL_INNER,
-    color: '#fff',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  btn: {
-    minHeight: 46,
-    borderRadius: CARD_RADIUS,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 14,
   },
 };

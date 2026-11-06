@@ -1,22 +1,17 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   RefreshControl,
-  ScrollView,
   StatusBar,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { resolveMyPlayerAndClub } from '@/api/stageClient';
-import {
-  GamerProfileShell,
-  GlassIconButton,
-  CYAN,
-} from '@/components/profile/gamer/GamerProfileUI';
-import { FUT, SectionCard } from '@/components/dashboard/CommandCenterUI';
+import useThemeStore from '@/store/themeStore';
+import { Screen, Card, Chip, SectionLabel } from '@/components/ui';
+import CompetitionHeader from '@/components/tournament/CompetitionHeader';
 import StandingsTable from '@/components/tournament/StandingsTable';
 import TournamentLeaderboard from '@/components/tournament/TournamentLeaderboard';
 import { groupFixturesByMatchday, loadLeagueDetail } from '@/lib/competitionSeason';
@@ -26,6 +21,7 @@ import { proposeTime, roleForClub } from '@/lib/scheduleEngine';
 export default function LeagueDetailScreen() {
   const { slug } = useLocalSearchParams();
   const router = useRouter();
+  const tokens = useThemeStore((s) => s.tokens);
   const [data, setData] = useState(null);
   const [myClub, setMyClub] = useState(null);
   const [user, setUser] = useState(null);
@@ -82,83 +78,76 @@ export default function LeagueDetailScreen() {
 
   if (loading || !data?.league) {
     return (
-      <GamerProfileShell>
+      <Screen scroll={false} tabBar={false} guideFab>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          {loading ? <ActivityIndicator color={CYAN} /> : <Text style={{ color: 'rgba(255,255,255,0.45)' }}>League not found</Text>}
+          {loading ? <ActivityIndicator color={tokens.cyan} /> : <Text style={{ color: tokens.muted }}>League not found</Text>}
         </View>
-      </GamerProfileShell>
+      </Screen>
     );
   }
 
   const days = groupFixturesByMatchday(data.fixtures);
 
   return (
-    <GamerProfileShell>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 }}>
-          <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
-          <Text style={{ color: '#fff', fontWeight: '900', marginLeft: 12, flex: 1 }} numberOfLines={1}>
-            {data.league.name}
-          </Text>
-        </View>
-        <View style={{ flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 }}>
+    <Screen
+      tabBar={false} guideFab
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={tokens.cyan} />}
+    >
+      <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
+      <View style={{ gap: 14 }}>
+        <CompetitionHeader title={data.league.name} onBack={() => router.back()} />
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {['table', 'fixtures', 'stats'].map((id) => (
-            <TouchableOpacity
-              key={id}
-              onPress={() => setTab(id)}
-              style={{
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                borderRadius: 999,
-                backgroundColor: tab === id ? 'rgba(0,232,255,0.16)' : 'transparent',
-                borderWidth: 1,
-                borderColor: tab === id ? 'rgba(0,232,255,0.4)' : 'rgba(255,255,255,0.12)',
-              }}
-            >
-              <Text style={{ color: tab === id ? CYAN : 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '800' }}>
-                {id.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
+            <Chip key={id} label={id.toUpperCase()} active={tab === id} onPress={() => setTab(id)} />
           ))}
         </View>
-        <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, gap: 10 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={CYAN} />}
-        >
-          {error ? <Text style={{ color: FUT.rose, fontSize: 12 }}>{error}</Text> : null}
-          {tab === 'table' ? (
-            <StandingsTable
-              title="League table"
-              rows={data.standings}
-              emptyLabel="No standings yet."
-            />
-          ) : tab === 'stats' ? (
-            <TournamentLeaderboard
-              tournamentId={data.league.id}
-              title="Season Statistics"
-              statisticsUrl={`/competition-views/regional_league/${encodeURIComponent(data.league.id)}/statistics`}
-            />
-          ) : days.map((day) => (
-            <SectionCard key={day.matchday}>
-              <Text style={{ color: CYAN, fontSize: 11, fontWeight: '900', marginBottom: 6 }}>MATCHDAY {day.matchday}</Text>
-              {day.rows.map((f) => (
-                <View key={f.id} style={{ paddingVertical: 8 }}>
-                  <TouchableOpacity onPress={() => openFixture(f)}>
-                    <Text style={{ color: '#fff', fontWeight: '700' }}>{f.home_club_name} vs {f.away_club_name}</Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{f.scheduling_status || f.status}</Text>
-                  </TouchableOpacity>
-                  {myClub && roleForClub(f, myClub.id) && ['open', 'home_proposed', 'away_proposed'].includes(f.scheduling_status) ? (
-                    <TouchableOpacity onPress={() => propose(f)}>
-                      <Text style={{ color: CYAN, fontSize: 11, fontWeight: '800' }}>Propose time</Text>
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
-              ))}
-            </SectionCard>
-          ))}
-        </ScrollView>
-      </SafeAreaView>
-    </GamerProfileShell>
+        {error ? <Text style={{ color: tokens.danger, fontSize: 12 }}>{error}</Text> : null}
+        {tab === 'table' ? (
+          <StandingsTable
+            title="League table"
+            rows={data.standings}
+            emptyLabel="No standings yet."
+          />
+        ) : tab === 'stats' ? (
+          <TournamentLeaderboard
+            tournamentId={data.league.id}
+            title="Season Statistics"
+            statisticsUrl={`/competition-views/regional_league/${encodeURIComponent(data.league.id)}/statistics`}
+          />
+        ) : days.map((day) => (
+          <Card key={day.matchday} style={{ gap: 4 }}>
+            <SectionLabel>{`MATCHDAY ${day.matchday}`}</SectionLabel>
+            {day.rows.map((f) => (
+              <View
+                key={f.id}
+                style={{ paddingVertical: 4, borderTopWidth: 1, borderTopColor: tokens.border }}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => openFixture(f)}
+                  style={{ minHeight: 44, justifyContent: 'center' }}
+                >
+                  <Text numberOfLines={2} style={{ color: tokens.text, fontSize: 15, fontWeight: '700' }}>
+                    {f.home_club_name} vs {f.away_club_name}
+                  </Text>
+                  <Text numberOfLines={1} style={{ color: tokens.muted, fontSize: 12, marginTop: 2 }}>
+                    {f.scheduling_status || f.status}
+                  </Text>
+                </Pressable>
+                {myClub && roleForClub(f, myClub.id) && ['open', 'home_proposed', 'away_proposed'].includes(f.scheduling_status) ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => propose(f)}
+                    style={{ minHeight: 44, justifyContent: 'center' }}
+                  >
+                    <Text style={{ color: tokens.cyan, fontSize: 13, fontWeight: '700' }}>Propose time</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ))}
+          </Card>
+        ))}
+      </View>
+    </Screen>
   );
 }

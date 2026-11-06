@@ -9,12 +9,13 @@ import { stageClient, resolveMyPlayerAndClub } from '@/api/stageClient';
 import { loadClubProfile } from '@/lib/clubProfileData';
 import { getPrimaryClubRole } from '@/lib/clubStaffRoles';
 import { playerRoute } from '@/lib/stageNews';
+import { clubStatItems } from '@/lib/clubStatItems';
 import ClubHero from '@/components/club/ClubHero';
 import ClubProfileTabs from '@/app/(tabs)/profile/clubProfileTabs';
-import {
-  GamerProfileShell,
-  AMBER,
-} from '@/components/profile/gamer/GamerProfileUI';
+import { GamerProfileShell } from '@/components/profile/gamer/GamerProfileUI';
+import useThemeStore from '@/store/themeStore';
+import Card from '@/components/ui/Card';
+import StatGrid from '@/components/ui/StatGrid';
 import FollowToggleButton from '@/components/profile/FollowToggleButton';
 
 export default function TeamProfileScreen() {
@@ -22,6 +23,7 @@ export default function TeamProfileScreen() {
   const { user } = useAuthStore();
   const teamId = params?.teamId;
   const router = useRouter();
+  const tokens = useThemeStore((s) => s.tokens);
   const [bundle, setBundle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [myPlayer, setMyPlayer] = useState(null);
@@ -55,9 +57,9 @@ export default function TeamProfileScreen() {
         <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             {loading ? (
-              <ActivityIndicator color={AMBER} />
+              <ActivityIndicator color={tokens.cyan} />
             ) : (
-              <Text style={{ color: 'rgba(255,255,255,0.45)' }}>Club not found</Text>
+              <Text style={{ color: tokens.muted, fontSize: 15 }}>Club not found</Text>
             )}
           </View>
         </SafeAreaView>
@@ -66,6 +68,7 @@ export default function TeamProfileScreen() {
   }
 
   const clubName = club.name || club.club_name || 'Club';
+  const statItems = clubStatItems(bundle);
 
   return (
     <GamerProfileShell>
@@ -94,7 +97,12 @@ export default function TeamProfileScreen() {
             )}
           />
 
-          <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
+          <View style={{ paddingHorizontal: 20, marginTop: 14, gap: 14 }}>
+            {statItems.length > 0 ? (
+              <Card style={{ paddingVertical: 14 }}>
+                <StatGrid items={statItems} columns={statItems.length} />
+              </Card>
+            ) : null}
             <ClubProfileTabs
               club={club}
               isOwner={isOwner}

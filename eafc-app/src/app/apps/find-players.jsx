@@ -4,21 +4,18 @@ import {
   RefreshControl,
   ScrollView,
   StatusBar,
-  TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { GamerProfileShell, GlassIconButton } from '@/components/profile/gamer/GamerProfileUI';
+import useThemeStore from '@/store/themeStore';
+import { IconButton, Screen, SectionLabel, SegmentedControl } from '@/components/ui';
 import PageTile, { PageTitle } from '@/components/theme/PageTile';
 import DirectoryCarousel from '@/components/directory/DirectoryCarousel';
 import DirectoryDetailSheet from '@/components/directory/DirectoryDetailSheet';
+import DirectorySearchField from '@/components/directory/DirectorySearchField';
 import FilterListBox from '@/components/directory/FilterListBox';
-import HubToggle from '@/components/directory/HubToggle';
 import { DirectoryPlayerList } from '@/components/directory/DirectoryLists';
 import TransferPlayerPhotoCard from '@/components/transfer/TransferPlayerPhotoCard';
-import { SILVER, TILE_HAIRLINE } from '@/components/transfer/transferHubTheme';
 import { playerAvatarInitials, resolvePlayerAvatarUrl } from '@/lib/playerAvatar';
 import {
   OVR_FLOOR_OPTIONS,
@@ -30,8 +27,14 @@ import {
   playerOverallRating,
 } from '@/lib/stageDirectories';
 
+const VIEW_OPTIONS = [
+  { key: 'carousel', label: 'Carousel' },
+  { key: 'list', label: 'List' },
+];
+
 export default function FindPlayersScreen() {
   const router = useRouter();
+  const tokens = useThemeStore((s) => s.tokens);
   const [players, setPlayers] = useState([]);
   const [query, setQuery] = useState('');
   const [platform, setPlatform] = useState('All');
@@ -98,62 +101,30 @@ export default function FindPlayersScreen() {
   };
 
   return (
-    <GamerProfileShell>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 }}>
-          <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
+    <Screen scroll={false} tabBar={false} guideFab>
+      <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
+      <View style={{ flex: 1, gap: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <IconButton icon="arrow-back" onPress={() => router.back()} accessibilityLabel="Back" />
         </View>
 
-        <PageTitle
-          title="FIND PLAYERS"
-          subtitle={`${rows.length} public profile${rows.length === 1 ? '' : 's'}`}
-        />
+        <PageTitle title="FIND PLAYERS" padded={false} style={{ paddingBottom: 0 }} />
 
         <PageTile
           tileKey="find_players"
           tileTitle="FIND PLAYERS"
-          style={{ flex: 1, marginHorizontal: 12, marginBottom: 12 }}
+          style={{ flex: 1 }}
           contentStyle={{ flex: 1, paddingHorizontal: 12, gap: 12 }}
         >
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            <HubToggle
-              label="Carousel"
-              icon="images-outline"
-              active={viewMode === 'carousel'}
-              onPress={() => setViewMode('carousel')}
-            />
-            <HubToggle
-              label="List"
-              icon="list-outline"
-              active={viewMode === 'list'}
-              onPress={() => setViewMode('list')}
-            />
-          </View>
+          <DirectorySearchField
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search gamertag"
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
 
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 10,
-              borderWidth: 1,
-              borderColor: TILE_HAIRLINE,
-              backgroundColor: 'rgba(0,0,0,0.4)',
-              paddingHorizontal: 12,
-              minHeight: 44,
-            }}
-          >
-            <Ionicons name="search" size={16} color="rgba(255,255,255,0.4)" />
-            <TextInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Search gamertag"
-              placeholderTextColor="rgba(255,255,255,0.35)"
-              autoCorrect={false}
-              autoCapitalize="none"
-              style={{ flex: 1, color: '#fff', fontSize: 15, paddingVertical: 10 }}
-            />
-          </View>
+          <SegmentedControl options={VIEW_OPTIONS} value={viewMode} onChange={setViewMode} />
 
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <FilterListBox label="CONSOLE" value={platform} options={PLATFORMS} onChange={setPlatform} />
@@ -161,14 +132,16 @@ export default function FindPlayersScreen() {
             <FilterListBox label="OVR" value={minOvr} options={OVR_FLOOR_OPTIONS} onChange={setMinOvr} />
           </View>
 
+          <SectionLabel>{`${rows.length} public profile${rows.length === 1 ? '' : 's'}`}</SectionLabel>
+
           {loading ? (
-            <ActivityIndicator color={SILVER} style={{ marginTop: 48 }} />
+            <ActivityIndicator color={tokens.cyan} style={{ marginTop: 48 }} />
           ) : viewMode === 'list' ? (
             <ScrollView
               style={{ flex: 1 }}
               contentContainerStyle={{ paddingVertical: 12, paddingBottom: 40 }}
               refreshControl={(
-                <RefreshControl refreshing={Boolean(refreshing)} onRefresh={() => { setRefreshing(true); load(); }} tintColor={SILVER} />
+                <RefreshControl refreshing={Boolean(refreshing)} onRefresh={() => { setRefreshing(true); load(); }} tintColor={tokens.cyan} colors={[tokens.cyan]} />
               )}
             >
               <DirectoryPlayerList
@@ -192,7 +165,7 @@ export default function FindPlayersScreen() {
             />
           )}
         </PageTile>
-      </SafeAreaView>
+      </View>
 
       <DirectoryDetailSheet
         visible={detailsOpen}
@@ -211,6 +184,6 @@ export default function FindPlayersScreen() {
         secondaryLabel="VS"
         onSecondary={challenge}
       />
-    </GamerProfileShell>
+    </Screen>
   );
 }

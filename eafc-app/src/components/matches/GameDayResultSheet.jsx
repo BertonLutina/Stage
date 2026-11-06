@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -15,8 +14,10 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { stageClient } from '@/api/stageClient';
-import { CYAN } from '@/components/profile/gamer/GamerProfileUI';
-import { FUT } from '@/components/dashboard/CommandCenterUI';
+import useThemeStore from '@/store/themeStore';
+import { Button, IconButton } from '@/components/ui';
+import { MIN_TOUCH } from '@/components/ui/metrics';
+import { sectionLabelStyle } from '@/components/dashboard/CommandCenterUI';
 import { buildResultPayload, isClubGameDayMatch, mapResultError, submitMatchResult } from '@/lib/gameDayOps';
 import {
   evidenceRequired,
@@ -35,6 +36,9 @@ export default function GameDayResultSheet({
   isHomeTeam,
   onSubmitted,
 }) {
+  const tokens = useThemeStore((st) => st.tokens);
+  const hint = hintStyle(tokens);
+  const label = sectionLabelStyle(tokens);
   const isClubMatch = isClubGameDayMatch(game);
   const homeName = game?.home_club_name || game?.home_player_name || 'Home';
   const awayName = game?.away_club_name || game?.away_player_name || 'Away';
@@ -266,12 +270,15 @@ export default function GameDayResultSheet({
           onPress={onClose}
           accessibilityRole="button"
           accessibilityLabel="Close result sheet"
-          style={styles.scrim}
+          style={[styles.scrim, { backgroundColor: tokens.overlay }]}
         />
-        <View style={styles.sheet} onStartShouldSetResponder={() => true}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 16 }}>
-            <Text style={{ color: '#fff', fontWeight: '900', letterSpacing: 0.6 }}>{title}</Text>
-            <TouchableOpacity onPress={onClose}><Ionicons name="close" size={22} color="rgba(255,255,255,0.7)" /></TouchableOpacity>
+        <View
+          style={[styles.sheet, { backgroundColor: tokens.bgDeep, borderColor: tokens.border }]}
+          onStartShouldSetResponder={() => true}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, gap: 12 }}>
+            <Text numberOfLines={1} style={{ flex: 1, color: tokens.text, fontSize: 16, fontWeight: '700', letterSpacing: 0.5 }}>{title}</Text>
+            <IconButton icon="close" onPress={onClose} accessibilityLabel="Close" />
           </View>
           <ScrollView
             keyboardShouldPersistTaps="handled"
@@ -285,7 +292,7 @@ export default function GameDayResultSheet({
               </Text>
             ) : null}
             {reviewMode && correction && !countering ? (
-              <Text style={[hint, { color: FUT.gold }]}>
+              <Text style={[hint, { color: tokens.warning }]}>
                 Correction proposed: {correctionFixture.home}–{correctionFixture.away}. Accept it, counter once, or dispute with proof.
               </Text>
             ) : null}
@@ -294,12 +301,12 @@ export default function GameDayResultSheet({
             ) : null}
 
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              <ScoreBox label={`${homeName} (home)`} value={homeScore} onChange={setHomeScore} readOnly={scoreLocked} />
-              <ScoreBox label={`${awayName} (away)`} value={awayScore} onChange={setAwayScore} readOnly={scoreLocked} />
+              <ScoreBox tokens={tokens} label={`${homeName} (home)`} value={homeScore} onChange={setHomeScore} readOnly={scoreLocked} />
+              <ScoreBox tokens={tokens} label={`${awayName} (away)`} value={awayScore} onChange={setAwayScore} readOnly={scoreLocked} />
             </View>
 
             {penaltyError ? (
-              <Text style={{ color: FUT.rose, fontSize: 12 }}>{penaltyError}</Text>
+              <Text style={{ color: tokens.danger, fontSize: 13 }}>{penaltyError}</Text>
             ) : null}
             {showPenalties ? (
               <View style={{ gap: 8 }}>
@@ -310,8 +317,8 @@ export default function GameDayResultSheet({
                   ['away', 'Away won on penalties'],
                 ].map(([value, caption]) => (
                   <TouchableOpacity key={value} onPress={() => setPenaltyChoice(value)} style={rowBtn}>
-                    <Ionicons name={penaltyChoice === value ? 'radio-button-on' : 'radio-button-off'} size={16} color={CYAN} />
-                    <Text style={{ color: '#fff', fontSize: 13 }}>{caption}</Text>
+                    <Ionicons name={penaltyChoice === value ? 'radio-button-on' : 'radio-button-off'} size={22} color={tokens.cyan} />
+                    <Text style={{ color: tokens.text, fontSize: 14 }}>{caption}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -325,16 +332,16 @@ export default function GameDayResultSheet({
                   const on = playedIds.has(String(p.id));
                   const marks = playerMarks[p.id] || {};
                   return (
-                    <View key={p.id} style={playerRow}>
-                      <TouchableOpacity onPress={() => togglePlayed(p.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-                        <Ionicons name={on ? 'checkbox' : 'square-outline'} size={18} color={on ? CYAN : 'rgba(255,255,255,0.35)'} />
-                        <Text style={{ color: on ? '#fff' : 'rgba(255,255,255,0.45)', fontWeight: '700', flex: 1 }}>{p.gamertag}</Text>
+                    <View key={p.id} style={playerRow(tokens)}>
+                      <TouchableOpacity onPress={() => togglePlayed(p.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, minHeight: 44 }}>
+                        <Ionicons name={on ? 'checkbox' : 'square-outline'} size={22} color={on ? tokens.cyan : tokens.muted} />
+                        <Text numberOfLines={1} style={{ color: on ? tokens.text : tokens.muted, fontWeight: '600', flex: 1 }}>{p.gamertag}</Text>
                       </TouchableOpacity>
                       {on ? (
                         <View style={{ flexDirection: 'row', gap: 6 }}>
-                          <MiniNum label="G" value={marks.goals} onChange={(v) => setMark(p.id, 'goals', v)} />
-                          <MiniNum label="A" value={marks.assists} onChange={(v) => setMark(p.id, 'assists', v)} />
-                          <MiniNum label="R" value={marks.rating} onChange={(v) => setMark(p.id, 'rating', v)} />
+                          <MiniNum tokens={tokens} label="G" value={marks.goals} onChange={(v) => setMark(p.id, 'goals', v)} />
+                          <MiniNum tokens={tokens} label="A" value={marks.assists} onChange={(v) => setMark(p.id, 'assists', v)} />
+                          <MiniNum tokens={tokens} label="R" value={marks.rating} onChange={(v) => setMark(p.id, 'rating', v)} />
                         </View>
                       ) : null}
                     </View>
@@ -344,28 +351,29 @@ export default function GameDayResultSheet({
             ) : null}
 
             {proofPreview ? (
-              <Image source={{ uri: proofPreview }} style={{ width: '100%', height: 160, borderRadius: 12, backgroundColor: '#0A1222' }} />
+              <Image source={{ uri: proofPreview }} style={{ width: '100%', height: 160, borderRadius: 12, backgroundColor: tokens.card }} />
             ) : null}
             <Text style={label}>
               PROOF {needsEvidence || reviewMode ? '(required to dispute / submit)' : '(optional for Arrange Game)'}
             </Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <TouchableOpacity onPress={() => pickProof(false)} style={[proofBtn, { flex: 1 }]}>
-                {uploading
-                  ? <ActivityIndicator color={CYAN} />
-                  : (
-                    <>
-                      <Ionicons name={proofUrl ? 'checkmark-circle' : 'image'} size={16} color={CYAN} />
-                      <Text style={{ color: CYAN, fontWeight: '800', fontSize: 12 }}>
-                        {proofUrl ? 'Proof ready' : 'Gallery'}
-                      </Text>
-                    </>
-                  )}
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => pickProof(true)} style={[proofBtn, { flex: 1 }]}>
-                <Ionicons name="camera" size={16} color={CYAN} />
-                <Text style={{ color: CYAN, fontWeight: '800', fontSize: 12 }}>Camera</Text>
-              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Button
+                  variant="secondary"
+                  title={proofUrl ? 'Proof ready' : 'Gallery'}
+                  icon={proofUrl ? 'checkmark-circle-outline' : 'image-outline'}
+                  loading={uploading}
+                  onPress={() => pickProof(false)}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button
+                  variant="secondary"
+                  title="Camera"
+                  icon="camera-outline"
+                  onPress={() => pickProof(true)}
+                />
+              </View>
             </View>
 
             {reviewMode || correcting ? (
@@ -373,50 +381,63 @@ export default function GameDayResultSheet({
                 value={explanation}
                 onChangeText={setExplanation}
                 placeholder="Optional note"
-                placeholderTextColor="rgba(255,255,255,0.35)"
-                style={noteInput}
+                placeholderTextColor={tokens.muted}
+                selectionColor={tokens.cyan}
+                style={noteInput(tokens)}
               />
             ) : null}
 
-            {error ? <Text style={{ color: FUT.rose, fontSize: 12 }}>{error}</Text> : null}
+            {error ? <Text style={{ color: tokens.danger, fontSize: 13 }}>{error}</Text> : null}
 
             {reviewMode && !countering ? (
               <View style={{ gap: 8 }}>
-                <TouchableOpacity onPress={() => runAction('accept_correction')} disabled={submitting} style={submitBtn}>
-                  {submitting ? <ActivityIndicator color="#041018" /> : <Text style={submitLabel}>Accept correction</Text>}
-                </TouchableOpacity>
+                <Button
+                  title="Accept correction"
+                  onPress={() => runAction('accept_correction')}
+                  loading={submitting}
+                  disabled={submitting}
+                />
                 {controls.canCounter ? (
-                  <TouchableOpacity onPress={() => setCountering(true)} disabled={submitting} style={outlineBtn}>
-                    <Text style={outlineLabel}>Counter once</Text>
-                  </TouchableOpacity>
+                  <Button
+                    variant="secondary"
+                    title="Counter once"
+                    onPress={() => setCountering(true)}
+                    disabled={submitting}
+                  />
                 ) : null}
-                <TouchableOpacity onPress={() => runAction('dispute_result')} disabled={submitting} style={outlineBtn}>
-                  <Text style={outlineLabel}>Dispute result</Text>
-                </TouchableOpacity>
+                <Button
+                  variant="danger"
+                  title="Dispute result"
+                  onPress={() => runAction('dispute_result')}
+                  disabled={submitting}
+                />
               </View>
             ) : null}
 
             {confirmMode && !correcting ? (
               <View style={{ gap: 8 }}>
-                <TouchableOpacity onPress={() => runAction('confirm_result')} disabled={submitting} style={submitBtn}>
-                  {submitting ? <ActivityIndicator color="#041018" /> : <Text style={submitLabel}>Confirm result</Text>}
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setCorrecting(true)} disabled={submitting} style={outlineBtn}>
-                  <Text style={outlineLabel}>Result is incorrect</Text>
-                </TouchableOpacity>
+                <Button
+                  title="Confirm result"
+                  onPress={() => runAction('confirm_result')}
+                  loading={submitting}
+                  disabled={submitting}
+                />
+                <Button
+                  variant="secondary"
+                  title="Result is incorrect"
+                  onPress={() => setCorrecting(true)}
+                  disabled={submitting}
+                />
               </View>
             ) : null}
 
             {(!reviewMode && !confirmMode) || correcting || countering ? (
-              <TouchableOpacity
+              <Button
+                title={countering ? 'Send counter' : correcting ? 'Propose correction' : 'Submit full time'}
                 onPress={() => runAction(countering ? 'counter_result' : correcting ? 'propose_correction' : 'submit_result')}
+                loading={submitting}
                 disabled={submitting || uploading || (needsEvidence && !proofUrl && !correcting)}
-                style={[submitBtn, needsEvidence && !proofUrl && !correcting && { opacity: 0.4 }]}
-              >
-                {submitting
-                  ? <ActivityIndicator color="#041018" />
-                  : <Text style={submitLabel}>{countering ? 'Send counter' : correcting ? 'Propose correction' : 'Submit full time'}</Text>}
-              </TouchableOpacity>
+              />
             ) : null}
           </ScrollView>
         </View>
@@ -425,23 +446,24 @@ export default function GameDayResultSheet({
   );
 }
 
-function ScoreBox({ label, value, onChange, readOnly }) {
+function ScoreBox({ tokens, label, value, onChange, readOnly }) {
   return (
     <View style={{ flex: 1 }}>
-      <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, marginBottom: 6 }}>{label}</Text>
+      <Text numberOfLines={1} style={{ color: tokens.textSoft, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>{label}</Text>
       <TextInput
         value={String(value)}
         onChangeText={onChange}
         editable={!readOnly}
         keyboardType="number-pad"
+        selectionColor={tokens.cyan}
         style={{
-          backgroundColor: 'rgba(255,255,255,0.06)',
+          backgroundColor: tokens.bgDeep,
           borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.12)',
+          borderColor: tokens.border,
           borderRadius: 12,
-          color: '#fff',
+          color: tokens.text,
           fontSize: 28,
-          fontWeight: '900',
+          fontWeight: '700',
           textAlign: 'center',
           paddingVertical: 12,
           opacity: readOnly ? 0.7 : 1,
@@ -451,24 +473,27 @@ function ScoreBox({ label, value, onChange, readOnly }) {
   );
 }
 
-function MiniNum({ label, value, onChange }) {
+/** Per-player G/A/R input: 44pt touch target. */
+function MiniNum({ tokens, label, value, onChange }) {
   return (
-    <View style={{ width: 42 }}>
-      <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, textAlign: 'center' }}>{label}</Text>
+    <View style={{ width: 48 }}>
+      <Text style={{ color: tokens.muted, fontSize: 11, textAlign: 'center' }}>{label}</Text>
       <TextInput
         value={String(value ?? 0)}
         onChangeText={onChange}
         keyboardType="decimal-pad"
+        selectionColor={tokens.cyan}
         style={{
-          backgroundColor: 'rgba(255,255,255,0.06)',
+          backgroundColor: tokens.bgDeep,
           borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.12)',
+          borderColor: tokens.border,
           borderRadius: 8,
-          color: '#fff',
-          fontSize: 13,
-          fontWeight: '800',
+          color: tokens.text,
+          fontSize: 14,
+          fontWeight: '600',
           textAlign: 'center',
-          paddingVertical: 4,
+          minHeight: MIN_TOUCH,
+          paddingVertical: 8,
         }}
       />
     </View>
@@ -477,58 +502,32 @@ function MiniNum({ label, value, onChange }) {
 
 const styles = {
   root: { flex: 1, justifyContent: 'flex-end' },
-  scrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)' },
+  scrim: { flex: 1 },
   sheet: {
-    backgroundColor: '#071018',
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     borderWidth: 1,
-    borderColor: 'rgba(0,232,255,0.28)',
     maxHeight: '88%',
     paddingBottom: 28,
   },
 };
 
-const hint = { color: 'rgba(255,255,255,0.5)', fontSize: 12, lineHeight: 18 };
-const label = { color: 'rgba(255,255,255,0.45)', fontSize: 10, fontWeight: '800', letterSpacing: 0.6 };
-const rowBtn = { flexDirection: 'row', alignItems: 'center', gap: 8 };
-const playerRow = {
-  backgroundColor: 'rgba(255,255,255,0.04)',
-  borderRadius: 10,
+const hintStyle = (tokens) => ({ color: tokens.muted, fontSize: 13, lineHeight: 19 });
+const rowBtn = { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 };
+const playerRow = (tokens) => ({
+  backgroundColor: tokens.card,
+  borderWidth: 1,
+  borderColor: tokens.border,
+  borderRadius: 12,
   padding: 10,
   gap: 8,
-};
-const proofBtn = {
+});
+const noteInput = (tokens) => ({
+  backgroundColor: tokens.bgDeep,
   borderWidth: 1,
-  borderColor: 'rgba(0,232,255,0.35)',
+  borderColor: tokens.border,
   borderRadius: 12,
-  paddingVertical: 12,
-  flexDirection: 'row',
-  justifyContent: 'center',
-  alignItems: 'center',
-  gap: 8,
-};
-const submitBtn = {
-  backgroundColor: CYAN,
-  borderRadius: 12,
-  paddingVertical: 14,
-  alignItems: 'center',
-};
-const submitLabel = { color: '#041018', fontWeight: '900' };
-const outlineBtn = {
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.2)',
-  borderRadius: 12,
-  paddingVertical: 14,
-  alignItems: 'center',
-};
-const outlineLabel = { color: '#fff', fontWeight: '800' };
-const noteInput = {
-  backgroundColor: 'rgba(255,255,255,0.06)',
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.12)',
-  borderRadius: 12,
-  color: '#fff',
-  paddingHorizontal: 12,
-  paddingVertical: 10,
-};
+  color: tokens.text,
+  height: 50,
+  paddingHorizontal: 16,
+});

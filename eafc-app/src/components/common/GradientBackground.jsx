@@ -33,6 +33,6 @@ export default function GradientBackground({ children, style, colors, start, end
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
 });

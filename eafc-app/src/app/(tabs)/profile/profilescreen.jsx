@@ -21,11 +21,11 @@ import {
   EmptyTabPanel,
   IdentityVerifiedBar,
   RoleChip,
-  CYAN,
-  AMBER,
 } from '@/components/profile/gamer/GamerProfileUI';
 import PageTile, { SilverPill } from '@/components/theme/PageTile';
 import { headingStyleLg } from '@/lib/fonts';
+import { hexToRgba } from '@/lib/stageTheme';
+import useThemeStore from '@/store/themeStore';
 import { formatProfilePlatform } from '@/lib/profilePlatform';
 import { getPlayerNationality } from '@/lib/countryDisplay';
 import FlagMark from '@/components/common/FlagMark';
@@ -66,6 +66,7 @@ export default function ProfileScreen({
   onClubLeft,
 }) {
   const { user: me, logout } = useAuthStore();
+  const tokens = useThemeStore((s) => s.tokens);
   const params = useLocalSearchParams();
   const router = useRouter();
   const viewingOther = Boolean(
@@ -306,10 +307,24 @@ export default function ProfileScreen({
   const displayName = player?.gamertag || me?.gamer_tag || 'Player';
   const verified = Number(player?.is_verified) === 1;
 
+  // Stage list row: card chrome, 56px tall, icon + label (+ chevron).
+  const lifestyleRow = (extra = {}) => ({
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 56,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: tokens.border,
+    backgroundColor: tokens.glass,
+    paddingHorizontal: 16,
+    ...extra,
+  });
+
   const renderLifestyle = () => (
-    <View style={{ gap: 8 }}>
+    <View style={{ gap: 10 }}>
       {player.bio ? (
-        <Text style={{ color: 'rgba(255,255,255,0.62)', fontSize: 14, lineHeight: 20, marginBottom: 6 }}>
+        <Text style={{ color: tokens.textSoft, fontSize: 15, lineHeight: 21, marginBottom: 6 }}>
           {player.bio}
         </Text>
       ) : !isOwn ? (
@@ -325,21 +340,11 @@ export default function ProfileScreen({
           accessibilityRole="button"
           accessibilityLabel="Availability"
           activeOpacity={0.85}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 12,
-            minHeight: 56,
-            borderRadius: 8,
-            borderWidth: 1,
-            borderColor: 'rgba(0,240,255,0.18)',
-            backgroundColor: 'rgba(0,240,255,0.05)',
-            paddingHorizontal: 14,
-          }}
+          style={lifestyleRow()}
         >
-          <Ionicons name="calendar-outline" size={18} color={CYAN} />
-          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14, flex: 1 }}>Availability</Text>
-          <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.35)" />
+          <Ionicons name="calendar-outline" size={22} color={tokens.cyan} />
+          <Text numberOfLines={1} style={{ color: tokens.text, fontWeight: '600', fontSize: 15, flex: 1 }}>Availability</Text>
+          <Ionicons name="chevron-forward" size={18} color={tokens.muted} />
         </TouchableOpacity>
       ) : null}
       {isOwn && signedClub?.id ? (
@@ -349,21 +354,14 @@ export default function ProfileScreen({
           accessibilityRole="button"
           accessibilityLabel="Leave club"
           activeOpacity={0.85}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 12,
-            minHeight: 56,
-            borderRadius: 8,
-            borderWidth: 1,
-            borderColor: 'rgba(251,113,133,0.35)',
-            backgroundColor: 'rgba(251,113,133,0.08)',
-            paddingHorizontal: 14,
-          }}
+          style={lifestyleRow({
+            borderColor: hexToRgba(tokens.danger, 0.5),
+            backgroundColor: tokens.live ? hexToRgba(tokens.danger, 0.14) : tokens.dangerBg,
+          })}
         >
-          <Ionicons name="exit-outline" size={18} color="#FB7185" />
+          <Ionicons name="exit-outline" size={22} color={tokens.danger} />
           <View style={{ flex: 1 }}>
-            <Text style={{ color: '#FB7185', fontWeight: '800', fontSize: 14 }}>
+            <Text numberOfLines={1} style={{ color: tokens.danger, fontWeight: '600', fontSize: 15 }}>
               {leaving ? 'Leaving…' : 'Leave club'}
             </Text>
           </View>
@@ -378,19 +376,10 @@ export default function ProfileScreen({
           accessibilityRole="button"
           accessibilityLabel="Sign out"
           activeOpacity={0.85}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 12,
-            minHeight: 56,
-            borderRadius: 8,
-            borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.12)',
-            paddingHorizontal: 14,
-          }}
+          style={lifestyleRow()}
         >
-          <Ionicons name="log-out-outline" size={18} color="rgba(255,255,255,0.7)" />
-          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Sign out</Text>
+          <Ionicons name="log-out-outline" size={22} color={tokens.textSoft} />
+          <Text numberOfLines={1} style={{ color: tokens.text, fontWeight: '600', fontSize: 15, flex: 1 }}>Sign out</Text>
         </TouchableOpacity>
       ) : null}
     </View>
@@ -398,17 +387,17 @@ export default function ProfileScreen({
 
   const body = loading ? (
     <View style={{ paddingTop: 80, alignItems: 'center' }}>
-      <ActivityIndicator color={CYAN} />
+      <ActivityIndicator color={tokens.cyan} />
     </View>
   ) : !player ? (
     <View style={{ padding: 32, alignItems: 'center' }}>
-      <Ionicons name="person-outline" size={48} color="rgba(255,255,255,0.3)" />
-      <Text style={{ color: 'rgba(255,255,255,0.45)', marginTop: 12, textAlign: 'center' }}>
+      <Ionicons name="person-outline" size={48} color={tokens.faint} />
+      <Text style={{ color: tokens.muted, marginTop: 12, textAlign: 'center' }}>
         No player profile yet.
       </Text>
     </View>
   ) : (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: embedded ? 40 : 120 }}>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: embedded ? 16 : 120 }}>
       {tab !== 'career' ? (
         <View>
           <GamerBanner
@@ -419,7 +408,7 @@ export default function ProfileScreen({
             topRight={bannerActions}
             onPress={isOwn ? pickAndUploadBanner : undefined}
           />
-          <View style={{ paddingHorizontal: 16, marginTop: -108, zIndex: 10, gap: 12 }}>
+          <View style={{ paddingHorizontal: 20, marginTop: -108, zIndex: 10, gap: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 14 }}>
               <FutIdentityCard
                 imageUrl={player.avatar_url}
@@ -434,23 +423,23 @@ export default function ProfileScreen({
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
                   <Text
                     numberOfLines={2}
-                    style={[headingStyleLg, { color: '#fff', lineHeight: 28, flexShrink: 1 }]}
+                    style={[headingStyleLg, { color: tokens.text, fontSize: 30, letterSpacing: 30 * 0.03, lineHeight: 32, flexShrink: 1 }]}
                   >
                     {displayName}
                   </Text>
                   {verified ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Text style={{ color: CYAN, fontSize: 10, fontWeight: '900' }}>EA</Text>
-                      <Ionicons name="checkmark-circle" size={14} color={CYAN} />
+                      <Text style={{ color: tokens.cyan, fontSize: 11, fontWeight: '700' }}>EA</Text>
+                      <Ionicons name="checkmark-circle" size={16} color={tokens.cyan} />
                     </View>
                   ) : null}
                 </View>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                   {player.position ? (
-                    <GamerMetaPill icon="locate" iconColor={CYAN}>{formatPositions(player)}</GamerMetaPill>
+                    <GamerMetaPill icon="locate" iconColor={tokens.cyan}>{formatPositions(player)}</GamerMetaPill>
                   ) : null}
                   {player.platform ? (
-                    <GamerMetaPill icon="game-controller" iconColor={CYAN}>
+                    <GamerMetaPill icon="game-controller" iconColor={tokens.cyan}>
                       {formatProfilePlatform(player.platform)}
                     </GamerMetaPill>
                   ) : null}
@@ -467,12 +456,12 @@ export default function ProfileScreen({
                     />
                   ) : null}
                   {signedClub ? (
-                    <GamerMetaPill icon="shield" iconColor={CYAN} onPress={() => openClub(signedClub.id)}>
+                    <GamerMetaPill icon="shield" iconColor={tokens.cyan} onPress={() => openClub(signedClub.id)}>
                       {signedClub.name}
                     </GamerMetaPill>
                   ) : null}
                   {canRequestLoan ? (
-                    <GamerMetaPill icon="swap-horizontal" iconColor={AMBER} onPress={() => setLoanOpen(true)}>
+                    <GamerMetaPill icon="swap-horizontal" iconColor={tokens.amber} onPress={() => setLoanOpen(true)}>
                       Request loan
                     </GamerMetaPill>
                   ) : null}
@@ -501,12 +490,12 @@ export default function ProfileScreen({
       ) : null}
 
       {tab === 'career' ? (
-        <View style={{ paddingHorizontal: 16, paddingTop: 10, alignItems: 'flex-end' }}>
+        <View style={{ paddingHorizontal: 20, paddingTop: 10, alignItems: 'flex-end' }}>
           {bannerActions}
         </View>
       ) : null}
 
-      <View style={{ paddingHorizontal: 16, marginTop: tab === 'career' ? 8 : 16 }}>
+      <View style={{ paddingHorizontal: 20, marginTop: tab === 'career' ? 8 : 16 }}>
         <PageTile
           tileKey="profile"
           tileTitle="PROFILE"

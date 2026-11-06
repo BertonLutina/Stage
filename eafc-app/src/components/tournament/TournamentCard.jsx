@@ -1,9 +1,11 @@
 import React from 'react';
-import { View, Image, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, Image, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import TournamentCountdown from './TournamentCountdown';
-import { GAME_DAY_SILVER, TILE_BORDER, TILE_FILL } from '@/components/dashboard/CommandCenterUI';
-import { CARD_RADIUS } from '@/lib/stageTheme';
+import useThemeStore from '@/store/themeStore';
+import { Card } from '@/components/ui';
+import { hexToRgba } from '@/lib/stageTheme';
 
 const TYPE_LABEL = {
   knockout: 'Knockout',
@@ -24,7 +26,7 @@ function statusMeta(status) {
     return { label: 'Open' };
   }
   if (status === 'in_progress' || status === 'active') {
-    return { label: 'Live' };
+    return { label: 'Live', live: true };
   }
   if (status === 'completed') {
     return { label: 'Done' };
@@ -32,7 +34,17 @@ function statusMeta(status) {
   return { label: String(status || 'Draft') };
 }
 
+function MetaItem({ tokens, label, value, strong }) {
+  return (
+    <Text numberOfLines={1} style={{ color: tokens.muted, fontSize: 12, flexShrink: 1 }}>
+      {label}{' '}
+      <Text style={{ color: strong ? tokens.cyanHi : tokens.text, fontWeight: '600' }}>{value}</Text>
+    </Text>
+  );
+}
+
 export default function TournamentCard({ tournament: t, trophyItems = [], onPress }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const registered = t.registered_clubs?.length || t.teams?.length || t.registered_count || 0;
   const maxTeams = Math.max(Number(t.max_teams) || 8, 1);
   const fillPct = Math.min(100, Math.round((registered / maxTeams) * 100));
@@ -52,190 +64,112 @@ export default function TournamentCard({ tournament: t, trophyItems = [], onPres
     ? new Date(startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
     : null;
 
+  const participants = t.participant_type === 'player' ? 'Players' : 'Clubs';
+  const badgeLabel = isFull ? 'Full' : status.label;
+  const badgeStrong = status.live && !isFull;
+
+  const entryLabel = hasFee ? `${Number(t.entry_fee_stc).toLocaleString()} STC` : 'Free';
+  const spokenLabel = `${t.name}, ${badgeLabel}, ${registered} of ${maxTeams} registered, entry ${entryLabel}`;
+
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.88}>
-      <View style={styles.cardClip}>
-        <View style={[styles.banner, !t.banner_url && { backgroundColor: t.banner_color || '#0A1222' }]}>
-          {t.banner_url ? (
-            <Image source={{ uri: t.banner_url }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
-          ) : null}
+    <Card
+      highlight={Boolean(status.live)}
+      onPress={onPress}
+      accessibilityLabel={spokenLabel}
+      style={{ gap: 12 }}
+    >
+      {t.banner_url ? (
+        <View style={{ height: 84, borderRadius: 12, overflow: 'hidden', backgroundColor: tokens.bgDeep }}>
+          <Image source={{ uri: t.banner_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
           <LinearGradient
-            colors={['rgba(3,6,13,0.2)', 'rgba(3,6,13,0.85)']}
-            style={StyleSheet.absoluteFillObject}
+            colors={[hexToRgba(tokens.bgDeep, 0.1), hexToRgba(tokens.bgDeep, 0.7)]}
+            style={StyleSheet.absoluteFill}
           />
-
-          <View style={styles.typeBadge}>
-            <Text style={styles.typeText}>{typeLbl}</Text>
-          </View>
-
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusText}>{isFull ? 'Full' : status.label}</Text>
-          </View>
-
-          <Text style={styles.participantHint}>
-            {t.participant_type === 'player' ? 'Players' : 'Clubs'}
-          </Text>
-
-          {trophyUrl ? (
-            <Image source={{ uri: trophyUrl }} style={styles.trophy} resizeMode="contain" />
-          ) : null}
         </View>
+      ) : null}
 
-        <View style={styles.body}>
-          <Text style={styles.name} numberOfLines={1}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <View
+          style={{
+            height: 24,
+            borderRadius: 999,
+            borderWidth: 1,
+            paddingHorizontal: 10,
+            justifyContent: 'center',
+            borderColor: badgeStrong ? tokens.cyan : tokens.border,
+            backgroundColor: badgeStrong ? tokens.cyan : tokens.card,
+          }}
+        >
+          <Text
+            numberOfLines={1}
+            style={{
+              fontSize: 11,
+              fontWeight: '600',
+              color: badgeStrong ? tokens.onCyan : tokens.textSoft,
+            }}
+          >
+            {badgeLabel}
+          </Text>
+        </View>
+        <Text numberOfLines={1} style={{ color: tokens.muted, fontSize: 12 }}>
+          {registered} / {maxTeams}
+        </Text>
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View
+          style={{
+            width: 52,
+            height: 52,
+            borderRadius: 12,
+            backgroundColor: tokens.border,
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+          }}
+        >
+          {trophyUrl ? (
+            <Image source={{ uri: trophyUrl }} style={{ width: 40, height: 40 }} resizeMode="contain" />
+          ) : (
+            <Ionicons name="trophy-outline" size={22} color={tokens.cyanHi} />
+          )}
+        </View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text numberOfLines={1} style={{ color: tokens.text, fontSize: 17, fontWeight: '700' }}>
             {t.name}
           </Text>
+          <Text numberOfLines={1} style={{ color: tokens.muted, fontSize: 12, marginTop: 2 }}>
+            {typeLbl} · {participants}
+          </Text>
           {t.creator_gamertag ? (
-            <Text style={styles.creator} numberOfLines={1}>
+            <Text numberOfLines={1} style={{ color: tokens.muted, fontSize: 11, marginTop: 2 }}>
               By {t.creator_gamertag}
             </Text>
           ) : null}
-
-          <View style={styles.fillRow}>
-            <Text style={styles.fillMeta}>
-              {registered}/{maxTeams}
-              {dateLabel ? ` · ${dateLabel}` : ''}
-            </Text>
-          </View>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${fillPct}%` }]} />
-          </View>
-
-          <View style={styles.feeRow}>
-            {hasFee ? (
-              <>
-                <Text style={styles.feeText}>Entry {Number(t.entry_fee_stc).toLocaleString()} STC</Text>
-                <Text style={styles.prizeText}>Prize {pool.toLocaleString()} STC</Text>
-              </>
-            ) : (
-              <Text style={styles.freeText}>FREE</Text>
-            )}
-          </View>
-
-          {showCountdown ? <TournamentCountdown startDate={startDate} compact /> : null}
         </View>
       </View>
-    </TouchableOpacity>
+
+      <View
+        accessibilityRole="progressbar"
+        accessibilityValue={{ min: 0, max: maxTeams, now: Math.min(registered, maxTeams) }}
+        style={{ height: 4, borderRadius: 2, backgroundColor: tokens.border, overflow: 'hidden' }}
+      >
+        <View style={{ height: '100%', width: `${fillPct}%`, backgroundColor: tokens.cyan }} />
+      </View>
+
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 16, rowGap: 4 }}>
+        {dateLabel ? <MetaItem tokens={tokens} label="Starts" value={dateLabel} /> : null}
+        {hasFee ? (
+          <>
+            <MetaItem tokens={tokens} label="Entry" value={entryLabel} />
+            <MetaItem tokens={tokens} label="Prize" value={`${pool.toLocaleString()} STC`} strong />
+          </>
+        ) : (
+          <MetaItem tokens={tokens} label="Entry" value={entryLabel} />
+        )}
+      </View>
+
+      {showCountdown ? <TournamentCountdown startDate={startDate} compact /> : null}
+    </Card>
   );
 }
-
-const styles = StyleSheet.create({
-  cardClip: {
-    borderWidth: 1,
-    borderColor: TILE_BORDER,
-    borderRadius: CARD_RADIUS,
-    overflow: 'hidden',
-    backgroundColor: TILE_FILL,
-  },
-  banner: {
-    height: 100,
-    position: 'relative',
-  },
-  typeBadge: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: TILE_BORDER,
-    backgroundColor: 'rgba(3,6,13,0.65)',
-  },
-  typeText: {
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    color: GAME_DAY_SILVER,
-  },
-  statusBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: TILE_BORDER,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
-  statusText: {
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    color: GAME_DAY_SILVER,
-  },
-  participantHint: {
-    position: 'absolute',
-    left: 10,
-    bottom: 10,
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  trophy: {
-    position: 'absolute',
-    right: 10,
-    bottom: 8,
-    width: 42,
-    height: 42,
-  },
-  body: {
-    padding: 14,
-  },
-  name: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '900',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  creator: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 11,
-    marginTop: 2,
-  },
-  fillRow: {
-    marginTop: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  fillMeta: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 11,
-  },
-  progressTrack: {
-    marginTop: 6,
-    height: 3,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: GAME_DAY_SILVER,
-  },
-  feeRow: {
-    marginTop: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  feeText: {
-    color: 'rgba(255,255,255,0.55)',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  prizeText: {
-    color: GAME_DAY_SILVER,
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  freeText: {
-    color: GAME_DAY_SILVER,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-});

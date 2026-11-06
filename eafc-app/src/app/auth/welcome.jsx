@@ -1,29 +1,64 @@
 import React from 'react';
-import { View, Image, TouchableOpacity } from 'react-native';
-import STText from '../../components/common/STText';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, Image } from 'react-native';
 import { useRouter } from 'expo-router';
+import useThemeStore from '@/store/themeStore';
+import { Screen, Button, BrandLogo } from '@/components/ui';
+
+/** Faded stadium mark watermark, bottom-left, as in the Welcome mockup. */
+const MARK = require('../../../assets/brand/stage-icon.png');
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const tokens = useThemeStore((s) => s.tokens);
 
   return (
-    <SafeAreaView className="flex-1 px-6">
-      <View className="flex-1 items-center justify-center">
-        <Image source={require('../../../assets/logo-lockup.png')} className="h-20 w-80" style={{ resizeMode: 'contain' }} />
-        <STText color="#FFFFFF" className="text-center mt-3 px-4 opacity-80">
-          Football and esports club platform. Build your identity, join clubs, and compete.
-        </STText>
+    <Screen scroll={false} tabBar={false}>
+      <Image
+        source={MARK}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          left: -70,
+          top: 150,
+          width: 530,
+          height: (530 * 220) / 461,
+          opacity: 0.16,
+          resizeMode: 'contain',
+        }}
+      />
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'flex-end',
+          gap: 14,
+          paddingHorizontal: 4,
+          paddingBottom: 18,
+        }}
+      >
+        <Text
+          style={{
+            color: tokens.cyan,
+            fontSize: 11,
+            fontWeight: '600',
+            letterSpacing: 11 * 0.12,
+            textTransform: 'uppercase',
+          }}
+        >
+          EA FC Pro Clubs
+        </Text>
+        <BrandLogo variant="lockup" width={320} style={{ maxWidth: '100%', alignSelf: 'flex-start' }} />
+        <Text style={{ color: tokens.textSoft, fontSize: 17, lineHeight: 25, marginBottom: 20 }}>
+          Your club, your contracts, your tournaments. All in one place.
+        </Text>
+        <Button title="Create Account" onPress={() => router.push('/auth/signupscreen')} />
+        <Button
+          title="I already have an account"
+          variant="secondary"
+          onPress={() => router.push('/auth/loginscreen')}
+        />
       </View>
-
-      <View className="pb-8 gap-3">
-        <TouchableOpacity onPress={() => router.push('/auth/signupscreen')} className="bg-primary rounded-2xl py-4 items-center">
-          <STText className="font-bold" style={{ color: '#02091B' }}>Create Account</STText>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/auth/loginscreen')} className="border border-lineInner/40 rounded-2xl py-4 items-center">
-          <STText color="#5FE3E8" className="font-semibold">I already have an account</STText>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+    </Screen>
   );
 }

@@ -23,6 +23,8 @@ import {
 } from '@/lib/clubSquadDisplay';
 import { asObjectArray } from '@/lib/clubProfileData';
 import { GamerClubTabNav, GamerSectionCard, EmptyTabPanel } from '@/components/profile/gamer/GamerProfileUI';
+import Card from '@/components/ui/Card';
+import useThemeStore from '@/store/themeStore';
 import ClubFixturesPanel from '@/components/club/ClubFixturesPanel';
 import ClubStatsPanel from '@/components/club/ClubStatsPanel';
 import ClubOfficePanel from '@/components/club/ClubOfficePanel';
@@ -87,6 +89,7 @@ export default function ClubProfileTabs({
   shirts,
 }) {
   const router = useRouter();
+  const tokens = useThemeStore((st) => st.tokens);
   const [tab, setTab] = useState('squad');
   const [squad, setSquad] = useState(Array.isArray(playersProp) ? playersProp : []);
   const [loans, setLoans] = useState([]);
@@ -320,7 +323,7 @@ export default function ClubProfileTabs({
     if (loadingTab) {
       return (
         <View style={{ paddingVertical: 28, alignItems: 'center' }}>
-          <ActivityIndicator color="#00E5FF" />
+          <ActivityIndicator color={tokens.cyan} />
         </View>
       );
     }
@@ -352,7 +355,7 @@ export default function ClubProfileTabs({
         ))}
         {outOnLoan.length ? (
           <View style={{ gap: 10, marginTop: 8 }}>
-            <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '800', letterSpacing: 1.4, textTransform: 'uppercase' }}>
+            <Text style={{ color: tokens.muted, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12, textTransform: 'uppercase' }}>
               ON LOAN · {outOnLoan.length}
             </Text>
             {outOnLoan.map((player) => (
@@ -380,13 +383,13 @@ export default function ClubProfileTabs({
     return (
       <View style={{ gap: 8 }}>
         {posts.map((post) => (
-          <View key={post.id} style={{ borderRadius: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.03)', padding: 12, gap: 8 }}>
-            <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: '700' }}>
+          <Card key={post.id} style={{ gap: 8 }}>
+            <Text numberOfLines={1} style={{ color: tokens.muted, fontSize: 12, fontWeight: '600' }}>
               {post.author_name || post.author_email || 'Club'}
               {post.created_date ? ` · ${String(post.created_date).slice(0, 10)}` : ''}
             </Text>
-            {post.content ? <Text style={{ color: '#fff', fontSize: 14, lineHeight: 20 }}>{post.content}</Text> : null}
-          </View>
+            {post.content ? <Text style={{ color: tokens.text, fontSize: 15, lineHeight: 21 }}>{post.content}</Text> : null}
+          </Card>
         ))}
       </View>
     );
@@ -399,14 +402,14 @@ export default function ClubProfileTabs({
       ) : null}
       {trophies.filter((item) => item.source === 'achievement').length ? (
         <View style={{ gap: 8 }}>
-          <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: '800' }}>CLUB ACHIEVEMENTS</Text>
+          <Text style={{ color: tokens.muted, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12, textTransform: 'uppercase' }}>CLUB ACHIEVEMENTS</Text>
           {trophies.filter((item) => item.source === 'achievement').map((item) => (
-            <View key={item.id} style={{ borderRadius: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.03)', padding: 12 }}>
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>{item.title || item.name || 'Trophy'}</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 4 }}>
+            <Card key={item.id}>
+              <Text numberOfLines={2} style={{ color: tokens.text, fontWeight: '700', fontSize: 15 }}>{item.title || item.name || 'Trophy'}</Text>
+              <Text numberOfLines={2} style={{ color: tokens.muted, fontSize: 13, marginTop: 4 }}>
                 {item.subtitle || item.season || item.competition_name || 'Club achievement'}
               </Text>
-            </View>
+            </Card>
           ))}
         </View>
       ) : null}
@@ -418,7 +421,7 @@ export default function ClubProfileTabs({
     return (
       <GamerSectionCard title="Club Chat">
         {chatMessages.slice(-40).map((message) => (
-          <Text key={message.id} style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, paddingVertical: 6 }}>
+          <Text key={message.id} style={{ color: tokens.textSoft, fontSize: 14, paddingVertical: 6 }}>
             {message.sender_gamertag || message.sender_email || 'Member'}: {message.content}
           </Text>
         ))}

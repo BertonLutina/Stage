@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, TouchableOpacity, Image, Linking, StyleSheet, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { AMBER } from '../profile/gamer/GamerProfileUI';
+import useThemeStore from '@/store/themeStore';
+import { hexToRgba } from '@/lib/stageTheme';
 
 function parseMetadata(meta) {
   if (!meta) return {};
@@ -21,6 +22,9 @@ function formatTime(value) {
 }
 
 export default function ChatMessageBubble({ item, isMe, baseUrl = '', onPollVote, currentUserId, showSender = true }) {
+  const tokens = useThemeStore((s) => s.tokens);
+  const styles = useMemo(() => makeStyles(tokens), [tokens]);
+  const pollStyles = useMemo(() => makePollStyles(tokens), [tokens]);
   const type = item.message_type || 'text';
   const meta = parseMetadata(item.media_metadata);
   const mediaUrl = item.media_url ? (item.media_url.startsWith('http') ? item.media_url : `${baseUrl}${item.media_url}`) : null;
@@ -38,7 +42,7 @@ export default function ChatMessageBubble({ item, isMe, baseUrl = '', onPollVote
         if (!mediaUrl) return <Text style={styles.muted}>[Video]</Text>;
         return (
           <TouchableOpacity onPress={() => Linking.openURL(mediaUrl)} style={styles.video}>
-            <Ionicons name="play" size={28} color="#fff" />
+            <Ionicons name="play" size={28} color={tokens.text} />
             <Text style={styles.videoLabel}>Play video</Text>
           </TouchableOpacity>
         );
@@ -54,13 +58,13 @@ export default function ChatMessageBubble({ item, isMe, baseUrl = '', onPollVote
         return (
           <View style={styles.audioRow}>
             <View style={styles.audioIcon}>
-              <Ionicons name="mic" size={16} color={AMBER} />
+              <Ionicons name="mic" size={16} color={tokens.cyan} />
             </View>
             <View>
               <Text style={styles.body}>{meta.duration ? `${meta.duration}s` : 'Voice note'}</Text>
               {mediaUrl ? (
                 <TouchableOpacity onPress={() => Linking.openURL(mediaUrl)}>
-                  <Text style={styles.amberLink}>Tap to play</Text>
+                  <Text style={styles.accentLink}>Tap to play</Text>
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -70,7 +74,7 @@ export default function ChatMessageBubble({ item, isMe, baseUrl = '', onPollVote
         return (
           <TouchableOpacity onPress={() => mediaUrl && Linking.openURL(mediaUrl)} style={styles.audioRow}>
             <View style={styles.docIcon}>
-              <Ionicons name="document-text" size={18} color={AMBER} />
+              <Ionicons name="document-text" size={18} color={tokens.cyan} />
             </View>
             <View>
               <Text style={styles.body}>{meta.filename || 'Document'}</Text>
@@ -92,7 +96,7 @@ export default function ChatMessageBubble({ item, isMe, baseUrl = '', onPollVote
             <Text style={pollStyles.question}>{item.content || meta.question || 'Poll'}</Text>
             {multiple ? (
               <View style={pollStyles.hintRow}>
-                <Ionicons name="checkmark-done" size={14} color="rgba(255,255,255,0.5)" />
+                <Ionicons name="checkmark-done" size={14} color={tokens.muted} />
                 <Text style={pollStyles.hint}>Select one or more</Text>
               </View>
             ) : null}
@@ -111,7 +115,7 @@ export default function ChatMessageBubble({ item, isMe, baseUrl = '', onPollVote
                   <View style={pollStyles.optionTop}>
                     <View style={pollStyles.optionLeft}>
                       <View style={[pollStyles.radio, isSelected && pollStyles.radioSelected]}>
-                        {isSelected ? <Ionicons name="checkmark" size={14} color="#1A1200" /> : null}
+                        {isSelected ? <Ionicons name="checkmark" size={14} color={tokens.onCyan} /> : null}
                       </View>
                       <Text style={pollStyles.optionText}>{opt.text || opt}</Text>
                     </View>
@@ -143,13 +147,13 @@ export default function ChatMessageBubble({ item, isMe, baseUrl = '', onPollVote
     <View style={[styles.row, isMe ? styles.rowMe : styles.rowThem]}>
       <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleThem]}>
         {!isMe && showSender ? (
-          <Text style={styles.sender}>{item.gamer_tag || 'Member'}</Text>
+          <Text style={styles.sender} numberOfLines={1}>{item.gamer_tag || 'Member'}</Text>
         ) : null}
         {renderContent()}
         <View style={styles.metaRow}>
           <Text style={styles.time}>{time}</Text>
           {isMe ? (
-            <Ionicons name="checkmark-done" size={14} color={AMBER} style={{ marginLeft: 4 }} />
+            <Ionicons name="checkmark-done" size={14} color={tokens.cyan} style={{ marginLeft: 4 }} />
           ) : null}
         </View>
       </View>
@@ -157,64 +161,64 @@ export default function ChatMessageBubble({ item, isMe, baseUrl = '', onPollVote
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (tokens) => StyleSheet.create({
   row: { marginBottom: 6, flexDirection: 'row', paddingHorizontal: 8 },
   rowMe: { justifyContent: 'flex-end' },
   rowThem: { justifyContent: 'flex-start' },
   bubble: {
     maxWidth: '82%',
-    paddingHorizontal: 10,
-    paddingTop: 6,
-    paddingBottom: 4,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 6,
     borderRadius: 16,
   },
   bubbleMe: {
-    backgroundColor: 'rgba(255,214,10,0.16)',
+    backgroundColor: hexToRgba(tokens.cyan, 0.16),
     borderWidth: 1,
-    borderColor: 'rgba(255,214,10,0.28)',
+    borderColor: hexToRgba(tokens.cyan, 0.32),
     borderBottomRightRadius: 4,
   },
   bubbleThem: {
-    backgroundColor: '#12182A',
+    backgroundColor: tokens.card,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: tokens.border,
     borderBottomLeftRadius: 4,
   },
   sender: {
-    color: AMBER,
+    color: tokens.cyan,
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '700',
     marginBottom: 2,
   },
-  body: { color: '#fff', fontSize: 15, lineHeight: 20 },
-  muted: { color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 2 },
-  photo: { width: 220, height: 164, borderRadius: 10, marginTop: 2 },
+  body: { color: tokens.text, fontSize: 15, lineHeight: 20 },
+  muted: { color: tokens.muted, fontSize: 12, marginTop: 2 },
+  photo: { width: 220, height: 164, borderRadius: 12, marginTop: 2 },
   video: {
     width: 200,
     height: 120,
-    borderRadius: 10,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    borderRadius: 12,
+    backgroundColor: hexToRgba(tokens.bgDeep, 0.85),
     alignItems: 'center',
     justifyContent: 'center',
   },
-  videoLabel: { color: '#fff', fontWeight: '700', marginTop: 6 },
+  videoLabel: { color: tokens.text, fontWeight: '700', marginTop: 6 },
   linkCard: {
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderColor: tokens.border,
+    backgroundColor: tokens.bgDeep,
     padding: 10,
     minWidth: 180,
   },
-  linkTitle: { color: AMBER, fontWeight: '700', fontSize: 13 },
-  linkUrl: { color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 4 },
-  amberLink: { color: AMBER, fontSize: 12, marginTop: 2, fontWeight: '700' },
+  linkTitle: { color: tokens.cyan, fontWeight: '700', fontSize: 13 },
+  linkUrl: { color: tokens.muted, fontSize: 11, marginTop: 4 },
+  accentLink: { color: tokens.cyan, fontSize: 12, marginTop: 2, fontWeight: '700' },
   audioRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
   audioIcon: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,214,10,0.12)',
+    backgroundColor: hexToRgba(tokens.cyan, 0.12),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -222,7 +226,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: 'rgba(255,214,10,0.12)',
+    backgroundColor: hexToRgba(tokens.cyan, 0.12),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -232,14 +236,14 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     marginTop: 2,
   },
-  time: { color: 'rgba(255,255,255,0.42)', fontSize: 11 },
+  time: { color: tokens.muted, fontSize: 11 },
 });
 
-const pollStyles = StyleSheet.create({
+const makePollStyles = (tokens) => StyleSheet.create({
   container: { minWidth: 220, paddingVertical: 4 },
-  question: { color: '#fff', fontWeight: '700', fontSize: 15, marginBottom: 4 },
+  question: { color: tokens.text, fontWeight: '700', fontSize: 15, marginBottom: 4 },
   hintRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  hint: { color: 'rgba(255,255,255,0.5)', fontSize: 12, marginLeft: 6 },
+  hint: { color: tokens.muted, fontSize: 12, marginLeft: 6 },
   optionRow: { marginBottom: 10 },
   optionTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
   optionLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
@@ -248,31 +252,31 @@ const pollStyles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.4)',
+    borderColor: tokens.borderStrong,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
   },
   radioSelected: {
-    backgroundColor: AMBER,
-    borderColor: AMBER,
+    backgroundColor: tokens.cyan,
+    borderColor: tokens.cyan,
   },
-  optionText: { color: '#fff', fontSize: 14, flex: 1 },
-  voteCount: { color: 'rgba(255,255,255,0.6)', fontSize: 12 },
+  optionText: { color: tokens.text, fontSize: 14, flex: 1 },
+  voteCount: { color: tokens.muted, fontSize: 12 },
   progressBg: {
     height: 4,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: tokens.border,
     borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: AMBER,
+    backgroundColor: tokens.cyan,
     borderRadius: 2,
     opacity: 0.7,
   },
   viewVotes: {
-    color: AMBER,
+    color: tokens.cyan,
     fontSize: 12,
     marginTop: 8,
     fontWeight: '700',

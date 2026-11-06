@@ -115,7 +115,7 @@ export default function Toast() {
 
 const styles = StyleSheet.create({
   layer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 99999,
     elevation: 99999,
   },

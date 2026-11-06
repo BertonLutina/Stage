@@ -6,16 +6,21 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  TouchableOpacity,
-  TextInput,
   FlatList,
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useGamerTokens } from '@/components/profile/gamer/GamerProfileUI';
+import useThemeStore from '@/store/themeStore';
+import { SelectField, TextField } from '@/components/ui';
+import { MIN_TOUCH } from '@/components/ui/metrics';
 import { headingStyleLg } from '@/lib/fonts';
 import LiveGlass from '@/components/theme/LiveGlass';
 
+/**
+ * Select field + searchable bottom sheet. The trigger is the shared Stage SelectField
+ * (50 high, radius 12, bgDeep) so it sits in family next to TextField.
+ * `flush` drops the trailing 12px gap for callers that lay fields out with `gap`.
+ */
 export function SettingsListbox({
   label,
   value,
@@ -25,37 +30,23 @@ export function SettingsListbox({
   title,
   searchPlaceholder = 'Search…',
   accent = 'cyan',
+  flush = false,
 }) {
-  const tokens = useGamerTokens();
+  const tokens = useThemeStore((s) => s.tokens);
   const [open, setOpen] = useState(false);
   const selected = options.find((opt) => String(opt.id) === String(value));
   const display = selected?.label || value || placeholder;
   const tint = accent === 'amber' ? tokens.amber : tokens.cyan;
 
   return (
-    <View style={{ marginBottom: 12 }}>
-      {label ? (
-        <Text style={[styles.fieldLabel, { color: tokens.muted }]}>{label}</Text>
-      ) : null}
-      <TouchableOpacity
-        onPress={() => setOpen(true)}
-        activeOpacity={0.85}
-        accessibilityRole="button"
+    <View style={flush ? null : { marginBottom: 12 }}>
+      <SelectField
+        label={label}
+        value={selected?.label || (value != null ? String(value) : '')}
+        placeholder={placeholder}
         accessibilityLabel={label ? `${label}, ${display}` : display}
-        style={[styles.trigger, { borderColor: tokens.inputBorder, backgroundColor: tokens.inputFill }]}
-      >
-        <Text
-          numberOfLines={1}
-          style={[
-            styles.triggerValue,
-            { color: tokens.text },
-            !selected && !value && { color: tokens.faint, fontWeight: '600' },
-          ]}
-        >
-          {display}
-        </Text>
-        <Ionicons name="chevron-down" size={18} color={tokens.muted} />
-      </TouchableOpacity>
+        onPress={() => setOpen(true)}
+      />
       <OptionsBottomSheet
         visible={open}
         title={title || label || 'Select'}
@@ -89,8 +80,8 @@ export function OptionsBottomSheet({
   tint,
   tokens,
 }) {
-  const fallbackTokens = useGamerTokens();
-  const t = tokens || fallbackTokens;
+  const storeTokens = useThemeStore((s) => s.tokens);
+  const t = tokens || storeTokens;
   const color = tint || (accent === 'amber' ? t.amber : t.cyan);
   const [query, setQuery] = useState('');
   const showSearch = options.length > 8;
@@ -119,36 +110,33 @@ export function OptionsBottomSheet({
           onPress={() => { setQuery(''); onClose?.(); }}
           accessibilityRole="button"
           accessibilityLabel="Close"
-          style={styles.scrim}
+          style={[styles.scrim, { backgroundColor: t.overlay }]}
         />
         <LiveGlass
           intensity={26}
           style={[
             styles.sheet,
             {
-              backgroundColor: t.live ? 'transparent' : t.cardSolid,
-              borderColor: t.cyanBorder,
+              backgroundColor: t.live ? 'transparent' : t.bgDeep,
+              borderColor: t.border,
             },
           ]}
         >
           <View style={styles.handleWrap}>
-            <View style={[styles.handle, { backgroundColor: t.hairline }]} />
+            <View style={[styles.handle, { backgroundColor: t.border }]} />
           </View>
-          <Text style={[headingStyleLg, styles.sheetTitle, { color: t.text }]}>{title}</Text>
+          <Text numberOfLines={1} style={[headingStyleLg, styles.sheetTitle, { color: t.text }]}>{title}</Text>
           {showSearch ? (
-            <TextInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder={searchPlaceholder}
-              placeholderTextColor={t.faint}
-              style={[styles.search, {
-                borderColor: t.inputBorder,
-                backgroundColor: t.inputFill,
-                color: t.text,
-              }]}
-              autoCorrect={false}
-              autoCapitalize="none"
-            />
+            <View style={{ marginBottom: 10 }}>
+              <TextField
+                value={query}
+                onChangeText={setQuery}
+                placeholder={searchPlaceholder}
+                accessibilityLabel={searchPlaceholder}
+                autoCorrect={false}
+                autoCapitalize="none"
+              />
+            </View>
           ) : null}
           <FlatList
             data={filtered}
@@ -163,24 +151,23 @@ export function OptionsBottomSheet({
                   {showSection ? (
                     <Text style={[styles.section, { color: t.muted }]}>{item.section}</Text>
                   ) : null}
-                  <TouchableOpacity
+                  <Pressable
                     onPress={() => {
                       if (item.disabled) return;
                       setQuery('');
                       onSelect?.(item.id, item);
                     }}
                     disabled={item.disabled}
-                    activeOpacity={0.85}
                     accessibilityRole="button"
                     accessibilityState={{ selected: active, disabled: !!item.disabled }}
                     accessibilityLabel={item.label}
-                    style={[
+                    style={({ pressed }) => [
                       styles.option,
                       {
-                        borderColor: active ? t.tileBorder : t.hairline,
-                        backgroundColor: active ? t.tileFill : t.inputFill,
+                        borderColor: active ? color : t.border,
+                        backgroundColor: active ? t.card : 'transparent',
+                        opacity: item.disabled ? 0.4 : (pressed ? 0.85 : 1),
                       },
-                      item.disabled && { opacity: 0.4 },
                     ]}
                   >
                     <View style={{ flex: 1, minWidth: 0 }}>
@@ -192,11 +179,11 @@ export function OptionsBottomSheet({
                       ) : null}
                     </View>
                     {active ? (
-                      <Ionicons name="checkmark-circle" size={20} color={color} />
+                      <Ionicons name="checkmark-circle" size={22} color={color} />
                     ) : (
-                      <View style={[styles.emptyCheck, { borderColor: t.hairline }]} />
+                      <View style={[styles.emptyCheck, { borderColor: t.border }]} />
                     )}
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
               );
             }}
@@ -211,38 +198,16 @@ export function OptionsBottomSheet({
 }
 
 const styles = StyleSheet.create({
-  fieldLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.1,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-  },
-  trigger: {
-    minHeight: 50,
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  triggerValue: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '700',
-  },
   sheetRoot: {
     flex: 1,
     justifyContent: 'flex-end',
   },
   scrim: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
   },
   sheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
     borderWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 10,
@@ -259,28 +224,20 @@ const styles = StyleSheet.create({
     fontSize: 22,
     marginBottom: 12,
   },
-  search: {
-    minHeight: 46,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    marginBottom: 10,
-    fontSize: 15,
-  },
   section: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.4,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 11 * 0.12,
     textTransform: 'uppercase',
     marginTop: 10,
     marginBottom: 6,
   },
   option: {
-    minHeight: 52,
-    borderRadius: 14,
+    minHeight: MIN_TOUCH + 8,
+    borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -288,7 +245,7 @@ const styles = StyleSheet.create({
   },
   optionLabel: {
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   optionDesc: {
     fontSize: 12,
@@ -296,9 +253,9 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   emptyCheck: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 1,
   },
   empty: {

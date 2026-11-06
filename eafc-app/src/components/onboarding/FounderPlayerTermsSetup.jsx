@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { View, TextInput, TouchableOpacity } from 'react-native';
-import STText from '../common/STText';
+import { View, Text } from 'react-native';
+import { Button, Card, SectionLabel, TextField } from '@/components/ui';
 import {
   FOUNDER_PLAYER_WEEKLY_SALARY_MAX,
   FOUNDER_PLAYER_WEEKLY_SALARY_MIN,
@@ -8,8 +8,8 @@ import {
   isFounderPlayerWageAllowed,
   normalizeFounderPlayerTerms,
 } from '../../lib/founderPlayerTerms';
-import { SettingsListbox } from '../settings/SettingsListbox';
-import { onboardingStyles as s } from './onboardingStyles';
+import { OnboardingSelect, StepHeading, TextLink } from './OnboardingParts';
+import { STEP_GAP, useOnboardingStyles } from './onboardingStyles';
 
 const TARGET_TYPES = [
   { value: 'min', label: 'Minimum (≥)' },
@@ -18,6 +18,7 @@ const TARGET_TYPES = [
 ];
 
 export default function FounderPlayerTermsSetup({ initialTerms = null, onComplete }) {
+  const s = useOnboardingStyles();
   const seeded = normalizeFounderPlayerTerms(initialTerms || {});
   const [weeklySalary, setWeeklySalary] = useState(seeded.weekly_salary_stc ? String(seeded.weekly_salary_stc) : '');
   const [signingBonus, setSigningBonus] = useState(seeded.signing_bonus_stc ? String(seeded.signing_bonus_stc) : '');
@@ -55,49 +56,37 @@ export default function FounderPlayerTermsSetup({ initialTerms = null, onComplet
   };
 
   return (
-    <View>
-      <STText style={s.title}>Pay yourself</STText>
-      <STText style={s.subtitle}>
-        This is your founder player wage. You can renegotiate later.
-      </STText>
-
-      <STText style={s.label}>Weekly salary (STC)</STText>
-      <TextInput
-        value={weeklySalary}
-        onChangeText={setWeeklySalary}
-        keyboardType="number-pad"
-        placeholder="e.g. 40000"
-        placeholderTextColor="rgba(255,255,255,0.35)"
-        style={s.input}
+    <View style={{ gap: STEP_GAP }}>
+      <StepHeading
+        title="Pay yourself"
+        subtitle="This is your founder player wage. You can renegotiate later."
       />
-      <STText style={s.subtitle}>
-        {FOUNDER_PLAYER_WEEKLY_SALARY_MIN.toLocaleString()} – {FOUNDER_PLAYER_WEEKLY_SALARY_MAX.toLocaleString()} STC / week
-      </STText>
 
-      <STText style={s.label}>Signing bonus (STC)</STText>
-      <TextInput
+      <View style={{ gap: 6 }}>
+        <TextField
+          label="Weekly salary (STC)"
+          value={weeklySalary}
+          onChangeText={setWeeklySalary}
+          keyboardType="number-pad"
+          placeholder="e.g. 40000"
+        />
+        <Text style={s.hint}>
+          {FOUNDER_PLAYER_WEEKLY_SALARY_MIN.toLocaleString()} – {FOUNDER_PLAYER_WEEKLY_SALARY_MAX.toLocaleString()} STC / week
+        </Text>
+      </View>
+
+      <TextField
+        label="Signing bonus (STC)"
         value={signingBonus}
         onChangeText={setSigningBonus}
         keyboardType="number-pad"
         placeholder="e.g. 5000"
-        placeholderTextColor="rgba(255,255,255,0.35)"
-        style={s.input}
       />
 
-      <STText style={s.label}>Performance targets</STText>
+      <SectionLabel>Performance targets</SectionLabel>
       {targets.map((target, idx) => (
-        <View
-          key={`${target.stat}-${idx}`}
-          style={{
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.15)',
-            backgroundColor: 'rgba(255,255,255,0.05)',
-            padding: 12,
-            marginBottom: 10,
-          }}
-        >
-          <SettingsListbox
+        <Card key={`${target.stat}-${idx}`} style={{ gap: 12 }}>
+          <OnboardingSelect
             label="Stat"
             value={target.stat}
             placeholder="Select stat"
@@ -105,7 +94,7 @@ export default function FounderPlayerTermsSetup({ initialTerms = null, onComplet
             options={statOptions}
             onChange={(id) => updateTarget(idx, 'stat', id)}
           />
-          <SettingsListbox
+          <OnboardingSelect
             label="Type"
             value={target.type}
             placeholder="Select type"
@@ -113,37 +102,29 @@ export default function FounderPlayerTermsSetup({ initialTerms = null, onComplet
             options={typeOptions}
             onChange={(id) => updateTarget(idx, 'type', id)}
           />
-          <TextInput
+          <TextField
+            label={target.type === 'range' ? 'Min' : 'Value'}
             value={String(target.value ?? '')}
             onChangeText={(value) => updateTarget(idx, 'value', parseFloat(value) || 0)}
             keyboardType="number-pad"
             placeholder={target.type === 'range' ? 'Min' : 'Value'}
-            placeholderTextColor="rgba(255,255,255,0.35)"
-            style={s.input}
           />
           {target.type === 'range' ? (
-            <TextInput
+            <TextField
+              label="Max"
               value={String(target.value_max || '')}
               onChangeText={(value) => updateTarget(idx, 'value_max', parseFloat(value) || 0)}
               keyboardType="number-pad"
               placeholder="Max"
-              placeholderTextColor="rgba(255,255,255,0.35)"
-              style={s.input}
             />
           ) : null}
-          <TouchableOpacity onPress={() => removeTarget(idx)} style={s.ghostBtn}>
-            <STText style={s.ghostBtnText}>Remove target</STText>
-          </TouchableOpacity>
-        </View>
+          <TextLink title="Remove target" onPress={() => removeTarget(idx)} />
+        </Card>
       ))}
 
-      <TouchableOpacity onPress={addTarget} style={s.ghostBtn}>
-        <STText style={s.ghostBtnText}>+ Add target</STText>
-      </TouchableOpacity>
+      <TextLink title="+ Add target" onPress={addTarget} />
 
-      <TouchableOpacity onPress={handleContinue} style={[s.primaryBtn, !wageOk && { opacity: 0.4 }]} disabled={!wageOk}>
-        <STText style={s.primaryBtnText}>Next</STText>
-      </TouchableOpacity>
+      <Button title="Next" onPress={handleContinue} disabled={!wageOk} />
     </View>
   );
 }

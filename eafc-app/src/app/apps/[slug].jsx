@@ -1,52 +1,63 @@
 import React, { useMemo } from 'react';
-import { Text, TouchableOpacity, StatusBar, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text, StatusBar, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import useThemeStore from '@/store/themeStore';
+import { Button, Card, IconButton, Screen } from '@/components/ui';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
 import { findMiniApp } from '@/lib/miniApps';
-import {
-  GamerProfileShell,
-  GlassIconButton,
-  CYAN,
-} from '@/components/profile/gamer/GamerProfileUI';
 
 export default function MiniAppFallback() {
   const { slug } = useLocalSearchParams();
   const router = useRouter();
+  const tokens = useThemeStore((s) => s.tokens);
   const app = useMemo(() => findMiniApp(String(slug || '')), [slug]);
   const title = app?.label || 'App';
 
   return (
-    <GamerProfileShell>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-        <View style={{ paddingHorizontal: 16, paddingTop: 8, flexDirection: 'row', alignItems: 'center' }}>
-          <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
-          <Text style={{ flex: 1, marginLeft: 12, color: '#fff', fontWeight: '900', fontSize: 18 }}>
-            {title}
-          </Text>
-        </View>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28 }}>
-          <Ionicons name={app?.icon || 'apps-outline'} size={36} color={CYAN} />
-          <Text style={{ color: '#fff', fontWeight: '800', marginTop: 12 }}>{title}</Text>
-          <Text style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: 8 }}>
-            This app is not available on this build.
-          </Text>
-          <TouchableOpacity
-            onPress={() => router.back()}
+    <Screen scroll={false} tabBar={false}>
+      <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <IconButton icon="arrow-back" accessibilityLabel="Back" onPress={() => router.back()} />
+        <Text
+          numberOfLines={1}
+          style={{
+            flexShrink: 1,
+            color: tokens.muted,
+            fontSize: 11,
+            fontWeight: '600',
+            letterSpacing: 11 * 0.12,
+            textTransform: 'uppercase',
+          }}
+        >
+          {title}
+        </Text>
+        <View style={{ width: 44 }} />
+      </View>
+      <View style={{ flex: 1, justifyContent: 'center' }}>
+        <Card style={{ alignItems: 'center', gap: 12, paddingVertical: 28 }}>
+          <Ionicons name={app?.icon || 'apps-outline'} size={36} color={tokens.cyan} />
+          <Text
+            numberOfLines={2}
             style={{
-              marginTop: 20,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: 'rgba(0,240,255,0.4)',
-              paddingHorizontal: 18,
-              paddingVertical: 12,
+              color: tokens.text,
+              fontFamily: FONT_EA_SPORTS,
+              fontSize: 26,
+              letterSpacing: 26 * 0.03,
+              textTransform: 'uppercase',
+              textAlign: 'center',
             }}
           >
-            <Text style={{ color: CYAN, fontWeight: '800' }}>Back to Apps</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    </GamerProfileShell>
+            {title}
+          </Text>
+          <Text style={{ color: tokens.muted, textAlign: 'center', fontSize: 14 }}>
+            This app is not available on this build.
+          </Text>
+          <View style={{ alignSelf: 'stretch', marginTop: 8 }}>
+            <Button title="Back to Apps" variant="secondary" onPress={() => router.back()} />
+          </View>
+        </Card>
+      </View>
+    </Screen>
   );
 }

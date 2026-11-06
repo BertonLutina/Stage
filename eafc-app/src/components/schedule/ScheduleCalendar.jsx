@@ -22,9 +22,10 @@ import {
   shiftCalendarMonth,
 } from '@/lib/scheduleCalendar';
 import { penaltyOutcome } from '@/lib/penaltyOutcome';
-import { CYAN, AMBER } from '@/components/profile/gamer/GamerProfileUI';
-import { FUT, SectionCard } from '@/components/dashboard/CommandCenterUI';
-import { headingStyleSm } from '@/lib/fonts';
+import useThemeStore from '@/store/themeStore';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
+import { hexToRgba } from '@/lib/stageTheme';
+import { Card, Chip, IconButton } from '@/components/ui';
 
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const TAP = 44;
@@ -55,25 +56,135 @@ function fmtTime(value) {
   return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
-function categoryMeta(event) {
-  return CALENDAR_CATEGORIES[event.category] || {
-    label: event.category === 'gost' ? 'GOST' : 'Match',
-    color: '#94a3b8',
-    background: 'rgba(148,163,184,0.12)',
+/**
+ * League-tier colours come from Stage tokens so the calendar stays on-palette (labels stay in the lib).
+ * Hue alone is not enough at 6-8px (supreme cyan, tournament aqua and friendly muted read alike),
+ * so every tier also has its own marker SHAPE, see `categoryShape`.
+ */
+export const CATEGORY_TOKEN = {
+  supreme: 'cyan',
+  elite: 'warning',
+  challenger: 'success',
+  regional: 'danger',
+  friendly: 'muted',
+  tournament: 'aqua',
+};
+
+/** Marker shape per tier. Unknown tiers (e.g. GOST) are a hollow ring. */
+export const CATEGORY_SHAPE = {
+  supreme: 'large',
+  elite: 'dot',
+  challenger: 'dot',
+  regional: 'dot',
+  friendly: 'small',
+  tournament: 'diamond',
+};
+export const UNKNOWN_SHAPE = 'ring';
+
+/** Unknown tiers fall back to a token no tier uses. */
+export const UNKNOWN_CATEGORY_TOKEN = 'borderStrong';
+
+export function isKnownCategory(id) {
+  return Object.prototype.hasOwnProperty.call(CATEGORY_TOKEN, id);
+}
+
+export function categoryColor(id, tokens) {
+  return tokens[isKnownCategory(id) ? CATEGORY_TOKEN[id] : UNKNOWN_CATEGORY_TOKEN] || tokens.muted;
+}
+
+export function categoryShape(id) {
+  return isKnownCategory(id) ? CATEGORY_SHAPE[id] : UNKNOWN_SHAPE;
+}
+
+function categoryMeta(event, tokens) {
+  const known = CALENDAR_CATEGORIES[event.category];
+  const color = categoryColor(event.category, tokens);
+  return {
+    label: known ? known.label : (event.category === 'gost' ? 'GOST' : 'Match'),
+    color,
+    background: hexToRgba(color, 0.12),
+    shape: categoryShape(event.category),
   };
 }
 
+/** Style of the marker inside its (size + 4) box. `size` is the base dot size. */
+export function markerStyle(shape, color, size = 8) {
+  switch (shape) {
+    case 'large':
+      return { width: size + 3, height: size + 3, borderRadius: (size + 3) / 2, borderWidth: 0, backgroundColor: color };
+    case 'small':
+      return { width: size - 3, height: size - 3, borderRadius: (size - 3) / 2, borderWidth: 0, backgroundColor: color };
+    case 'diamond': {
+      const side = Math.round(size * 0.85);
+      return { width: side, height: side, borderRadius: 1, borderWidth: 0, backgroundColor: color, transform: [{ rotate: '45deg' }] };
+    }
+    case 'ring':
+      return { width: size, height: size, borderRadius: size / 2, borderWidth: 1.5, borderColor: color, backgroundColor: 'transparent' };
+    default:
+      return { width: size, height: size, borderRadius: size / 2, borderWidth: 0, backgroundColor: color };
+  }
+}
+
+/** The one category marker used by day cells, event rows and the legend, so they cannot drift. */
+export function CategoryDot({ color, shape = 'dot', size = 8 }) {
+  const box = size + 4;
+  return (
+    <View style={{ width: box, height: box, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={markerStyle(shape, color, size)} />
+    </View>
+  );
+}
+
+/** 36px tinted tile that leads an event row. */
+function IconBox({ color, background, children }) {
+  return (
+    <View
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: color,
+        backgroundColor: background,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      {children}
+    </View>
+  );
+}
+
+function rowStyle(tokens) {
+  return {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: TAP,
+    paddingHorizontal: 4,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: tokens.border,
+  };
+}
+
+const rowTitle = (tokens) => ({ color: tokens.text, fontSize: 15, fontWeight: '700' });
+const rowMeta = (tokens) => ({ color: tokens.muted, fontSize: 12, marginTop: 2 });
+const emptyStyle = (tokens) => ({ color: tokens.muted, textAlign: 'center', paddingVertical: 28, fontSize: 14 });
+
 function LegacyDayEventRow({ event, onPress }) {
+  const tokens = useThemeStore((st) => st.tokens);
+  const warn = { color: hexToRgba(tokens.warning, 0.5), background: hexToRgba(tokens.warning, 0.12) };
   if (event.type === 'tournament_start') {
     const td = event.tournamentData || {};
     return (
-      <View style={styles.row}>
-        <View style={[styles.iconBox, { borderColor: 'rgba(255,210,74,0.35)', backgroundColor: 'rgba(255,210,74,0.1)' }]}>
-          <Ionicons name="trophy" size={16} color={AMBER} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.rowTitle} numberOfLines={1}>{td.name || event.competition}</Text>
-          <Text style={styles.rowMeta}>Tournament start{fmtTime(event.date) ? ` · ${fmtTime(event.date)}` : ''}</Text>
+      <View style={rowStyle(tokens)}>
+        <IconBox color={warn.color} background={warn.background}>
+          <Ionicons name="trophy-outline" size={20} color={tokens.warning} />
+        </IconBox>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={rowTitle(tokens)} numberOfLines={1}>{td.name || event.competition}</Text>
+          <Text style={rowMeta(tokens)}>Tournament start{fmtTime(event.date) ? ` · ${fmtTime(event.date)}` : ''}</Text>
         </View>
       </View>
     );
@@ -81,42 +192,42 @@ function LegacyDayEventRow({ event, onPress }) {
 
   if (event.type === 'contract_end') {
     return (
-      <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.row}>
-        <View style={[styles.iconBox, { borderColor: 'rgba(255,210,74,0.35)', backgroundColor: 'rgba(255,210,74,0.1)' }]}>
-          <Ionicons name="document-text" size={16} color={AMBER} />
+      <TouchableOpacity onPress={onPress} activeOpacity={0.85} accessibilityRole="button" style={rowStyle(tokens)}>
+        <IconBox color={warn.color} background={warn.background}>
+          <Ionicons name="document-text-outline" size={20} color={tokens.warning} />
+        </IconBox>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={rowTitle(tokens)} numberOfLines={1}>Contract End · {event.contractData?.contract_type || 'squad'}</Text>
+          <Text style={rowMeta(tokens)}>Contract</Text>
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.rowTitle}>Contract End · {event.contractData?.contract_type || 'squad'}</Text>
-          <Text style={styles.rowMeta}>Contract</Text>
-        </View>
-        <Text style={{ color: AMBER, fontSize: 10, fontWeight: '800' }}>END</Text>
+        <Text style={{ color: tokens.warning, fontSize: 11, fontWeight: '600' }}>END</Text>
       </TouchableOpacity>
     );
   }
 
   const resultColor = event.result?.outcome === 'W'
-    ? FUT.lime
+    ? tokens.success
     : event.result?.outcome === 'L'
-      ? FUT.rose
+      ? tokens.danger
       : event.result
-        ? AMBER
+        ? tokens.warning
         : null;
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.row}>
-      <View style={[styles.iconBox, { borderColor: 'rgba(0,232,255,0.35)', backgroundColor: 'rgba(0,232,255,0.1)' }]}>
-        <Ionicons name="shield" size={16} color={CYAN} />
-      </View>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.85} accessibilityRole="button" style={rowStyle(tokens)}>
+      <IconBox color={hexToRgba(tokens.cyan, 0.5)} background={hexToRgba(tokens.cyan, 0.12)}>
+        <Ionicons name="shield-outline" size={20} color={tokens.cyan} />
+      </IconBox>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={styles.rowTitle} numberOfLines={1}>{event.opposition || 'TBD'}</Text>
-        <Text style={styles.rowMeta} numberOfLines={1}>
+        <Text style={rowTitle(tokens)} numberOfLines={1}>{event.opposition || 'TBD'}</Text>
+        <Text style={rowMeta(tokens)} numberOfLines={1}>
           {[fmtTime(event.date), event.venue, event.competition].filter(Boolean).join(' · ')}
         </Text>
       </View>
       {event.result ? (
-        <Text style={{ color: resultColor, fontWeight: '900', fontSize: 13 }}>{event.result.display}</Text>
+        <Text style={{ color: resultColor, fontWeight: '700', fontSize: 14 }}>{event.result.display}</Text>
       ) : (
-        <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10, fontWeight: '800', textTransform: 'uppercase' }}>
+        <Text numberOfLines={1} style={{ color: tokens.muted, fontSize: 11, fontWeight: '600', textTransform: 'uppercase', maxWidth: 80 }}>
           {event.status || '—'}
         </Text>
       )}
@@ -125,18 +236,19 @@ function LegacyDayEventRow({ event, onPress }) {
 }
 
 function ApiDayEventRow({ event, timezone, conflict, onPress }) {
-  const category = categoryMeta(event);
+  const tokens = useThemeStore((st) => st.tokens);
+  const category = categoryMeta(event, tokens);
   const pens = penaltyOutcome(event.match || event);
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.row}>
-      <View style={[styles.iconBox, { borderColor: category.color, backgroundColor: category.background }]}>
-        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: category.color }} />
-      </View>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.85} accessibilityRole="button" style={rowStyle(tokens)}>
+      <IconBox color={category.color} background={category.background}>
+        <CategoryDot color={category.color} shape={category.shape} />
+      </IconBox>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={styles.rowTitle} numberOfLines={1}>
+        <Text style={rowTitle(tokens)} numberOfLines={1}>
           {event.homeName || 'TBD'} v {event.awayName || 'TBD'}
         </Text>
-        <Text style={styles.rowMeta} numberOfLines={2}>
+        <Text style={rowMeta(tokens)} numberOfLines={2}>
           {[
             category.label,
             calendarTime(event.startsAt, timezone),
@@ -144,14 +256,15 @@ function ApiDayEventRow({ event, timezone, conflict, onPress }) {
             conflict ? 'Kickoff conflict' : null,
           ].filter(Boolean).join(' · ')}
         </Text>
-        {pens ? <Text style={{ color: CYAN, fontSize: 11, marginTop: 2 }}>{pens}</Text> : null}
+        {pens ? <Text style={{ color: tokens.cyan, fontSize: 12, marginTop: 2 }}>{pens}</Text> : null}
       </View>
-      <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.35)" />
+      <Ionicons name="chevron-forward" size={18} color={tokens.muted} />
     </TouchableOpacity>
   );
 }
 
 function LegacyCalendar({ events, onOpenMatch }) {
+  const tokens = useThemeStore((st) => st.tokens);
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState(null);
 
@@ -171,7 +284,7 @@ function LegacyCalendar({ events, onOpenMatch }) {
 
   return (
     <View style={{ gap: 12 }}>
-      <SectionCard>
+      <Card>
         <CalendarChrome
           title={monthLabel(currentMonth)}
           onPrev={() => shiftMonth(-1)}
@@ -193,7 +306,7 @@ function LegacyCalendar({ events, onOpenMatch }) {
                 selected={selected}
                 today={today}
                 dots={dayEvents.slice(0, 3).map((ev) => (
-                  ev.type === 'contract_end' ? AMBER : ev.type === 'tournament_start' ? '#A78BFA' : CYAN
+                  ev.type === 'contract_end' ? tokens.warning : ev.type === 'tournament_start' ? tokens.success : tokens.cyan
                 ))}
                 onPress={() => setSelectedDate(day)}
               />
@@ -201,19 +314,19 @@ function LegacyCalendar({ events, onOpenMatch }) {
           })}
         </View>
         <LegendRow items={[
-          { color: CYAN, label: 'Match' },
-          { color: AMBER, label: 'Contract' },
-          { color: '#A78BFA', label: 'Tournament' },
+          { color: tokens.cyan, label: 'Match' },
+          { color: tokens.warning, label: 'Contract' },
+          { color: tokens.success, label: 'Tournament' },
         ]}
         />
-      </SectionCard>
+      </Card>
       <DaySheet
         visible={!!selectedDate}
         title={selectedDate ? dayHeading(selectedDate) : ''}
         onClose={() => setSelectedDate(null)}
       >
         {selectedEvents.length === 0 ? (
-          <Text style={styles.empty}>No events on this day</Text>
+          <Text style={emptyStyle(tokens)}>No events on this day</Text>
         ) : (
           selectedEvents.map((ev) => (
             <LegacyDayEventRow key={ev.id} event={ev} onPress={() => openEvent(ev)} />
@@ -225,6 +338,7 @@ function LegacyCalendar({ events, onOpenMatch }) {
 }
 
 function ApiCalendar({ tournamentId, timezone = 'Europe/Brussels', onOpenMatch }) {
+  const tokens = useThemeStore((st) => st.tokens);
   const [month, setMonth] = useState(() => calendarDay(new Date(), timezone).slice(0, 7));
   const [selected, setSelected] = useState(() => calendarDay(new Date(), timezone));
   const [scope, setScope] = useState('general');
@@ -281,26 +395,20 @@ function ApiCalendar({ tournamentId, timezone = 'Europe/Brussels', onOpenMatch }
 
   return (
     <View style={{ gap: 12 }}>
-      <SectionCard>
+      <Card>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ gap: 8, paddingBottom: 12 }}
         >
-          {CALENDAR_SCOPES.map((option) => {
-            const active = scope === option.id;
-            return (
-              <TouchableOpacity
-                key={option.id}
-                onPress={() => setScope(option.id)}
-                style={[styles.scopePill, active && styles.scopePillActive]}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-              >
-                <Text style={[styles.scopeText, active && { color: CYAN }]}>{option.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
+          {CALENDAR_SCOPES.map((option) => (
+            <Chip
+              key={option.id}
+              label={option.label}
+              active={scope === option.id}
+              onPress={() => setScope(option.id)}
+            />
+          ))}
         </ScrollView>
 
         <CalendarChrome
@@ -311,13 +419,27 @@ function ApiCalendar({ tournamentId, timezone = 'Europe/Brussels', onOpenMatch }
         />
 
         {error ? (
-          <TouchableOpacity onPress={() => setRevision((r) => r + 1)} style={styles.alert}>
-            <Text style={{ color: FUT.rose, fontSize: 12, flex: 1 }}>{error}</Text>
-            <Text style={{ color: CYAN, fontSize: 12, fontWeight: '800' }}>Retry</Text>
+          <TouchableOpacity
+            onPress={() => setRevision((r) => r + 1)}
+            accessibilityRole="button"
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 10,
+              marginBottom: 10,
+              minHeight: 44,
+              padding: 12,
+              borderWidth: 1,
+              borderColor: hexToRgba(tokens.danger, 0.5),
+              borderRadius: 12,
+            }}
+          >
+            <Text style={{ color: tokens.danger, fontSize: 13, flex: 1 }}>{error}</Text>
+            <Text style={{ color: tokens.cyan, fontSize: 13, fontWeight: '600' }}>Retry</Text>
           </TouchableOpacity>
         ) : null}
 
-        <Text style={styles.status}>
+        <Text style={{ color: tokens.muted, fontSize: 12, marginBottom: 10 }}>
           {loading && !current
             ? 'Loading scheduled games...'
             : loading
@@ -336,20 +458,27 @@ function ApiCalendar({ tournamentId, timezone = 'Europe/Brussels', onOpenMatch }
                 inMonth={day.slice(0, 7) === month}
                 selected={day === selected}
                 today={day === today}
-                dots={items.slice(0, 3).map((ev) => categoryMeta(ev).color)}
+                dots={items.slice(0, 3).map((ev) => {
+                  const meta = categoryMeta(ev, tokens);
+                  return { color: meta.color, shape: meta.shape };
+                })}
                 onPress={() => setSelected(day)}
               />
             );
           })}
         </View>
         <LegendRow
-          items={Object.entries(CALENDAR_CATEGORIES).map(([id, cat]) => ({
-            color: cat.color,
-            label: cat.label,
-            key: id,
-          }))}
+          items={[
+            ...Object.entries(CALENDAR_CATEGORIES).map(([id, cat]) => ({
+              color: categoryColor(id, tokens),
+              shape: categoryShape(id),
+              label: cat.label,
+              key: id,
+            })),
+            { color: categoryColor(null, tokens), label: 'Other', key: 'other', shape: UNKNOWN_SHAPE },
+          ]}
         />
-      </SectionCard>
+      </Card>
 
       <DaySheet
         visible
@@ -358,9 +487,9 @@ function ApiCalendar({ tournamentId, timezone = 'Europe/Brussels', onOpenMatch }
         onClose={null}
       >
         {loading && !current ? (
-          <ActivityIndicator color={CYAN} style={{ marginVertical: 24 }} />
+          <ActivityIndicator color={tokens.cyan} style={{ marginVertical: 24 }} />
         ) : selectedEvents.length === 0 ? (
-          <Text style={styles.empty}>No confirmed games on this day</Text>
+          <Text style={emptyStyle(tokens)}>No confirmed games on this day</Text>
         ) : (
           selectedEvents.map((ev) => (
             <ApiDayEventRow
@@ -382,32 +511,55 @@ function ApiCalendar({ tournamentId, timezone = 'Europe/Brussels', onOpenMatch }
 }
 
 function CalendarChrome({ title, onPrev, onNext, onToday }) {
+  const tokens = useThemeStore((st) => st.tokens);
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 8 }}>
-      <TouchableOpacity onPress={onPrev} accessibilityLabel="Previous month" style={styles.navBtn}>
-        <Ionicons name="chevron-back" size={18} color={CYAN} />
-      </TouchableOpacity>
-      <Text style={[headingStyleSm, { color: '#fff', fontSize: 14, letterSpacing: 2, flex: 1, textAlign: 'center' }]}>
+      <IconButton icon="chevron-back" onPress={onPrev} accessibilityLabel="Previous month" />
+      <Text
+        numberOfLines={1}
+        style={{
+          color: tokens.text,
+          fontFamily: FONT_EA_SPORTS,
+          fontSize: 16,
+          letterSpacing: 16 * 0.03,
+          flex: 1,
+          textAlign: 'center',
+          textTransform: 'uppercase',
+        }}
+      >
         {title}
       </Text>
       {onToday ? (
-        <TouchableOpacity onPress={onToday} style={[styles.navBtn, { width: 'auto', paddingHorizontal: 12 }]}>
-          <Text style={{ color: CYAN, fontSize: 11, fontWeight: '800' }}>Today</Text>
+        <TouchableOpacity
+          onPress={onToday}
+          accessibilityRole="button"
+          accessibilityLabel="Today"
+          style={{
+            height: TAP,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: tokens.border,
+            backgroundColor: tokens.card,
+            paddingHorizontal: 12,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={{ color: tokens.cyan, fontSize: 13, fontWeight: '600' }}>Today</Text>
         </TouchableOpacity>
       ) : null}
-      <TouchableOpacity onPress={onNext} accessibilityLabel="Next month" style={styles.navBtn}>
-        <Ionicons name="chevron-forward" size={18} color={CYAN} />
-      </TouchableOpacity>
+      <IconButton icon="chevron-forward" onPress={onNext} accessibilityLabel="Next month" />
     </View>
   );
 }
 
 function WeekHeaders() {
+  const tokens = useThemeStore((st) => st.tokens);
   return (
     <View style={{ flexDirection: 'row', marginBottom: 6 }}>
       {DAY_NAMES.map((d) => (
         <View key={d} style={{ flex: 1, alignItems: 'center', paddingVertical: 6, minHeight: 28 }}>
-          <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '800', letterSpacing: 1 }}>
+          <Text style={{ color: tokens.muted, fontSize: 11, fontWeight: '600' }}>
             {d[0]}
           </Text>
         </View>
@@ -417,10 +569,13 @@ function WeekHeaders() {
 }
 
 function DayCell({ dayNumber, inMonth, selected, today, dots = [], onPress }) {
+  const tokens = useThemeStore((st) => st.tokens);
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityState={{ selected: Boolean(selected) }}
       style={{
         width: `${100 / 7}%`,
         minHeight: TAP,
@@ -428,10 +583,10 @@ function DayCell({ dayNumber, inMonth, selected, today, dots = [], onPress }) {
         justifyContent: 'flex-start',
         paddingTop: 6,
         paddingBottom: 8,
-        borderRadius: 10,
-        backgroundColor: selected ? 'rgba(0,232,255,0.16)' : 'transparent',
+        borderRadius: 12,
+        backgroundColor: selected ? tokens.cardHi : 'transparent',
         borderWidth: selected ? 1 : 0,
-        borderColor: 'rgba(0,232,255,0.4)',
+        borderColor: tokens.aqua,
         opacity: inMonth ? 1 : 0.28,
       }}
     >
@@ -441,13 +596,13 @@ function DayCell({ dayNumber, inMonth, selected, today, dots = [], onPress }) {
         borderRadius: 14,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: today && !selected ? CYAN : 'transparent',
+        backgroundColor: today && !selected ? tokens.cyan : 'transparent',
       }}
       >
         <Text style={{
-          color: today && !selected ? '#031018' : selected ? CYAN : '#fff',
-          fontSize: 13,
-          fontWeight: '800',
+          color: today && !selected ? tokens.onCyan : selected ? tokens.cyan : tokens.text,
+          fontSize: 14,
+          fontWeight: '700',
         }}
         >
           {dayNumber}
@@ -455,9 +610,12 @@ function DayCell({ dayNumber, inMonth, selected, today, dots = [], onPress }) {
       </View>
       {dots.length > 0 ? (
         <View style={{ flexDirection: 'row', gap: 3, marginTop: 4 }}>
-          {dots.map((color, index) => (
-            <View key={`${color}-${index}`} style={[styles.dot, { backgroundColor: color }]} />
-          ))}
+          {dots.map((dot, index) => {
+            const color = typeof dot === 'string' ? dot : dot.color;
+            return (
+              <CategoryDot key={`${color}-${index}`} color={color} shape={typeof dot === 'string' ? 'dot' : dot.shape} size={6} />
+            );
+          })}
         </View>
       ) : null}
     </TouchableOpacity>
@@ -465,12 +623,13 @@ function DayCell({ dayNumber, inMonth, selected, today, dots = [], onPress }) {
 }
 
 function LegendRow({ items }) {
+  const tokens = useThemeStore((st) => st.tokens);
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)' }}>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: tokens.border }}>
       {items.map((item) => (
         <View key={item.key || item.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <View style={[styles.dot, { backgroundColor: item.color, width: 8, height: 8 }]} />
-          <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' }}>
+          <CategoryDot color={item.color} shape={item.shape} />
+          <Text style={{ color: tokens.muted, fontSize: 11, fontWeight: '600' }}>
             {item.label}
           </Text>
         </View>
@@ -480,27 +639,51 @@ function LegendRow({ items }) {
 }
 
 function DaySheet({ visible, title, onClose, children, embedded = false }) {
+  const tokens = useThemeStore((st) => st.tokens);
   if (embedded) {
     return (
-      <SectionCard>
-        <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15, marginBottom: 8 }}>{title}</Text>
+      <Card>
+        <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 16, marginBottom: 8 }}>{title}</Text>
         {children}
-      </SectionCard>
+      </Card>
     );
   }
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={styles.sheet}>
-        <View style={styles.sheetHandle} />
-        <View style={styles.sheetHeader}>
-          <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15 }}>{title}</Text>
-          <TouchableOpacity onPress={onClose} hitSlop={10} style={{ minWidth: TAP, minHeight: TAP, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="close" size={20} color="rgba(255,255,255,0.6)" />
-          </TouchableOpacity>
+      <Pressable
+        style={{ flex: 1, backgroundColor: tokens.overlay }}
+        onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel="Close day"
+      />
+      <View
+        style={{
+          backgroundColor: tokens.bgDeep,
+          borderTopLeftRadius: 22,
+          borderTopRightRadius: 22,
+          borderWidth: 1,
+          borderColor: tokens.border,
+          paddingBottom: 8,
+        }}
+      >
+        <View style={{ alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: tokens.border, marginTop: 10, marginBottom: 4 }} />
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            borderBottomWidth: 1,
+            borderBottomColor: tokens.border,
+            gap: 12,
+          }}
+        >
+          <Text numberOfLines={1} style={{ flex: 1, color: tokens.text, fontWeight: '700', fontSize: 16 }}>{title}</Text>
+          <IconButton icon="close" onPress={onClose} accessibilityLabel="Close" />
         </View>
-        <ScrollView style={{ maxHeight: 420 }} contentContainerStyle={{ paddingBottom: 24 }}>
+        <ScrollView style={{ maxHeight: 420 }} contentContainerStyle={{ paddingBottom: 24, paddingHorizontal: 16 }}>
           {children}
         </ScrollView>
       </View>
@@ -530,89 +713,3 @@ export default function ScheduleCalendar({
   }
   return <LegacyCalendar events={events || []} onOpenMatch={onOpenMatch} />;
 }
-
-const styles = {
-  navBtn: {
-    width: TAP,
-    height: TAP,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(0,232,255,0.25)',
-    backgroundColor: 'rgba(0,232,255,0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scopePill: {
-    minHeight: TAP,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    justifyContent: 'center',
-  },
-  scopePillActive: {
-    borderColor: 'rgba(0,232,255,0.45)',
-    backgroundColor: 'rgba(0,232,255,0.12)',
-  },
-  scopeText: { color: 'rgba(255,255,255,0.55)', fontSize: 12, fontWeight: '800' },
-  status: { color: 'rgba(255,255,255,0.45)', fontSize: 11, marginBottom: 10 },
-  alert: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(244,63,94,0.35)',
-    borderRadius: 10,
-  },
-  empty: { color: 'rgba(255,255,255,0.45)', textAlign: 'center', paddingVertical: 28 },
-  dot: { width: 6, height: 6, borderRadius: 3 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    minHeight: TAP,
-    paddingHorizontal: 4,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
-  },
-  iconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rowTitle: { color: '#fff', fontSize: 14, fontWeight: '800' },
-  rowMeta: { color: 'rgba(255,255,255,0.45)', fontSize: 11, marginTop: 2 },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
-  sheet: {
-    backgroundColor: '#0A1222',
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    borderWidth: 1,
-    borderColor: 'rgba(0,232,255,0.25)',
-    paddingBottom: 8,
-  },
-  sheetHandle: {
-    alignSelf: 'center',
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    marginTop: 10,
-    marginBottom: 4,
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
-  },
-};

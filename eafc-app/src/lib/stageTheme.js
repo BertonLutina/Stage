@@ -2,12 +2,12 @@ const THEME_KEY = 'stage-theme';
 
 export const STAGE_THEME_IDS = ['theme-dark', 'theme-video'];
 
-/** Sharp HUD cards. Player/club identity plates keep their own radii. */
-export const CARD_RADIUS = 2;
+/** Stage cards. Player/club identity plates keep their own radii. */
+export const CARD_RADIUS = 16;
 
-const MARINE = '#0B1A3A';
-/** HUD floodlight — cool off-white, never printer white */
-const PAPER = '#E2EAF4';
+const MARINE = '#07163A';
+/** Stage text — cool off-white, never printer white */
+const PAPER = '#EAF2FF';
 
 function hexToRgb(hex) {
   const raw = String(hex || '').replace('#', '').trim();
@@ -25,7 +25,7 @@ function hexToRgb(hex) {
 
 export function hexToRgba(hex, alpha) {
   const rgb = hexToRgb(hex);
-  if (!rgb) return `rgba(0,240,255,${alpha})`;
+  if (!rgb) return `rgba(95,227,232,${alpha})`;
   return `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`;
 }
 
@@ -55,63 +55,95 @@ export function contrastRatio(fgHex, bgHex) {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-function accents() {
-  return {
-    cyan: '#00F0FF',
-    amber: '#FFD60A',
-    cyanBorder: 'rgba(0,240,255,0.38)',
-    amberBorder: 'rgba(255,214,10,0.42)',
-    hairline: 'rgba(226,234,244,0.16)',
-    glass: 'rgba(8,12,24,0.78)',
-    card: 'rgba(10,18,32,0.92)',
-    cardSolid: '#0A1220',
-  };
-}
+/** Stage palette — verbatim from the redesign spec. */
+const STAGE = {
+  bg: '#03153F',
+  bgDeep: '#07163A',
+  card: '#132B5C',
+  cardHi: '#16346B',
+  border: '#234480',
+  borderStrong: '#4A6AA5',
+  textSoft: '#C9D8EE',
+  muted: '#9FB3D1',
+  cyan: '#5FE3E8',
+  cyanHi: '#8CF5F8',
+  aqua: '#2CCFD6',
+  onCyan: MARINE,
+  success: '#4ADE80',
+  successBg: '#14532D',
+  danger: '#F87171',
+  dangerBg: '#5B1A1A',
+  warning: '#FBBF24',
+  warningBg: '#2A2418',
+  warningBorder: '#B45309',
+};
+
+/** Raw palette for module-level constants that cannot read tokens (tile chrome, FUT). Prefer tokens in components. */
+export const STAGE_PALETTE = Object.freeze({ ...STAGE });
+
+/** Live Dark surfaces sit over the wallpaper, so they stay translucent. */
+const LIVE_SURFACE = hexToRgba(STAGE.card, 0.62);
 
 function tokensFromSurface({ id, bg, primary, text, muted }) {
-  const a = accents();
   const live = id === 'theme-video';
   const ink = text || PAPER;
+  const accent = primary || STAGE.cyan;
   return {
     id,
     isDark: true,
     live,
     bg,
+    bgDeep: STAGE.bgDeep,
     text: ink,
-    muted: muted || hexToRgba(ink, 0.58),
+    textSoft: STAGE.textSoft,
+    muted: muted || STAGE.muted,
     faint: hexToRgba(ink, 0.38),
-    primary: primary || a.cyan,
-    primaryText: isDarkHex(primary || a.cyan) ? PAPER : MARINE,
-    cyan: a.cyan,
-    amber: a.amber,
-    cyanBorder: a.cyanBorder,
-    amberBorder: a.amberBorder,
-    hairline: a.hairline,
-    glass: live ? 'rgba(8,12,24,0.58)' : a.glass,
-    card: live ? 'rgba(10,18,32,0.62)' : a.card,
-    cardSolid: live ? 'rgba(10,18,32,0.62)' : a.cardSolid,
+    primary: accent,
+    primaryText: isDarkHex(accent) ? PAPER : MARINE,
+    cyan: STAGE.cyan,
+    cyanHi: STAGE.cyanHi,
+    aqua: STAGE.aqua,
+    onCyan: STAGE.onCyan,
+    amber: STAGE.warning,
+    success: STAGE.success,
+    successBg: STAGE.successBg,
+    danger: STAGE.danger,
+    dangerBg: STAGE.dangerBg,
+    warning: STAGE.warning,
+    warningBg: STAGE.warningBg,
+    warningBorder: STAGE.warningBorder,
+    cyanBorder: hexToRgba(STAGE.cyan, 0.38),
+    amberBorder: hexToRgba(STAGE.warning, 0.42),
+    border: STAGE.border,
+    borderStrong: STAGE.borderStrong,
+    hairline: STAGE.border,
+    glass: live ? LIVE_SURFACE : STAGE.card,
+    card: live ? LIVE_SURFACE : STAGE.card,
+    cardHi: live ? LIVE_SURFACE : STAGE.cardHi,
+    cardSolid: live ? LIVE_SURFACE : STAGE.card,
     cardRadius: CARD_RADIUS,
-    inputFill: 'rgba(226,234,244,0.06)',
-    inputBorder: 'rgba(226,234,244,0.16)',
-    overlay: 'rgba(5,7,15,0.55)',
+    inputFill: STAGE.bgDeep,
+    inputBorder: STAGE.border,
+    overlay: hexToRgba(STAGE.bgDeep, 0.55),
     barStyle: 'light-content',
-    tileBorder: hexToRgba(primary || a.cyan, 0.32),
-    tileFill: hexToRgba(primary || a.cyan, 0.12),
-    wash: ['rgba(0,240,255,0.09)', 'transparent', 'rgba(255,214,10,0.05)'],
+    tileBorder: hexToRgba(accent, 0.32),
+    tileFill: hexToRgba(accent, 0.12),
+    /** Flat background: the old floodlight wash is gone, stops stay for call-site compatibility. */
+    wash: ['transparent', 'transparent', 'transparent'],
   };
 }
 
 const PRESETS = {
   'theme-dark': () => tokensFromSurface({
     id: 'theme-dark',
-    bg: '#05070F',
-    primary: '#00F0FF',
+    bg: STAGE.bg,
+    primary: STAGE.cyan,
     text: PAPER,
   }),
   'theme-video': () => tokensFromSurface({
     id: 'theme-video',
     bg: '#02060D',
-    primary: '#00F0FF',
+    primary: STAGE.cyan,
     text: PAPER,
   }),
 };

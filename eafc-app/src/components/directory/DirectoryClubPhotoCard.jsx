@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Image, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import useThemeStore from '@/store/themeStore';
 import { headingStyle } from '@/lib/fonts';
+import { hexToRgba } from '@/lib/stageTheme';
 import { clubDisplayName, clubOverallRating } from '@/lib/stageDirectories';
-import { FRAME_FOCUSED, FRAME_IDLE, OVR_BADGE, SILVER } from '@/components/transfer/transferHubTheme';
 
 export default function DirectoryClubPhotoCard({ club, focused = false, width = 168 }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const [imageFailed, setImageFailed] = useState(false);
   const height = Math.round(width * (4 / 3));
   const imageUrl = club?.logo_url || '';
@@ -17,7 +19,9 @@ export default function DirectoryClubPhotoCard({ club, focused = false, width = 
   const resolvedOverall = ovr == null
     ? null
     : (ovr === 0 ? '0.0' : (Number.isInteger(ovr) ? String(ovr) : ovr.toFixed(1)));
-  const frame = focused ? FRAME_FOCUSED : FRAME_IDLE;
+  const frame = focused
+    ? [tokens.cyanHi, tokens.cyan, tokens.aqua]
+    : [hexToRgba(tokens.cyan, 0.45), hexToRgba(tokens.cyan, 0.16), hexToRgba(tokens.cyan, 0.08)];
   const initials = String(club?.tag || clubDisplayName(club) || 'C').slice(0, 3).toUpperCase();
 
   return (
@@ -25,7 +29,7 @@ export default function DirectoryClubPhotoCard({ club, focused = false, width = 
       style={{
         width,
         height,
-        shadowColor: SILVER,
+        shadowColor: tokens.cyan,
         shadowOpacity: focused ? 0.55 : 0.18,
         shadowRadius: focused ? 22 : 10,
         shadowOffset: { width: 0, height: 8 },
@@ -43,7 +47,7 @@ export default function DirectoryClubPhotoCard({ club, focused = false, width = 
             flex: 1,
             borderRadius: 16,
             overflow: 'hidden',
-            backgroundColor: '#0d1528',
+            backgroundColor: tokens.bgDeep,
           }}
         >
           {imageUrl && !imageFailed ? (
@@ -55,14 +59,14 @@ export default function DirectoryClubPhotoCard({ club, focused = false, width = 
             />
           ) : (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 28, fontWeight: '900' }}>
+              <Text style={{ color: tokens.muted, fontSize: 28, fontWeight: '900' }}>
                 {initials}
               </Text>
             </View>
           )}
 
           <LinearGradient
-            colors={['transparent', 'rgba(0,0,0,0.18)', 'rgba(0,0,0,0.82)']}
+            colors={['transparent', hexToRgba(tokens.bgDeep, 0.18), hexToRgba(tokens.bgDeep, 0.88)]}
             locations={[0.35, 0.62, 1]}
             style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
             pointerEvents="none"
@@ -70,9 +74,9 @@ export default function DirectoryClubPhotoCard({ club, focused = false, width = 
 
           {resolvedOverall ? (
             <View style={{ position: 'absolute', top: 8, right: 8, minWidth: 42, borderRadius: 8, overflow: 'hidden' }}>
-              <LinearGradient colors={OVR_BADGE} style={{ paddingHorizontal: 8, paddingVertical: 5, alignItems: 'center' }}>
-                <Text style={{ color: 'rgba(0,0,0,0.7)', fontSize: 8, fontWeight: '900', letterSpacing: 1 }}>OVR</Text>
-                <Text style={[headingStyle, { color: '#000', fontSize: 18, letterSpacing: 0, lineHeight: 20 }]}>
+              <LinearGradient colors={[tokens.cyanHi, tokens.cyan]} style={{ paddingHorizontal: 8, paddingVertical: 5, alignItems: 'center' }}>
+                <Text style={{ color: tokens.onCyan, fontSize: 8, fontWeight: '900', letterSpacing: 1 }}>OVR</Text>
+                <Text style={[headingStyle, { color: tokens.onCyan, fontSize: 18, letterSpacing: 0, lineHeight: 20 }]}>
                   {resolvedOverall}
                 </Text>
               </LinearGradient>
@@ -80,11 +84,11 @@ export default function DirectoryClubPhotoCard({ club, focused = false, width = 
           ) : null}
 
           <View style={{ position: 'absolute', left: 10, right: 10, bottom: 10 }}>
-            <Text style={[headingStyle, { color: '#fff', fontSize: 18, letterSpacing: 0.4 }]}>
+            <Text style={[headingStyle, { color: tokens.text, fontSize: 18, letterSpacing: 0.4 }]}>
               {String(club?.tag || club?.region || 'CLUB').toUpperCase()}
             </Text>
             {club?.platform ? (
-              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: '700', marginTop: 2 }}>
+              <Text style={{ color: tokens.textSoft, fontSize: 10, fontWeight: '700', marginTop: 2 }}>
                 {club.platform}
               </Text>
             ) : null}

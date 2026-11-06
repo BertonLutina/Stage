@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Game Day</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+a{color:#5FE3E8;text-decoration:none}a:hover{color:#8CF5F8}
+.scr{width:390px;height:844px;position:relative;overflow:hidden;background-color:#03153F;background-image:radial-gradient(ellipse 75% 42% at 50% 78%,rgba(0,82,140,.95) 0%,rgba(0,82,140,0) 72%),radial-gradient(ellipse 90% 35% at 50% 0%,rgba(14,58,124,.9) 0%,rgba(14,58,124,0) 75%),linear-gradient(90deg,#020C30 0%,#06306A 50%,#020C30 100%);color:#EAF2FF;font-family:Inter,system-ui,sans-serif;font-size:14px}
+.pad{padding:58px 20px 110px;display:flex;flex-direction:column;gap:16px}
+.h{font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.03em;margin:0}
+.k{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#9FB3D1}
+.mut{color:#9FB3D1}
+.card{background:#132B5C;border:1px solid #234480;border-radius:16px;padding:16px}
+.row{display:flex;align-items:center;gap:12px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:14px;border:0;background:#5FE3E8;color:#07163A;font:700 15px Inter,sans-serif;width:100%}
+.btn:hover{color:#07163A;background:#8CF5F8}
+.btn2{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:14px;background:transparent;border:1px solid #5FE3E8;color:#5FE3E8;font:600 15px Inter,sans-serif;width:100%}
+.chip{display:inline-flex;align-items:center;height:34px;padding:0 14px;border-radius:999px;background:#132B5C;border:1px solid #234480;color:#C9D8EE;font:600 13px Inter,sans-serif;white-space:nowrap}
+.chip.on{background:#5FE3E8;color:#07163A;border-color:#5FE3E8}
+.av{width:44px;height:44px;border-radius:12px;background:#234480;display:flex;align-items:center;justify-content:center;font:800 16px 'Saira Condensed',sans-serif;color:#8CF5F8;flex:none}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ib{width:44px;height:44px;border-radius:12px;background:#132B5C;border:1px solid #234480;display:flex;align-items:center;justify-content:center;color:#EAF2FF;flex:none}
+.in{display:flex;flex-direction:column;gap:6px}
+.in input,.in select,.in textarea{height:50px;border-radius:12px;border:1px solid #234480;background:#07163A;color:#EAF2FF;padding:0 14px;font:500 15px Inter,sans-serif}
+.in label{font-size:12px;font-weight:600;color:#9FB3D1}
+.tabs{position:absolute;left:16px;right:16px;bottom:24px;height:64px;border-radius:22px;background:#07163A;border:1px solid #234480;display:flex;align-items:center;justify-content:space-around}
+.tab{width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#9FB3D1;border-radius:14px}
+.tab.on{color:#5FE3E8;background:#132B5C}
+.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.sep{height:1px;background:#234480}
+.sec{display:flex;justify-content:space-between;align-items:baseline}
+.ok{color:#4ADE80}.bad{color:#F87171}
+.ev{display:flex;align-items:center;gap:12px;color:#EAF2FF}
+.d{width:48px;flex:none;display:flex;flex-direction:column;align-items:center}
+.d b{font:800 24px 'Saira Condensed',sans-serif;line-height:1}
+.d span{font-size:11px;font-weight:600;color:#9FB3D1;text-transform:uppercase}
+</style>
+</helmet>
+<div class="scr">
+<div class="pad" style="gap: 14px">
+<div class="top"><h1 class="h" style="font-size: 34px">Game Day</h1><a class="btn" href="#" style="width: auto; height: 44px; padding: 0 16px; font-size: 14px"><svg class="i" style="width: 18px; height: 18px" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Arrange Game</a></div>
+<div class="row" style="background: #07163A; border-radius: 14px; padding: 4px; gap: 4px"><button class="chip on" style="flex: 1; justify-content: center; height: 40px">Fixtures</button><button class="chip" style="flex: 1; justify-content: center; height: 40px; background: transparent; border-color: transparent">Calendar</button><button class="chip" style="flex: 1; justify-content: center; height: 40px; background: transparent; border-color: transparent">Results</button></div>
+<div class="card row" style="border-color: #B45309; background: #2A2418; gap: 10px"><svg class="i" style="color: #FBBF24" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 17h.01M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg><span style="flex: 1; font-size: 13px">Contract with Night Owls FC ends in 9 games</span></div>
+<span class="k">This week</span>
+<a class="card ev" href="MatchDetail.dc.html" style="border-color: #2CCFD6"><div class="d"><b>29</b><span>Thu</span></div><div style="flex: 1"><b>vs Red Foxes</b><div class="mut" style="font-size: 12px">League · 21:00 · Home</div></div><span class="chip on" style="height: 26px; font-size: 11px">Tonight</span></a>
+<a class="card ev" href="MatchDetail.dc.html"><div class="d"><b>31</b><span>Sat</span></div><div style="flex: 1"><b>at Blue Comets</b><div class="mut" style="font-size: 12px">Cup · Round of 16 · 20:30</div></div><svg class="i mut" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg></a>
+<span class="k">Next week</span>
+<a class="card ev" href="MatchDetail.dc.html"><div class="d"><b>04</b><span>Wed</span></div><div style="flex: 1"><b>vs Iron Wolves</b><div class="mut" style="font-size: 12px">Friendly · 22:00 · Pending</div></div><span class="chip" style="height: 26px; font-size: 11px">Invite</span></a>
+<div class="card ev"><div class="d"><b>06</b><span>Fri</span></div><div style="flex: 1"><b>Contract end</b><div class="mut" style="font-size: 12px">Night Owls FC · Player contract</div></div></div>
+</div>
+<nav class="tabs" aria-label="Main">
+<a class="tab" href="Home.dc.html" aria-label="Home"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg></a>
+<a class="tab on" href="GameDay.dc.html" aria-label="Game Day"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5l4 2.9-1.5 4.6h-5L8 10.4z"></path></svg></a>
+<a class="tab" href="Tournaments.dc.html" aria-label="Tournaments"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M10 17h4v4h-4z"></path></svg></a>
+<a class="tab" href="Profile.dc.html" aria-label="Profile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></a>
+<a class="tab" href="Search.dc.html" aria-label="Search"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg></a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,19 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Image,
-  ImageBackground,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import STText from '../../components/common/STText';
+import useThemeStore from '@/store/themeStore';
+import { Screen, Card, Button, StepProgress } from '@/components/ui';
+import { hexToRgba } from '@/lib/stageTheme';
 import PlayerSetup from '../../components/onboarding/PlayerSetup';
 import IdentityClaimSetup from '../../components/onboarding/IdentityClaimSetup';
 import FounderPlayerTermsSetup from '../../components/onboarding/FounderPlayerTermsSetup';
@@ -21,8 +12,20 @@ import ClubSetup from '../../components/onboarding/ClubSetup';
 import DiscordJoinStep from '../../components/onboarding/DiscordJoinStep';
 import PresidentContractSetup from '../../components/onboarding/PresidentContractSetup';
 import TutorialPopup from '../../components/onboarding/TutorialPopup';
-import { ONB, onboardingStyles as s } from '../../components/onboarding/onboardingStyles';
-import { SettingsListbox } from '../../components/settings/SettingsListbox';
+import {
+  StepHeader,
+  StepHeading,
+  OnboardingSelect,
+  FormError,
+} from '../../components/onboarding/OnboardingParts';
+import {
+  PlatformStep,
+  PositionStep,
+  GamertagStep,
+  ClubChoiceStep,
+} from '../../components/onboarding/PlayerOnboardingSteps';
+import { savePlayerProfile } from '../../lib/savePlayerProfile';
+import { STEP_GAP, useOnboardingStyles } from '../../components/onboarding/onboardingStyles';
 import {
   resolveMyPlayerAndClub,
   stageClient,
@@ -33,9 +36,6 @@ import { isDiscordConfigured } from '../../lib/discordConfig';
 import { markOnboardingComplete } from '../../services/onboardingService';
 import { isFinishedOnboardingProfile } from '../../lib/onboardingGate';
 import { localStorage } from '../../lib/polyfillStorage';
-
-const BANNER = require('../../../assets/Banner.jpg');
-const LOGO = require('../../../assets/stadium-logo.png');
 
 const TIMEZONES = [
   { value: 'Europe/Brussels', label: 'Brussels' },
@@ -74,20 +74,40 @@ function getStepMeta(intent, step, phase) {
   return { label: 'Choose role', index: 0, total: 2 };
 }
 
+/** Player-only branch: the mockup's 4 linear steps (Platform → Position → Gamertag → Club). */
+const PLAYER_STEPS = {
+  platform: { n: 1, back: 'choose' },
+  position: { n: 2, back: 'platform' },
+  gamertag: { n: 3, back: 'position' },
+  club_player: { n: 4, back: 'gamertag' },
+};
+
+/** Index 0 is "Choose role" (no bar); every later step owns one bar. */
 function StepDots({ index, total }) {
+  return <StepProgress total={Math.max(total - 1, 1)} current={index} />;
+}
+
+function PathCard({ icon, tint, description, label, onPress, children }) {
+  const tokens = useThemeStore((st) => st.tokens);
+  const s = useOnboardingStyles();
   return (
-    <View style={styles.dots} accessibilityRole="progressbar">
-      {Array.from({ length: Math.max(total, 1) }).map((_, i) => (
-        <View
-          key={i}
-          style={[
-            styles.dot,
-            i === index && styles.dotCurrent,
-            i < index && styles.dotDone,
-          ]}
-        />
-      ))}
-    </View>
+    <Card onPress={onPress} accessibilityLabel={label}>
+      <View
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 12,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: hexToRgba(tint, 0.14),
+          marginBottom: 14,
+        }}
+      >
+        <Ionicons name={icon} size={22} color={tint} />
+      </View>
+      {children}
+      <Text style={[s.cardBody, { marginTop: 4, color: tokens.muted }]}>{description}</Text>
+    </Card>
   );
 }
 
@@ -104,6 +124,16 @@ export default function OnboardingScreen() {
   const [loading, setLoading] = useState(true);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [timezone, setTimezone] = useState(detectTimezone);
+  const [platform, setPlatform] = useState('PS5');
+  const [playerPosition, setPlayerPosition] = useState('ST');
+  const [gamertag, setGamertag] = useState('');
+  const [country, setCountry] = useState('');
+  const [linkProClub, setLinkProClub] = useState(false);
+  const [clubChoice, setClubChoice] = useState('freeagent');
+  const [savingPlayer, setSavingPlayer] = useState(false);
+  const [playerError, setPlayerError] = useState(null);
+  const tokens = useThemeStore((st) => st.tokens);
+  const s = useOnboardingStyles();
 
   const finish = async () => {
     if (user?.id) await markOnboardingComplete(user.id);
@@ -165,258 +195,241 @@ export default function OnboardingScreen() {
     else setTutorialOpen(true);
   };
 
+  // Player branch (mockup flow): platform/position held in state, persisted once
+  // at the Gamertag step via savePlayerProfile (the real backend write).
+  const onGamertagContinue = async () => {
+    if (!gamertag.trim() || !country) {
+      setPlayerError('Gamertag and country are required');
+      return;
+    }
+    setSavingPlayer(true);
+    setPlayerError(null);
+    try {
+      const saved = await savePlayerProfile({
+        user,
+        gamertag,
+        position: playerPosition,
+        secondaryPosition: 'none',
+        country,
+        platform,
+      });
+      setPlayer(saved || player);
+      setStep('club_player');
+    } catch (err) {
+      setPlayerError(err?.data?.error || err?.data?.message || err?.message || 'Failed to save profile');
+    } finally {
+      setSavingPlayer(false);
+    }
+  };
+
+  const onClubChoiceFinish = async () => {
+    if (clubChoice === 'create') {
+      if (user?.id) await markOnboardingComplete(user.id);
+      router.replace('/teams/createteamscreen');
+      return;
+    }
+    finishOnboarding();
+  };
+
   const handleClubComplete = (nextFounderState) => {
     setFounderState(nextFounderState || null);
     setFoundedClub(nextFounderState?.club || null);
     setStep('president_contract');
   };
 
+  const playerStep = PLAYER_STEPS[step];
   const meta = getStepMeta(intent, step, clubSetupPhase);
   const canGoBack = step !== 'choose' && step !== 'club' && step !== 'president_contract' && step !== 'discord';
   const goBack = () => setStep(step === 'founder_terms' ? 'identity' : step === 'identity' ? 'player' : 'choose');
 
   return (
-    <View style={styles.root}>
-      <ImageBackground source={BANNER} style={styles.hero} resizeMode="cover">
-        <View style={styles.heroScrim} />
-        <SafeAreaView edges={['top']} style={styles.heroSafe}>
-          <View style={styles.topBar}>
-            {canGoBack ? (
-              <TouchableOpacity onPress={goBack} style={styles.backBtn} accessibilityLabel="Back">
-                <Ionicons name="chevron-back" size={22} color="#fff" />
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.backBtn} />
-            )}
-            <Image source={LOGO} style={styles.logo} resizeMode="contain" />
-            <View style={styles.backBtn} />
-          </View>
-          {step !== 'choose' && step !== 'discord' ? (
-            <View style={styles.progressRow}>
-              <STText style={styles.progressLabel}>{meta.label}</STText>
-              <StepDots index={meta.index} total={meta.total} />
-            </View>
-          ) : null}
-        </SafeAreaView>
-      </ImageBackground>
-
-      <KeyboardAvoidingView
-        style={styles.body}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        {loading ? (
-          <View style={styles.center}>
-            <ActivityIndicator color={ONB.cyan} size="large" />
-          </View>
+    <View style={{ flex: 1 }}>
+      <Screen tabBar={false} keyboardAvoiding>
+        {playerStep ? (
+          <StepHeader
+            onBack={() => setStep(playerStep.back)}
+            label={`Step ${playerStep.n} of 4`}
+            current={playerStep.n}
+            total={4}
+          />
         ) : (
-          <ScrollView
-            contentContainerStyle={styles.scroll}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {step === 'choose' ? (
-              <View style={styles.choose}>
-                <STText style={s.title}>Who are you on the pitch?</STText>
-                <STText style={s.subtitle}>
-                  Pick a path. You can add the other role later from settings.
-                </STText>
+          <>
+            <StepHeader
+              onBack={canGoBack ? goBack : null}
+              label={step !== 'choose' && step !== 'discord' ? meta.label : ''}
+            />
+            {step !== 'choose' && step !== 'discord' ? (
+              <View style={{ marginTop: STEP_GAP }}>
+                <StepDots index={meta.index} total={meta.total} />
+              </View>
+            ) : null}
+          </>
+        )}
 
-                <TouchableOpacity
-                  style={[s.roleCard, styles.pathPlayer]}
-                  onPress={() => {
-                    setOnboardingIntent('player', 'player');
-                    setStep('player');
-                  }}
-                  activeOpacity={0.88}
-                >
-                  <View style={[styles.pathIcon, { backgroundColor: 'rgba(0,240,255,0.14)' }]}>
-                    <Ionicons name="football-outline" size={22} color={ONB.cyan} />
-                  </View>
-                  <STText style={[s.roleTitle, { color: ONB.cyan }]}>Player</STText>
-                  <STText style={s.roleDesc}>Get a profile, get verified, get signed.</STText>
-                </TouchableOpacity>
+        <View style={{ flex: 1, marginTop: 20 }}>
+          {loading ? (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <ActivityIndicator color={tokens.cyan} size="large" />
+            </View>
+          ) : (
+            <>
+              {step === 'choose' ? (
+                <View style={{ gap: 14 }}>
+                  <StepHeading
+                    title="Who are you on the pitch?"
+                    subtitle="Pick a path. You can add the other role later from settings."
+                  />
 
-                <TouchableOpacity
-                  style={[s.roleCard, styles.pathBoth]}
-                  onPress={() => {
-                    setOnboardingIntent('both', 'player');
-                    setStep('player');
-                  }}
-                  activeOpacity={0.88}
-                >
-                  <View style={[styles.pathIcon, { backgroundColor: 'rgba(255,214,10,0.14)' }]}>
-                    <Ionicons name="shield-outline" size={22} color={ONB.amber} />
-                  </View>
-                  <STText style={[s.roleTitle, { color: ONB.amber }]}>Player + President</STText>
-                  <STText style={s.roleDesc}>Play and run your own club from day one.</STText>
-                </TouchableOpacity>
+                  <PathCard
+                    icon="football-outline"
+                    tint={tokens.cyan}
+                    label="Player"
+                    description="Get a profile, get verified, get signed."
+                    onPress={() => {
+                      setOnboardingIntent('player', 'player');
+                      setStep('platform');
+                    }}
+                  >
+                    <Text style={[s.cardTitle, { color: tokens.cyan, fontSize: 20 }]}>Player</Text>
+                  </PathCard>
 
-                <SettingsListbox
-                  label="Match times timezone"
-                  value={timezone}
-                  placeholder="Select timezone"
-                  title="Timezone"
-                  searchPlaceholder="Search…"
-                  options={TIMEZONES.map((z) => ({ id: z.value, label: z.label }))}
-                  onChange={(id) => {
-                    setTimezone(id);
-                    stageClient.auth.updateTimezone(id).catch(() => {});
+                  <PathCard
+                    icon="shield-outline"
+                    tint={tokens.warning}
+                    label="Player + President"
+                    description="Play and run your own club from day one."
+                    onPress={() => {
+                      setOnboardingIntent('both', 'player');
+                      setStep('player');
+                    }}
+                  >
+                    <Text style={[s.cardTitle, { color: tokens.warning, fontSize: 20 }]}>Player + President</Text>
+                  </PathCard>
+
+                  <OnboardingSelect
+                    label="Match times timezone"
+                    value={timezone}
+                    placeholder="Select timezone"
+                    title="Timezone"
+                    searchPlaceholder="Search…"
+                    options={TIMEZONES.map((z) => ({ id: z.value, label: z.label }))}
+                    onChange={(id) => {
+                      setTimezone(id);
+                      stageClient.auth.updateTimezone(id).catch(() => {});
+                    }}
+                  />
+                </View>
+              ) : null}
+
+              {step === 'platform' ? (
+                <View style={{ gap: STEP_GAP }}>
+                  <PlatformStep value={platform} onChange={setPlatform} />
+                  <Button title="Continue" onPress={() => setStep('position')} />
+                </View>
+              ) : null}
+
+              {step === 'position' ? (
+                <View style={{ gap: STEP_GAP }}>
+                  <PositionStep value={playerPosition} onChange={setPlayerPosition} />
+                  <Button title="Continue" onPress={() => setStep('gamertag')} />
+                </View>
+              ) : null}
+
+              {step === 'gamertag' ? (
+                <View style={{ gap: STEP_GAP }}>
+                  <GamertagStep
+                    gamertag={gamertag}
+                    onChangeGamertag={setGamertag}
+                    country={country}
+                    onChangeCountry={setCountry}
+                    linked={linkProClub}
+                    onToggleLink={() => setLinkProClub((v) => !v)}
+                  />
+                  <FormError>{playerError}</FormError>
+                  <Button title="Continue" onPress={onGamertagContinue} loading={savingPlayer} />
+                </View>
+              ) : null}
+
+              {step === 'club_player' ? (
+                <View style={{ gap: STEP_GAP }}>
+                  <ClubChoiceStep value={clubChoice} onChange={setClubChoice} />
+                  <Button title="Finish Setup" onPress={onClubChoiceFinish} />
+                </View>
+              ) : null}
+
+              {step === 'player' && (!player || !player.country) ? (
+                <PlayerSetup
+                  onComplete={handlePlayerComplete}
+                  user={user}
+                  initialPlayer={player}
+                  intent={intent}
+                />
+              ) : null}
+
+              {step === 'player' && player?.country ? (
+                <View style={{ gap: STEP_GAP }}>
+                  <StepHeading
+                    title="You are set"
+                    subtitle={`${player.gamertag || user?.email} is ready. Next we link your platform identity.`}
+                  />
+                  <Button title="Continue" onPress={() => setStep('identity')} />
+                </View>
+              ) : null}
+
+              {step === 'identity' && player ? (
+                <IdentityClaimSetup
+                  player={player}
+                  onComplete={() => {
+                    if (intent === 'both') setStep('founder_terms');
+                    else finishOnboarding();
                   }}
                 />
-              </View>
-            ) : null}
+              ) : null}
 
-            {step === 'player' && (!player || !player.country) ? (
-              <PlayerSetup
-                onComplete={handlePlayerComplete}
-                user={user}
-                initialPlayer={player}
-                intent={intent}
-              />
-            ) : null}
+              {step === 'founder_terms' && intent === 'both' ? (
+                <FounderPlayerTermsSetup
+                  initialTerms={founderPlayerTerms}
+                  onComplete={(terms) => {
+                    setFounderPlayerTerms(terms);
+                    setStep('club');
+                  }}
+                />
+              ) : null}
 
-            {step === 'player' && player?.country ? (
-              <View>
-                <STText style={s.title}>You are set</STText>
-                <STText style={s.subtitle}>
-                  {player.gamertag || user?.email} is ready. Next we link your platform identity.
-                </STText>
-                <TouchableOpacity onPress={() => setStep('identity')} style={s.primaryBtn}>
-                  <STText style={s.primaryBtnText}>Continue</STText>
-                </TouchableOpacity>
-              </View>
-            ) : null}
+              {step === 'club' && intent === 'both' ? (
+                <ClubSetup
+                  onComplete={handleClubComplete}
+                  onPhaseChange={setClubSetupPhase}
+                  player={player}
+                  user={user}
+                  playerContract={founderPlayerTerms}
+                  required
+                />
+              ) : null}
 
-            {step === 'identity' && player ? (
-              <IdentityClaimSetup
-                player={player}
-                onComplete={() => {
-                  if (intent === 'both') setStep('founder_terms');
-                  else finishOnboarding();
-                }}
-              />
-            ) : null}
+              {step === 'president_contract' && intent === 'both' ? (
+                <PresidentContractSetup
+                  club={foundedClub}
+                  player={player}
+                  user={user}
+                  founderState={founderState}
+                  playerContract={founderPlayerTerms}
+                  onComplete={finishOnboarding}
+                />
+              ) : null}
 
-            {step === 'founder_terms' && intent === 'both' ? (
-              <FounderPlayerTermsSetup
-                initialTerms={founderPlayerTerms}
-                onComplete={(terms) => {
-                  setFounderPlayerTerms(terms);
-                  setStep('club');
-                }}
-              />
-            ) : null}
-
-            {step === 'club' && intent === 'both' ? (
-              <ClubSetup
-                onComplete={handleClubComplete}
-                onPhaseChange={setClubSetupPhase}
-                player={player}
-                user={user}
-                playerContract={founderPlayerTerms}
-                required
-              />
-            ) : null}
-
-            {step === 'president_contract' && intent === 'both' ? (
-              <PresidentContractSetup
-                club={foundedClub}
-                player={player}
-                user={user}
-                founderState={founderState}
-                playerContract={founderPlayerTerms}
-                onComplete={finishOnboarding}
-              />
-            ) : null}
-
-            {step === 'discord' ? (
-              <DiscordJoinStep
-                onSkip={() => setTutorialOpen(true)}
-                onContinue={() => setTutorialOpen(true)}
-              />
-            ) : null}
-          </ScrollView>
-        )}
-      </KeyboardAvoidingView>
+              {step === 'discord' ? (
+                <DiscordJoinStep
+                  onSkip={() => setTutorialOpen(true)}
+                  onContinue={() => setTutorialOpen(true)}
+                />
+              ) : null}
+            </>
+          )}
+        </View>
+      </Screen>
 
       <TutorialPopup open={tutorialOpen} onClose={finish} intent={intent} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: ONB.bg },
-  hero: { height: 168 },
-  heroScrim: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(5,7,15,0.55)',
-  },
-  heroSafe: { flex: 1, justifyContent: 'space-between', paddingBottom: 12 },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-  },
-  backBtn: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logo: { height: 40, width: 120 },
-  progressRow: {
-    paddingHorizontal: 20,
-    gap: 10,
-  },
-  progressLabel: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  dots: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.22)',
-  },
-  dotCurrent: {
-    width: 18,
-    backgroundColor: ONB.cyan,
-  },
-  dotDone: {
-    backgroundColor: 'rgba(0,240,255,0.45)',
-  },
-  body: {
-    flex: 1,
-    backgroundColor: ONB.bg,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    marginTop: -16,
-  },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 28,
-    paddingBottom: 40,
-  },
-  choose: { flexGrow: 1 },
-  pathPlayer: {
-    borderColor: 'rgba(0,240,255,0.28)',
-    backgroundColor: 'rgba(0,240,255,0.06)',
-  },
-  pathBoth: {
-    borderColor: 'rgba(255,214,10,0.28)',
-    backgroundColor: 'rgba(255,214,10,0.06)',
-  },
-  pathIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-  },
-});

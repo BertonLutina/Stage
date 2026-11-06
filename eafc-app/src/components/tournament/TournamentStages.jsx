@@ -18,7 +18,9 @@ import {
 import { canOpenTournamentGameDay, tournamentGameDayPath } from '@/lib/tournamentGameDay';
 import StandingsTable from '@/components/tournament/StandingsTable';
 import { calculateLeagueStandings, calculateGroupStandings } from '@/lib/tournamentEngine';
-import { GAME_DAY_SILVER } from '@/components/dashboard/CommandCenterUI';
+import useThemeStore from '@/store/themeStore';
+import { Card, SelectField } from '@/components/ui';
+import { hexToRgba } from '@/lib/stageTheme';
 
 function sideName(match, side, isPlayer) {
   if (isPlayer) return match[`${side}_player_name`] || match[`${side}_club_name`] || 'TBD';
@@ -33,7 +35,7 @@ function scoreLabel(match) {
   return 'vs';
 }
 
-function MatchRow({ match, stage, isPlayer, onOpen }) {
+function MatchRow({ match, stage, isPlayer, onOpen, styles }) {
   const aggregate = stageAggregate(stage, match);
   return (
     <TouchableOpacity onPress={() => onOpen?.(match)} style={styles.matchRow} activeOpacity={0.85}>
@@ -61,6 +63,8 @@ export default function TournamentStages({
   showStandings = true,
 }) {
   const router = useRouter();
+  const tokens = useThemeStore((st) => st.tokens);
+  const styles = useMemo(() => makeStyles(tokens), [tokens]);
   const stages = useMemo(() => buildTournamentStages(tournament, matches), [tournament, matches]);
   const [selectedId, setSelectedId] = useState(null);
   const [modal, setModal] = useState(null);
@@ -116,9 +120,9 @@ export default function TournamentStages({
 
   if (!stage) {
     return (
-      <View style={styles.card}>
+      <Card>
         <Text style={styles.empty}>No stages yet.</Text>
-      </View>
+      </Card>
     );
   }
 
@@ -134,6 +138,7 @@ export default function TournamentStages({
             stage={stage}
             isPlayer={isPlayer}
             onOpen={openMatch}
+            styles={styles}
           />
         ))}
       </View>
@@ -142,29 +147,29 @@ export default function TournamentStages({
 
   return (
     <View style={{ gap: 12 }}>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Stage</Text>
-        <TouchableOpacity style={styles.select} onPress={() => setPickerOpen(true)}>
-          <Text style={styles.selectText}>{stage.label}</Text>
-          <Ionicons name="chevron-down" size={16} color={GAME_DAY_SILVER} />
-        </TouchableOpacity>
+      <Card style={{ gap: 10 }}>
+        <SelectField label="Stage" value={stage.label} onPress={() => setPickerOpen(true)} />
 
         {matchdays.length > 1 ? (
           <View style={styles.dayNav}>
             <TouchableOpacity
               disabled={matchdays.indexOf(activeDay) <= 0}
               onPress={() => setMatchday(matchdays[matchdays.indexOf(activeDay) - 1])}
-              style={styles.dayBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Previous matchday"
+              style={[styles.dayBtn, matchdays.indexOf(activeDay) <= 0 && { opacity: 0.4 }]}
             >
-              <Ionicons name="chevron-back" size={16} color="#fff" />
+              <Ionicons name="chevron-back" size={18} color={tokens.text} />
             </TouchableOpacity>
             <Text style={styles.dayLabel}>Matchday {activeDay}</Text>
             <TouchableOpacity
               disabled={matchdays.indexOf(activeDay) >= matchdays.length - 1}
               onPress={() => setMatchday(matchdays[matchdays.indexOf(activeDay) + 1])}
-              style={styles.dayBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Next matchday"
+              style={[styles.dayBtn, matchdays.indexOf(activeDay) >= matchdays.length - 1 && { opacity: 0.4 }]}
             >
-              <Ionicons name="chevron-forward" size={16} color="#fff" />
+              <Ionicons name="chevron-forward" size={18} color={tokens.text} />
             </TouchableOpacity>
           </View>
         ) : null}
@@ -192,29 +197,31 @@ export default function TournamentStages({
             />
           </View>
         ) : null}
-      </View>
+      </Card>
 
       <View style={styles.tiles}>
-        <TouchableOpacity
-          style={styles.tile}
+        <Card
+          style={{ flex: 1 }}
           onPress={() => setModal({ category: 'Fixtures', rows: fixtures })}
+          accessibilityLabel={`Fixtures, ${fixtures.length}`}
         >
           <View style={styles.tileHead}>
             <Text style={styles.tileTitle}>Fixtures</Text>
             <Text style={styles.tileCount}>{fixtures.length}</Text>
           </View>
-          <Text style={styles.tileStage}>{stage.label}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.tile}
+          <Text numberOfLines={1} style={styles.tileStage}>{stage.label}</Text>
+        </Card>
+        <Card
+          style={{ flex: 1 }}
           onPress={() => setModal({ category: 'Results', rows: results })}
+          accessibilityLabel={`Results, ${results.length}`}
         >
           <View style={styles.tileHead}>
             <Text style={styles.tileTitle}>Results</Text>
             <Text style={styles.tileCount}>{results.length}</Text>
           </View>
-          <Text style={styles.tileStage}>{stage.label}</Text>
-        </TouchableOpacity>
+          <Text numberOfLines={1} style={styles.tileStage}>{stage.label}</Text>
+        </Card>
       </View>
 
       <Modal visible={pickerOpen} transparent animationType="fade" onRequestClose={() => setPickerOpen(false)}>
@@ -231,7 +238,7 @@ export default function TournamentStages({
                   setPickerOpen(false);
                 }}
               >
-                <Text style={styles.sheetRowText}>{item.label}</Text>
+                <Text numberOfLines={1} style={styles.sheetRowText}>{item.label}</Text>
                 <Text style={styles.sheetMeta}>{item.matches.length}</Text>
               </TouchableOpacity>
             ))}
@@ -244,11 +251,16 @@ export default function TournamentStages({
           <View style={[styles.sheet, styles.sheetTall]}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{modal?.category}</Text>
-              <TouchableOpacity onPress={() => setModal(null)}>
-                <Ionicons name="close" size={22} color="#fff" />
+              <TouchableOpacity
+                onPress={() => setModal(null)}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+                style={styles.closeBtn}
+              >
+                <Ionicons name="close" size={22} color={tokens.text} />
               </TouchableOpacity>
             </View>
-            <Text style={styles.tileStage}>{stage.label}</Text>
+            <Text numberOfLines={1} style={styles.tileStage}>{stage.label}</Text>
             <ScrollView style={{ maxHeight: 420 }}>
               {modal ? renderList(
                 modal.rows,
@@ -262,124 +274,98 @@ export default function TournamentStages({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
-    backgroundColor: 'rgba(8,14,28,0.92)',
-    padding: 12,
-    gap: 10,
-  },
-  cardTitle: {
-    color: 'rgba(255,255,255,0.45)',
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  select: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-  selectText: { color: '#fff', fontWeight: '800', flex: 1, paddingRight: 8 },
-  dayNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.1)',
-    paddingVertical: 6,
-  },
-  dayBtn: { padding: 8 },
-  dayLabel: { color: '#fff', fontWeight: '800' },
-  preview: {
-    color: GAME_DAY_SILVER,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  section: { marginTop: 4 },
-  sectionLabel: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginBottom: 4,
-    marginTop: 8,
-  },
-  matchRow: {
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
-  },
-  matchGrid: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  side: { flex: 1, color: '#fff', fontWeight: '700', fontSize: 13 },
-  sideAway: { textAlign: 'right' },
-  score: {
-    minWidth: 48,
-    textAlign: 'center',
-    color: GAME_DAY_SILVER,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
-  },
-  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4, justifyContent: 'flex-end' },
-  meta: { color: 'rgba(255,255,255,0.4)', fontSize: 11 },
-  metaWarn: { color: '#F5C542', fontSize: 11, fontWeight: '700' },
-  metaLink: { color: GAME_DAY_SILVER, fontSize: 11, fontWeight: '800' },
-  empty: {
-    color: 'rgba(255,255,255,0.4)',
-    textAlign: 'center',
-    paddingVertical: 20,
-    fontSize: 13,
-  },
-  tiles: { flexDirection: 'row', gap: 10 },
-  tile: {
-    flex: 1,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
-    backgroundColor: 'rgba(8,14,28,0.92)',
-    padding: 12,
-  },
-  tileHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  tileTitle: { color: '#fff', fontWeight: '900', fontSize: 15 },
-  tileCount: { color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '800' },
-  tileStage: { color: GAME_DAY_SILVER, fontSize: 11, fontWeight: '700', marginTop: 6 },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: '#0A1220',
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    padding: 16,
-    gap: 8,
-  },
-  sheetTall: { maxHeight: '80%' },
-  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sheetTitle: { color: '#fff', fontWeight: '900', fontSize: 16 },
-  sheetRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
-  },
-  sheetRowActive: { backgroundColor: 'rgba(0,240,255,0.08)' },
-  sheetRowText: { color: '#fff', fontWeight: '700' },
-  sheetMeta: { color: 'rgba(255,255,255,0.4)', fontWeight: '700' },
-});
+function makeStyles(tokens) {
+  return StyleSheet.create({
+    dayNav: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderColor: tokens.border,
+    },
+    dayBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+    dayLabel: { color: tokens.text, fontWeight: '600', fontSize: 14 },
+    preview: {
+      color: tokens.cyan,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    section: { marginTop: 4 },
+    sectionLabel: {
+      color: tokens.muted,
+      fontSize: 11,
+      fontWeight: '600',
+      letterSpacing: 11 * 0.12,
+      textTransform: 'uppercase',
+      marginBottom: 4,
+      marginTop: 8,
+    },
+    matchRow: {
+      minHeight: 44,
+      paddingVertical: 10,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: tokens.border,
+    },
+    matchGrid: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    side: { flex: 1, color: tokens.text, fontWeight: '600', fontSize: 14 },
+    sideAway: { textAlign: 'right' },
+    score: {
+      minWidth: 48,
+      textAlign: 'center',
+      color: tokens.cyan,
+      fontWeight: '700',
+      fontVariant: ['tabular-nums'],
+    },
+    metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4, justifyContent: 'flex-end' },
+    meta: { color: tokens.muted, fontSize: 12 },
+    metaWarn: { color: tokens.warning, fontSize: 12, fontWeight: '600' },
+    metaLink: { color: tokens.cyan, fontSize: 12, fontWeight: '600' },
+    empty: {
+      color: tokens.muted,
+      textAlign: 'center',
+      paddingVertical: 20,
+      fontSize: 14,
+    },
+    tiles: { flexDirection: 'row', gap: 12 },
+    tileHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    tileTitle: { color: tokens.text, fontWeight: '700', fontSize: 15 },
+    tileCount: { color: tokens.muted, fontSize: 13, fontWeight: '600' },
+    tileStage: { color: tokens.cyan, fontSize: 12, fontWeight: '600', marginTop: 6 },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: hexToRgba(tokens.bgDeep, 0.7),
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      backgroundColor: tokens.bgDeep,
+      borderTopLeftRadius: 22,
+      borderTopRightRadius: 22,
+      borderWidth: 1,
+      borderBottomWidth: 0,
+      borderColor: tokens.border,
+      padding: 16,
+      gap: 8,
+    },
+    sheetTall: { maxHeight: '80%' },
+    sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    sheetTitle: { color: tokens.text, fontWeight: '700', fontSize: 17 },
+    closeBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+    sheetRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+      minHeight: 48,
+      paddingHorizontal: 8,
+      borderRadius: 12,
+    },
+    sheetRowActive: { backgroundColor: tokens.card },
+    sheetRowText: { flex: 1, color: tokens.text, fontWeight: '600', fontSize: 15 },
+    sheetMeta: { color: tokens.muted, fontWeight: '600' },
+  });
+}

@@ -1,21 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
   StatusBar,
-  Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { GamerProfileShell, GlassIconButton } from '@/components/profile/gamer/GamerProfileUI';
-import { headingStyleSm } from '@/lib/fonts';
+import useThemeStore from '@/store/themeStore';
+import { IconButton, Screen, SectionLabel } from '@/components/ui';
 import PageTile, { PageTitle } from '@/components/theme/PageTile';
+import HubToggle from '@/components/directory/HubToggle';
 import { useTransferWindowStatus } from '@/hooks/useTransferWindowStatus';
 import {
   filterTransferEntries,
@@ -26,39 +25,10 @@ import TransferFilters from '@/components/transfer/TransferFilters';
 import TransferPlayerCarousel from '@/components/transfer/TransferPlayerCarousel';
 import TransferPlayerList from '@/components/transfer/TransferPlayerList';
 import TransferWindowBanner from '@/components/transfer/TransferWindowBanner';
-import { SILVER } from '@/components/transfer/transferHubTheme';
-
-function HubToggle({ label, icon, active, badge, onPress }) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.85}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        minHeight: 36,
-        paddingHorizontal: 12,
-        borderWidth: 1,
-        borderColor: active ? 'rgba(248,251,255,0.55)' : 'rgba(255,255,255,0.12)',
-        backgroundColor: active ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.35)',
-      }}
-    >
-      <Ionicons name={icon} size={14} color={active ? SILVER : 'rgba(255,255,255,0.5)'} />
-      <Text style={[headingStyleSm, { fontSize: 11, letterSpacing: 1.6, color: active ? SILVER : 'rgba(255,255,255,0.5)' }]}>
-        {label}
-      </Text>
-      {badge > 0 ? (
-        <Text style={{ color: active ? SILVER : 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '800' }}>
-          {badge}
-        </Text>
-      ) : null}
-    </TouchableOpacity>
-  );
-}
 
 export default function TransfersScreen() {
   const router = useRouter();
+  const tokens = useThemeStore((s) => s.tokens);
   const { currentWindow } = useTransferWindowStatus();
   const [entries, setEntries] = useState([]);
   const [freeCount, setFreeCount] = useState(0);
@@ -119,56 +89,61 @@ export default function TransfersScreen() {
   };
 
   return (
-    <GamerProfileShell>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 }}>
-          <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
+    <Screen scroll={false} tabBar={false} guideFab>
+      <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
+      <View style={{ flex: 1, gap: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <IconButton icon="arrow-back" onPress={() => router.back()} accessibilityLabel="Back" />
         </View>
 
         <PageTitle
           eyebrow="TRANSFER HUB"
           title="TRANSFERS"
           subtitle={`${rows.length} player${rows.length === 1 ? '' : 's'} found  •  ${freeCount} free  •  ${expiringCount} expiring`}
+          padded={false}
+          style={{ paddingBottom: 0 }}
         />
 
         <PageTile
           tileKey="transfers"
           tileTitle="TRANSFER HUB"
-          style={{ flex: 1, marginHorizontal: 12, marginBottom: 12 }}
+          style={{ flex: 1 }}
           contentStyle={{ flex: 1, paddingHorizontal: 12, gap: 12 }}
         >
-          <View style={{ gap: 12 }}>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              <HubToggle
-                label="Carousel"
-                icon="images-outline"
-                active={viewMode === 'carousel'}
-                onPress={() => setViewMode('carousel')}
-              />
-              <HubToggle
-                label="List"
-                icon="list-outline"
-                active={viewMode === 'list'}
-                onPress={() => setViewMode('list')}
-              />
-              <HubToggle
-                label="Filters"
-                icon="options-outline"
-                badge={filterCount}
-                onPress={() => setFiltersOpen(true)}
-              />
-            </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <HubToggle
+              label="Carousel"
+              icon="images-outline"
+              active={viewMode === 'carousel'}
+              onPress={() => setViewMode('carousel')}
+            />
+            <HubToggle
+              label="List"
+              icon="list-outline"
+              active={viewMode === 'list'}
+              onPress={() => setViewMode('list')}
+            />
+            <HubToggle
+              label="Filters"
+              icon="options-outline"
+              badge={filterCount}
+              onPress={() => setFiltersOpen(true)}
+            />
           </View>
 
           {loading ? (
-            <ActivityIndicator color={SILVER} style={{ marginTop: 48 }} />
+            <ActivityIndicator color={tokens.cyan} style={{ marginTop: 48 }} />
           ) : viewMode === 'list' ? (
             <ScrollView
               style={{ flex: 1 }}
               contentContainerStyle={{ paddingVertical: 12, paddingBottom: 40 }}
               refreshControl={(
-                <RefreshControl refreshing={Boolean(refreshing)} onRefresh={() => { setRefreshing(true); load(); }} tintColor={SILVER} />
+                <RefreshControl
+                  refreshing={Boolean(refreshing)}
+                  onRefresh={() => { setRefreshing(true); load(); }}
+                  tintColor={tokens.cyan}
+                  colors={[tokens.cyan]}
+                />
               )}
             >
               <TransferPlayerList
@@ -185,33 +160,52 @@ export default function TransfersScreen() {
             />
           )}
         </PageTile>
-      </SafeAreaView>
+      </View>
 
       <Modal visible={filtersOpen} transparent animationType="slide" onRequestClose={() => setFiltersOpen(false)}>
-        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.62)' }}>
-          <Pressable style={{ flex: 1 }} onPress={() => setFiltersOpen(false)} />
-          <View style={{ backgroundColor: '#071018', borderTopWidth: 1, borderColor: 'rgba(238,243,251,0.22)', maxHeight: '86%' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 8 }}>
-              <Text style={[headingStyleSm, { color: SILVER, letterSpacing: 2.4 }]}>Filters</Text>
-              <TouchableOpacity onPress={() => setFiltersOpen(false)} hitSlop={10}>
-                <Ionicons name="close" size={22} color="rgba(255,255,255,0.7)" />
-              </TouchableOpacity>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: tokens.overlay }}>
+            <Pressable
+              style={{ flex: 1 }}
+              onPress={() => setFiltersOpen(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Dismiss filters"
+            />
+            <View
+              style={{
+                backgroundColor: tokens.bgDeep,
+                borderTopWidth: 1,
+                borderLeftWidth: 1,
+                borderRightWidth: 1,
+                borderColor: tokens.border,
+                borderTopLeftRadius: 22,
+                borderTopRightRadius: 22,
+                maxHeight: '86%',
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 20, paddingRight: 12, paddingTop: 12, paddingBottom: 8 }}>
+                <SectionLabel>Filters</SectionLabel>
+                <IconButton icon="close" onPress={() => setFiltersOpen(false)} accessibilityLabel="Close filters" />
+              </View>
+              <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32, gap: 16 }}>
+                <TransferWindowBanner window={currentWindow} />
+                <TransferFilters
+                  search={query}
+                  onSearch={setQuery}
+                  position={position}
+                  onPosition={setPosition}
+                  statusFilter={status}
+                  onStatus={setStatus}
+                  platform={platform}
+                  onPlatform={setPlatform}
+                />
+              </ScrollView>
             </View>
-            <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32, gap: 16 }}>
-              <TransferWindowBanner window={currentWindow} />
-              <TransferFilters
-                search={query}
-                onSearch={setQuery}
-                position={position}
-                onPosition={setPosition}
-                statusFilter={status}
-                onStatus={setStatus}
-                platform={platform}
-                onPlatform={setPlatform}
-              />
-            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <TransferDetailSheet
@@ -220,6 +214,6 @@ export default function TransfersScreen() {
         onClose={() => setDetailsOpen(false)}
         onViewProfile={openProfile}
       />
-    </GamerProfileShell>
+    </Screen>
   );
 }

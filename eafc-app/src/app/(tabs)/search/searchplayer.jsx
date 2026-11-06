@@ -2,15 +2,17 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   FlatList,
-  TouchableOpacity,
-  Image,
+  Text,
   ActivityIndicator,
-  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import STText from '../../../components/common/STText';
+import useThemeStore from '@/store/themeStore';
+import { Card, Screen } from '@/components/ui';
+import DirectoryResultRow from '@/components/directory/DirectoryResultRow';
+import DirectorySearchField from '@/components/directory/DirectorySearchField';
 import { resolveMyPlayerAndClub } from '@/api/stageClient';
+import { playerAvatarInitials } from '@/lib/playerAvatar';
 import {
   filterPlayerDirectory,
   loadPlayerDirectory,
@@ -21,41 +23,21 @@ function PlayerRow({ player, isClubOwner, onChallenge, onPress }) {
   const name = playerDisplayName(player);
 
   return (
-    <TouchableOpacity
+    <DirectoryResultRow
+      imageUrl={player.avatar_url}
+      initials={playerAvatarInitials(player)}
+      name={name}
+      meta={[player.position, player.platform].filter(Boolean).join(' · ') || 'Player'}
+      actionLabel={isClubOwner ? 'Invite' : 'Challenge'}
       onPress={onPress}
-      activeOpacity={0.7}
-      className="flex-row items-center px-4 py-3 border-b border-white/5"
-    >
-      <View className="h-12 w-12 rounded-full bg-white/10 items-center justify-center overflow-hidden">
-        {player.avatar_url ? (
-          <Image source={{ uri: player.avatar_url }} className="h-12 w-12" />
-        ) : (
-          <Ionicons name="person" size={24} color="rgba(255,255,255,0.5)" />
-        )}
-      </View>
-      <View className="ml-3 flex-1">
-        <STText className="font-semibold">{name}</STText>
-        <STText className="text-xs opacity-70">
-          {[player.position, player.platform].filter(Boolean).join(' · ') || 'Player'}
-        </STText>
-      </View>
-      <TouchableOpacity
-        onPress={(e) => {
-          e.stopPropagation();
-          onChallenge?.(player);
-        }}
-        className="rounded-lg border border-[#5FE3E8]/50 px-3 py-1.5"
-      >
-        <STText className="text-xs font-semibold" style={{ color: '#5FE3E8' }}>
-          {isClubOwner ? 'Invite' : 'Challenge'}
-        </STText>
-      </TouchableOpacity>
-    </TouchableOpacity>
+      onAction={() => onChallenge?.(player)}
+    />
   );
 }
 
 export default function SearchPlayers() {
   const router = useRouter();
+  const tokens = useThemeStore((s) => s.tokens);
   const [query, setQuery] = useState('');
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -102,41 +84,39 @@ export default function SearchPlayers() {
   };
 
   return (
-    <View className="flex-1">
-      <View className="px-4 py-3">
-        <TextInput
+    <Screen scroll={false}>
+      <View style={{ flex: 1, gap: 14 }}>
+        <DirectorySearchField
           placeholder="Search players..."
-          placeholderTextColor="rgba(255,255,255,0.4)"
           value={query}
           onChangeText={setQuery}
-          className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-base"
-          style={{ color: '#fff' }}
         />
+        {loading ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 48 }}>
+            <ActivityIndicator color={tokens.cyan} />
+          </View>
+        ) : (
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => item.id}
+            keyboardShouldPersistTaps="handled"
+            renderItem={({ item }) => (
+              <PlayerRow
+                player={item}
+                isClubOwner={isClubOwner}
+                onChallenge={handleChallenge}
+                onPress={() => handleSelectPlayer(item)}
+              />
+            )}
+            ListEmptyComponent={
+              <Card style={{ alignItems: 'center', paddingVertical: 40, gap: 8 }}>
+                <Ionicons name="people-outline" size={36} color={tokens.muted} />
+                <Text style={{ color: tokens.muted, fontSize: 14, fontWeight: '600' }}>No players found</Text>
+              </Card>
+            }
+          />
+        )}
       </View>
-      {loading ? (
-        <View className="flex-1 items-center justify-center py-12">
-          <ActivityIndicator color="#5FE3E8" />
-        </View>
-      ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <PlayerRow
-              player={item}
-              isClubOwner={isClubOwner}
-              onChallenge={handleChallenge}
-              onPress={() => handleSelectPlayer(item)}
-            />
-          )}
-          ListEmptyComponent={
-            <View className="py-12 items-center">
-              <Ionicons name="people-outline" size={48} color="rgba(255,255,255,0.3)" />
-              <STText className="mt-2 opacity-60">No players found</STText>
-            </View>
-          }
-        />
-      )}
-    </View>
+    </Screen>
   );
 }

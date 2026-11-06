@@ -2,25 +2,16 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   StatusBar,
   Text,
-  TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { resolveMyPlayerAndClub, stageClient } from '@/api/stageClient';
 import DateTimeZoneFields from '@/components/matches/DateTimeZoneFields';
-import { GAME_DAY_SILVER, FUT } from '@/components/dashboard/CommandCenterUI';
-import {
-  GamerProfileShell,
-  GlassIconButton,
-  useGamerTokens,
-} from '@/components/profile/gamer/GamerProfileUI';
+import useThemeStore from '@/store/themeStore';
+import { Button, Card, IconButton, Screen, SectionLabel, TextField } from '@/components/ui';
 import PageTile, { PageTitle, SilverPill } from '@/components/theme/PageTile';
 import { combineDateTimeToMysql } from '@/lib/arrangeGame';
 import {
@@ -47,28 +38,52 @@ import {
 } from '@/lib/tournamentRuleTemplates';
 import { isStageAdmin } from '@/lib/adminDisputes';
 
+const FORMAT_ICON = {
+  knockout: 'git-network-outline',
+  league: 'list-outline',
+  group_stage: 'grid-outline',
+  swiss_ucl: 'swap-horizontal-outline',
+};
+
 function OptionRow({ label, active, onPress, sub }) {
+  const tokens = useThemeStore((st) => st.tokens);
   return (
-    <TouchableOpacity
+    <Card
+      highlight={active}
       onPress={onPress}
-      style={{
-        flex: 1,
-        minHeight: 64,
-        padding: 12,
-        borderWidth: 1,
-        borderColor: active ? 'rgba(0,232,255,0.45)' : 'rgba(255,255,255,0.12)',
-        backgroundColor: active ? 'rgba(0,232,255,0.1)' : 'rgba(255,255,255,0.04)',
-      }}
+      accessibilityLabel={sub ? `${label}, ${sub}` : label}
+      style={{ flex: 1, minHeight: 64, padding: 12, justifyContent: 'center' }}
     >
-      <Text style={{ color: active ? '#fff' : 'rgba(255,255,255,0.8)', fontWeight: '900', fontSize: 13 }}>{label}</Text>
-      {sub ? <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 4 }}>{sub}</Text> : null}
-    </TouchableOpacity>
+      <Text numberOfLines={1} style={{ color: active ? tokens.text : tokens.textSoft, fontWeight: '700', fontSize: 15 }}>
+        {label}
+      </Text>
+      {sub ? (
+        <Text numberOfLines={1} style={{ color: tokens.muted, fontSize: 12, marginTop: 4 }}>{sub}</Text>
+      ) : null}
+    </Card>
+  );
+}
+
+function FormatTile({ label, icon, active, onPress }) {
+  const tokens = useThemeStore((st) => st.tokens);
+  return (
+    <Card
+      highlight={active}
+      onPress={onPress}
+      accessibilityLabel={label}
+      style={{ flexBasis: '47%', flexGrow: 1, minHeight: 64, paddingVertical: 14, paddingHorizontal: 8 }}
+    >
+      <View style={{ alignItems: 'center', gap: 8 }}>
+        <Ionicons name={icon} size={22} color={active ? tokens.cyan : tokens.textSoft} />
+        <Text numberOfLines={1} style={{ color: tokens.text, fontSize: 13, fontWeight: '700' }}>{label}</Text>
+      </View>
+    </Card>
   );
 }
 
 export default function CreateTournamentScreen() {
   const router = useRouter();
-  const tokens = useGamerTokens();
+  const tokens = useThemeStore((st) => st.tokens);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
@@ -170,286 +185,254 @@ export default function CreateTournamentScreen() {
 
   if (loading) {
     return (
-      <GamerProfileShell>
+      <Screen scroll={false}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={GAME_DAY_SILVER} size="large" />
+          <ActivityIndicator color={tokens.cyan} size="large" />
         </View>
-      </GamerProfileShell>
+      </Screen>
     );
   }
 
+  const chipRow = { flexDirection: 'row', flexWrap: 'wrap', gap: 8 };
+
   return (
-    <GamerProfileShell>
+    <Screen keyboardAvoiding>
       <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <GlassIconButton icon="chevron-back" onPress={() => router.back()} />
-              <View style={{ flex: 1 }}>
-                <PageTitle title="CREATE CUP" subtitle="Community tournament · STAGE Plus" padded={false} />
+      <View style={{ gap: 16 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <IconButton icon="close" accessibilityLabel="Close" onPress={() => router.back()} />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <PageTitle
+              title="CREATE CUP"
+              subtitle="Community tournament · STAGE Plus"
+              padded={false}
+              style={{ paddingBottom: 0 }}
+            />
+          </View>
+        </View>
+
+        <PageTile tileKey="tournaments" tileTitle="CREATE CUP" contentStyle={{ paddingHorizontal: 12, gap: 16 }}>
+          {!canCreate ? (
+            <View style={{ gap: 10 }}>
+              <Text style={{ color: tokens.warning, fontSize: 15, fontWeight: '700' }}>STAGE Plus required</Text>
+              <Text style={{ color: tokens.muted, fontSize: 14, lineHeight: 20 }}>
+                Creating a community cup costs {TOURNAMENT_CREDIT_COST} credits and needs an active STAGE Plus membership.
+              </Text>
+              <View style={{ flexDirection: 'row' }}>
+                <SilverPill label="View STAGE Plus" onPress={() => router.push('/apps/store')} />
               </View>
             </View>
-
-            <PageTile tileKey="tournaments" tileTitle="CREATE CUP" contentStyle={{ paddingHorizontal: 12, gap: 16 }}>
-              {!canCreate ? (
-                <View style={{ gap: 10 }}>
-                  <Text style={{ color: FUT.gold, fontSize: 13, fontWeight: '800' }}>STAGE Plus required</Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, lineHeight: 18 }}>
-                    Creating a community cup costs {TOURNAMENT_CREDIT_COST} credits and needs an active STAGE Plus membership.
-                  </Text>
-                  <SilverPill label="View STAGE Plus" onPress={() => router.push('/apps/store')} />
+          ) : (
+            <>
+              <View style={{ gap: 10 }}>
+                <SectionLabel>Tournament for</SectionLabel>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <OptionRow
+                    label="Clubs"
+                    sub="Clubs compete"
+                    active={form.participant_type === 'club'}
+                    onPress={() => setField('participant_type', 'club')}
+                  />
+                  <OptionRow
+                    label="Players"
+                    sub="Players register"
+                    active={form.participant_type === 'player'}
+                    onPress={() => setField('participant_type', 'player')}
+                  />
                 </View>
-              ) : (
-                <>
-                  <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10, fontWeight: '800', letterSpacing: 0.6 }}>
-                    TOURNAMENT FOR
-                  </Text>
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <OptionRow
-                      label="Clubs"
-                      sub="Clubs compete"
-                      active={form.participant_type === 'club'}
-                      onPress={() => setField('participant_type', 'club')}
-                    />
-                    <OptionRow
-                      label="Players"
-                      sub="Players register"
-                      active={form.participant_type === 'player'}
-                      onPress={() => setField('participant_type', 'player')}
-                    />
-                  </View>
+              </View>
 
-                  <Field label="Name *">
-                    <TextInput
-                      value={form.name}
-                      onChangeText={(value) => setField('name', value)}
-                      placeholder="Cup name"
-                      placeholderTextColor="rgba(255,255,255,0.35)"
-                      style={inputStyle}
-                    />
-                  </Field>
+              <TextField
+                label="Name *"
+                value={form.name}
+                onChangeText={(value) => setField('name', value)}
+                placeholder="Cup name"
+              />
 
-                  <Field label="Description">
-                    <TextInput
-                      value={form.description}
-                      onChangeText={(value) => setField('description', value)}
-                      placeholder="Optional"
-                      placeholderTextColor="rgba(255,255,255,0.35)"
-                      multiline
-                      style={[inputStyle, { minHeight: 80, textAlignVertical: 'top' }]}
-                    />
-                  </Field>
+              <TextField
+                label="Description"
+                value={form.description}
+                onChangeText={(value) => setField('description', value)}
+                placeholder="Optional"
+                multiline
+              />
 
-                  <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10, fontWeight: '800', letterSpacing: 0.6 }}>
-                    FORMAT
-                  </Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                    {['knockout', 'league', 'group_stage', 'swiss_ucl'].map((type) => (
+              <View style={{ gap: 10 }}>
+                <SectionLabel>Format</SectionLabel>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                  {['knockout', 'league', 'group_stage', 'swiss_ucl'].map((type) => (
+                    <FormatTile
+                      key={type}
+                      label={getTournamentFormatRule(type).label}
+                      icon={FORMAT_ICON[type]}
+                      active={form.type === type}
+                      onPress={() => setForm((prev) => applyTournamentFormat(prev, type))}
+                    />
+                  ))}
+                </View>
+                <Text style={{ color: tokens.muted, fontSize: 13 }}>{formatRule.hint}</Text>
+              </View>
+
+              <View style={{ gap: 10 }}>
+                <SectionLabel>Max teams</SectionLabel>
+                <View style={chipRow}>
+                  {maxTeamOptions.map((n) => (
+                    <SilverPill
+                      key={n}
+                      label={String(n)}
+                      active={String(form.max_teams) === String(n)}
+                      onPress={() => setField('max_teams', String(n))}
+                    />
+                  ))}
+                </View>
+              </View>
+
+              <View style={{ gap: 10 }}>
+                <SectionLabel>Platform</SectionLabel>
+                <View style={chipRow}>
+                  {TOURNAMENT_PLATFORM_OPTIONS.map((platform) => (
+                    <SilverPill
+                      key={platform}
+                      label={platform}
+                      active={form.platform === platform}
+                      onPress={() => setField('platform', platform)}
+                    />
+                  ))}
+                </View>
+              </View>
+
+              <Field label="Kickoff">
+                <DateTimeZoneFields
+                  date={startDate}
+                  time={startTime}
+                  timezone="UTC"
+                  showTimezone={false}
+                  onDateChange={setStartDate}
+                  onTimeChange={setStartTime}
+                />
+              </Field>
+
+              <View style={{ gap: 10 }}>
+                <SectionLabel>Region</SectionLabel>
+                <View style={chipRow}>
+                  {TOURNAMENT_REGION_OPTIONS.map((region) => (
+                    <SilverPill
+                      key={region}
+                      label={region}
+                      active={form.region === region}
+                      onPress={() => setForm((prev) => ({ ...prev, region, country_code: '' }))}
+                    />
+                  ))}
+                </View>
+              </View>
+
+              {form.region !== 'Global' && countryOptions.length > 0 ? (
+                <Field label="Country (optional)">
+                  <View style={chipRow}>
+                    <SilverPill
+                      label="All countries"
+                      active={!form.country_code}
+                      onPress={() => setField('country_code', '')}
+                    />
+                    {countryOptions.slice(0, 12).map((country) => (
                       <SilverPill
-                        key={type}
-                        label={getTournamentFormatRule(type).label}
-                        active={form.type === type}
-                        onPress={() => setForm((prev) => applyTournamentFormat(prev, type))}
+                        key={country.code}
+                        label={country.name}
+                        active={form.country_code === country.code}
+                        onPress={() => setField('country_code', country.code)}
                       />
                     ))}
                   </View>
-                  <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{formatRule.hint}</Text>
+                </Field>
+              ) : null}
 
-                  <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10, fontWeight: '800', letterSpacing: 0.6 }}>
-                    MAX TEAMS
-                  </Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                    {maxTeamOptions.map((n) => (
-                      <SilverPill
-                        key={n}
-                        label={String(n)}
-                        active={String(form.max_teams) === String(n)}
-                        onPress={() => setField('max_teams', String(n))}
-                      />
-                    ))}
-                  </View>
+              <TextField
+                label="Entry fee (STC)"
+                value={String(form.entry_fee_stc)}
+                onChangeText={(value) => setField('entry_fee_stc', value)}
+                keyboardType="number-pad"
+                placeholder="1000"
+              />
 
-                  <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10, fontWeight: '800', letterSpacing: 0.6 }}>
-                    PLATFORM
-                  </Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                    {TOURNAMENT_PLATFORM_OPTIONS.map((platform) => (
-                      <SilverPill
-                        key={platform}
-                        label={platform}
-                        active={form.platform === platform}
-                        onPress={() => setField('platform', platform)}
-                      />
-                    ))}
-                  </View>
+              <Card highlight style={{ gap: 8 }}>
+                <Row label="Create cost" value={`${TOURNAMENT_CREDIT_COST} credits`} />
+                <Row
+                  label="Entry cost"
+                  value={`${TOURNAMENT_CREDIT_COST} credits + ${prizeBreakdown.entryFee.toLocaleString()} STC`}
+                />
+                <Row label="Winner" value={`${prizeBreakdown.winner.toLocaleString()} STC`} />
+                <Row label="Runner-up" value={`${prizeBreakdown.runnerUp.toLocaleString()} STC`} />
+                <Row label="Third" value={`${prizeBreakdown.thirdPlace.toLocaleString()} STC`} />
+                <Row label="Prize pool" value={`${prizeBreakdown.pool.toLocaleString()} STC`} emphasize />
+              </Card>
 
-                  <Field label="Kickoff">
-                    <DateTimeZoneFields
-                      date={startDate}
-                      time={startTime}
-                      timezone="UTC"
-                      showTimezone={false}
-                      onDateChange={setStartDate}
-                      onTimeChange={setStartTime}
+              <Field label="Rules template">
+                <View style={chipRow}>
+                  {ruleTemplates.map((template) => (
+                    <SilverPill
+                      key={template.id}
+                      label={template.title}
+                      active={form.rules_template_id === template.id}
+                      onPress={() => setField('rules_template_id', template.id)}
                     />
-                  </Field>
-
-                  <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10, fontWeight: '800', letterSpacing: 0.6 }}>
-                    REGION
+                  ))}
+                </View>
+                <Text style={{ color: tokens.muted, fontSize: 13, lineHeight: 18 }}>
+                  {ruleTemplates.find((template) => template.id === form.rules_template_id)?.summary}
+                </Text>
+                <View style={{
+                  borderWidth: 1,
+                  borderColor: tokens.border,
+                  borderRadius: 12,
+                  backgroundColor: tokens.bgDeep,
+                  padding: 14,
+                }}
+                >
+                  <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 15, marginBottom: 8 }}>{rulesPreview.title}</Text>
+                  <Text style={{ color: tokens.textSoft, fontSize: 13, lineHeight: 19 }}>
+                    {rulesPreview.body}
                   </Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                    {TOURNAMENT_REGION_OPTIONS.map((region) => (
-                      <SilverPill
-                        key={region}
-                        label={region}
-                        active={form.region === region}
-                        onPress={() => setForm((prev) => ({ ...prev, region, country_code: '' }))}
-                      />
-                    ))}
-                  </View>
+                </View>
+              </Field>
 
-                  {form.region !== 'Global' && countryOptions.length > 0 ? (
-                    <Field label="Country (optional)">
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                        <SilverPill
-                          label="All countries"
-                          active={!form.country_code}
-                          onPress={() => setField('country_code', '')}
-                        />
-                        {countryOptions.slice(0, 12).map((country) => (
-                          <SilverPill
-                            key={country.code}
-                            label={country.name}
-                            active={form.country_code === country.code}
-                            onPress={() => setField('country_code', country.code)}
-                          />
-                        ))}
-                      </View>
-                    </Field>
-                  ) : null}
+              {error ? <Text style={{ color: tokens.danger, fontSize: 13 }}>{error}</Text> : null}
 
-                  <Field label="Entry fee (STC)">
-                    <TextInput
-                      value={String(form.entry_fee_stc)}
-                      onChangeText={(value) => setField('entry_fee_stc', value)}
-                      keyboardType="number-pad"
-                      placeholder="1000"
-                      placeholderTextColor="rgba(255,255,255,0.35)"
-                      style={inputStyle}
-                    />
-                  </Field>
-
-                  <View style={{
-                    borderWidth: 1,
-                    borderColor: 'rgba(0,232,255,0.2)',
-                    backgroundColor: 'rgba(0,232,255,0.07)',
-                    padding: 14,
-                    gap: 8,
-                  }}
-                  >
-                    <Row label="Create cost" value={`${TOURNAMENT_CREDIT_COST} credits`} />
-                    <Row
-                      label="Entry cost"
-                      value={`${TOURNAMENT_CREDIT_COST} credits + ${prizeBreakdown.entryFee.toLocaleString()} STC`}
-                    />
-                    <Row label="Winner" value={`${prizeBreakdown.winner.toLocaleString()} STC`} />
-                    <Row label="Runner-up" value={`${prizeBreakdown.runnerUp.toLocaleString()} STC`} />
-                    <Row label="Third" value={`${prizeBreakdown.thirdPlace.toLocaleString()} STC`} />
-                    <Row label="Prize pool" value={`${prizeBreakdown.pool.toLocaleString()} STC`} emphasize />
-                  </View>
-
-                  <Field label="Rules template">
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                      {ruleTemplates.map((template) => (
-                        <SilverPill
-                          key={template.id}
-                          label={template.title}
-                          active={form.rules_template_id === template.id}
-                          onPress={() => setField('rules_template_id', template.id)}
-                        />
-                      ))}
-                    </View>
-                    <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, lineHeight: 16 }}>
-                      {ruleTemplates.find((template) => template.id === form.rules_template_id)?.summary}
-                    </Text>
-                    <View style={{
-                      borderWidth: 1,
-                      borderColor: 'rgba(255,255,255,0.12)',
-                      backgroundColor: 'rgba(255,255,255,0.04)',
-                      padding: 12,
-                    }}
-                    >
-                      <Text style={{ color: '#fff', fontWeight: '800', marginBottom: 8 }}>{rulesPreview.title}</Text>
-                      <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 12, lineHeight: 18 }}>
-                        {rulesPreview.body}
-                      </Text>
-                    </View>
-                  </Field>
-
-                  {error ? <Text style={{ color: FUT.rose, fontSize: 12 }}>{error}</Text> : null}
-
-                  <TouchableOpacity
-                    onPress={create}
-                    disabled={creating}
-                    style={{
-                      backgroundColor: GAME_DAY_SILVER,
-                      paddingVertical: 14,
-                      alignItems: 'center',
-                      opacity: creating ? 0.6 : 1,
-                    }}
-                  >
-                    {creating
-                      ? <ActivityIndicator color="#041018" />
-                      : <Text style={{ color: '#041018', fontWeight: '900' }}>Create tournament</Text>}
-                  </TouchableOpacity>
-                </>
-              )}
-            </PageTile>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </GamerProfileShell>
+              <Button title="Create tournament" onPress={create} loading={creating} />
+            </>
+          )}
+        </PageTile>
+      </View>
+    </Screen>
   );
 }
 
 function Field({ label, children }) {
   return (
-    <View style={{ gap: 8 }}>
-      <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10, fontWeight: '800', letterSpacing: 0.6 }}>
-        {label.toUpperCase()}
-      </Text>
+    <View style={{ gap: 10 }}>
+      <SectionLabel>{label}</SectionLabel>
       {children}
     </View>
   );
 }
 
 function Row({ label, value, emphasize }) {
+  const tokens = useThemeStore((st) => st.tokens);
   return (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
       <Text style={{
-        color: emphasize ? '#9ef7ff' : 'rgba(255,255,255,0.45)',
-        fontSize: 12,
-        fontWeight: emphasize ? '800' : '600',
+        color: emphasize ? tokens.cyanHi : tokens.muted,
+        fontSize: 13,
+        fontWeight: emphasize ? '700' : '600',
       }}
       >
         {label}
       </Text>
-      <Text style={{ color: emphasize ? '#9ef7ff' : '#fff', fontSize: 12, fontWeight: '800' }}>{value}</Text>
+      <Text
+        numberOfLines={1}
+        style={{ flexShrink: 1, color: emphasize ? tokens.cyanHi : tokens.text, fontSize: 13, fontWeight: '700' }}
+      >
+        {value}
+      </Text>
     </View>
   );
 }
-
-const inputStyle = {
-  backgroundColor: 'rgba(255,255,255,0.06)',
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.12)',
-  borderRadius: 2,
-  color: '#fff',
-  paddingHorizontal: 12,
-  paddingVertical: 12,
-  fontSize: 14,
-};

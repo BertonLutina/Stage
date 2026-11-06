@@ -1,85 +1,115 @@
 import React from 'react';
-import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { headingStyleSm } from '@/lib/fonts';
+import useThemeStore from '@/store/themeStore';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
+import { Avatar, Card } from '@/components/ui';
 import { playerAvatarInitials, resolvePlayerAvatarUrl } from '@/lib/playerAvatar';
 import { clubDisplayName, clubOverallRating, playerDisplayName } from '@/lib/stageDirectories';
-import { SILVER, TILE_HAIRLINE } from '@/components/transfer/transferHubTheme';
+
+/** Club OVR can be an average: show it like the club card does (integers plain, otherwise 1 decimal). */
+function formatClubOvr(raw) {
+  if (raw == null) return null;
+  const rounded = Math.round(Number(raw) * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+/** Same result-row pattern as the Search mockup: avatar tile, name + meta, OVR on the right. */
+function DirectoryRow({
+  selected, imageUrl, initials, name, meta, ovr, a11yLabel, onPress,
+}) {
+  const tokens = useThemeStore((s) => s.tokens);
+  const hasOvr = ovr != null && ovr !== '';
+
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={a11yLabel}
+      accessibilityState={{ selected }}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        minHeight: 68,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+        borderRadius: selected ? 12 : 0,
+        borderWidth: selected ? 1 : 0,
+        borderBottomWidth: 1,
+        borderColor: selected ? tokens.cyan : tokens.border,
+        backgroundColor: selected ? tokens.card : 'transparent',
+        opacity: pressed ? 0.85 : 1,
+      })}
+    >
+      <Avatar uri={imageUrl} initials={initials} />
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text numberOfLines={1} style={{ color: tokens.text, fontSize: 15, fontWeight: '700' }}>
+          {name}
+        </Text>
+        {meta ? (
+          <Text numberOfLines={1} style={{ color: tokens.muted, fontSize: 12, marginTop: 2 }}>
+            {meta}
+          </Text>
+        ) : null}
+      </View>
+      {hasOvr ? (
+        <Text
+          numberOfLines={1}
+          style={{
+            minWidth: 34,
+            textAlign: 'right',
+            color: tokens.cyan,
+            fontFamily: FONT_EA_SPORTS,
+            fontSize: 20,
+          }}
+        >
+          {ovr}
+        </Text>
+      ) : null}
+    </Pressable>
+  );
+}
+
+function EmptyList({ icon, title }) {
+  const tokens = useThemeStore((s) => s.tokens);
+  return (
+    <Card style={{ alignItems: 'center', paddingVertical: 40, gap: 8 }}>
+      <Ionicons name={icon} size={36} color={tokens.muted} />
+      <Text style={{ color: tokens.text, fontSize: 15, fontWeight: '700', textAlign: 'center' }}>{title}</Text>
+      <Text style={{ color: tokens.muted, fontSize: 12, textAlign: 'center' }}>Try adjusting filters</Text>
+    </Card>
+  );
+}
+
+function joinParts(parts, separator = ' · ') {
+  return parts.filter(Boolean).join(separator);
+}
 
 export function DirectoryPlayerList({ players = [], selectedId, onSelect }) {
   if (players.length === 0) {
-    return (
-      <View style={{ borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: '#071018', paddingVertical: 48, paddingHorizontal: 24, alignItems: 'center' }}>
-        <Ionicons name="people-outline" size={40} color="rgba(238,243,251,0.28)" />
-        <Text style={[headingStyleSm, { color: 'rgba(255,255,255,0.55)', marginTop: 12 }]}>No players found</Text>
-        <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, marginTop: 8 }}>Try adjusting filters</Text>
-      </View>
-    );
+    return <EmptyList icon="people-outline" title="No players found" />;
   }
 
   return (
-    <View style={{ gap: 6 }}>
+    <View>
       {players.map((player) => {
         const isSelected = String(selectedId) === String(player.id);
-        const imageUrl = resolvePlayerAvatarUrl(player);
+        const name = playerDisplayName(player);
+        const ovr = player.overall_rating || null;
+        const meta = joinParts([player.position, player.platform]);
         return (
-          <TouchableOpacity
+          <DirectoryRow
             key={String(player.id)}
+            selected={isSelected}
+            imageUrl={resolvePlayerAvatarUrl(player)}
+            initials={playerAvatarInitials(player)}
+            name={name}
+            meta={meta}
+            ovr={ovr}
+            a11yLabel={joinParts([name, player.position, ovr ? `OVR ${ovr}` : null, player.platform], ', ')}
             onPress={() => onSelect?.(player, { openDetails: true })}
-            activeOpacity={0.85}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 12,
-              minHeight: 56,
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderWidth: 1,
-              borderColor: isSelected ? 'rgba(248,251,255,0.5)' : TILE_HAIRLINE,
-              backgroundColor: isSelected ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.3)',
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                overflow: 'hidden',
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.1)',
-                backgroundColor: '#071018',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {imageUrl ? (
-                <Image source={{ uri: imageUrl }} style={{ width: 40, height: 40 }} />
-              ) : (
-                <Text style={{ color: SILVER, fontWeight: '900' }}>{playerAvatarInitials(player)}</Text>
-              )}
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text
-                numberOfLines={1}
-                style={[headingStyleSm, { color: isSelected ? SILVER : '#fff', fontSize: 13 }]}
-              >
-                {playerDisplayName(player)}
-              </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
-                {player.position ? (
-                  <View style={{ backgroundColor: 'rgba(238,243,251,0.1)', paddingHorizontal: 6, paddingVertical: 2 }}>
-                    <Text style={{ color: SILVER, fontSize: 11, fontWeight: '700' }}>{player.position}</Text>
-                  </View>
-                ) : null}
-                {player.overall_rating ? (
-                  <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>OVR {player.overall_rating}</Text>
-                ) : null}
-                {player.platform ? (
-                  <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{player.platform}</Text>
-                ) : null}
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.28)" />
-          </TouchableOpacity>
+          />
         );
       })}
     </View>
@@ -88,81 +118,29 @@ export function DirectoryPlayerList({ players = [], selectedId, onSelect }) {
 
 export function DirectoryClubList({ clubs = [], selectedId, onSelect }) {
   if (clubs.length === 0) {
-    return (
-      <View style={{ borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: '#071018', paddingVertical: 48, paddingHorizontal: 24, alignItems: 'center' }}>
-        <Ionicons name="shield-outline" size={40} color="rgba(238,243,251,0.28)" />
-        <Text style={[headingStyleSm, { color: 'rgba(255,255,255,0.55)', marginTop: 12 }]}>No clubs found</Text>
-        <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, marginTop: 8 }}>Try adjusting filters</Text>
-      </View>
-    );
+    return <EmptyList icon="shield-outline" title="No clubs found" />;
   }
 
   return (
-    <View style={{ gap: 6 }}>
+    <View>
       {clubs.map((club) => {
         const isSelected = String(selectedId) === String(club.id);
-        const ovr = clubOverallRating(club);
+        const name = clubDisplayName(club);
+        const ovr = formatClubOvr(clubOverallRating(club));
+        const meta = joinParts([club.tag, club.region, club.platform]);
+        const initials = String(club.tag || name || 'C').slice(0, 3).toUpperCase();
         return (
-          <TouchableOpacity
+          <DirectoryRow
             key={String(club.id)}
+            selected={isSelected}
+            imageUrl={club.logo_url}
+            initials={initials}
+            name={name}
+            meta={meta}
+            ovr={ovr}
+            a11yLabel={joinParts([name, club.tag, club.region, ovr != null ? `OVR ${ovr}` : null, club.platform], ', ')}
             onPress={() => onSelect?.(club, { openDetails: true })}
-            activeOpacity={0.85}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 12,
-              minHeight: 56,
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderWidth: 1,
-              borderColor: isSelected ? 'rgba(248,251,255,0.5)' : TILE_HAIRLINE,
-              backgroundColor: isSelected ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.3)',
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                overflow: 'hidden',
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.1)',
-                backgroundColor: '#071018',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {club.logo_url ? (
-                <Image source={{ uri: club.logo_url }} style={{ width: 40, height: 40 }} />
-              ) : (
-                <Ionicons name="shield-outline" size={18} color={SILVER} />
-              )}
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text
-                numberOfLines={1}
-                style={[headingStyleSm, { color: isSelected ? SILVER : '#fff', fontSize: 13 }]}
-              >
-                {clubDisplayName(club)}
-              </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
-                {club.tag ? (
-                  <View style={{ backgroundColor: 'rgba(238,243,251,0.1)', paddingHorizontal: 6, paddingVertical: 2 }}>
-                    <Text style={{ color: SILVER, fontSize: 11, fontWeight: '700' }}>{club.tag}</Text>
-                  </View>
-                ) : null}
-                {ovr != null ? (
-                  <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>OVR {ovr}</Text>
-                ) : null}
-                {club.region ? (
-                  <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{club.region}</Text>
-                ) : null}
-                {club.platform ? (
-                  <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{club.platform}</Text>
-                ) : null}
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.28)" />
-          </TouchableOpacity>
+          />
         );
       })}
     </View>

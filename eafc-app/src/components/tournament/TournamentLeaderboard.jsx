@@ -10,7 +10,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { stageClient } from '@/api/stageClient';
-import { GAME_DAY_SILVER } from '@/components/dashboard/CommandCenterUI';
+import useThemeStore from '@/store/themeStore';
+import { Card, Chip, SelectField } from '@/components/ui';
+import { hexToRgba } from '@/lib/stageTheme';
 
 const CATEGORIES = {
   participants: [
@@ -44,6 +46,8 @@ export default function TournamentLeaderboard({
   statisticsUrl,
   title = 'Tournament Statistics',
 }) {
+  const tokens = useThemeStore((st) => st.tokens);
+  const styles = useMemo(() => makeStyles(tokens), [tokens]);
   const [stats, setStats] = useState(null);
   const [group, setGroup] = useState('participants');
   const [categoryId, setCategoryId] = useState('goals');
@@ -87,12 +91,17 @@ export default function TournamentLeaderboard({
   const appearancesKey = effectiveGroup === 'goalkeepers' ? 'goalkeeper_appearances' : 'appearances';
 
   return (
-    <View style={styles.card}>
+    <Card style={{ padding: 0, overflow: 'hidden' }}>
       <View style={styles.header}>
-        <Ionicons name="trophy-outline" size={18} color={GAME_DAY_SILVER} />
-        <Text style={styles.title}>{title}</Text>
-        <TouchableOpacity onPress={() => { setRefreshing(true); load(); }} hitSlop={8}>
-          <Ionicons name="refresh" size={18} color="rgba(255,255,255,0.55)" />
+        <Ionicons name="trophy-outline" size={22} color={tokens.cyan} />
+        <Text numberOfLines={1} style={styles.title}>{title}</Text>
+        <TouchableOpacity
+          onPress={() => { setRefreshing(true); load(); }}
+          accessibilityRole="button"
+          accessibilityLabel="Refresh statistics"
+          style={styles.refreshBtn}
+        >
+          <Ionicons name="refresh" size={20} color={tokens.muted} />
         </TouchableOpacity>
       </View>
 
@@ -103,30 +112,34 @@ export default function TournamentLeaderboard({
             ['players', 'Players'],
             ['goalkeepers', 'Keepers'],
           ].map(([id, label]) => (
-            <TouchableOpacity
+            <Chip
               key={id}
+              label={label}
+              active={effectiveGroup === id}
               onPress={() => {
                 setGroup(id);
                 setCategoryId(CATEGORIES[id][0].id);
               }}
-              style={[styles.chip, effectiveGroup === id && styles.chipActive]}
-            >
-              <Text style={[styles.chipText, effectiveGroup === id && styles.chipTextActive]}>{label}</Text>
-            </TouchableOpacity>
+            />
           ))}
         </View>
       ) : null}
 
-      <TouchableOpacity style={styles.select} onPress={() => setPickerOpen((v) => !v)}>
-        <Text style={styles.selectText}>{category.label}</Text>
-        <Ionicons name={pickerOpen ? 'chevron-up' : 'chevron-down'} size={16} color={GAME_DAY_SILVER} />
-      </TouchableOpacity>
+      <View style={styles.selectWrap}>
+        <SelectField
+          label="Category"
+          value={category.label}
+          open={pickerOpen}
+          onPress={() => setPickerOpen((v) => !v)}
+        />
+      </View>
       {pickerOpen ? (
         <View style={styles.picker}>
           {categories.map((item) => (
             <TouchableOpacity
               key={item.id}
               style={styles.pickerRow}
+              accessibilityRole="button"
               onPress={() => {
                 setCategoryId(item.id);
                 setPickerOpen(false);
@@ -139,7 +152,7 @@ export default function TournamentLeaderboard({
       ) : null}
 
       {loading ? (
-        <ActivityIndicator color={GAME_DAY_SILVER} style={{ marginVertical: 24 }} />
+        <ActivityIndicator color={tokens.cyan} style={{ marginVertical: 24 }} />
       ) : (
         <ScrollView
           style={{ maxHeight: 420 }}
@@ -147,7 +160,7 @@ export default function TournamentLeaderboard({
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => { setRefreshing(true); load(); }}
-              tintColor={GAME_DAY_SILVER}
+              tintColor={tokens.cyan}
             />
           )}
         >
@@ -174,88 +187,65 @@ export default function TournamentLeaderboard({
           ))}
         </ScrollView>
       )}
-    </View>
+    </Card>
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
-    backgroundColor: 'rgba(8,14,28,0.92)',
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
-  },
-  title: { flex: 1, color: '#fff', fontWeight: '900', fontSize: 15 },
-  groupRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingTop: 10,
-  },
-  chip: {
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-  },
-  chipActive: {
-    borderColor: 'rgba(0,240,255,0.45)',
-    backgroundColor: 'rgba(0,240,255,0.10)',
-  },
-  chipText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '800' },
-  chipTextActive: { color: GAME_DAY_SILVER },
-  select: {
-    marginHorizontal: 12,
-    marginTop: 10,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  selectText: { color: '#fff', fontWeight: '700', flex: 1, paddingRight: 8, fontSize: 13 },
-  picker: {
-    marginHorizontal: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  pickerRow: {
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
-  },
-  pickerText: { color: '#fff', fontSize: 13, fontWeight: '600' },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    gap: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255,255,255,0.06)',
-  },
-  alt: { backgroundColor: 'rgba(255,255,255,0.02)' },
-  rank: { width: 28, color: 'rgba(255,255,255,0.45)', fontWeight: '900' },
-  name: { color: '#fff', fontWeight: '800', fontSize: 13 },
-  sub: { color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 2 },
-  apps: { width: 28, textAlign: 'center', color: 'rgba(255,255,255,0.45)', fontVariant: ['tabular-nums'] },
-  value: { width: 52, textAlign: 'right', color: GAME_DAY_SILVER, fontWeight: '900', fontVariant: ['tabular-nums'] },
-  empty: { color: 'rgba(255,255,255,0.4)', textAlign: 'center', paddingVertical: 28, fontSize: 13 },
-  error: { color: '#FF6B8A', padding: 14, fontSize: 12 },
-});
+function makeStyles(tokens) {
+  return StyleSheet.create({
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingLeft: 16,
+      paddingRight: 4,
+      minHeight: 52,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: tokens.border,
+    },
+    title: { flex: 1, color: tokens.text, fontWeight: '700', fontSize: 16 },
+    refreshBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+    groupRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      paddingHorizontal: 16,
+      paddingTop: 12,
+    },
+    selectWrap: { marginHorizontal: 16, marginTop: 12, marginBottom: 8 },
+    picker: {
+      marginHorizontal: 16,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: tokens.border,
+      borderRadius: 12,
+      overflow: 'hidden',
+      backgroundColor: tokens.bgDeep,
+    },
+    pickerRow: {
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingHorizontal: 16,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: tokens.border,
+    },
+    pickerText: { color: tokens.text, fontSize: 14, fontWeight: '600' },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 11,
+      gap: 8,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: tokens.border,
+    },
+    alt: { backgroundColor: hexToRgba(tokens.bgDeep, 0.4) },
+    rank: { width: 28, color: tokens.muted, fontWeight: '700' },
+    name: { color: tokens.text, fontWeight: '600', fontSize: 14 },
+    sub: { color: tokens.muted, fontSize: 12, marginTop: 2 },
+    apps: { width: 28, textAlign: 'center', color: tokens.muted, fontVariant: ['tabular-nums'] },
+    value: { width: 52, textAlign: 'right', color: tokens.cyan, fontWeight: '700', fontVariant: ['tabular-nums'] },
+    empty: { color: tokens.muted, textAlign: 'center', paddingVertical: 28, fontSize: 14 },
+    error: { color: tokens.danger, padding: 16, fontSize: 13 },
+  });
+}

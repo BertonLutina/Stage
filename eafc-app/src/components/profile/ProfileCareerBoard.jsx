@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { headingStyleLg } from '@/lib/fonts';
+import { CARD_RADIUS, hexToRgba } from '@/lib/stageTheme';
 import { CAREER_LABELS } from '@/lib/playerCareer';
 import { getMatchOpponent, loadMyUpcomingMatches } from '@/lib/dashboardData';
 import {
-  AMBER,
   GamerSectionCard,
   useGamerTokens,
 } from '@/components/profile/gamer/GamerProfileUI';
@@ -45,32 +44,32 @@ function NextFixturesCard({ player, club }) {
               <View
                 key={match.id}
                 style={{
-                  borderRadius: 6,
+                  borderRadius: 12,
                   borderWidth: 1,
-                  borderColor: tokens.hairline,
+                  borderColor: tokens.border,
                   backgroundColor: tokens.inputFill,
                   padding: 12,
                   gap: 8,
                 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                  <Text style={{ color: tokens.text, fontSize: 13, fontWeight: '800', flex: 1 }} numberOfLines={1}>
+                  <Text style={{ color: tokens.text, fontSize: 14, fontWeight: '700', flex: 1 }} numberOfLines={1}>
                     {club?.name || sides.home}
                   </Text>
                   <View style={{
-                    borderRadius: 4,
-                    paddingHorizontal: 7,
+                    borderRadius: 999,
+                    paddingHorizontal: 8,
                     paddingVertical: 3,
-                    backgroundColor: 'rgba(255,214,10,0.14)',
+                    backgroundColor: hexToRgba(tokens.amber, 0.14),
                     borderWidth: 1,
-                    borderColor: 'rgba(255,214,10,0.35)',
+                    borderColor: tokens.amberBorder,
                   }}>
-                    <Text style={{ color: AMBER, fontSize: 9, fontWeight: '900', letterSpacing: 1 }}>
+                    <Text style={{ color: tokens.amber, fontSize: 10, fontWeight: '700', letterSpacing: 0.8 }}>
                       {sides.isHome ? 'HOME' : 'AWAY'}
                     </Text>
                   </View>
                 </View>
-                <Text style={{ color: tokens.muted, fontSize: 12, fontWeight: '700' }} numberOfLines={1}>
+                <Text style={{ color: tokens.muted, fontSize: 13, fontWeight: '600' }} numberOfLines={1}>
                   vs {sides.opponent}
                 </Text>
                 {formatFixtureWhen(match) ? (
@@ -86,27 +85,32 @@ function NextFixturesCard({ player, club }) {
 }
 
 export default function ProfileCareerBoard({ player, signedClub, career, careerLoading }) {
+  const tokens = useGamerTokens();
   const name = player?.gamertag || player?.display_name || 'Player';
 
   return (
     <View style={{ gap: 12 }}>
-      <View style={{ borderRadius: 8, overflow: 'hidden', minHeight: 128 }}>
-        <LinearGradient
-          colors={['#4A1520', '#1A0A12', '#0A070C']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ paddingHorizontal: 16, paddingVertical: 18 }}
-        >
-          <Text style={{ color: '#F87171', fontSize: 10, fontWeight: '900', letterSpacing: 1.8, textTransform: 'uppercase' }}>
-            {CAREER_LABELS.careerMode}
-          </Text>
-          <Text style={[headingStyleLg, { color: '#fff', marginTop: 8, lineHeight: 28 }]}>
-            {name} Career
-          </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 13, lineHeight: 19, marginTop: 8 }}>
-            {CAREER_LABELS.careerBannerHint}
-          </Text>
-        </LinearGradient>
+      <View
+        style={{
+          borderRadius: CARD_RADIUS,
+          overflow: 'hidden',
+          minHeight: 128,
+          borderWidth: 1,
+          borderColor: hexToRgba(tokens.danger, 0.5),
+          backgroundColor: tokens.live ? tokens.card : tokens.dangerBg,
+          paddingHorizontal: 16,
+          paddingVertical: 18,
+        }}
+      >
+        <Text style={{ color: tokens.danger, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12, textTransform: 'uppercase' }}>
+          {CAREER_LABELS.careerMode}
+        </Text>
+        <Text style={[headingStyleLg, { color: tokens.text, marginTop: 8, lineHeight: 30 }]}>
+          {name} Career
+        </Text>
+        <Text style={{ color: tokens.textSoft, fontSize: 14, lineHeight: 20, marginTop: 8 }}>
+          {CAREER_LABELS.careerBannerHint}
+        </Text>
       </View>
 
       <NextFixturesCard player={player} club={signedClub} />

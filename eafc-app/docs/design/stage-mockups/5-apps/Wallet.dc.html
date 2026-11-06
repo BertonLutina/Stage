@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Wallet</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+a{color:#5FE3E8;text-decoration:none}a:hover{color:#8CF5F8}
+.scr{width:390px;height:844px;position:relative;overflow:hidden;background-color:#03153F;background-image:radial-gradient(ellipse 75% 42% at 50% 78%,rgba(0,82,140,.95) 0%,rgba(0,82,140,0) 72%),radial-gradient(ellipse 90% 35% at 50% 0%,rgba(14,58,124,.9) 0%,rgba(14,58,124,0) 75%),linear-gradient(90deg,#020C30 0%,#06306A 50%,#020C30 100%);color:#EAF2FF;font-family:Inter,system-ui,sans-serif;font-size:14px}
+.pad{padding:58px 20px 110px;display:flex;flex-direction:column;gap:16px}
+.h{font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.03em;margin:0}
+.k{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#9FB3D1}
+.mut{color:#9FB3D1}
+.card{background:#132B5C;border:1px solid #234480;border-radius:16px;padding:16px}
+.row{display:flex;align-items:center;gap:12px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:14px;border:0;background:#5FE3E8;color:#07163A;font:700 15px Inter,sans-serif;width:100%}
+.btn:hover{color:#07163A;background:#8CF5F8}
+.btn2{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:14px;background:transparent;border:1px solid #5FE3E8;color:#5FE3E8;font:600 15px Inter,sans-serif;width:100%}
+.chip{display:inline-flex;align-items:center;height:34px;padding:0 14px;border-radius:999px;background:#132B5C;border:1px solid #234480;color:#C9D8EE;font:600 13px Inter,sans-serif;white-space:nowrap}
+.chip.on{background:#5FE3E8;color:#07163A;border-color:#5FE3E8}
+.av{width:44px;height:44px;border-radius:12px;background:#234480;display:flex;align-items:center;justify-content:center;font:800 16px 'Saira Condensed',sans-serif;color:#8CF5F8;flex:none}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ib{width:44px;height:44px;border-radius:12px;background:#132B5C;border:1px solid #234480;display:flex;align-items:center;justify-content:center;color:#EAF2FF;flex:none}
+.in{display:flex;flex-direction:column;gap:6px}
+.in input,.in select,.in textarea{height:50px;border-radius:12px;border:1px solid #234480;background:#07163A;color:#EAF2FF;padding:0 14px;font:500 15px Inter,sans-serif}
+.in label{font-size:12px;font-weight:600;color:#9FB3D1}
+.tabs{position:absolute;left:16px;right:16px;bottom:24px;height:64px;border-radius:22px;background:#07163A;border:1px solid #234480;display:flex;align-items:center;justify-content:space-around}
+.tab{width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#9FB3D1;border-radius:14px}
+.tab.on{color:#5FE3E8;background:#132B5C}
+.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.sep{height:1px;background:#234480}
+.sec{display:flex;justify-content:space-between;align-items:baseline}
+.ok{color:#4ADE80}.bad{color:#F87171}
+.tx{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #234480}
+.qa{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#EAF2FF}
+</style>
+</helmet>
+<div class="scr">
+<div class="pad" style="gap: 16px">
+<div class="top"><a class="ib" href="Apps.dc.html" aria-label="Back"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><span class="k">Wallet</span><span style="width: 44px"></span></div>
+<div class="card" style="background: #16346B; border-color: #2CCFD6; display: flex; flex-direction: column; gap: 6px; padding: 22px 20px">
+<span class="k">Your balance</span>
+<div class="row" style="gap: 8px; align-items: baseline"><span class="h" style="font-size: 54px; line-height: 1">2,450</span><span class="h" style="font-size: 22px; color: #5FE3E8">STC</span></div>
+<span class="mut" style="font-size: 13px">+520 STC this month</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<a class="qa" href="Store.dc.html"><span class="ib" style="width: 56px; height: 56px; color: #5FE3E8"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span>Top up</a>
+<button class="qa" style="background: none; border: 0; font: inherit; font-size: 12px; font-weight: 600"><span class="ib" style="width: 56px; height: 56px; color: #5FE3E8"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>Send</button>
+<a class="qa" href="Store.dc.html"><span class="ib" style="width: 56px; height: 56px; color: #5FE3E8"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2"></path></svg></span>Store</a>
+</div>
+<div class="sec"><span class="k">Activity</span><span class="mut" style="font-size: 12px">This month</span></div>
+<div>
+<div class="tx"><div class="ib" style="width: 40px; height: 40px; color: #4ADE80"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0zM12 13v4M8 21h8"></path></svg></div><div style="flex: 1"><b style="font-size: 14px">Objective reward</b><div class="mut" style="font-size: 12px">Play 3 league matches · Today</div></div><b class="ok">+150</b></div>
+<div class="tx"><div class="ib" style="width: 40px; height: 40px; color: #4ADE80"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5l4 2.9-1.5 4.6h-5L8 10.4z"></path></svg></div><div style="flex: 1"><b style="font-size: 14px">Match win bonus</b><div class="mut" style="font-size: 12px">vs Red Foxes · Today</div></div><b class="ok">+70</b></div>
+<div class="tx"><div class="ib" style="width: 40px; height: 40px; color: #F87171"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2"></path></svg></div><div style="flex: 1"><b style="font-size: 14px">Store · Neon boots</b><div class="mut" style="font-size: 12px">27 Oct</div></div><b class="bad">−200</b></div>
+<div class="tx" style="border-bottom: 0"><div class="ib" style="width: 40px; height: 40px; color: #4ADE80"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v10H4zM8 12h8"></path></svg></div><div style="flex: 1"><b style="font-size: 14px">Contract salary</b><div class="mut" style="font-size: 12px">Night Owls FC · 25 Oct</div></div><b class="ok">+300</b></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

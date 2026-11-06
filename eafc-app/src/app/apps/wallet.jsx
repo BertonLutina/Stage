@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
 import { stageClient } from '@/api/stageClient';
-import AppDirectoryScreen, { DirectoryRow, FilterChips } from '@/components/apps/AppDirectoryScreen';
-import { CYAN } from '@/components/profile/gamer/GamerProfileUI';
+import useThemeStore from '@/store/themeStore';
+import { Button, Card, SectionLabel } from '@/components/ui';
+import AppDirectoryScreen, { DirectoryRow } from '@/components/apps/AppDirectoryScreen';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
 import { formatSTC, loadWallet, timeAgo, walletTxLabel } from '@/lib/stageDirectories';
 
 const TX_FILTERS = [
@@ -12,6 +14,7 @@ const TX_FILTERS = [
 ];
 
 export default function WalletScreen() {
+  const tokens = useThemeStore((s) => s.tokens);
   const [wallet, setWallet] = useState(null);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -60,40 +63,52 @@ export default function WalletScreen() {
       emptyIcon="flash-outline"
       emptyText="No transactions yet"
       ListHeaderComponent={(
-        <View style={{ gap: 10, marginBottom: 6 }}>
-          <View style={{
-            borderRadius: 2,
-            borderWidth: 1,
-            borderColor: 'rgba(0,240,255,0.28)',
-            backgroundColor: 'rgba(0,240,255,0.08)',
-            padding: 18,
-          }}
-          >
-            <Text style={{ color: CYAN, fontSize: 11, fontWeight: '900', letterSpacing: 1.4 }}>STC</Text>
-            <Text style={{ color: '#fff', fontSize: 36, fontWeight: '900', marginTop: 4 }}>
-              {formatSTC(wallet?.balance)}
-            </Text>
-            <Text style={{ color: 'rgba(255,255,255,0.5)', marginTop: 6, fontSize: 12 }}>
+        <View style={{ gap: 16, marginBottom: 6 }}>
+          <Card highlight style={{ paddingVertical: 22, paddingHorizontal: 20, gap: 6 }}>
+            <SectionLabel>Your balance</SectionLabel>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.5}
+                style={{
+                  flexShrink: 1,
+                  color: tokens.text,
+                  fontFamily: FONT_EA_SPORTS,
+                  fontSize: 54,
+                  lineHeight: 58,
+                  letterSpacing: 54 * 0.03,
+                  textTransform: 'uppercase',
+                }}
+              >
+                {formatSTC(wallet?.balance)}
+              </Text>
+              <Text
+                style={{
+                  color: tokens.cyan,
+                  fontFamily: FONT_EA_SPORTS,
+                  fontSize: 22,
+                  letterSpacing: 22 * 0.03,
+                  textTransform: 'uppercase',
+                }}
+              >
+                STC
+              </Text>
+            </View>
+            <Text numberOfLines={2} style={{ color: tokens.muted, fontSize: 13 }}>
               Weekly salary {formatSTC(wallet?.weeklySalary)}
               {wallet?.nextSalaryDays != null ? ` · next in ${wallet.nextSalaryDays}d` : ''}
             </Text>
-            <TouchableOpacity
-              onPress={collectSalary}
-              disabled={busy}
-              style={{
-                marginTop: 14,
-                alignSelf: 'flex-start',
-                borderRadius: 12,
-                backgroundColor: CYAN,
-                paddingHorizontal: 14,
-                paddingVertical: 10,
-              }}
-            >
-              <Text style={{ color: '#041018', fontWeight: '800' }}>
-                {busy ? 'Collecting…' : 'Collect salary'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+            <View style={{ marginTop: 12 }}>
+              <Button
+                title={busy ? 'Collecting…' : 'Collect salary'}
+                icon="cash-outline"
+                onPress={collectSalary}
+                disabled={busy}
+              />
+            </View>
+          </Card>
+          <SectionLabel>Activity</SectionLabel>
         </View>
       )}
       renderItem={({ item }) => {
@@ -104,7 +119,7 @@ export default function WalletScreen() {
             subtitle={[walletTxLabel(item.category), timeAgo(item.created_date)].filter(Boolean).join(' · ')}
             fallbackIcon={amount >= 0 ? 'arrow-up-outline' : 'arrow-down-outline'}
             badge={`${amount >= 0 ? '+' : ''}${formatSTC(amount)}`}
-            badgeColor={amount >= 0 ? '#34D399' : '#FB7185'}
+            badgeColor={amount >= 0 ? tokens.success : tokens.danger}
           />
         );
       }}

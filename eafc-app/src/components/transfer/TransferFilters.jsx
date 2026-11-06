@@ -1,44 +1,16 @@
 import React from 'react';
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { headingStyleSm } from '@/lib/fonts';
+import useThemeStore from '@/store/themeStore';
+import { Chip, SectionLabel } from '@/components/ui';
+import DirectorySearchField from '@/components/directory/DirectorySearchField';
 import { PLAYER_POSITIONS, PLATFORMS } from '@/lib/stageDirectories';
-import { SILVER } from './transferHubTheme';
 
 const STATUS_OPTIONS = [
   { id: 'all', label: 'All' },
   { id: 'free_agent', label: 'Free Agent' },
   { id: 'expiring', label: 'Expiring' },
 ];
-
-function Chip({ label, active, onPress }) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.85}
-      style={{
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderWidth: 1,
-        borderColor: active ? 'rgba(248,251,255,0.55)' : 'rgba(255,255,255,0.12)',
-        backgroundColor: active ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.4)',
-      }}
-    >
-      <Text
-        style={[
-          headingStyleSm,
-          {
-            fontSize: 11,
-            color: active ? SILVER : 'rgba(255,255,255,0.55)',
-            letterSpacing: 1,
-          },
-        ]}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
 
 export default function TransferFilters({
   search,
@@ -50,34 +22,20 @@ export default function TransferFilters({
   platform,
   onPlatform,
 }) {
+  const tokens = useThemeStore((s) => s.tokens);
+
   return (
     <View style={{ gap: 14 }}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 10,
-          borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.1)',
-          backgroundColor: 'rgba(0,0,0,0.4)',
-          paddingHorizontal: 12,
-          minHeight: 46,
-        }}
-      >
-        <Ionicons name="search" size={16} color="rgba(255,255,255,0.4)" />
-        <TextInput
-          value={search}
-          onChangeText={onSearch}
-          placeholder="Search gamertag"
-          placeholderTextColor="rgba(255,255,255,0.35)"
-          autoCorrect={false}
-          autoCapitalize="none"
-          style={{ flex: 1, color: '#fff', fontSize: 15, paddingVertical: 10 }}
-        />
-      </View>
+      <DirectorySearchField
+        value={search}
+        onChangeText={onSearch}
+        placeholder="Search gamertag"
+        autoCorrect={false}
+        autoCapitalize="none"
+      />
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-        <Ionicons name="options-outline" size={14} color="rgba(255,255,255,0.4)" />
+        <Ionicons name="options-outline" size={16} color={tokens.muted} />
         {STATUS_OPTIONS.map((opt) => (
           <Chip
             key={opt.id}
@@ -88,10 +46,8 @@ export default function TransferFilters({
         ))}
       </View>
 
-      <View>
-        <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: '700', letterSpacing: 1.4, marginBottom: 8 }}>
-          POSITION
-        </Text>
+      <View style={{ gap: 8 }}>
+        <SectionLabel>POSITION</SectionLabel>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
           {PLAYER_POSITIONS.map((opt) => (
             <Chip
@@ -104,10 +60,8 @@ export default function TransferFilters({
         </ScrollView>
       </View>
 
-      <View>
-        <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: '700', letterSpacing: 1.4, marginBottom: 8 }}>
-          PLATFORM
-        </Text>
+      <View style={{ gap: 8 }}>
+        <SectionLabel>PLATFORM</SectionLabel>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {PLATFORMS.map((opt) => (
             <Chip

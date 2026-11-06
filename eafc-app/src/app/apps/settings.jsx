@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, TextInput, Switch, Modal,
+  View, Text, Pressable, Modal, KeyboardAvoidingView, Platform,
   StatusBar, ActivityIndicator, Linking, Image, Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -49,17 +48,16 @@ import {
   biometricPromptCopy,
 } from '@/services/biometricAuthService';
 import SettingsSection from '@/components/settings/SettingsSection';
+import { SettingsGroup, SettingsRow } from '@/components/settings/SettingsRows';
 import AccountRoleUpgradeSection from '@/components/settings/AccountRoleUpgradeSection';
 import TutorialPopup from '@/components/onboarding/TutorialPopup';
 import { readAccountIntent } from '@/lib/accountIntent';
 import {
-  GamerProfileShell,
-  GlassIconButton,
-  CYAN,
-  useGamerTokens,
-} from '@/components/profile/gamer/GamerProfileUI';
-import { headingStyleLg, headingStyleSm } from '@/lib/fonts';
+  Button, Card, Chip, IconButton, Screen, SegmentedControl, SectionLabel, TextField, Toggle,
+} from '@/components/ui';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
 import { normalizeThemeId } from '@/lib/stageTheme';
+import { CUSTOM_THEME_DEFAULTS } from '@/lib/customThemeDefaults';
 import { SettingsListbox } from '@/components/settings/SettingsListbox';
 import { DASHBOARD_LAYOUTS } from '@/lib/dashboardLayouts';
 import useDashboardLayoutStore from '@/store/dashboardLayoutStore';
@@ -102,56 +100,42 @@ function interpolate(value, vars) {
   );
 }
 
-function Chip({ label, selected, onPress, color }) {
-  const tokens = useGamerTokens();
-  const tint = color || tokens.cyan;
+/** Password input with a show/hide button. Reads its own tokens; every prop is passed explicitly. */
+function PasswordField({ label, value, onChange, placeholder, visible, onToggle }) {
+  const tokens = useThemeStore((s) => s.tokens);
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={{
-        borderRadius: 999,
-        borderWidth: 1,
-        borderColor: selected ? tint : tokens.hairline,
-        backgroundColor: selected ? tokens.tileFill : tokens.inputFill,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-      }}
-    >
-      <Text style={{ color: selected ? tint : tokens.muted, fontWeight: '800', fontSize: 12 }}>
-        {label}
-      </Text>
-    </TouchableOpacity>
+    <TextField
+      label={label}
+      value={value}
+      onChangeText={onChange}
+      placeholder={placeholder}
+      secureTextEntry={!visible}
+      autoCapitalize="none"
+      autoCorrect={false}
+      right={(
+        <Pressable
+          onPress={onToggle}
+          accessibilityRole="button"
+          accessibilityLabel={`${visible ? 'Hide' : 'Show'} ${String(label || 'password').toLowerCase()}`}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Ionicons name={visible ? 'eye-off-outline' : 'eye-outline'} size={22} color={tokens.muted} />
+        </Pressable>
+      )}
+    />
   );
 }
 
-function PasswordField({ label, value, onChange, placeholder, visible, onToggle }) {
-  const tokens = useGamerTokens();
+/** "Label: value" with a minus and a plus button (Live Dark blur / overlay). */
+function FxStepper({ label, minusLabel, plusLabel, onMinus, onPlus }) {
+  const tokens = useThemeStore((s) => s.tokens);
   return (
-    <View style={{ gap: 6 }}>
-      <Text style={{ color: tokens.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1.2 }}>
-        {String(label || '').toUpperCase()}
-      </Text>
-      <View style={{ position: 'relative', justifyContent: 'center' }}>
-        <TextInput
-          value={value}
-          onChangeText={onChange}
-          placeholder={placeholder}
-          placeholderTextColor={tokens.faint}
-          secureTextEntry={!visible}
-          style={{
-            backgroundColor: tokens.inputFill,
-            borderWidth: 1,
-            borderColor: tokens.inputBorder,
-            borderRadius: 12,
-            color: tokens.text,
-            paddingHorizontal: 14,
-            paddingVertical: 12,
-            paddingRight: 44,
-          }}
-        />
-        <TouchableOpacity onPress={onToggle} style={{ position: 'absolute', right: 12, height: '100%', justifyContent: 'center' }}>
-          <Ionicons name={visible ? 'eye-off-outline' : 'eye-outline'} size={18} color={tokens.muted} />
-        </TouchableOpacity>
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+      <Text numberOfLines={1} style={{ flex: 1, color: tokens.textSoft, fontSize: 14 }}>{label}</Text>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <IconButton icon="remove" accessibilityLabel={minusLabel} onPress={onMinus} />
+        <IconButton icon="add" accessibilityLabel={plusLabel} onPress={onPlus} />
       </View>
     </View>
   );
@@ -161,7 +145,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
-  const tokens = useGamerTokens();
+  const tokens = useThemeStore((s) => s.tokens);
   const setStageTheme = useThemeStore((s) => s.setStageTheme);
   const refreshTheme = useThemeStore((s) => s.refresh);
   const [tutorialOpen, setTutorialOpen] = useState(false);
@@ -174,13 +158,13 @@ export default function SettingsScreen() {
   const [saved, setSaved] = useState(false);
   const [timezone, setTimezone] = useState(detectTimezone);
   const [theme, setTheme] = useState(() => normalizeThemeId(localStorage.getItem(THEME_KEY) || 'theme-dark'));
-  const [customPrimaryColor, setCustomPrimaryColor] = useState('#00d4ff');
-  const [customGradientColor, setCustomGradientColor] = useState('#0099ff');
-  const [customBackgroundColor, setCustomBackgroundColor] = useState('#220e0e');
-  const [customBackgroundOpacity, setCustomBackgroundOpacity] = useState(0.95);
-  const [customTextColor, setCustomTextColor] = useState('#ffffff');
-  const [customPrimaryTextColor, setCustomPrimaryTextColor] = useState('#ffffff');
-  const [customSecondaryTextColor, setCustomSecondaryTextColor] = useState('#e0e0e0');
+  const [customPrimaryColor, setCustomPrimaryColor] = useState(CUSTOM_THEME_DEFAULTS.primaryColor);
+  const [customGradientColor, setCustomGradientColor] = useState(CUSTOM_THEME_DEFAULTS.gradientColor);
+  const [customBackgroundColor, setCustomBackgroundColor] = useState(CUSTOM_THEME_DEFAULTS.backgroundColor);
+  const [customBackgroundOpacity, setCustomBackgroundOpacity] = useState(CUSTOM_THEME_DEFAULTS.backgroundOpacity);
+  const [customTextColor, setCustomTextColor] = useState(CUSTOM_THEME_DEFAULTS.textColor);
+  const [customPrimaryTextColor, setCustomPrimaryTextColor] = useState(CUSTOM_THEME_DEFAULTS.primaryTextColor);
+  const [customSecondaryTextColor, setCustomSecondaryTextColor] = useState(CUSTOM_THEME_DEFAULTS.secondaryTextColor);
   const [backgroundImage, setBackgroundImage] = useState(null);
   const [notifSettings, setNotifSettings] = useState(getDefaultNotificationSettings());
   const [player, setPlayer] = useState(null);
@@ -400,386 +384,361 @@ export default function SettingsScreen() {
 
   if (loading) {
     return (
-      <GamerProfileShell>
+      <Screen tabBar={false} scroll={false}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={CYAN} size="large" />
+          <ActivityIndicator color={tokens.cyan} size="large" />
         </View>
-      </GamerProfileShell>
+      </Screen>
     );
   }
 
   return (
-    <GamerProfileShell>
+    <Screen tabBar={false} keyboardAvoiding style={{ gap: 16 }}>
       <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-        <View style={{ paddingHorizontal: 16, paddingTop: 8, flexDirection: 'row', alignItems: 'center' }}>
-          <GlassIconButton icon="arrow-back" onPress={() => router.back()} />
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={[headingStyleSm, { color: tokens.cyan, fontSize: 10, letterSpacing: 2 }]}>STAGE</Text>
-            <Text style={[headingStyleLg, { color: tokens.text, fontSize: 22 }]}>{t('settingsPage.title')}</Text>
-          </View>
-        </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <IconButton icon="chevron-back" accessibilityLabel="Back" onPress={() => router.back()} />
+        <SectionLabel>STAGE</SectionLabel>
+        <View style={{ width: 44, height: 44 }} />
+      </View>
 
-        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 48, gap: 14 }} showsVerticalScrollIndicator={false}>
-          <Text style={{ color: tokens.muted, fontSize: 13, marginTop: -4 }}>
-            {t('settingsPage.subtitle')}
-          </Text>
+      <View style={{ gap: 6 }}>
+        <Text
+          accessibilityRole="header"
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.6}
+          style={{
+            color: tokens.text,
+            fontFamily: FONT_EA_SPORTS,
+            fontSize: 34,
+            letterSpacing: 34 * 0.03,
+            textTransform: 'uppercase',
+          }}
+        >
+          {t('settingsPage.title')}
+        </Text>
+        <Text style={{ color: tokens.muted, fontSize: 14 }}>
+          {t('settingsPage.subtitle')}
+        </Text>
+      </View>
 
-          <AccountRoleUpgradeSection t={t} />
+      <AccountRoleUpgradeSection t={t} />
 
-          <SettingsSection title="Store & wallet" description="STAGE Plus, credit packs, and your STC balance." icon="bag-outline">
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <TouchableOpacity
-                onPress={() => router.push('/apps/store')}
-                style={{ flex: 1, backgroundColor: CYAN, borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}
-              >
-                <Text style={{ color: '#041018', fontWeight: '900' }}>Store</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => router.push('/apps/wallet')}
-                style={{ flex: 1, borderWidth: 1, borderColor: 'rgba(0,240,255,0.35)', borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}
-              >
-                <Text style={{ color: CYAN, fontWeight: '900' }}>Wallet</Text>
-              </TouchableOpacity>
+      <SettingsSection
+        rows
+        title="Store & wallet"
+        description="STAGE Plus, credit packs, and your STC balance."
+        icon="bag-outline"
+      >
+        <SettingsRow icon="bag-outline" title="Store" onPress={() => router.push('/apps/store')} />
+        <SettingsRow icon="wallet-outline" title="Wallet" onPress={() => router.push('/apps/wallet')} />
+      </SettingsSection>
+
+      <SettingsSection
+        rows
+        title="How STAGE works"
+        description="Replay the onboarding tutorial. Same modal as desktop."
+        icon="book-outline"
+      >
+        <SettingsRow icon="book-outline" title="Open tutorial" onPress={() => setTutorialOpen(true)} />
+      </SettingsSection>
+
+      <SettingsSection title={t('settingsPage.languageTitle')} description={t('settingsPage.languageDescription')} icon="globe-outline">
+        <SettingsListbox
+          flush
+          label={t('settingsPage.languageTitle')}
+          value={language}
+          options={DISPLAY_LANGUAGES.map((lang) => ({
+            id: lang.value,
+            label: `${lang.flag} ${lang.nativeLabel}`,
+            description: lang.label,
+            disabled: !lang.enabled,
+          }))}
+          onChange={(id) => setLanguage(id)}
+        />
+        <SettingsListbox
+          flush
+          label="Timezone"
+          value={timezone}
+          options={[
+            ...TIMEZONES.map((zone) => ({ id: zone.value, label: zone.label, description: zone.value })),
+            ...(!TIMEZONES.some((zone) => zone.value === timezone) && timezone
+              ? [{ id: timezone, label: timezone }]
+              : []),
+          ]}
+          onChange={(id) => setTimezone(id)}
+        />
+        <Text style={{ color: tokens.muted, fontSize: 12, lineHeight: 16 }}>
+          Match times use this timezone. Brussels automatically switches between CET and CEST.
+        </Text>
+      </SettingsSection>
+
+      <SettingsSection title={t('settingsPage.stgAppTheme')} description={t('settingsPage.stgAppThemeDesc')} icon="color-palette-outline">
+        <SegmentedControl
+          accessibilityLabel={t('settingsPage.stgAppTheme')}
+          options={THEMES.map((item) => ({ key: item.id, label: t(`settingsPage.${item.labelKey}`) }))}
+          value={theme}
+          onChange={(id) => applyThemeId(id)}
+        />
+
+        {theme === 'theme-video' ? (
+          <View style={{ marginTop: 6, gap: 12 }}>
+            <View style={{ gap: 4 }}>
+              <Text style={{ color: tokens.text, fontSize: 15, fontWeight: '600' }}>{t('settingsPage.stgLiveDarkBgTitle')}</Text>
+              <Text style={{ color: tokens.muted, fontSize: 12, lineHeight: 16 }}>{t('settingsPage.stgLiveDarkBgDesc')}</Text>
             </View>
-          </SettingsSection>
-
-          <SettingsSection
-            title="How STAGE works"
-            description="Replay the onboarding tutorial. Same modal as desktop."
-            icon="book-outline"
-          >
-            <TouchableOpacity
-              onPress={() => setTutorialOpen(true)}
-              style={{
-                backgroundColor: CYAN,
-                borderRadius: 12,
-                paddingVertical: 13,
-                alignItems: 'center',
+            <SettingsListbox
+              flush
+              value={liveDarkBg}
+              title={t('settingsPage.stgLiveDarkBgTitle')}
+              options={LIVE_DARK_BG_OPTIONS.map((opt) => ({
+                id: opt.id,
+                label: t(`settingsPage.${opt.labelKey}`),
+                description: opt.descKey ? t(`settingsPage.${opt.descKey}`) : undefined,
+              }))}
+              onChange={(id) => {
+                setLiveDarkBg(setLiveDarkBgPreference(id));
+                refreshTheme();
               }}
-            >
-              <Text style={{ color: '#041018', fontWeight: '900' }}>Open tutorial</Text>
-            </TouchableOpacity>
-          </SettingsSection>
-
-          <SettingsSection title={t('settingsPage.languageTitle')} description={t('settingsPage.languageDescription')} icon="globe-outline">
-            <SettingsListbox
-              label={t('settingsPage.languageTitle')}
-              value={language}
-              options={DISPLAY_LANGUAGES.map((lang) => ({
-                id: lang.value,
-                label: `${lang.flag} ${lang.nativeLabel}`,
-                description: lang.label,
-                disabled: !lang.enabled,
-              }))}
-              onChange={(id) => setLanguage(id)}
             />
-            <SettingsListbox
-              label="Timezone"
-              value={timezone}
-              options={[
-                ...TIMEZONES.map((zone) => ({ id: zone.value, label: zone.label, description: zone.value })),
-                ...(!TIMEZONES.some((zone) => zone.value === timezone) && timezone
-                  ? [{ id: timezone, label: timezone }]
-                  : []),
-              ]}
-              onChange={(id) => setTimezone(id)}
-            />
-            <Text style={{ color: tokens.faint, fontSize: 11, marginTop: -4, lineHeight: 16 }}>
-              Match times use this timezone. Brussels automatically switches between CET and CEST.
+            <Text style={{ color: tokens.muted, fontSize: 12, lineHeight: 16 }}>
+              {t('settingsPage.stgLiveDarkUploadsDesc', { count: filledUploadCount(liveDarkSlots), max: LIVE_DARK_MAX_UPLOADS })}
             </Text>
-          </SettingsSection>
-
-          <SettingsSection title={t('settingsPage.stgAppTheme')} description={t('settingsPage.stgAppThemeDesc')} icon="color-palette-outline">
-            <SettingsListbox
-              label={t('settingsPage.stgAppTheme')}
-              value={theme}
-              options={THEMES.map((item) => ({
-                id: item.id,
-                label: t(`settingsPage.${item.labelKey}`),
-              }))}
-              onChange={(id) => applyThemeId(id)}
-            />
-
-            {theme === 'theme-video' ? (
-              <View style={{ marginTop: 14, gap: 12 }}>
-                <Text style={{ color: tokens.text, fontWeight: '800' }}>{t('settingsPage.stgLiveDarkBgTitle')}</Text>
-                <Text style={{ color: tokens.muted, fontSize: 12 }}>{t('settingsPage.stgLiveDarkBgDesc')}</Text>
-                <SettingsListbox
-                  value={liveDarkBg}
-                  title={t('settingsPage.stgLiveDarkBgTitle')}
-                  options={LIVE_DARK_BG_OPTIONS.map((opt) => ({
-                    id: opt.id,
-                    label: t(`settingsPage.${opt.labelKey}`),
-                    description: opt.descKey ? t(`settingsPage.${opt.descKey}`) : undefined,
-                  }))}
-                  onChange={(id) => {
-                    setLiveDarkBg(setLiveDarkBgPreference(id));
-                    refreshTheme();
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {liveDarkSlots.map((src, index) => (
+                <Pressable
+                  key={`slot-${index}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={src ? `Use upload ${index + 1} as background` : `Upload background ${index + 1}`}
+                  onPress={() => (src ? setLiveDarkBg(setLiveDarkBgPreference(`custom-${index}`)) : handleLiveDarkUpload(index))}
+                  onLongPress={() => src && (clearLiveDarkUpload(index), setLiveDarkSlots(getLiveDarkUploadSlots()), setLiveDarkBg(getLiveDarkBgPreference()))}
+                  style={{
+                    flex: 1,
+                    aspectRatio: 1,
+                    minHeight: 44,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: liveDarkBg === `custom-${index}` ? tokens.cyan : tokens.border,
+                    overflow: 'hidden',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: tokens.bgDeep,
                   }}
-                />
-                <Text style={{ color: tokens.muted, fontSize: 12 }}>
-                  {t('settingsPage.stgLiveDarkUploadsDesc', { count: filledUploadCount(liveDarkSlots), max: LIVE_DARK_MAX_UPLOADS })}
-                </Text>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  {liveDarkSlots.map((src, index) => (
-                    <TouchableOpacity
-                      key={`slot-${index}`}
-                      onPress={() => (src ? setLiveDarkBg(setLiveDarkBgPreference(`custom-${index}`)) : handleLiveDarkUpload(index))}
-                      onLongPress={() => src && (clearLiveDarkUpload(index), setLiveDarkSlots(getLiveDarkUploadSlots()), setLiveDarkBg(getLiveDarkBgPreference()))}
-                      style={{
-                        flex: 1,
-                        aspectRatio: 1,
-                        borderRadius: 12,
-                        borderWidth: 1,
-                        borderColor: liveDarkBg === `custom-${index}` ? tokens.cyan : tokens.hairline,
-                        overflow: 'hidden',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: tokens.inputFill,
-                      }}
-                    >
-                      {src ? (
-                        <Image source={{ uri: src }} style={{ width: '100%', height: '100%' }} />
-                      ) : (
-                        <Text style={{ color: tokens.faint, fontSize: 10, textAlign: 'center' }}>
-                          {liveDarkUploading ? t('settingsPage.stgLiveDarkUploading') : t('settingsPage.stgLiveDarkSlotEmpty', { n: index + 1 })}
-                        </Text>
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ color: tokens.muted }}>{t('settingsPage.stgLiveDarkBlur')}: {Math.round(liveDarkFx.blur)}px</Text>
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <Chip label="-" selected={false} onPress={() => { setLiveDarkFxState(setLiveDarkFx({ blur: liveDarkFx.blur - 2 })); refreshTheme(); }} />
-                    <Chip label="+" selected={false} onPress={() => { setLiveDarkFxState(setLiveDarkFx({ blur: liveDarkFx.blur + 2 })); refreshTheme(); }} />
-                  </View>
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ color: tokens.muted }}>{t('settingsPage.stgLiveDarkOverlay')}: {Math.round(liveDarkFx.overlay * 100)}%</Text>
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <Chip label="-" selected={false} onPress={() => { setLiveDarkFxState(setLiveDarkFx({ overlay: liveDarkFx.overlay - 0.05 })); refreshTheme(); }} />
-                    <Chip label="+" selected={false} onPress={() => { setLiveDarkFxState(setLiveDarkFx({ overlay: liveDarkFx.overlay + 0.05 })); refreshTheme(); }} />
-                  </View>
-                </View>
-              </View>
-            ) : null}
-          </SettingsSection>
-
-          <SettingsSection
-            title="Home layout"
-            description="Choose how Command Center is arranged. Change it anytime here."
-            icon="grid-outline"
-          >
-            <SettingsListbox
-              label="Home layout"
-              value={homeLayout}
-              options={DASHBOARD_LAYOUTS.map((item) => ({
-                id: item.id,
-                label: `${item.id} · ${item.name}`,
-                description: item.blurb,
-              }))}
-              onChange={(id) => setHomeLayout(id)}
-            />
-          </SettingsSection>
-
-          <SettingsSection title={t('settingsPage.stgAccountSecurity')} description={t('settingsPage.stgAccountSecurityDesc')} icon="lock-closed-outline">
-            {biometricAvailable ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <Text style={{ color: tokens.text, fontWeight: '700' }}>{bioLabel}</Text>
-                <Switch
-                  value={biometricEnabled}
-                  onValueChange={async (next) => {
-                    setBiometricEnabledState(next);
-                    await setBiometricEnabled(next);
-                  }}
-                  trackColor={{ false: 'rgba(255,255,255,0.15)', true: CYAN }}
-                  thumbColor="#fff"
-                />
-              </View>
-            ) : null}
-            {!showPasswordForm ? (
-              <TouchableOpacity
-                onPress={() => setShowPasswordForm(true)}
-                style={{ borderWidth: 1, borderColor: 'rgba(0,240,255,0.3)', borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}
-              >
-                <Text style={{ color: CYAN, fontWeight: '800' }}>{t('settingsPage.stgChangePassword')}</Text>
-              </TouchableOpacity>
-            ) : (
-              <View style={{ gap: 10 }}>
-                <PasswordField label={t('settingsPage.stgCurrentPassword')} value={currentPassword} onChange={setCurrentPassword} placeholder={t('settingsPage.stgEnterCurrentPassword')} visible={showCurrentPass} onToggle={() => setShowCurrentPass((v) => !v)} />
-                <PasswordField label={t('settingsPage.stgNewPassword')} value={newPassword} onChange={setNewPassword} placeholder={t('settingsPage.stgEnterNewPassword')} visible={showNewPass} onToggle={() => setShowNewPass((v) => !v)} />
-                <PasswordField label={t('settingsPage.stgConfirmPassword')} value={confirmPassword} onChange={setConfirmPassword} placeholder={t('settingsPage.stgConfirmNewPassword')} visible={showConfirmPass} onToggle={() => setShowConfirmPass((v) => !v)} />
-                {passwordMessage ? (
-                  <Text style={{ color: passwordMessage.includes('success') ? '#34D399' : '#FB7185', fontSize: 12 }}>{passwordMessage}</Text>
-                ) : null}
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <TouchableOpacity
-                    onPress={handleChangePassword}
-                    disabled={passwordLoading || !currentPassword || !newPassword || !confirmPassword}
-                    style={{ flex: 1, backgroundColor: CYAN, borderRadius: 12, paddingVertical: 12, alignItems: 'center', opacity: passwordLoading ? 0.6 : 1 }}
-                  >
-                    <Text style={{ color: '#041018', fontWeight: '900' }}>
-                      {passwordLoading ? t('settingsPage.stgUpdating') : t('settingsPage.stgUpdatePassword')}
+                >
+                  {src ? (
+                    <Image source={{ uri: src }} style={{ width: '100%', height: '100%' }} />
+                  ) : (
+                    <Text numberOfLines={3} style={{ color: tokens.muted, fontSize: 11, textAlign: 'center', paddingHorizontal: 4 }}>
+                      {liveDarkUploading ? t('settingsPage.stgLiveDarkUploading') : t('settingsPage.stgLiveDarkSlotEmpty', { n: index + 1 })}
                     </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => { setShowPasswordForm(false); setPasswordMessage(''); }}
-                    style={{ flex: 1, borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)', borderRadius: 12, paddingVertical: 12, alignItems: 'center' }}
-                  >
-                    <Text style={{ color: tokens.text, fontWeight: '800' }}>Cancel</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-          </SettingsSection>
+                  )}
+                </Pressable>
+              ))}
+            </View>
+            <FxStepper
+              label={`${t('settingsPage.stgLiveDarkBlur')}: ${Math.round(liveDarkFx.blur)}px`}
+              minusLabel="Decrease blur"
+              plusLabel="Increase blur"
+              onMinus={() => { setLiveDarkFxState(setLiveDarkFx({ blur: liveDarkFx.blur - 2 })); refreshTheme(); }}
+              onPlus={() => { setLiveDarkFxState(setLiveDarkFx({ blur: liveDarkFx.blur + 2 })); refreshTheme(); }}
+            />
+            <FxStepper
+              label={`${t('settingsPage.stgLiveDarkOverlay')}: ${Math.round(liveDarkFx.overlay * 100)}%`}
+              minusLabel="Decrease overlay"
+              plusLabel="Increase overlay"
+              onMinus={() => { setLiveDarkFxState(setLiveDarkFx({ overlay: liveDarkFx.overlay - 0.05 })); refreshTheme(); }}
+              onPlus={() => { setLiveDarkFxState(setLiveDarkFx({ overlay: liveDarkFx.overlay + 0.05 })); refreshTheme(); }}
+            />
+          </View>
+        ) : null}
+      </SettingsSection>
 
-          <SettingsSection title={t('nav.discord') || 'Community'} description={t('settingsPage.stgCommunityDesc')} icon="logo-discord">
-            <TouchableOpacity
-              onPress={() => DISCORD_INVITE_URL && Linking.openURL(DISCORD_INVITE_URL)}
-              style={{ backgroundColor: '#5865F2', borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}
-            >
-              <Text style={{ color: '#fff', fontWeight: '900' }}>Join Discord</Text>
-            </TouchableOpacity>
-          </SettingsSection>
+      <SettingsSection
+        title="Home layout"
+        description="Choose how Command Center is arranged. Change it anytime here."
+        icon="grid-outline"
+      >
+        <SettingsListbox
+          flush
+          label="Home layout"
+          value={homeLayout}
+          options={DASHBOARD_LAYOUTS.map((item) => ({
+            id: item.id,
+            label: `${item.id} · ${item.name}`,
+            description: item.blurb,
+          }))}
+          onChange={(id) => setHomeLayout(id)}
+        />
+      </SettingsSection>
 
-          {NOTIFICATION_CHANNELS.map((channel) => (
-            <SettingsSection
-              key={channel.key}
-              title={channel.label}
-              description={channel.description}
-              icon={channel.key === 'email' ? 'mail-outline' : channel.key === 'mobile' ? 'phone-portrait-outline' : 'notifications-outline'}
-              action={notifSaving ? <Text style={{ color: tokens.muted, fontSize: 11 }}>Saving...</Text> : null}
-            >
-              {channel.key === 'push' ? (
-                <View style={{ marginBottom: 12 }}>
-                  <NotificationPushSection
-                    status={pushStatus}
-                    busy={pushBusy}
-                    onToggle={handleTogglePhonePush}
-                    embedded
-                  />
-                </View>
-              ) : null}
-              <NotificationChannelSwitches
-                settings={notifSettings}
-                channel={channel.key}
-                onToggle={handleToggleNotif}
+      <SettingsSection title={t('settingsPage.stgAccountSecurity')} description={t('settingsPage.stgAccountSecurityDesc')} icon="lock-closed-outline">
+        {biometricAvailable ? (
+          <SettingsRow
+            icon="finger-print-outline"
+            title={bioLabel}
+            right={(
+              <Toggle
+                value={biometricEnabled}
+                accessibilityLabel={bioLabel}
+                onValueChange={async (next) => {
+                  setBiometricEnabledState(next);
+                  await setBiometricEnabled(next);
+                }}
               />
-              {channel.key === 'mobile' ? (
-                <View style={{ marginTop: 12, gap: 8 }}>
-                  <TouchableOpacity
-                    onPress={() => TEST_TOAST_SAMPLES.forEach((row) => showToast(row.message))}
-                    style={{
-                      borderWidth: 1,
-                      borderColor: 'rgba(0,240,255,0.35)',
-                      borderRadius: 12,
-                      paddingVertical: 12,
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Text style={{ color: CYAN, fontWeight: '800' }}>Send all test toasts</Text>
-                  </TouchableOpacity>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                    {TEST_TOAST_SAMPLES.map((row) => (
-                      <TouchableOpacity
-                        key={row.key}
-                        onPress={() => showToast(row.message)}
-                        style={{
-                          borderWidth: 1,
-                          borderColor: 'rgba(255,255,255,0.14)',
-                          borderRadius: 999,
-                          paddingHorizontal: 12,
-                          paddingVertical: 8,
-                        }}
-                      >
-                        <Text style={{ color: tokens.text, fontSize: 11, fontWeight: '800' }}>{row.label}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-              ) : null}
-            </SettingsSection>
-          ))}
+            )}
+          />
+        ) : null}
+        {!showPasswordForm ? (
+          <Button
+            variant="secondary"
+            icon="key-outline"
+            title={t('settingsPage.stgChangePassword')}
+            onPress={() => setShowPasswordForm(true)}
+          />
+        ) : (
+          <View style={{ gap: 12 }}>
+            <PasswordField label={t('settingsPage.stgCurrentPassword')} value={currentPassword} onChange={setCurrentPassword} placeholder={t('settingsPage.stgEnterCurrentPassword')} visible={showCurrentPass} onToggle={() => setShowCurrentPass((v) => !v)} />
+            <PasswordField label={t('settingsPage.stgNewPassword')} value={newPassword} onChange={setNewPassword} placeholder={t('settingsPage.stgEnterNewPassword')} visible={showNewPass} onToggle={() => setShowNewPass((v) => !v)} />
+            <PasswordField label={t('settingsPage.stgConfirmPassword')} value={confirmPassword} onChange={setConfirmPassword} placeholder={t('settingsPage.stgConfirmNewPassword')} visible={showConfirmPass} onToggle={() => setShowConfirmPass((v) => !v)} />
+            {passwordMessage ? (
+              <Text
+                accessibilityRole="alert"
+                style={{ color: passwordMessage.includes('success') ? tokens.success : tokens.danger, fontSize: 12 }}
+              >
+                {passwordMessage}
+              </Text>
+            ) : null}
+            <Button
+              title={passwordLoading ? t('settingsPage.stgUpdating') : t('settingsPage.stgUpdatePassword')}
+              onPress={handleChangePassword}
+              disabled={passwordLoading || !currentPassword || !newPassword || !confirmPassword}
+            />
+            <Button
+              variant="secondary"
+              title="Cancel"
+              onPress={() => { setShowPasswordForm(false); setPasswordMessage(''); }}
+            />
+          </View>
+        )}
+      </SettingsSection>
 
-          <TouchableOpacity
-            onPress={handleSave}
-            disabled={saving}
-            style={{ backgroundColor: tokens.cyan, borderRadius: 12, paddingVertical: 14, alignItems: 'center', opacity: saving ? 0.6 : 1 }}
-          >
-            <Text style={{ color: tokens.primaryText, fontWeight: '900', letterSpacing: 0.8 }}>
-              {saving ? t('settingsPage.saving') : saved ? t('settingsPage.saved') : t('settingsPage.saveChanges')}
-            </Text>
-          </TouchableOpacity>
+      <SettingsSection title={t('nav.discord') || 'Community'} description={t('settingsPage.stgCommunityDesc')} icon="logo-discord">
+        <Button
+          variant="secondary"
+          icon="logo-discord"
+          title="Join Discord"
+          onPress={() => DISCORD_INVITE_URL && Linking.openURL(DISCORD_INVITE_URL)}
+        />
+      </SettingsSection>
 
-          <TouchableOpacity
-            onPress={async () => {
-              await logout();
-              router.replace('/auth/loginscreen');
-            }}
-            style={{ borderWidth: 1, borderColor: 'rgba(245,158,11,0.4)', borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}
-          >
-            <Text style={{ color: '#F59E0B', fontWeight: '900' }}>{t('settingsPage.stgSignOut')}</Text>
-          </TouchableOpacity>
+      {NOTIFICATION_CHANNELS.map((channel) => (
+        <SettingsSection
+          key={channel.key}
+          title={channel.label}
+          description={channel.description}
+          icon={channel.key === 'email' ? 'mail-outline' : channel.key === 'mobile' ? 'phone-portrait-outline' : 'notifications-outline'}
+          action={notifSaving ? <Text style={{ color: tokens.muted, fontSize: 11 }}>Saving...</Text> : null}
+        >
+          {channel.key === 'push' ? (
+            <NotificationPushSection
+              status={pushStatus}
+              busy={pushBusy}
+              onToggle={handleTogglePhonePush}
+              embedded
+            />
+          ) : null}
+          <NotificationChannelSwitches
+            settings={notifSettings}
+            channel={channel.key}
+            onToggle={handleToggleNotif}
+          />
+          {channel.key === 'mobile' ? (
+            <View style={{ gap: 12 }}>
+              <Button
+                variant="secondary"
+                title="Send all test toasts"
+                onPress={() => TEST_TOAST_SAMPLES.forEach((row) => showToast(row.message))}
+              />
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {TEST_TOAST_SAMPLES.map((row) => (
+                  <Chip key={row.key} label={row.label} onPress={() => showToast(row.message)} />
+                ))}
+              </View>
+            </View>
+          ) : null}
+        </SettingsSection>
+      ))}
 
-          <SettingsSection title={t('settingsPage.stgDangerZone')} description={t('settingsPage.stgDangerZoneDesc')} icon="warning-outline">
-            <TouchableOpacity
-              onPress={() => setDeleteOpen(true)}
-              style={{ borderWidth: 1, borderColor: 'rgba(244,63,94,0.4)', borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}
-            >
-              <Text style={{ color: '#FB7185', fontWeight: '900' }}>{t('settingsPage.stgDeleteAccount')}</Text>
-            </TouchableOpacity>
-          </SettingsSection>
-        </ScrollView>
-      </SafeAreaView>
+      <Button
+        title={saving ? t('settingsPage.saving') : saved ? t('settingsPage.saved') : t('settingsPage.saveChanges')}
+        onPress={handleSave}
+        disabled={saving}
+      />
+
+      <SettingsGroup>
+        <SettingsRow
+          danger
+          chevron={false}
+          icon="log-out-outline"
+          title={t('settingsPage.stgSignOut')}
+          onPress={async () => {
+            await logout();
+            router.replace('/auth/loginscreen');
+          }}
+        />
+      </SettingsGroup>
+
+      <SettingsSection title={t('settingsPage.stgDangerZone')} description={t('settingsPage.stgDangerZoneDesc')} icon="warning-outline">
+        <Button
+          variant="danger"
+          icon="trash-outline"
+          title={t('settingsPage.stgDeleteAccount')}
+          onPress={() => setDeleteOpen(true)}
+        />
+      </SettingsSection>
 
       <Modal visible={deleteOpen} transparent animationType="fade" onRequestClose={() => setDeleteOpen(false)}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 24 }}>
-          <View style={{ backgroundColor: '#111827', borderRadius: 16, padding: 18, borderWidth: 1, borderColor: 'rgba(244,63,94,0.3)' }}>
-            <Text style={{ color: '#FB7185', fontWeight: '900', fontSize: 16 }}>{t('settingsPage.stgDeleteAccount')}</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.6)', marginTop: 8, lineHeight: 18 }}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1, backgroundColor: tokens.overlay, justifyContent: 'center', padding: 24 }}
+        >
+          <Card solid style={{ gap: 12, borderColor: tokens.danger }}>
+            <Text numberOfLines={2} style={{ color: tokens.danger, fontWeight: '700', fontSize: 17 }}>
+              {t('settingsPage.stgDeleteAccount')}
+            </Text>
+            <Text style={{ color: tokens.textSoft, fontSize: 14, lineHeight: 20 }}>
               {t('settingsPage.stgDeleteWarning')} {t('settingsPage.stgCannotUndo')}
             </Text>
-            <Text style={{ color: 'rgba(255,255,255,0.5)', marginTop: 12 }}>{t('settingsPage.stgTypeToConfirm')}</Text>
-            <TextInput
+            <Text style={{ color: tokens.muted, fontSize: 13 }}>{t('settingsPage.stgTypeToConfirm')}</Text>
+            <TextField
               value={deleteConfirm}
               onChangeText={setDeleteConfirm}
               placeholder={t('settingsPage.stgTypeDelete')}
-              placeholderTextColor="rgba(255,255,255,0.35)"
+              accessibilityLabel={t('settingsPage.stgTypeToConfirm')}
               autoCapitalize="characters"
-              style={{
-                marginTop: 8,
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.14)',
-                borderRadius: 10,
-                color: '#fff',
-                paddingHorizontal: 12,
-                paddingVertical: 10,
-              }}
             />
-            <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
-              <TouchableOpacity onPress={() => { setDeleteOpen(false); setDeleteConfirm(''); }} style={{ flex: 1, borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)', borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}>
-                <Text style={{ color: '#fff', fontWeight: '800' }}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+            <View style={{ gap: 10, marginTop: 4 }}>
+              <Button
+                variant="secondary"
+                title="Cancel"
+                onPress={() => { setDeleteOpen(false); setDeleteConfirm(''); }}
+              />
+              <Button
+                variant="danger"
+                icon="trash-outline"
+                title={deleting ? t('settingsPage.stgDeleting') : t('settingsPage.stgDeleteMyAccount')}
                 onPress={handleDelete}
                 disabled={deleteConfirm !== 'DELETE' || deleting}
-                style={{ flex: 1, backgroundColor: '#FB7185', borderRadius: 10, paddingVertical: 12, alignItems: 'center', opacity: deleteConfirm === 'DELETE' ? 1 : 0.4 }}
-              >
-                <Text style={{ color: '#1A0508', fontWeight: '900' }}>
-                  {deleting ? t('settingsPage.stgDeleting') : t('settingsPage.stgDeleteMyAccount')}
-                </Text>
-              </TouchableOpacity>
+              />
             </View>
-          </View>
-        </View>
+          </Card>
+        </KeyboardAvoidingView>
       </Modal>
       <TutorialPopup
         open={tutorialOpen}
         onClose={() => setTutorialOpen(false)}
         intent={readAccountIntent(user?.id)}
       />
-    </GamerProfileShell>
+    </Screen>
   );
 }

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { stageClient } from '@/api/stageClient';
-import { FUT } from '@/components/dashboard/CommandCenterUI';
+import useThemeStore from '@/store/themeStore';
+import { Button, Card, SectionLabel, TextField } from '@/components/ui';
 import {
   actorFromProfile,
   canConfirmMatchCancel,
@@ -12,6 +13,7 @@ import {
 } from '@/lib/matchFixtureLifecycle';
 
 export default function GameDayFixtureActions({ game, user, myPlayer, myClub, isMyMatch, onGameUpdate }) {
+  const tokens = useThemeStore((st) => st.tokens);
   const [loading, setLoading] = useState(null);
   const [error, setError] = useState('');
   const [showReschedule, setShowReschedule] = useState(false);
@@ -53,72 +55,63 @@ export default function GameDayFixtureActions({ game, user, myPlayer, myClub, is
   };
 
   return (
-    <View style={card}>
-      <Text style={title}>FIXTURE</Text>
+    <Card style={{ gap: 12 }}>
+      <SectionLabel>FIXTURE</SectionLabel>
       {waiting ? (
-        <Text style={{ color: FUT.gold, fontSize: 12, marginTop: 8 }}>
+        <Text style={{ color: tokens.warning, fontSize: 13 }}>
           Waiting for your opponent to confirm the cancel.
         </Text>
       ) : null}
       {canConfirm ? (
-        <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
           <Action label="Confirm cancel" loading={loading === 'confirm_cancel'} onPress={() => invoke('confirm_cancel')} tone="bad" />
           <Action label="Keep match" loading={loading === 'decline_cancel'} onPress={() => invoke('decline_cancel')} tone="good" />
         </View>
       ) : null}
       {canReschedule && showReschedule ? (
-        <View style={{ gap: 8, marginTop: 10 }}>
-          <TextInput value={newDate} onChangeText={setNewDate} placeholder="YYYY-MM-DD" placeholderTextColor="rgba(255,255,255,0.35)" style={input} />
-          <TextInput value={newTime} onChangeText={setNewTime} placeholder="HH:MM" placeholderTextColor="rgba(255,255,255,0.35)" style={input} />
+        <View style={{ gap: 10 }}>
+          <TextField
+            accessibilityLabel="New date"
+            value={newDate}
+            onChangeText={setNewDate}
+            placeholder="YYYY-MM-DD"
+          />
+          <TextField
+            accessibilityLabel="New time"
+            value={newTime}
+            onChangeText={setNewTime}
+            placeholder="HH:MM"
+          />
           <Action
             label={loading === 'request_reschedule' ? 'Sending…' : 'Send proposal'}
             loading={loading === 'request_reschedule'}
             onPress={() => invoke('request_reschedule', { new_date: newDate, new_time: newTime })}
-            tone="warn"
+            tone="good"
+            inRow={false}
           />
         </View>
       ) : null}
-      <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-        {canReschedule && !showReschedule ? (
-          <Action label="Change time" loading={false} onPress={() => setShowReschedule(true)} tone="warn" />
-        ) : null}
-        {canRequest ? (
-          <Action label={loading === 'request_cancel' ? 'Sending…' : 'Cancel game'} loading={loading === 'request_cancel'} onPress={() => invoke('request_cancel')} tone="bad" />
-        ) : null}
-      </View>
-      {error ? <Text style={{ color: FUT.rose, fontSize: 11, marginTop: 8 }}>{error}</Text> : null}
+      {(canReschedule && !showReschedule) || canRequest ? (
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          {canReschedule && !showReschedule ? (
+            <Action label="Change time" loading={false} onPress={() => setShowReschedule(true)} tone="warn" />
+          ) : null}
+          {canRequest ? (
+            <Action label={loading === 'request_cancel' ? 'Sending…' : 'Cancel game'} loading={loading === 'request_cancel'} onPress={() => invoke('request_cancel')} tone="bad" />
+          ) : null}
+        </View>
+      ) : null}
+      {error ? <Text style={{ color: tokens.danger, fontSize: 12 }}>{error}</Text> : null}
+    </Card>
+  );
+}
+
+/** good = main action (filled), warn = neutral (outlined), bad = destructive (red outline). */
+function Action({ label, loading, onPress, tone, inRow = true }) {
+  const variant = tone === 'bad' ? 'danger' : tone === 'warn' ? 'secondary' : 'primary';
+  return (
+    <View style={inRow ? { flex: 1, minWidth: 0 } : undefined}>
+      <Button title={label} variant={variant} loading={loading} onPress={onPress} />
     </View>
   );
 }
-
-function Action({ label, loading, onPress, tone }) {
-  const bg = tone === 'good' ? 'rgba(124,255,107,0.16)' : tone === 'bad' ? 'rgba(255,77,109,0.14)' : 'rgba(255,210,74,0.14)';
-  const border = tone === 'good' ? 'rgba(124,255,107,0.4)' : tone === 'bad' ? 'rgba(255,77,109,0.35)' : 'rgba(255,210,74,0.4)';
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={loading}
-      style={{ flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center', backgroundColor: bg, borderWidth: 1, borderColor: border }}
-    >
-      {loading ? <ActivityIndicator color="#fff" /> : <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>{label}</Text>}
-    </TouchableOpacity>
-  );
-}
-
-const card = {
-  backgroundColor: 'rgba(255,255,255,0.04)',
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.1)',
-  borderRadius: 2,
-  padding: 14,
-};
-
-const title = { color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: '900', letterSpacing: 1.2 };
-const input = {
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.12)',
-  borderRadius: 10,
-  color: '#fff',
-  paddingHorizontal: 10,
-  paddingVertical: 8,
-};

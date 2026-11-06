@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator,
+  View, Text, ScrollView, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import useThemeStore from '@/store/themeStore';
+import { Avatar, Button, Card, IconButton } from '@/components/ui';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
 import {
   getEffectiveInboxActionType,
+  inboxTypeLabel,
   inboxMessageNeedsAction,
   inboxMessageIsActioned,
   senderInitials,
@@ -13,8 +17,6 @@ import {
 } from '@/lib/inboxHelpers';
 import { deleteInboxMessage, respondToInboxMessage } from '@/lib/inboxData';
 import DateTimeZoneFields from '@/components/matches/DateTimeZoneFields';
-import { CYAN, AMBER } from '@/components/profile/gamer/GamerProfileUI';
-import { FUT } from '@/components/dashboard/CommandCenterUI';
 import InboxLoanCard from '@/components/inbox/InboxLoanCard';
 
 const LOAN_TYPES = ['loan_proposal', 'loan_early_end', 'loan_purchase', 'loan_recalled', 'loan_terminated_early'];
@@ -33,6 +35,7 @@ export default function InboxMessageDetail({
   onStatusChanged,
   onBack,
 }) {
+  const tokens = useThemeStore((st) => st.tokens);
   const [loading, setLoading] = useState(null);
   const [error, setError] = useState('');
   const [showReschedule, setShowReschedule] = useState(false);
@@ -42,7 +45,7 @@ export default function InboxMessageDetail({
   if (!message) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: 'rgba(255,255,255,0.45)' }}>Message unavailable</Text>
+        <Text style={{ color: tokens.muted }}>Message unavailable</Text>
       </View>
     );
   }
@@ -104,63 +107,143 @@ export default function InboxMessageDetail({
     ]);
   };
 
+  const senderName = message.is_system ? 'STAGE' : (message.sender_gamertag || 'Unknown');
+  const showActions = showGenericActions || showContractActions || showScheduleActions || showTrialActions;
+
   return (
     <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={onBack} hitSlop={10} style={styles.iconBtn}>
-          <Ionicons name="arrow-back" size={20} color="#fff" />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }} />
-        <TouchableOpacity onPress={onDelete} hitSlop={10} style={styles.iconBtn}>
-          <Ionicons name="trash-outline" size={18} color="rgba(255,255,255,0.65)" />
-        </TouchableOpacity>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <IconButton icon="arrow-back" accessibilityLabel="Back" onPress={onBack} />
+        <Text
+          numberOfLines={1}
+          style={{
+            flex: 1,
+            textAlign: 'center',
+            color: tokens.muted,
+            fontSize: 11,
+            fontWeight: '600',
+            letterSpacing: 11 * 0.12,
+            textTransform: 'uppercase',
+          }}
+        >
+          {inboxTypeLabel(message.message_type)}
+        </Text>
+        <IconButton icon="trash-outline" accessibilityLabel="Delete message" onPress={onDelete} />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
-        <Text style={styles.subject}>{message.subject || '(No subject)'}</Text>
-
-        <View style={styles.senderBlock}>
-          {message.sender_avatar_url && !message.is_system ? (
-            <Image source={{ uri: message.sender_avatar_url }} style={styles.avatar} />
-          ) : (
-            <View style={[styles.avatar, { backgroundColor: message.is_system ? 'rgba(0,232,255,0.2)' : '#0EA5E9' }]}>
-              <Text style={{ color: '#fff', fontWeight: '900' }}>
-                {message.is_system ? '⚡' : senderInitials(message)}
-              </Text>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ gap: 16, paddingTop: 16, paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          {message.is_system ? (
+            <View
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 12,
+                backgroundColor: tokens.border,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Ionicons name="flash-outline" size={26} color={tokens.cyanHi} />
             </View>
+          ) : (
+            <Avatar
+              initials={senderInitials(message)}
+              uri={message.sender_avatar_url}
+              size={56}
+            />
           )}
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.senderName}>
-              {message.is_system ? 'STAGE' : (message.sender_gamertag || 'Unknown')}
+            <Text numberOfLines={1} style={{ color: tokens.text, fontWeight: '700', fontSize: 16 }}>
+              {senderName}
             </Text>
-            <Text style={styles.toLine}>
+            <Text numberOfLines={1} style={{ color: tokens.muted, fontSize: 13, marginTop: 2 }}>
               To you{message.sender_club_name ? ` · ${message.sender_club_name}` : ''}
             </Text>
+            <Text numberOfLines={1} style={{ color: tokens.muted, fontSize: 12, marginTop: 2 }}>
+              {formatFullDate(message.created_date)}
+            </Text>
           </View>
-          <Text style={styles.date}>{formatFullDate(message.created_date)}</Text>
         </View>
 
+        <Text
+          numberOfLines={4}
+          style={{
+            color: tokens.text,
+            fontFamily: FONT_EA_SPORTS,
+            fontSize: 30,
+            lineHeight: 32,
+            letterSpacing: 30 * 0.03,
+            textTransform: 'uppercase',
+          }}
+        >
+          {message.subject || '(No subject)'}
+        </Text>
+
         {hasAction ? (
-          <View style={styles.warnBanner}>
-            <Ionicons name="warning" size={16} color={AMBER} />
-            <Text style={styles.warnText}>A response is required</Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 10,
+              padding: 16,
+              borderRadius: tokens.cardRadius,
+              borderWidth: 1,
+              borderColor: tokens.warningBorder,
+              backgroundColor: tokens.warningBg,
+            }}
+          >
+            <Ionicons name="alert-circle-outline" size={22} color={tokens.warning} />
+            <Text style={{ flex: 1, color: tokens.text, fontSize: 13 }}>A response is required</Text>
           </View>
         ) : null}
 
         {isActioned ? (
-          <View style={styles.statusBanner}>
-            <Text style={styles.statusText}>{String(status).replace(/_/g, ' ')}</Text>
+          <View
+            style={{
+              alignSelf: 'flex-start',
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderRadius: 6,
+              borderWidth: 1,
+              borderColor: tokens.border,
+              backgroundColor: tokens.card,
+            }}
+          >
+            <Text
+              style={{
+                color: tokens.textSoft,
+                fontSize: 11,
+                fontWeight: '700',
+                letterSpacing: 11 * 0.08,
+                textTransform: 'uppercase',
+              }}
+            >
+              {String(status).replace(/_/g, ' ')}
+            </Text>
           </View>
         ) : null}
 
         {error ? (
-          <View style={styles.errorBanner}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View
+            style={{
+              padding: 12,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: tokens.danger,
+              backgroundColor: tokens.dangerBg,
+            }}
+          >
+            <Text style={{ color: tokens.danger, fontSize: 13, fontWeight: '600' }}>{error}</Text>
           </View>
         ) : null}
 
-        <View style={styles.bodyCard}>
-          <Text style={styles.body}>{message.body || ''}</Text>
+        <Card>
+          <Text style={{ color: tokens.textSoft, fontSize: 15, lineHeight: 23 }}>{message.body || ''}</Text>
           {showLoanCard ? (
             <InboxLoanCard
               message={message}
@@ -168,21 +251,23 @@ export default function InboxMessageDetail({
             />
           ) : null}
           {message.related_entity_type === 'match' ? (
-            <Text style={styles.linked}>Linked to a scheduled match — check Schedule for details.</Text>
+            <Text style={{ color: tokens.muted, fontSize: 13, marginTop: 14, lineHeight: 18 }}>
+              Linked to a scheduled match — check Schedule for details.
+            </Text>
           ) : null}
           {message.message_type === 'league_schedule' && meta.proposed_date ? (
-            <Text style={styles.metaLine}>
+            <Text style={{ color: tokens.cyan, fontSize: 13, marginTop: 14, lineHeight: 18, fontWeight: '600' }}>
               Proposed: {formatFullDate(meta.proposed_date)}
               {meta.match_context ? `\n${meta.match_context}` : ''}
             </Text>
           ) : null}
-        </View>
+        </Card>
       </ScrollView>
 
-      {(showGenericActions || showContractActions || showScheduleActions || showTrialActions) ? (
-        <View style={styles.actionBar}>
+      {showActions ? (
+        <View style={{ paddingTop: 12, gap: 10 }}>
           {showReschedule ? (
-            <View style={{ gap: 8, marginBottom: 10 }}>
+            <View style={{ gap: 8 }}>
               <DateTimeZoneFields
                 date={newDate}
                 time={newTime}
@@ -190,34 +275,29 @@ export default function InboxMessageDetail({
                 onTimeChange={setNewTime}
                 showTimezone={false}
               />
-              <TouchableOpacity
-                style={[styles.btn, styles.btnPrimary]}
-                onPress={() => runAction(showScheduleActions ? 'date_change_requested' : 'date_change_requested')}
+              <Button
+                title="Send new time"
+                loading={loading === 'date_change_requested'}
                 disabled={!!loading || !newDate || !newTime}
-              >
-                {loading === 'date_change_requested' ? (
-                  <ActivityIndicator color="#031018" />
-                ) : (
-                  <Text style={styles.btnPrimaryText}>Send new time</Text>
-                )}
-              </TouchableOpacity>
+                onPress={() => runAction(showScheduleActions ? 'date_change_requested' : 'date_change_requested')}
+              />
             </View>
           ) : null}
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {(showGenericActions || showContractActions || showScheduleActions || showTrialActions) ? (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+            {showActions ? (
               <>
-                <ActionBtn
-                  label={isCancelRequest ? 'Confirm cancel' : (showScheduleActions ? 'Accept time' : 'Accept')}
-                  tone="good"
-                  loading={loading === 'accepted' || loading === 'confirmed'}
-                  onPress={() => runAction(showScheduleActions ? 'confirmed' : 'accepted')}
-                />
                 <ActionBtn
                   label={isCancelRequest ? 'Keep match' : 'Decline'}
                   tone="bad"
                   loading={loading === 'declined'}
                   onPress={() => runAction('declined')}
+                />
+                <ActionBtn
+                  label={isCancelRequest ? 'Confirm cancel' : (showScheduleActions ? 'Accept time' : 'Accept')}
+                  tone="good"
+                  loading={loading === 'accepted' || loading === 'confirmed'}
+                  onPress={() => runAction(showScheduleActions ? 'confirmed' : 'accepted')}
                 />
               </>
             ) : null}
@@ -245,141 +325,12 @@ export default function InboxMessageDetail({
   );
 }
 
+/** good = primary cyan, bad = danger outline, warn = cyan outline; each takes an equal share of the row. */
 function ActionBtn({ label, tone, loading, onPress }) {
-  const bg = tone === 'good'
-    ? 'rgba(124,255,107,0.18)'
-    : tone === 'bad'
-      ? 'rgba(255,77,109,0.16)'
-      : 'rgba(255,210,74,0.14)';
-  const border = tone === 'good'
-    ? 'rgba(124,255,107,0.45)'
-    : tone === 'bad'
-      ? 'rgba(255,77,109,0.4)'
-      : 'rgba(255,210,74,0.4)';
-  const color = tone === 'good' ? FUT.lime : tone === 'bad' ? FUT.rose : AMBER;
+  const variant = tone === 'good' ? 'primary' : tone === 'bad' ? 'danger' : 'secondary';
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={!!loading}
-      style={[styles.btn, { backgroundColor: bg, borderColor: border }]}
-    >
-      {loading ? <ActivityIndicator color={color} /> : (
-        <Text style={{ color, fontWeight: '900', fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase' }}>
-          {label}
-        </Text>
-      )}
-    </TouchableOpacity>
+    <View style={{ flexGrow: 1, flexBasis: '45%' }}>
+      <Button title={label} variant={variant} loading={!!loading} onPress={onPress} />
+    </View>
   );
 }
-
-const styles = {
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
-  },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-  },
-  subject: {
-    color: '#fff',
-    fontSize: 22,
-    fontWeight: '900',
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 12,
-    lineHeight: 28,
-  },
-  senderBlock: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  senderName: { color: '#fff', fontWeight: '800', fontSize: 14 },
-  toLine: { color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 2 },
-  date: { color: 'rgba(255,255,255,0.4)', fontSize: 11 },
-  warnBanner: {
-    marginHorizontal: 16,
-    marginBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,210,74,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,210,74,0.3)',
-  },
-  warnText: { color: AMBER, fontWeight: '800', fontSize: 12 },
-  statusBanner: {
-    alignSelf: 'flex-start',
-    marginHorizontal: 16,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  statusText: { color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '800', textTransform: 'uppercase' },
-  errorBanner: {
-    marginHorizontal: 16,
-    marginBottom: 10,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,77,109,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,77,109,0.35)',
-  },
-  errorText: { color: FUT.rose, fontSize: 12, fontWeight: '700' },
-  bodyCard: {
-    marginHorizontal: 16,
-    marginTop: 4,
-    padding: 16,
-    borderRadius: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(0,232,255,0.18)',
-    backgroundColor: 'rgba(10,18,34,0.9)',
-  },
-  body: { color: 'rgba(255,255,255,0.85)', fontSize: 14, lineHeight: 22 },
-  linked: { color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 14, lineHeight: 18 },
-  metaLine: { color: CYAN, fontSize: 12, marginTop: 14, lineHeight: 18, fontWeight: '600' },
-  actionBar: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,210,74,0.25)',
-    backgroundColor: 'rgba(8,10,18,0.98)',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 20,
-  },
-  btn: {
-    minHeight: 42,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnPrimary: {
-    backgroundColor: CYAN,
-    borderColor: CYAN,
-  },
-  btnPrimaryText: { color: '#031018', fontWeight: '900', fontSize: 12, textTransform: 'uppercase' },
-};

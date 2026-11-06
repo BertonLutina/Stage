@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, ActivityIndicator } from 'react-native';
-import STText from '../common/STText';
+import { View, Text } from 'react-native';
+import useThemeStore from '@/store/themeStore';
+import { Button, Card } from '@/components/ui';
+import { headingStyle } from '@/lib/fonts';
 import { stageClient } from '../../api/stageClient';
-import { onboardingStyles as s } from './onboardingStyles';
+import { FormError, StepHeading } from './OnboardingParts';
+import { STEP_GAP, useOnboardingStyles } from './onboardingStyles';
 
 function resolvePresidentContract(founderState) {
   if (!founderState || typeof founderState !== 'object') return null;
@@ -22,6 +25,8 @@ export default function PresidentContractSetup({
   playerContract = null,
   onComplete,
 }) {
+  const tokens = useThemeStore((st) => st.tokens);
+  const s = useOnboardingStyles();
   const [signing, setSigning] = useState(false);
   const [error, setError] = useState(null);
   const presidentName = player?.gamertag || user?.email || 'President';
@@ -67,60 +72,40 @@ export default function PresidentContractSetup({
   };
 
   return (
-    <View>
-      <STText style={s.title}>Sign as president</STText>
-      <STText style={s.subtitle}>
-        This locks you as the club creator. It is not a player wage deal.
-      </STText>
+    <View style={{ gap: STEP_GAP }}>
+      <StepHeading
+        title="Sign as president"
+        subtitle="This locks you as the club creator. It is not a player wage deal."
+      />
 
-      <View style={{
-        borderRadius: 22,
-        borderWidth: 1,
-        borderColor: 'rgba(255,214,10,0.28)',
-        backgroundColor: 'rgba(255,214,10,0.08)',
-        padding: 20,
-        marginBottom: 14,
-      }}
-      >
-        <STText style={{ color: '#FFD60A', fontSize: 13, fontWeight: '800' }}>
+      <Card highlight style={{ gap: 4 }}>
+        <Text style={{ color: tokens.warning, fontSize: 13, fontWeight: '700' }}>
           President
-        </STText>
-        <STText style={{ color: '#fff', fontSize: 24, fontWeight: '800', marginTop: 6 }}>{presidentName}</STText>
-        <STText style={{ color: 'rgba(255,255,255,0.58)', fontSize: 15, marginTop: 4 }}>
+        </Text>
+        <Text
+          numberOfLines={1}
+          style={[headingStyle, { color: tokens.text, fontSize: 24, letterSpacing: 24 * 0.03, marginTop: 2 }]}
+        >
+          {presidentName}
+        </Text>
+        <Text numberOfLines={1} style={{ color: tokens.muted, fontSize: 15 }}>
           {club?.name || 'Your club'}
-        </STText>
-      </View>
+        </Text>
+      </Card>
 
-      <View style={{
-        borderRadius: 22,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.10)',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        padding: 20,
-        marginBottom: 16,
-        gap: 8,
-      }}
-      >
-        <STText style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Terms</STText>
-        <STText style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15 }}>Role · Club President</STText>
-        <STText style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15 }}>Length · 10 years</STText>
-        <STText style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15 }}>Salary · 0 STC / week</STText>
-        <STText style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, marginTop: 6, lineHeight: 20 }}>
+      <Card style={{ gap: 8 }}>
+        <Text style={s.cardTitle}>Terms</Text>
+        <Text style={{ color: tokens.textSoft, fontSize: 15 }}>Role · Club President</Text>
+        <Text style={{ color: tokens.textSoft, fontSize: 15 }}>Length · 10 years</Text>
+        <Text style={{ color: tokens.textSoft, fontSize: 15 }}>Salary · 0 STC / week</Text>
+        <Text style={[s.hint, { marginTop: 6, fontSize: 14, lineHeight: 20 }]}>
           Captain is a staff title you assign later. This contract cannot be deleted from the office.
-        </STText>
-      </View>
+        </Text>
+      </Card>
 
-      {error ? (
-        <STText style={{ color: '#f87171', fontSize: 12, marginBottom: 10 }}>{error}</STText>
-      ) : null}
+      <FormError>{error}</FormError>
 
-      <TouchableOpacity onPress={handleSign} disabled={signing} style={s.primaryBtn}>
-        {signing ? (
-          <ActivityIndicator color="#041018" />
-        ) : (
-          <STText style={s.primaryBtnText}>Sign</STText>
-        )}
-      </TouchableOpacity>
+      <Button title="Sign" onPress={handleSign} loading={signing} />
     </View>
   );
 }

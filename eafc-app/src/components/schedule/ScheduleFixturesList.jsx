@@ -1,8 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { CYAN, AMBER } from '@/components/profile/gamer/GamerProfileUI';
-import { FUT, SectionCard } from '@/components/dashboard/CommandCenterUI';
+import useThemeStore from '@/store/themeStore';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
+import { hexToRgba } from '@/lib/stageTheme';
+import { Card } from '@/components/ui';
+import { sectionLabelStyle } from '@/components/dashboard/CommandCenterUI';
 import { fixturesListEvents } from '@/lib/scheduleEvents';
 
 function fmtMonth(date) {
@@ -23,110 +26,139 @@ function fmtTime(date) {
   return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
+function DateBlock({ tokens, event, withTime = true }) {
+  return (
+    <View style={{ width: 48, alignItems: 'center' }}>
+      <Text style={{ color: tokens.muted, fontSize: 11, fontWeight: '600' }}>{fmtMonth(event.date)}</Text>
+      <Text style={{ color: tokens.text, fontFamily: FONT_EA_SPORTS, fontSize: 24, lineHeight: 26 }}>
+        {fmtDay(event.date)}
+      </Text>
+      {withTime ? <Text style={{ color: tokens.muted, fontSize: 11 }}>{fmtTime(event.date)}</Text> : null}
+    </View>
+  );
+}
+
+function rowStyle(tokens) {
+  return {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 64,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: tokens.border,
+  };
+}
+
 function MatchRow({ event, onPress }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const resultColor = event.result?.outcome === 'W'
-    ? FUT.lime
+    ? tokens.success
     : event.result?.outcome === 'L'
-      ? FUT.rose
+      ? tokens.danger
       : event.result
-        ? AMBER
+        ? tokens.warning
         : null;
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.row}>
-      <View style={styles.dateBlock}>
-        <Text style={styles.month}>{fmtMonth(event.date)}</Text>
-        <Text style={styles.day}>{fmtDay(event.date)}</Text>
-        <Text style={styles.time}>{fmtTime(event.date)}</Text>
-      </View>
-      <View style={styles.divider} />
+    <TouchableOpacity onPress={onPress} activeOpacity={0.85} accessibilityRole="button" style={rowStyle(tokens)}>
+      <DateBlock tokens={tokens} event={event} />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={styles.title} numberOfLines={1}>{event.opposition || 'TBD'}</Text>
-        <Text style={styles.meta} numberOfLines={1}>
+        <Text style={{ color: tokens.text, fontSize: 15, fontWeight: '700' }} numberOfLines={1}>{event.opposition || 'TBD'}</Text>
+        <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
           {[event.venue, event.competition].filter(Boolean).join(' · ')}
         </Text>
       </View>
       {event.result ? (
-        <Text style={{ color: resultColor, fontWeight: '900', fontSize: 13 }}>{event.result.display}</Text>
+        <Text style={{ color: resultColor, fontWeight: '700', fontSize: 14 }}>{event.result.display}</Text>
       ) : (
-        <Text style={styles.status}>{String(event.status || '—').replace(/_/g, ' ')}</Text>
+        <Text
+          numberOfLines={1}
+          style={{ color: tokens.cyan, fontSize: 11, fontWeight: '600', textTransform: 'uppercase', maxWidth: 80, textAlign: 'right' }}
+        >
+          {String(event.status || '—').replace(/_/g, ' ')}
+        </Text>
       )}
-      <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.35)" />
+      <Ionicons name="chevron-forward" size={18} color={tokens.muted} />
     </TouchableOpacity>
   );
 }
 
 function ContractEndRow({ event, onPress }) {
+  const tokens = useThemeStore((s) => s.tokens);
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.row}>
-      <View style={styles.dateBlock}>
-        <Text style={styles.month}>{fmtMonth(event.date)}</Text>
-        <Text style={styles.day}>{fmtDay(event.date)}</Text>
-      </View>
-      <View style={styles.divider} />
-      <View style={{ flex: 1 }}>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.85} accessibilityRole="button" style={rowStyle(tokens)}>
+      <DateBlock tokens={tokens} event={event} withTime={false} />
+      <View style={{ flex: 1, minWidth: 0 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Ionicons name="document-text-outline" size={14} color={AMBER} />
-          <Text style={styles.title} numberOfLines={1}>
+          <Ionicons name="document-text-outline" size={18} color={tokens.warning} />
+          <Text style={{ color: tokens.text, fontSize: 15, fontWeight: '700', flexShrink: 1 }} numberOfLines={1}>
             Contract End · {event.contractData?.contract_type || 'squad'}
           </Text>
         </View>
-        <Text style={styles.meta}>Contract</Text>
+        <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 2 }}>Contract</Text>
       </View>
-      <Text style={{ color: AMBER, fontSize: 10, fontWeight: '800' }}>END</Text>
+      <Text style={{ color: tokens.warning, fontSize: 11, fontWeight: '600' }}>END</Text>
     </TouchableOpacity>
   );
 }
 
 function ContractReminderRow({ event, onPress }) {
+  const tokens = useThemeStore((s) => s.tokens);
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={[styles.row, { backgroundColor: 'rgba(255,210,74,0.06)' }]}>
-      <View style={[styles.dateBlock, { justifyContent: 'center' }]}>
-        <Ionicons name="warning" size={20} color={AMBER} />
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      style={[rowStyle(tokens), { backgroundColor: hexToRgba(tokens.warning, 0.08) }]}
+    >
+      <View style={{ width: 48, alignItems: 'center', justifyContent: 'center' }}>
+        <Ionicons name="warning-outline" size={22} color={tokens.warning} />
       </View>
-      <View style={styles.divider} />
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.title, { color: AMBER }]}>Contract expiring soon</Text>
-        <Text style={styles.meta}>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={{ color: tokens.warning, fontSize: 15, fontWeight: '700' }}>Contract expiring soon</Text>
+        <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 2 }}>
           {[
             event.gamesLeft != null ? `${event.gamesLeft} games left` : null,
             event.daysLeft != null ? `${event.daysLeft}d left` : null,
           ].filter(Boolean).join(' · ') || 'Tap for details'}
         </Text>
       </View>
-      <Text style={{ color: AMBER, fontWeight: '900' }}>!</Text>
+      <Ionicons name="alert-circle-outline" size={20} color={tokens.warning} />
     </TouchableOpacity>
   );
 }
 
 export default function ScheduleFixturesList({ events, onOpenMatch }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const list = fixturesListEvents(events);
 
   if (!list.length) {
     return (
-      <SectionCard>
-        <View style={{ alignItems: 'center', paddingVertical: 36, gap: 10 }}>
-          <Ionicons name="calendar-outline" size={36} color="rgba(255,255,255,0.2)" />
-          <Text style={{ color: 'rgba(255,255,255,0.65)', fontWeight: '800' }}>No scheduled matches yet</Text>
+      <Card>
+        <View style={{ alignItems: 'center', paddingVertical: 28, gap: 10 }}>
+          <Ionicons name="calendar-outline" size={36} color={tokens.muted} />
+          <Text style={{ color: tokens.textSoft, fontSize: 15, fontWeight: '600' }}>No scheduled matches yet</Text>
         </View>
-      </SectionCard>
+      </Card>
     );
   }
 
   return (
-    <SectionCard padded={false}>
+    <Card style={{ padding: 0, overflow: 'hidden' }}>
       <View style={{
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingHorizontal: 14,
+        paddingHorizontal: 16,
         paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.08)',
-        backgroundColor: 'rgba(0,232,255,0.06)',
+        borderBottomColor: tokens.border,
+        backgroundColor: hexToRgba(tokens.cyan, 0.06),
       }}
       >
-        <Text style={styles.head}>Match</Text>
-        <Text style={styles.head}>Result / Status</Text>
+        <Text style={sectionLabelStyle(tokens)}>Match</Text>
+        <Text style={sectionLabelStyle(tokens)}>Result / Status</Text>
       </View>
       {list.map((ev) => {
         if (ev.type === 'contract_end') {
@@ -143,40 +175,6 @@ export default function ScheduleFixturesList({ events, onOpenMatch }) {
           />
         );
       })}
-    </SectionCard>
+    </Card>
   );
 }
-
-const styles = {
-  head: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
-  },
-  dateBlock: { width: 44, alignItems: 'center' },
-  month: { color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '700' },
-  day: { color: '#fff', fontSize: 18, fontWeight: '900', lineHeight: 22 },
-  time: { color: 'rgba(255,255,255,0.4)', fontSize: 10 },
-  divider: { width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.1)' },
-  title: { color: '#fff', fontSize: 14, fontWeight: '800' },
-  meta: { color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 2 },
-  status: {
-    color: CYAN,
-    fontSize: 10,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    maxWidth: 72,
-    textAlign: 'right',
-  },
-};

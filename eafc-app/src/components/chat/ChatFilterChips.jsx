@@ -1,6 +1,7 @@
 import React from 'react';
-import { ScrollView, TouchableOpacity } from 'react-native';
-import STText from '../common/STText';
+import { ScrollView } from 'react-native';
+import { Chip } from '@/components/ui';
+import { SCREEN_GUTTER } from '@/components/ui/metrics';
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -16,6 +17,10 @@ const FILTERS = [
   { key: 'unread', label: 'Unread' },
 ];
 
+/**
+ * Horizontally scrolling filter chips. The strip pads itself by the screen gutter so
+ * a parent can pull it edge to edge with a negative margin.
+ */
 export default function ChatFilterChips({ activeFilters = [], onToggle }) {
   const isActive = (key) => activeFilters.includes(key);
 
@@ -23,18 +28,16 @@ export default function ChatFilterChips({ activeFilters = [], onToggle }) {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, gap: 8 }}
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={{ paddingHorizontal: SCREEN_GUTTER, paddingVertical: 5, gap: 8, alignItems: 'center' }}
     >
       {FILTERS.map((f) => (
-        <TouchableOpacity
+        <Chip
           key={f.key}
+          label={f.label}
+          active={isActive(f.key)}
           onPress={() => onToggle(f.key)}
-          className={`px-4 py-2 rounded-full ${isActive(f.key) ? 'bg-primary' : 'bg-white/10 border border-white/20'}`}
-        >
-          <STText className={isActive(f.key) ? 'text-dark font-semibold text-sm' : 'text-white text-sm'}>
-            {f.label}
-          </STText>
-        </TouchableOpacity>
+        />
       ))}
     </ScrollView>
   );

@@ -13,13 +13,17 @@ import {
   getFixtureAvailabilityCounts,
   groupClubFixtures,
 } from '@/lib/clubFixtures';
+import useThemeStore from '@/store/themeStore';
+import { hexToRgba } from '@/lib/stageTheme';
+import { FONT_EA_SPORTS } from '@/lib/fonts';
+import Card from '@/components/ui/Card';
 import { EmptyTabPanel } from '@/components/profile/gamer/GamerProfileUI';
 
-function availabilityColor(status) {
-  if (status === 'available') return '#6EE7B7';
-  if (status === 'unavailable') return '#FCA5A5';
-  if (status === 'maybe') return '#FBBF24';
-  return 'rgba(255,255,255,0.45)';
+function availabilityColor(tokens, status) {
+  if (status === 'available') return tokens.success;
+  if (status === 'unavailable') return tokens.danger;
+  if (status === 'maybe') return tokens.warning;
+  return tokens.muted;
 }
 
 function FixtureRow({
@@ -37,6 +41,7 @@ function FixtureRow({
   busyAvailability,
   onSetAvailability,
 }) {
+  const tokens = useThemeStore((st) => st.tokens);
   const isHome = fixture.home_club_id === clubId;
   const opponent = isHome ? fixture.away_club_name : fixture.home_club_name;
   const mine = isHome ? fixture.home_score : fixture.away_score;
@@ -48,48 +53,49 @@ function FixtureRow({
   const myStatus = myAvailability?.status || 'no_response';
   const counts = getFixtureAvailabilityCounts(availabilityRows, clubPlayers);
   const responseRows = buildFixtureResponseRows(availabilityRows, clubPlayers, playerById);
+  const myColor = availabilityColor(tokens, myStatus);
   const showMemberControls = canSetAvailability && myPlayer?.id && canManageAvailability;
   const showTeamSummary = canViewTeamAvailability && canManageAvailability;
 
   return (
-    <View style={{ paddingHorizontal: 14, paddingVertical: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
+    <View style={{ paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: tokens.border }}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'flex-start' }}>
         <View style={{ flex: 1, minWidth: 180 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <View style={{ borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(0,0,0,0.3)', paddingHorizontal: 6, paddingVertical: 3 }}>
-              <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 9, fontWeight: '900', letterSpacing: 1.2, textTransform: 'uppercase' }}>
+            <View style={{ borderWidth: 1, borderColor: tokens.border, backgroundColor: tokens.bgDeep, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 }}>
+              <Text style={{ color: tokens.muted, fontSize: 10, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' }}>
                 {isHome ? 'Home' : 'Away'}
               </Text>
             </View>
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14, flexShrink: 1 }} numberOfLines={1}>
+            <Text style={{ color: tokens.text, fontWeight: '600', fontSize: 14, flexShrink: 1 }} numberOfLines={1}>
               {isHome ? 'vs' : 'at'} {opponent || 'TBD'}
             </Text>
           </View>
-          <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 4 }} numberOfLines={1}>
+          <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 4 }} numberOfLines={1}>
             {fixtureEventName(fixture, group)}
           </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, marginTop: 4 }}>{fixtureDateLabel(fixture)}</Text>
+          <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 4 }}>{fixtureDateLabel(fixture)}</Text>
         </View>
         <View style={{ alignItems: 'flex-end', gap: 6 }}>
-          <View style={{ borderWidth: 1, borderColor: completed ? 'rgba(245,197,66,0.35)' : 'rgba(110,231,183,0.3)', backgroundColor: completed ? 'rgba(245,197,66,0.1)' : 'rgba(110,231,183,0.08)', paddingHorizontal: 8, paddingVertical: 4 }}>
-            <Text style={{ color: completed ? '#F5C542' : '#6EE7B7', fontSize: 9, fontWeight: '900', letterSpacing: 1, textTransform: 'uppercase' }}>
+          <View style={{ borderWidth: 1, borderColor: hexToRgba(completed ? tokens.amber : tokens.success, 0.4), backgroundColor: hexToRgba(completed ? tokens.amber : tokens.success, 0.12), borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
+            <Text style={{ color: completed ? tokens.amber : tokens.success, fontSize: 10, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' }}>
               {completed ? 'Completed' : (fixture.status || 'Scheduled')}
             </Text>
           </View>
-          <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, minWidth: 56, textAlign: 'center' }}>
+          <Text style={{ color: tokens.text, fontFamily: FONT_EA_SPORTS, fontSize: 18, minWidth: 56, textAlign: 'center' }}>
             {hasScore ? `${mine}-${theirs}` : 'TBD'}
           </Text>
         </View>
       </View>
 
       {(showMemberControls || showTeamSummary) ? (
-        <View style={{ marginTop: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 12, padding: 10, gap: 10 }}>
+        <View style={{ marginTop: 10, borderWidth: 1, borderColor: tokens.border, backgroundColor: tokens.bgDeep, borderRadius: 12, padding: 12, gap: 10 }}>
           {showMemberControls ? (
             <View>
-              <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 9, fontWeight: '900', letterSpacing: 1.4, textTransform: 'uppercase' }}>My availability</Text>
+              <Text style={{ color: tokens.muted, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12, textTransform: 'uppercase' }}>My availability</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8, alignItems: 'center' }}>
-                <View style={{ borderWidth: 1, borderColor: `${availabilityColor(myStatus)}55`, paddingHorizontal: 8, paddingVertical: 4 }}>
-                  <Text style={{ color: availabilityColor(myStatus), fontSize: 9, fontWeight: '900', letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                <View style={{ borderWidth: 1, borderColor: hexToRgba(myColor, 0.4), borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
+                  <Text style={{ color: myColor, fontSize: 10, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' }}>
                     {FIXTURE_AVAILABILITY_LABELS[myStatus] || myStatus}
                   </Text>
                 </View>
@@ -102,14 +108,15 @@ function FixtureRow({
                       minHeight: 44,
                       paddingHorizontal: 12,
                       justifyContent: 'center',
+                      borderRadius: 12,
                       borderWidth: 1,
-                      borderColor: status === 'available' ? 'rgba(110,231,183,0.35)' : 'rgba(252,165,165,0.35)',
+                      borderColor: hexToRgba(availabilityColor(tokens, status), 0.5),
                       backgroundColor: myStatus === status
-                        ? (status === 'available' ? '#6EE7B7' : '#FCA5A5')
-                        : (status === 'available' ? 'rgba(110,231,183,0.08)' : 'rgba(252,165,165,0.08)'),
+                        ? availabilityColor(tokens, status)
+                        : hexToRgba(availabilityColor(tokens, status), 0.1),
                     }}
                   >
-                    <Text style={{ color: myStatus === status ? '#000' : (status === 'available' ? '#6EE7B7' : '#FCA5A5'), fontSize: 10, fontWeight: '900', letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                    <Text style={{ color: myStatus === status ? tokens.onCyan : availabilityColor(tokens, status), fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' }}>
                       {busyAvailability === `${fixture.id}:${status}` ? 'Saving…' : FIXTURE_AVAILABILITY_LABELS[status]}
                     </Text>
                   </TouchableOpacity>
@@ -121,13 +128,13 @@ function FixtureRow({
           {showTeamSummary ? (
             <View>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                <Text style={{ color: '#6EE7B7', fontSize: 10, fontWeight: '900' }}>{counts.available} Available</Text>
-                <Text style={{ color: '#FCA5A5', fontSize: 10, fontWeight: '900' }}>{counts.unavailable} Unavailable</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontWeight: '900' }}>{counts.no_response} No Response</Text>
+                <Text style={{ color: tokens.success, fontSize: 12, fontWeight: '700' }}>{counts.available} Available</Text>
+                <Text style={{ color: tokens.danger, fontSize: 12, fontWeight: '700' }}>{counts.unavailable} Unavailable</Text>
+                <Text style={{ color: tokens.muted, fontSize: 12, fontWeight: '700' }}>{counts.no_response} No Response</Text>
               </View>
               {responseRows.length ? (
                 <TouchableOpacity onPress={onToggleResponses} style={{ marginTop: 8, minHeight: 44, justifyContent: 'center' }}>
-                  <Text style={{ color: '#00E5FF', fontSize: 10, fontWeight: '900', letterSpacing: 1.2, textTransform: 'uppercase' }}>
+                  <Text style={{ color: tokens.cyan, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' }}>
                     {responsesOpen ? 'Hide responses' : 'View responses'}
                   </Text>
                 </TouchableOpacity>
@@ -140,11 +147,11 @@ function FixtureRow({
       {showTeamSummary && responsesOpen ? (
         <View style={{ marginTop: 8, gap: 6 }}>
           {responseRows.map((row) => (
-            <View key={row.player.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.03)', paddingHorizontal: 10, paddingVertical: 8 }}>
-              <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12, flex: 1, marginRight: 8 }} numberOfLines={1}>
+            <View key={row.player.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 12, borderWidth: 1, borderColor: tokens.border, backgroundColor: tokens.bgDeep, paddingHorizontal: 12, paddingVertical: 10 }}>
+              <Text style={{ color: tokens.textSoft, fontSize: 13, flex: 1, marginRight: 8 }} numberOfLines={1}>
                 {row.player.gamertag || row.player.email || 'Player'}
               </Text>
-              <Text style={{ color: availabilityColor(row.status), fontSize: 9, fontWeight: '900', letterSpacing: 0.8, textTransform: 'uppercase' }}>
+              <Text style={{ color: availabilityColor(tokens, row.status), fontSize: 10, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' }}>
                 {FIXTURE_AVAILABILITY_LABELS[row.status] || row.status}
               </Text>
             </View>
@@ -169,6 +176,7 @@ export default function ClubFixturesPanel({
   const [busyAvailability, setBusyAvailability] = useState(null);
   const [expandedResponses, setExpandedResponses] = useState({});
   const [availabilityError, setAvailabilityError] = useState(null);
+  const tokens = useThemeStore((st) => st.tokens);
 
   const grouped = useMemo(() => {
     const fixturesById = new Map();
@@ -224,17 +232,17 @@ export default function ClubFixturesPanel({
   return (
     <View style={{ gap: 14 }}>
       {availabilityError ? (
-        <View style={{ borderWidth: 1, borderColor: 'rgba(248,113,113,0.35)', backgroundColor: 'rgba(248,113,113,0.08)', padding: 10, borderRadius: 12 }}>
-          <Text style={{ color: '#FCA5A5', fontSize: 12 }}>{availabilityError}</Text>
+        <View style={{ borderWidth: 1, borderColor: tokens.danger, backgroundColor: tokens.dangerBg, padding: 12, borderRadius: 12 }}>
+          <Text style={{ color: tokens.danger, fontSize: 13 }}>{availabilityError}</Text>
         </View>
       ) : null}
       {grouped.map((group) => (
-        <View key={group.key} style={{ overflow: 'hidden', borderRadius: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
-          <View style={{ borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 14, paddingVertical: 12 }}>
+        <Card key={group.key} style={{ overflow: 'hidden', padding: 0 }}>
+          <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
             {group.parent ? (
-              <Text style={{ color: 'rgba(0,229,255,0.65)', fontSize: 10, fontWeight: '900', letterSpacing: 1.6, textTransform: 'uppercase' }}>{group.parent}</Text>
+              <Text numberOfLines={1} style={{ color: tokens.cyan, fontSize: 11, fontWeight: '600', letterSpacing: 11 * 0.12, textTransform: 'uppercase' }}>{group.parent}</Text>
             ) : null}
-            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 13, letterSpacing: 1.4, textTransform: 'uppercase', marginTop: group.parent ? 2 : 0 }}>{group.title}</Text>
+            <Text numberOfLines={2} style={{ color: tokens.text, fontFamily: FONT_EA_SPORTS, fontSize: 16, letterSpacing: 16 * 0.03, textTransform: 'uppercase', marginTop: group.parent ? 2 : 0 }}>{group.title}</Text>
           </View>
           {group.fixtures.map((fixture) => (
             <FixtureRow
@@ -254,9 +262,9 @@ export default function ClubFixturesPanel({
               onSetAvailability={setMyFixtureAvailability}
             />
           ))}
-        </View>
+        </Card>
       ))}
-      {busyAvailability ? <ActivityIndicator color="#00E5FF" style={{ marginTop: 4 }} /> : null}
+      {busyAvailability ? <ActivityIndicator color={tokens.cyan} style={{ marginTop: 4 }} /> : null}
     </View>
   );
 }

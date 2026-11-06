@@ -1,20 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, StatusBar, ActivityIndicator, Text } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import useThemeStore from '@/store/themeStore';
 import { stageClient } from '@/api/stageClient';
 import { loadInboxMessages, markInboxMessageRead } from '@/lib/inboxData';
 import InboxMessageDetail from '@/components/inbox/InboxMessageDetail';
-import {
-  GamerProfileShell,
-  CYAN,
-} from '@/components/profile/gamer/GamerProfileUI';
+import { IconButton, Screen } from '@/components/ui';
 
 /**
  * Inbox message detail — Outlook-style reading pane (Stage theme).
  */
 export default function InboxDetailScreen() {
   const router = useRouter();
+  const tokens = useThemeStore((st) => st.tokens);
   const { id } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
@@ -60,37 +58,46 @@ export default function InboxDetailScreen() {
     return () => { if (typeof unsub === 'function') unsub(); };
   }, [id]);
 
+  const goBack = () => (router.canGoBack?.() === false ? router.replace('/apps/inbox') : router.back());
+
   if (loading) {
     return (
-      <GamerProfileShell>
+      <Screen scroll={false} tabBar={false} guideFab>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={CYAN} size="large" />
+          <ActivityIndicator color={tokens.cyan} size="large" />
         </View>
-      </GamerProfileShell>
+      </Screen>
     );
   }
 
   return (
-    <GamerProfileShell>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-        {error && !message ? (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-            <Text style={{ color: 'rgba(255,255,255,0.55)', textAlign: 'center' }}>{error}</Text>
+    <Screen scroll={false} tabBar={false} guideFab>
+      <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
+      {error && !message ? (
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row' }}>
+            <IconButton
+              icon="arrow-back"
+              accessibilityLabel="Back"
+              onPress={goBack}
+            />
           </View>
-        ) : (
-          <InboxMessageDetail
-            message={message}
-            onBack={() => router.back()}
-            onDeleted={() => router.replace('/apps/inbox')}
-            onStatusChanged={(msgId, status) => {
-              setMessage((prev) => (prev && String(prev.id) === String(msgId)
-                ? { ...prev, status, is_read: true }
-                : prev));
-            }}
-          />
-        )}
-      </SafeAreaView>
-    </GamerProfileShell>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+            <Text style={{ color: tokens.muted, textAlign: 'center' }}>{error}</Text>
+          </View>
+        </View>
+      ) : (
+        <InboxMessageDetail
+          message={message}
+          onBack={goBack}
+          onDeleted={() => router.replace('/apps/inbox')}
+          onStatusChanged={(msgId, status) => {
+            setMessage((prev) => (prev && String(prev.id) === String(msgId)
+              ? { ...prev, status, is_read: true }
+              : prev));
+          }}
+        />
+      )}
+    </Screen>
   );
 }

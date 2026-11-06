@@ -1,10 +1,12 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import useThemeStore from '@/store/themeStore';
+import { Card } from '@/components/ui';
 import { isTransferWindowOpen } from '@/lib/transferWindow';
-import { SILVER, TILE_HAIRLINE } from './transferHubTheme';
 
 export default function TransferWindowBanner({ window: currentWindow }) {
+  const tokens = useThemeStore((s) => s.tokens);
   const isOpen = isTransferWindowOpen(currentWindow);
   const end = currentWindow?.end_date ? new Date(currentWindow.end_date).toLocaleDateString() : null;
 
@@ -17,42 +19,35 @@ export default function TransferWindowBanner({ window: currentWindow }) {
   }
 
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-        borderWidth: 1,
-        padding: 12,
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        borderColor: isOpen ? 'rgba(248,251,255,0.4)' : TILE_HAIRLINE,
-      }}
-    >
-      <View
-        style={{
-          width: 36,
-          height: 36,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: isOpen ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.08)',
-          borderWidth: 1,
-          borderColor: TILE_HAIRLINE,
-        }}
-      >
-        <Ionicons
-          name={isOpen ? 'checkmark-circle' : 'alert-circle'}
-          size={20}
-          color={isOpen ? SILVER : 'rgba(255,255,255,0.45)'}
-        />
+    <Card highlight={isOpen}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: isOpen ? tokens.successBg : tokens.warningBg,
+            borderWidth: 1,
+            borderColor: isOpen ? tokens.success : tokens.warningBorder,
+          }}
+        >
+          <Ionicons
+            name={isOpen ? 'checkmark-circle-outline' : 'alert-circle-outline'}
+            size={22}
+            color={isOpen ? tokens.success : tokens.warning}
+          />
+        </View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 14 }}>
+            Transfer Window: {isOpen ? 'OPEN' : 'CLOSED'}
+          </Text>
+          <Text style={{ color: tokens.muted, fontSize: 12, marginTop: 3, lineHeight: 17 }}>
+            {currentWindow?.label ? `${currentWindow.label} · ` : ''}{detail}
+          </Text>
+        </View>
       </View>
-      <View style={{ flex: 1 }}>
-        <Text style={{ color: SILVER, fontWeight: '800', fontSize: 13 }}>
-          Transfer Window: {isOpen ? 'OPEN' : 'CLOSED'}
-        </Text>
-        <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, marginTop: 3 }}>
-          {currentWindow?.label ? `${currentWindow.label} · ` : ''}{detail}
-        </Text>
-      </View>
-    </View>
+    </Card>
   );
 }
