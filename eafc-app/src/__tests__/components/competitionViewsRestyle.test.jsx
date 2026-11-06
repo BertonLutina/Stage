@@ -55,6 +55,8 @@ jest.mock('../../api/tournamentActions', () => ({
   fetchTournamentPublic: jest.fn(async () => ({
     id: 't1', name: 'Autumn Cup', type: 'group_stage', participant_type: 'club', num_groups: 1,
   })),
+  fetchTournamentStandings: jest.fn(async () => []),
+  fetchTournamentBrackets: jest.fn(async () => []),
 }));
 
 import BracketView from '../../components/tournament/BracketView';

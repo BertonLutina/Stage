@@ -62,6 +62,10 @@ Legend: **GAP** = no endpoint found · **CONFIRM** = client helper exists, endpo
 
 Still open (highest-value first): Store cosmetic catalogue/buy, Wallet Send STC + monthly delta, Transfers Latest/My-offers feed, match stats + MOTM + scorers, highlights list, standings Home/Away/Form splits, head-to-head, UploadVideo file-upload, GameDay contract-ends banner.
 
+## Reconciled against the real backend → see `STAGE_BACKEND_ENDPOINTS.md`
+
+Read from the Stage web repo (`/Users/creaafde/Documents/workbench stage/stage`, `server/src/server/`). Many items below are **already backed** by an existing endpoint/function and should be **wired, not requested**: tournament `GET /:id/{standings,groups,brackets}`; `playerWallet`, `getTransferMarket`/`transferPayment`, `buyLifestyleItem`, `claimObjectiveReward`, `updateMatchStats`, identity-claim functions for Pro-Club. Nuance: `/standings` and `/groups` read `competition_*` tables (official/regional competitions); **community tournaments need the client derivation** — so wire endpoint-first with the derivation as fallback. Genuinely missing: match MOTM/events + highlights, head-to-head, gamertag availability, standings home/away/form splits, wallet monthly delta, store cosmetic catalogue.
+
 ## Note for the server team (`Lengarose/stage`)
 
 Highest-value gaps are the **cosmetic Store catalogue**, **Wallet Send STC**, **Transfers Latest/My-offers**, **match stats + MOTM + highlights**, and **head-to-head**. Wallet, Store and Transfers still have real usable surfaces; unsupported mockup-only blocks remain hidden rather than showing fake data.

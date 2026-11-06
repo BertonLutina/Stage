@@ -1,5 +1,10 @@
 import { useCallback } from 'react';
-import { fetchTournamentMatches, fetchTournamentPublic } from '../api/tournamentActions';
+import {
+  fetchTournamentMatches,
+  fetchTournamentPublic,
+  fetchTournamentStandings,
+  fetchTournamentBrackets,
+} from '../api/tournamentActions';
 import { calculateGroupStandings, calculateLeagueStandings } from '../lib/tournamentEngine';
 import useAsyncResource from './useAsyncResource';
 
@@ -17,7 +22,44 @@ function sortFixtures(rows) {
   return [...rows].sort((left, right) => matchDate(left) - matchDate(right));
 }
 
-export function buildTournamentView(tournament, rows) {
+/**
+ * Map server standings rows (/tournaments/:id/standings) to the derived table
+ * shape. Returns null unless every row is well-formed (has a name), so a partial
+ * or empty server response falls back to the client derivation.
+ */
+function mapServerStandings(rows) {
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  const mapped = rows.map((s, i) => {
+    const name = s.club_name || s.team_name || s.name || s.gamertag;
+    if (!name) return null;
+    const gf = Number(s.gf ?? s.goals_for ?? 0);
+    const ga = Number(s.ga ?? s.goals_against ?? 0);
+    return {
+      id: s.team_id || s.club_id || s.id,
+      name,
+      avatar_url: s.logo_url || s.avatar_url || null,
+      P: Number(s.played ?? s.matches_played ?? 0),
+      W: Number(s.won ?? s.wins ?? 0),
+      D: Number(s.drawn ?? s.draws ?? 0),
+      L: Number(s.lost ?? s.losses ?? 0),
+      GF: gf,
+      GA: ga,
+      GD: Number(s.gd ?? s.goal_difference ?? gf - ga),
+      Pts: Number(s.pts ?? s.points ?? 0),
+      rank: Number(s.rank ?? i + 1),
+    };
+  });
+  return mapped.every(Boolean) ? mapped : null;
+}
+
+/** Flatten server bracket rounds ([{name, matches}]) to the flat match list. */
+function flattenServerBrackets(rounds) {
+  if (!Array.isArray(rounds) || rounds.length === 0) return null;
+  const flat = rounds.flatMap((round) => (Array.isArray(round?.matches) ? round.matches : []));
+  return flat.length ? flat : null;
+}
+
+export function buildTournamentView(tournament, rows, server = {}) {
   const matches = Array.isArray(rows) ? rows.filter(Boolean) : [];
   const participantType = tournament?.participant_type === 'player' ? 'player' : 'club';
   const numGroups = Math.max(1, Number(tournament?.num_groups) || 1);
@@ -38,17 +80,21 @@ export function buildTournamentView(tournament, rows) {
     }))
     .filter((group) => group.teams.length > 0 || group.matches.length > 0);
 
-  const standings = String(tournament?.type || '').toLowerCase() === 'group_stage'
+  const derivedStandings = String(tournament?.type || '').toLowerCase() === 'group_stage'
     ? groups.flatMap((group) => group.teams)
     : calculateLeagueStandings(matches, { participant_type: participantType });
+  // Prefer the server-computed standings (official competitions); fall back to
+  // the client derivation (community tournaments return []).
+  const standings = mapServerStandings(server.standings) || derivedStandings;
   const completed = sortFixtures(matches.filter((match) =>
     TERMINAL_STATUSES.has(String(match?.status || '').toLowerCase())));
   const upcoming = sortFixtures(matches.filter((match) =>
     !TERMINAL_STATUSES.has(String(match?.status || '').toLowerCase())));
-  const bracketMatches = matches.filter((match) => {
+  const derivedBracketMatches = matches.filter((match) => {
     const type = String(match?.type || '').toLowerCase();
     return !GROUP_TYPES.has(type) && !LEAGUE_TYPES.has(type);
   });
+  const bracketMatches = flattenServerBrackets(server.brackets) || derivedBracketMatches;
 
   return {
     tournament: tournament || null,
@@ -64,11 +110,13 @@ export function buildTournamentView(tournament, rows) {
 }
 
 export async function loadTournament(tournamentId) {
-  const [tournament, matches] = await Promise.all([
+  const [tournament, matches, standings, brackets] = await Promise.all([
     fetchTournamentPublic(tournamentId),
     fetchTournamentMatches(tournamentId),
+    fetchTournamentStandings(tournamentId),
+    fetchTournamentBrackets(tournamentId),
   ]);
-  return buildTournamentView(tournament, matches);
+  return buildTournamentView(tournament, matches, { standings, brackets });
 }
 
 export default function useTournament(tournamentId) {

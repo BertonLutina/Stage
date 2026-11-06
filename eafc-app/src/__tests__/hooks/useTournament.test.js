@@ -5,6 +5,8 @@ import { fetchTournamentMatches, fetchTournamentPublic } from '../../api/tournam
 jest.mock('../../api/tournamentActions', () => ({
   fetchTournamentMatches: jest.fn(),
   fetchTournamentPublic: jest.fn(),
+  fetchTournamentStandings: jest.fn(() => Promise.resolve([])),
+  fetchTournamentBrackets: jest.fn(() => Promise.resolve([])),
 }));
 
 const tournament = {

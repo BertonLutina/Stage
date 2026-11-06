@@ -1,4 +1,5 @@
 import { stageClient } from "@/api/stageClient";
+import api from "@/utils/api";
 import { assertRulesAcceptance, mergeLocalRulesAcceptance } from "@/lib/tournamentRuleTemplates";
 import {
   generateKnockoutRound1,
@@ -87,6 +88,31 @@ function normalizeMatch(row) {
     ...row,
     group: row.group ?? row.group_number,
   };
+}
+
+/**
+ * Server-computed tournament views from the Stage mobile compat layer
+ * (`/api/mobile/tournaments/:id/{standings,brackets}`). These are populated for
+ * official / regional competitions; community tournaments return [] and the
+ * caller falls back to the client derivation. Never throws — empty on any error.
+ */
+async function fetchMobileTournamentRows(tournamentId, suffix) {
+  if (!tournamentId) return [];
+  try {
+    const res = await api.get(`/tournaments/${encodeURIComponent(tournamentId)}/${suffix}`);
+    const rows = res?.data?.data ?? res?.data;
+    return Array.isArray(rows) ? rows : [];
+  } catch {
+    return [];
+  }
+}
+
+export function fetchTournamentStandings(tournamentId) {
+  return fetchMobileTournamentRows(tournamentId, "standings");
+}
+
+export function fetchTournamentBrackets(tournamentId) {
+  return fetchMobileTournamentRows(tournamentId, "brackets");
 }
 
 export async function fetchTournamentMatches(tournamentId) {
