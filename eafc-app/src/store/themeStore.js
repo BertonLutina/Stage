@@ -18,7 +18,11 @@ function snapshot() {
 
 function applyAppearance() {
   if (typeof Appearance?.setColorScheme === 'function') {
-    Appearance.setColorScheme('dark');
+    try {
+      Appearance.setColorScheme('dark');
+    } catch {
+      // react-native-web throws when dark mode is media-based; ignore on web.
+    }
   }
 }
 

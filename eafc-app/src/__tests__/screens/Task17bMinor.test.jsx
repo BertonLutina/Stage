@@ -170,7 +170,7 @@ describe('TournamentCard accessibility label', () => {
 describe('SocialAuthIconButtons labels', () => {
   test.each(['signin', 'signup'])('%s mode reads "Continue with X", never "Sign in with Continue with X"', (mode) => {
     const { getByLabelText, queryByLabelText, getAllByRole } = render(<SocialAuthIconButtons mode={mode} />);
-    ['Google', 'Microsoft', 'Kick', 'Twitch'].forEach((name) => {
+    ['Google', 'Outlook', 'Kick', 'Twitch'].forEach((name) => {
       expect(getByLabelText(`Continue with ${name}`).props.accessibilityRole).toBe('button');
     });
     expect(queryByLabelText(/Sign (in|up) with Continue/)).toBeNull();

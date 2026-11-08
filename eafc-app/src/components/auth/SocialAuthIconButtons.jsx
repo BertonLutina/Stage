@@ -16,12 +16,13 @@ const GoogleIcon = () => (
   </Svg>
 );
 
-const MicrosoftIcon = () => (
-  <Svg width={20} height={20} viewBox="0 0 21 21">
-    <Rect x="1" y="1" width="9" height="9" fill={BRAND.microsoftRed} />
-    <Rect x="11" y="1" width="9" height="9" fill={BRAND.microsoftGreen} />
-    <Rect x="1" y="11" width="9" height="9" fill={BRAND.microsoftBlue} />
-    <Rect x="11" y="11" width="9" height="9" fill={BRAND.microsoftYellow} />
+const OutlookIcon = () => (
+  <Svg width={20} height={20} viewBox="0 0 24 24">
+    <Rect x="2" y="4" width="20" height="16" rx="3" fill={BRAND.outlook} />
+    <Path
+      fill="white"
+      d="M12 8.1c-2.25 0-3.95 1.72-3.95 3.9S9.75 15.9 12 15.9s3.95-1.72 3.95-3.9S14.25 8.1 12 8.1zm0 6.2c-1.3 0-2.3-1.02-2.3-2.3s1-2.3 2.3-2.3 2.3 1.02 2.3 2.3-1 2.3-2.3 2.3z"
+    />
   </Svg>
 );
 
@@ -39,7 +40,7 @@ const TwitchIcon = () => (
 
 const PROVIDER_ICONS = {
   google: { icon: <GoogleIcon />, label: 'Continue with Google' },
-  microsoft: { icon: <MicrosoftIcon />, label: 'Continue with Microsoft' },
+  microsoft: { icon: <OutlookIcon />, label: 'Continue with Outlook' },
   kick: { icon: <KickIcon />, label: 'Continue with Kick' },
   twitch: { icon: <TwitchIcon />, label: 'Continue with Twitch' },
 };

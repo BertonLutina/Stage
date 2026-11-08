@@ -11,6 +11,7 @@ export const BRAND_COLORS = {
   microsoftGreen: '#7FBA00',
   microsoftBlue: '#00A4EF',
   microsoftYellow: '#FFB900',
+  outlook: '#0F6CBD',
   kick: '#53FC18',
   twitch: '#9146FF',
   discord: '#5865F2',
