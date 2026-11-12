@@ -5,7 +5,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import useAuthStore from '../../store/authStore';
-import { stageClient, resolveMyPlayerAndClub } from '@/api/stageClient';
+import { resolveMyPlayerAndClub } from '@/api/stageClient';
 import useTeam from '@/hooks/useTeam';
 import { getPrimaryClubRole } from '@/lib/clubStaffRoles';
 import { playerRoute } from '@/lib/stageNews';
@@ -16,6 +16,7 @@ import { GamerProfileShell } from '@/components/profile/gamer/GamerProfileUI';
 import useThemeStore from '@/store/themeStore';
 import Card from '@/components/ui/Card';
 import StatGrid from '@/components/ui/StatGrid';
+import Button from '@/components/ui/Button';
 import FollowToggleButton from '@/components/profile/FollowToggleButton';
 
 export default function TeamProfileScreen() {
@@ -126,6 +127,13 @@ export default function TeamProfileScreen() {
               finance={bundle.finance}
               shirts={bundle.shirts}
             />
+            {(isOwner || isPresident || isCaptain) ? (
+              <Button
+                title="Recruit players"
+                onPress={() => router.push('/apps/transfers')}
+                accessibilityLabel="Recruit players"
+              />
+            ) : null}
           </View>
         </ScrollView>
       </SafeAreaView>

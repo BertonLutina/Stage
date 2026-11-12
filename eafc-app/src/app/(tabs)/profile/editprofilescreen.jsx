@@ -25,7 +25,6 @@ import { FONT_EA_SPORTS, headingStyleLg } from '@/lib/fonts';
 import { hostedMediaUrl } from '@/lib/uploadProfileMedia';
 import {
   Screen,
-  Card,
   Button,
   IconButton,
   Chip,
@@ -78,6 +77,7 @@ export default function EditProfileScreen() {
   const [country, setCountry] = useState(null);
   const [avatarUri, setAvatarUri] = useState(null);
   const [bannerUri, setBannerUri] = useState(null);
+  const [preferredFoot, setPreferredFoot] = useState(null);
   const [countryPicker, setCountryPicker] = useState(false);
   const [countryQuery, setCountryQuery] = useState('');
 
@@ -111,6 +111,7 @@ export default function EditProfileScreen() {
         setCountry(matchCountry(nextPlayer) || matchCountry(user));
         setAvatarUri(nextPlayer?.avatar_url || user?.avatar || user?.avatar_url || null);
         setBannerUri(nextPlayer?.banner_url || null);
+        setPreferredFoot(nextPlayer?.preferred_foot || null);
       } catch {
         const tag = user?.gamer_tag || user?.gamertag || '';
         const names = splitName(tag, user?.email);
@@ -182,6 +183,7 @@ export default function EditProfileScreen() {
         country: country?.name || null,
         country_code: country?.code || null,
       };
+      if (preferredFoot) playerPayload.preferred_foot = preferredFoot;
       if (avatarUrl) playerPayload.avatar_url = avatarUrl;
       if (bannerUrl) playerPayload.banner_url = bannerUrl;
 
@@ -341,30 +343,15 @@ export default function EditProfileScreen() {
         </View>
       </TouchableOpacity>
 
-      <SectionLabel>Identity</SectionLabel>
       <TextField
-        label="Gamertag"
+        label="Display name"
+        accessibilityLabel="Gamertag"
         labelColor={tokens.muted}
         value={gamertag}
         onChangeText={setGamertag}
         autoCapitalize="none"
         autoCorrect={false}
         placeholder="Your name on the pitch"
-      />
-      <View style={{ flexDirection: 'row', gap: 12 }}>
-        <View style={{ flex: 1 }}>
-          <TextField label="First name" labelColor={tokens.muted} value={firstName} onChangeText={setFirstName} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <TextField label="Last name" labelColor={tokens.muted} value={lastName} onChangeText={setLastName} />
-        </View>
-      </View>
-      <TextField
-        label="Email"
-        labelColor={tokens.muted}
-        value={user?.email || ''}
-        editable={false}
-        style={{ color: tokens.muted }}
       />
       <TextField
         label="Bio"
@@ -376,16 +363,8 @@ export default function EditProfileScreen() {
         style={{ minHeight: 84 }}
       />
 
-      <SectionLabel>On the pitch</SectionLabel>
-      <Card style={{ gap: 16 }}>
-        <SelectField
-          label="Country"
-          value={country?.name}
-          placeholder="Select country"
-          onPress={() => setCountryPicker(true)}
-        />
-
-        <View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+        <View style={{ width: '47%', flexGrow: 1 }}>
           <Text style={fieldLabel}>Main position</Text>
           <View style={chipWrap}>
             {POSITIONS.map((p) => (
@@ -401,9 +380,8 @@ export default function EditProfileScreen() {
             ))}
           </View>
         </View>
-
-        <View>
-          <Text style={fieldLabel}>Second position</Text>
+        <View style={{ width: '47%', flexGrow: 1 }}>
+          <Text style={fieldLabel}>Alt position</Text>
           <View style={chipWrap}>
             <Chip
               label="None"
@@ -420,8 +398,7 @@ export default function EditProfileScreen() {
             ))}
           </View>
         </View>
-
-        <View>
+        <View style={{ width: '47%', flexGrow: 1 }}>
           <Text style={fieldLabel}>Platform</Text>
           <View style={chipWrap}>
             {PLATFORM_OPTIONS.map((p) => (
@@ -429,7 +406,49 @@ export default function EditProfileScreen() {
             ))}
           </View>
         </View>
-      </Card>
+        <View style={{ width: '47%', flexGrow: 1 }}>
+          <SelectField
+            label="Country"
+            value={country?.name}
+            placeholder="Select country"
+            onPress={() => setCountryPicker(true)}
+          />
+        </View>
+      </View>
+
+      <View style={{ gap: 8 }}>
+        <Text style={fieldLabel}>Preferred foot</Text>
+        <View style={chipWrap}>
+          {['Left', 'Right', 'Both'].map((foot) => {
+            const value = foot.toLowerCase();
+            return (
+              <Chip
+                key={foot}
+                label={foot}
+                active={preferredFoot === value}
+                onPress={() => setPreferredFoot(value)}
+              />
+            );
+          })}
+        </View>
+      </View>
+
+      <SectionLabel>Account</SectionLabel>
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <View style={{ flex: 1 }}>
+          <TextField label="First name" labelColor={tokens.muted} value={firstName} onChangeText={setFirstName} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <TextField label="Last name" labelColor={tokens.muted} value={lastName} onChangeText={setLastName} />
+        </View>
+      </View>
+      <TextField
+        label="Email"
+        labelColor={tokens.muted}
+        value={user?.email || ''}
+        editable={false}
+        style={{ color: tokens.muted }}
+      />
 
       <Button title="Save Changes" onPress={save} loading={saving} />
 

@@ -53,14 +53,14 @@ describe('ui primitives A', () => {
     test('primary is cyan, 52 high, radius 14', () => {
       const { getByTestId } = render(<Button testID="btn" title="Go" onPress={() => {}} />);
       const style = flat(getByTestId('btn'));
-      expect(style.backgroundColor).toBe('#5FE3E8');
+      expect(style.backgroundColor).toBe('#4A6AA5');
       expect(style.height).toBe(52);
       expect(style.borderRadius).toBe(14);
     });
 
     test('secondary is outlined cyan, danger is outlined danger', () => {
       const { getByTestId, rerender } = render(<Button testID="btn" variant="secondary" title="Go" onPress={() => {}} />);
-      expect(flat(getByTestId('btn')).borderColor).toBe('#5FE3E8');
+      expect(flat(getByTestId('btn')).borderColor).toBe('#4A6AA5');
       expect(flat(getByTestId('btn')).backgroundColor).toBe('transparent');
       rerender(<Button testID="btn" variant="danger" title="Go" onPress={() => {}} />);
       expect(flat(getByTestId('btn')).borderColor).toBe('#F87171');
@@ -94,7 +94,7 @@ describe('ui primitives A', () => {
   describe('Chip', () => {
     test('active is cyan, inactive is card, 34 high, pill', () => {
       const { getByTestId, rerender } = render(<Chip testID="chip" label="All" active />);
-      expect(flat(getByTestId('chip')).backgroundColor).toBe('#5FE3E8');
+      expect(flat(getByTestId('chip')).backgroundColor).toBe('#4A6AA5');
       expect(flat(getByTestId('chip')).height).toBe(34);
       expect(flat(getByTestId('chip')).borderRadius).toBe(999);
       rerender(<Chip testID="chip" label="All" />);
@@ -154,7 +154,7 @@ describe('ui primitives A', () => {
       const { getByTestId } = render(<Card testID="card" highlight><Text>x</Text></Card>);
       const style = flat(getByTestId('card'));
       expect(style.backgroundColor).toBe('#16346B');
-      expect(style.borderColor).toBe('#2CCFD6');
+      expect(style.borderColor).toBe('#3C5E99');
     });
 
     test('live renders through LiveGlass with no opaque card background', () => {

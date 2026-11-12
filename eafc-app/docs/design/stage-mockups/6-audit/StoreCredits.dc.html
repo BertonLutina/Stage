@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Store credits</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&amp;family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+a{color:#5FE3E8;text-decoration:none}a:hover{color:#8CF5F8}
+.scr{width:390px;height:844px;position:relative;overflow:hidden;background-color:#03153F;background-image:radial-gradient(ellipse 75% 42% at 50% 78%,rgba(0,82,140,.95) 0%,rgba(0,82,140,0) 72%),radial-gradient(ellipse 90% 35% at 50% 0%,rgba(14,58,124,.9) 0%,rgba(14,58,124,0) 75%),linear-gradient(90deg,#020C30 0%,#06306A 50%,#020C30 100%);color:#EAF2FF;font-family:Inter,system-ui,sans-serif;font-size:14px}
+.pad{padding:58px 20px 110px;display:flex;flex-direction:column;gap:14px}
+.h{font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.03em;margin:0}
+.k{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#9FB3D1}
+.mut{color:#9FB3D1}
+.card{background:rgba(19,43,92,.92);border:1px solid #234480;border-radius:16px;padding:16px}
+.row{display:flex;align-items:center;gap:12px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border:0;background:#5FE3E8;color:#07163A;font:800 15px Inter,sans-serif;text-transform:uppercase;letter-spacing:.06em;width:100%;clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+.btn:hover{color:#07163A;background:#8CF5F8}
+.btn.warn{background:#FBBF24;color:#2A1A00}
+.btn2{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:12px;background:transparent;border:1px solid #5FE3E8;color:#5FE3E8;font:700 14px Inter,sans-serif;width:100%}
+.chip{display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:#132B5C;border:1px solid #234480;color:#C9D8EE;font:600 12px Inter,sans-serif;white-space:nowrap}
+.ib{width:44px;height:44px;border-radius:12px;background:#132B5C;border:1px solid #234480;display:flex;align-items:center;justify-content:center;color:#EAF2FF;flex:none}
+.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ok{color:#4ADE80}
+.tag{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border-radius:6px;white-space:nowrap}
+.t-warn{background:#2A2418;color:#FBBF24;border:1px solid #B45309}.t-info{background:#16346B;color:#8CF5F8}
+.pk{display:flex;flex-direction:column;gap:6px;padding:14px;text-align:left}
+.amt{font:800 28px 'Saira Condensed',sans-serif;line-height:1}
+</style>
+</helmet>
+<div class="scr">
+<div class="pad" style="gap: 13px">
+<div class="top"><a class="ib" href="Apps.dc.html" aria-label="Back"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><span class="k">Store</span><a class="chip" href="Wallet.dc.html" style="height: 36px">2,450 STC</a></div>
+<h1 class="h" style="font-size: 34px">Get STC</h1>
+<div class="card" style="background: #16346B; border-color: #FBBF24; display: flex; flex-direction: column; gap: 10px">
+<div class="top"><span class="h" style="font-size: 24px; color: #FBBF24">STAGE Plus</span><span class="tag t-warn">Monthly</span></div>
+<div class="mut" style="font-size: 13px; line-height: 1.5">Your STAGE Plus benefits, billed every month. Cancel anytime.</div>
+<div class="top"><span class="amt">[PRICE] / mo</span><button class="btn warn" style="width: auto; height: 44px; padding: 0 18px; font-size: 13px">Subscribe</button></div>
+</div>
+<span class="k">STC packs</span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<div class="card pk"><span class="amt">500</span><span class="mut" style="font-size: 12px">STC</span><button class="btn" style="height: 40px; font-size: 13px; margin-top: 6px">[PRICE]</button></div>
+<div class="card pk" style="border-color: #2CCFD6"><div class="top"><span class="amt">1,200</span><span class="tag t-info">Popular</span></div><span class="mut" style="font-size: 12px">STC</span><button class="btn" style="height: 40px; font-size: 13px; margin-top: 6px">[PRICE]</button></div>
+<div class="card pk"><span class="amt">2,500</span><span class="mut" style="font-size: 12px">STC</span><button class="btn" style="height: 40px; font-size: 13px; margin-top: 6px">[PRICE]</button></div>
+<div class="card pk"><span class="amt">6,000</span><span class="mut" style="font-size: 12px">STC</span><button class="btn" style="height: 40px; font-size: 13px; margin-top: 6px">[PRICE]</button></div>
+</div>
+<div class="row mut" style="font-size: 12px; gap: 8px"><svg class="i" style="width: 16px; height: 16px" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Secure payment by Stripe. Packs and prices come from the store settings.</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

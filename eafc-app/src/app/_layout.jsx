@@ -9,6 +9,7 @@ import '../../global.css';
 import '@/lib/polyfillStorage';
 import { hydrateStageStorage } from '../lib/polyfillStorage';
 import { FONT_EA_SPORTS } from '../lib/fonts';
+import { hideAndroidNavigationBar } from '../lib/androidNavigationBar';
 import useAuthBootstrap from '../hooks/useAuthBootstrap';
 import useNotificationsSocket from '../hooks/useNotificationsSocket';
 import { SocketProvider } from '@/lib/SocketContext';
@@ -48,6 +49,10 @@ export default function RootLayout() {
 
   useEffect(() => {
     hydrateStageStorage().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    hideAndroidNavigationBar().catch(() => {});
   }, []);
 
   useEffect(() => {

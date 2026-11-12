@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
-import useAvailability, { slotsToGrid, gridToSlots } from '../../hooks/useAvailability';
+import useAvailability, { slotsToGrid, gridToSlots, nextAvailabilityState } from '../../hooks/useAvailability';
 import api from '../../utils/api';
 
 jest.mock('../../utils/api', () => ({
@@ -16,7 +16,7 @@ describe('useAvailability', () => {
     api.put.mockResolvedValue({ data: { data: [] } });
   });
 
-  test('maps real time ranges to the 7 by 4 binary availability grid', () => {
+  test('maps real time ranges to the 7 by 4 availability grid', () => {
     const grid = slotsToGrid([{ day_of_week: 1, start_time: '20:00', end_time: '24:00' }]);
     expect(grid[1]).toEqual(['busy', 'available', 'available', 'busy']);
     expect(gridToSlots(grid)).toEqual([
@@ -24,7 +24,20 @@ describe('useAvailability', () => {
     ]);
   });
 
-  test('loads, saves and reports endpoint failures without inventing a maybe state', async () => {
+  test('round-trips maybe slots with an explicit status', () => {
+    const grid = slotsToGrid([
+      { day_of_week: 2, start_time: '20:00', end_time: '22:00', status: 'maybe' },
+    ]);
+    expect(grid[2][1]).toBe('maybe');
+    expect(gridToSlots(grid)).toEqual([
+      { day_of_week: 2, start_time: '20:00', end_time: '22:00', status: 'maybe' },
+    ]);
+    expect(nextAvailabilityState('busy')).toBe('available');
+    expect(nextAvailabilityState('available')).toBe('maybe');
+    expect(nextAvailabilityState('maybe')).toBe('busy');
+  });
+
+  test('loads, saves and reports endpoint failures', async () => {
     const { result } = renderHook(() => useAvailability('u1'));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.data.grid[1][1]).toBe('available');

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rankings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&amp;family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+a{color:#5FE3E8;text-decoration:none}a:hover{color:#8CF5F8}
+.scr{width:390px;height:844px;position:relative;overflow:hidden;background-color:#03153F;background-image:radial-gradient(ellipse 75% 42% at 50% 78%,rgba(0,82,140,.95) 0%,rgba(0,82,140,0) 72%),radial-gradient(ellipse 90% 35% at 50% 0%,rgba(14,58,124,.9) 0%,rgba(14,58,124,0) 75%),linear-gradient(90deg,#020C30 0%,#06306A 50%,#020C30 100%);color:#EAF2FF;font-family:Inter,system-ui,sans-serif;font-size:14px}
+.pad{padding:58px 20px 110px;display:flex;flex-direction:column;gap:14px}
+.h{font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.03em;margin:0}
+.k{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#9FB3D1}
+.mut{color:#9FB3D1}
+.card{background:rgba(19,43,92,.92);border:1px solid #234480;border-radius:16px;padding:16px}
+.row{display:flex;align-items:center;gap:12px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.chip{display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:#132B5C;border:1px solid #234480;color:#C9D8EE;font:600 12px Inter,sans-serif;white-space:nowrap}
+.chip.on{background:#5FE3E8;color:#07163A;border-color:#5FE3E8}
+.seg{display:flex;border-bottom:1px solid #234480}
+.seg span{flex:1;text-align:center;padding:12px 0;font:700 12px Inter,sans-serif;color:#9FB3D1;text-transform:uppercase;letter-spacing:.08em}
+.seg span.on{color:#5FE3E8;box-shadow:inset 0 -3px 0 #5FE3E8}
+.av{width:44px;height:44px;border-radius:50%;background:#234480;border:2px solid #2A4F8F;display:flex;align-items:center;justify-content:center;font:800 14px 'Saira Condensed',sans-serif;color:#8CF5F8;flex:none}
+.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ok{color:#4ADE80}
+.tabs{position:absolute;left:16px;right:16px;bottom:24px;height:64px;border-radius:22px;background:#07163A;border:1px solid #234480;display:flex;align-items:center;justify-content:space-around}
+.tab{width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:#9FB3D1;border-radius:14px}
+.tab.on{color:#5FE3E8;background:#132B5C}
+.rk{display:grid;grid-template-columns:26px 36px minmax(0,1fr) 54px 46px;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid #234480;font-size:13px;color:#EAF2FF}
+.rk.hd{font-size:10px;font-weight:700;letter-spacing:.08em;color:#9FB3D1;padding-top:8px;padding-bottom:8px}
+.rk .pt{font:800 17px 'Saira Condensed',sans-serif;text-align:right;color:#5FE3E8}
+.rk.me{background:#16346B;box-shadow:inset 3px 0 0 #5FE3E8}
+</style>
+</helmet>
+<div class="scr">
+<div class="pad" style="gap: 12px">
+<h1 class="h" style="font-size: 34px">Tournaments</h1>
+<div class="seg" role="tablist"><span>Tournaments</span><span>Competitions</span><span class="on">Rankings</span></div>
+<div class="row" style="gap: 8px"><span class="chip on">Clubs</span><span class="chip">Players</span><span class="chip">Europe</span><span class="chip">PS5</span></div>
+<div class="card" style="padding: 0; overflow: hidden">
+<div class="rk hd"><span>#</span><span></span><span>CLUB</span><span style="text-align: center">W-D-L</span><span style="text-align: right">PTS</span></div>
+<a class="rk" href="Club.dc.html"><span class="ok">1</span><div class="av" style="width: 34px; height: 34px; font-size: 11px">BC</div><b>Blue Comets</b><span class="mut" style="text-align: center">24-3-2</span><span class="pt">1 840</span></a>
+<a class="rk" href="Club.dc.html"><span class="ok">2</span><div class="av" style="width: 34px; height: 34px; font-size: 11px">IW</div><span>Iron Wolves</span><span class="mut" style="text-align: center">22-4-3</span><span class="pt">1 772</span></a>
+<a class="rk" href="Club.dc.html"><span class="ok">3</span><div class="av" style="width: 34px; height: 34px; font-size: 11px">GH</div><span>Golden Hawks</span><span class="mut" style="text-align: center">20-5-4</span><span class="pt">1 698</span></a>
+<a class="rk" href="Club.dc.html"><span>4</span><div class="av" style="width: 34px; height: 34px; font-size: 11px">RF</div><span>Red Foxes</span><span class="mut" style="text-align: center">19-3-7</span><span class="pt">1 611</span></a>
+<a class="rk" href="Club.dc.html"><span>5</span><div class="av" style="width: 34px; height: 34px; font-size: 11px">SU</div><span>Storm United</span><span class="mut" style="text-align: center">17-6-6</span><span class="pt">1 560</span></a>
+<div class="rk" style="justify-content: center; display: flex; color: #9FB3D1; font-size: 12px; padding: 6px">· · ·</div>
+<a class="rk me" href="TeamProfile.dc.html" style="border-bottom: 0"><span>12</span><div class="av" style="width: 34px; height: 34px; font-size: 11px">NOW</div><b>Night Owls FC</b><span class="mut" style="text-align: center">14-4-9</span><span class="pt">1 402</span></a>
+</div>
+<div class="row mut" style="font-size: 12px; gap: 8px"><svg class="i" style="width: 16px; height: 16px" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4M12 16h.01"></path></svg>Only ranked matches count. Your row stays visible.</div>
+</div>
+<nav class="tabs" aria-label="Main">
+<a class="tab" href="Home.dc.html" aria-label="Home"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg></a>
+<a class="tab" href="GameDay.dc.html" aria-label="Game Day"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5l4 2.9-1.5 4.6h-5L8 10.4z"></path></svg></a>
+<a class="tab on" href="Tournaments.dc.html" aria-label="Tournaments"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M10 17h4v4h-4z"></path></svg></a>
+<a class="tab" href="Profile.dc.html" aria-label="Profile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></a>
+<a class="tab" href="Search.dc.html" aria-label="Search"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg></a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

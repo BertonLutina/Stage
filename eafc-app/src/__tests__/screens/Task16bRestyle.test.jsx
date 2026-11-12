@@ -9,9 +9,6 @@ const mockBack = jest.fn();
 const mockPush = jest.fn();
 const mockLoadClubProfile = jest.fn();
 const mockResolve = jest.fn();
-const mockLoadSeason = jest.fn();
-const mockApply = jest.fn();
-let mockPlus = false;
 let mockPathname = '/apps/club/c1';
 let mockParams = { id: 'c1' };
 
@@ -50,16 +47,6 @@ jest.mock('../../api/stageClient', () => ({
 jest.mock('../../lib/clubProfileData', () => ({
   loadClubProfile: (...a) => mockLoadClubProfile(...a),
 }));
-jest.mock('../../lib/competitionSeason', () => ({
-  loadSeasonRegistrations: (...a) => mockLoadSeason(...a),
-}));
-jest.mock('../../lib/registrationEngine', () => ({
-  applyForLeague: (...a) => mockApply(...a),
-  ACTIVE_STATUSES: new Set(['pending', 'approved']),
-}));
-jest.mock('../../lib/subscriptionUtils', () => ({
-  entityHasStagePlus: () => mockPlus,
-}));
 jest.mock('../../components/profile/FollowToggleButton', () => {
   const React = require('react');
   const { Text } = require('react-native');
@@ -72,11 +59,9 @@ jest.mock('../../app/(tabs)/profile/clubProfileTabs', () => (props) => {
 });
 
 const ClubScreen = require('../../app/apps/club/[id]').default;
-const RegisterScreen = require('../../app/apps/register').default;
 const PageWalkthrough = require('../../components/onboarding/PageWalkthrough').default;
 const { guideFabBottom, guideFabClearance, guideFabBottomStack, guideFabClearanceStack, MIN_TOUCH } = require('../../components/ui/metrics');
 const { getPageWalkthrough } = require('../../lib/pageWalkthroughs');
-const { REGIONS } = require('../../lib/qualificationConfig');
 
 const STAGE_BG = '#03153F';
 const flush = () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
@@ -149,8 +134,8 @@ describe('Club app screen', () => {
     const r = render(<ClubScreen />);
     await waitFor(() => r.getByText('Red Foxes'));
     expect(r.getByTestId('stat-row-0')).toBeTruthy();
-    expect(r.getByText('Recent wins')).toBeTruthy();
-    expect(r.getByText('Players')).toBeTruthy();
+    expect(r.getByText('Record')).toBeTruthy();
+    expect(r.getByText('Squad')).toBeTruthy();
     expect(r.getByText('Trophies')).toBeTruthy();
     expect(mockTabsProps).toHaveBeenCalled();
     const props = mockTabsProps.mock.calls[0][0];
@@ -166,9 +151,9 @@ describe('Club app screen', () => {
     mockResolve.mockResolvedValue({ presidentClub: { id: 'own-club' } });
     mockLoadClubProfile.mockResolvedValue(BUNDLE);
     const r = render(<ClubScreen />);
-    await waitFor(() => r.getByText('Challenge'));
+    await waitFor(() => r.getByLabelText('Challenge'));
     expect(r.getByText('Follow')).toBeTruthy();
-    fireEvent.press(r.getByText('Challenge'));
+    fireEvent.press(r.getByLabelText('Challenge'));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/(tabs)/matches',
       params: expect.objectContaining({
@@ -196,8 +181,8 @@ describe('Club app screen', () => {
     });
     const r = render(<ClubScreen />);
     await waitFor(() => r.getByText('Red Foxes'));
-    expect(r.queryByText('Recent wins')).toBeNull();
-    expect(r.queryByText('Players')).toBeNull();
+    expect(r.queryByText('Record')).toBeNull();
+    expect(r.queryByText('Squad')).toBeNull();
     expect(r.queryByText('Trophies')).toBeNull();
     expect(r.queryByTestId('stat-row-0')).toBeNull();
   });
@@ -210,8 +195,8 @@ describe('Club app screen', () => {
     });
     const r = render(<ClubScreen />);
     await waitFor(() => r.getByText('Red Foxes'));
-    expect(r.getByText('Players')).toBeTruthy();
-    expect(r.queryByText('Recent wins')).toBeNull();
+    expect(r.getByText('Squad')).toBeTruthy();
+    expect(r.queryByText('Record')).toBeNull();
     expect(r.queryByText('Trophies')).toBeNull();
   });
 
@@ -235,79 +220,9 @@ describe('Club app screen', () => {
   });
 });
 
-describe('Register screen', () => {
-  const club = { id: 'c1', name: 'Foxes', platform: 'PS5' };
-  const user = { id: 'u1' };
-
-  function setup({ presidentClub = club, myClub = club, apps = [], plus = true, loadErr = null } = {}) {
-    mockPlus = plus;
-    mockResolve.mockResolvedValue({ user, club: myClub, presidentClub, player: null });
-    if (loadErr) mockLoadSeason.mockRejectedValue(loadErr);
-    else mockLoadSeason.mockResolvedValue({ leagues: [{ region_slug: REGIONS[0].slug, season_number: 4 }], myApps: apps });
-  }
-
+describe('Registration status pill', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    mockApply.mockResolvedValue({});
     useTheme('theme-dark');
-  });
-
-  test('loading shows the title area only once data is in', async () => {
-    mockResolve.mockReturnValue(new Promise(() => {}));
-    const r = render(<RegisterScreen />);
-    expect(r.queryByText('Regional leagues')).toBeNull();
-    expect(r.getByLabelText('Back')).toBeTruthy();
-  });
-
-  test('no club: explains a club is needed and offers no Apply', async () => {
-    setup({ presidentClub: null, myClub: null });
-    const r = render(<RegisterScreen />);
-    await waitFor(() => r.getByText('You need a club to apply for a regional league.'));
-    expect(r.queryByText('Apply')).toBeNull();
-    expect(r.getAllByText('Registration locked')).toHaveLength(REGIONS.length);
-  });
-
-  test('member who is not president sees the president-only message', async () => {
-    setup({ presidentClub: null });
-    const r = render(<RegisterScreen />);
-    await waitFor(() => r.getByText('Only the club president can apply for a regional league.'));
-  });
-
-  test('president without Plus sees the upsell and Open Store routes to the store', async () => {
-    setup({ plus: false });
-    const r = render(<RegisterScreen />);
-    await waitFor(() => r.getByText(/STAGE Plus is required/));
-    expect(r.queryByText('Apply')).toBeNull();
-    fireEvent.press(r.getByText('Open Store'));
-    expect(mockPush).toHaveBeenCalledWith('/apps/store');
-  });
-
-  test('president with Plus: existing application shows its status, others can apply', async () => {
-    setup({ apps: [{ region_slug: REGIONS[0].slug, status: 'pending' }] });
-    const r = render(<RegisterScreen />);
-    await waitFor(() => r.getByText('PENDING'));
-    expect(r.getAllByText('Apply')).toHaveLength(REGIONS.length - 1);
-    // pending reads as a warning pill, not the always-selected cyan chip
-    const pill = r.getByLabelText('Application status: PENDING');
-    const flatPill = StyleSheet.flatten(pill.props.style);
-    const tokens = useThemeStore.getState().tokens;
-    expect(flatPill.backgroundColor).toBe(tokens.warningBg);
-    expect(flatPill.borderColor).toBe(tokens.warningBorder);
-    expect(StyleSheet.flatten(r.getByText('PENDING').props.style).color).toBe(tokens.warning);
-    expect(flatPill.backgroundColor).not.toBe(tokens.cyan);
-    expect(flatPill.height).toBe(34);
-    expect(flatPill.borderRadius).toBe(999);
-  });
-
-  test('an approved application is a success pill', async () => {
-    setup({ apps: [{ region_slug: REGIONS[0].slug, status: 'approved' }] });
-    const r = render(<RegisterScreen />);
-    await waitFor(() => r.getByText('APPROVED'));
-    const tokens = useThemeStore.getState().tokens;
-    const flatPill = StyleSheet.flatten(r.getByLabelText('Application status: APPROVED').props.style);
-    expect(flatPill.backgroundColor).toBe(tokens.successBg);
-    expect(flatPill.borderColor).toBe(tokens.success);
-    expect(StyleSheet.flatten(r.getByText('APPROVED').props.style).color).toBe(tokens.success);
   });
 
   test('status tones: approved success, rejected/ended danger, pending/waitlisted warning', () => {
@@ -327,64 +242,6 @@ describe('Register screen', () => {
     expect(flatRejected.backgroundColor).toBe(tokens.dangerBg);
     expect(flatRejected.borderColor).toBe(tokens.danger);
     expect(StyleSheet.flatten(rejected.getByText('REJECTED').props.style).color).toBe(tokens.danger);
-  });
-
-  test('apply flow: select region, type note, send, then form closes and reloads', async () => {
-    setup();
-    const r = render(<RegisterScreen />);
-    await waitFor(() => r.getAllByText('Apply'));
-    fireEvent.press(r.getByLabelText(`Apply for ${REGIONS[1].name}`));
-    expect(r.getByText(`Apply · ${REGIONS[1].name}`)).toBeTruthy();
-    fireEvent.changeText(r.getByPlaceholderText('Note to admin (optional)'), '  hello ');
-    fireEvent.press(r.getByText('Send application'));
-    await waitFor(() => expect(mockApply).toHaveBeenCalled());
-    const args = mockApply.mock.calls[0];
-    expect(args[1]).toBe(REGIONS[1].slug);
-    expect(args[4].note).toBe('hello');
-    await flush();
-    await waitFor(() => expect(r.queryByText('Send application')).toBeNull());
-    expect(mockLoadSeason).toHaveBeenCalledTimes(2);
-  });
-
-  test('a failed application shows the error and keeps the form', async () => {
-    setup();
-    mockApply.mockRejectedValue(new Error('Nope'));
-    const r = render(<RegisterScreen />);
-    await waitFor(() => r.getAllByText('Apply'));
-    fireEvent.press(r.getByLabelText(`Apply for ${REGIONS[0].name}`));
-    fireEvent.press(r.getByText('Send application'));
-    await waitFor(() => r.getByText('Nope'));
-    expect(r.getByText('Send application')).toBeTruthy();
-  });
-
-  test('load failure shows the error text', async () => {
-    setup({ loadErr: new Error('Boom') });
-    const r = render(<RegisterScreen />);
-    await waitFor(() => r.getByText('Boom'));
-  });
-
-  test('page bottom padding clears the Guide button and the Send button shows a full-strength spinner', async () => {
-    setup();
-    let resolveApply;
-    mockApply.mockReturnValue(new Promise((res) => { resolveApply = res; }));
-    const r = render(<RegisterScreen />);
-    await waitFor(() => r.getAllByText('Apply'));
-    const content = r.getByTestId('screen-content');
-    expect(StyleSheet.flatten(content.props.style).paddingBottom).toBeGreaterThanOrEqual(guideFabClearanceStack(0));
-    fireEvent.press(r.getByLabelText(`Apply for ${REGIONS[0].name}`));
-    fireEvent.press(r.getByText('Send application'));
-    const btn = r.getByLabelText('Send application');
-    expect(btn.props.accessibilityState.busy).toBe(true);
-    expect(StyleSheet.flatten(typeof btn.props.style === 'function' ? btn.props.style({ pressed: false }) : btn.props.style).opacity).toBe(1);
-    await act(async () => { resolveApply({}); });
-  });
-
-  test('Live Dark keeps the page transparent', async () => {
-    useTheme('theme-video');
-    setup();
-    const r = render(<RegisterScreen />);
-    await waitFor(() => r.getAllByText('Apply'));
-    expect(styles(r).some((s) => s.backgroundColor === STAGE_BG)).toBe(false);
   });
 });
 

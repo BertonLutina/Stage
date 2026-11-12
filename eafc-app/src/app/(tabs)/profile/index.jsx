@@ -50,7 +50,7 @@ export default function ProfileIndex() {
   return (
     <GamerProfileShell>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: guideFabClearance(insets.bottom), backgroundColor: 'transparent' }}>
+      <View style={{ flex: 1, paddingBottom: guideFabClearance(insets.bottom), backgroundColor: 'transparent' }}>
         <ProfileScreen
           embedded
           player={identities.player}

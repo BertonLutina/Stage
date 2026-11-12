@@ -18,7 +18,7 @@
 - **No new dependency** without justifying it in the section report. `expo-linear-gradient` is already a dependency (used in `src/components/common/GradientBackground.jsx`).
 - Visible strings go through `src/translations` (FR first, plus existing languages). Keep existing `t()` keys and `testID`s where screens are reused by tests.
 - Accessibility: real buttons, `accessibilityLabel` on icon-only buttons, token-table contrast, touch targets ≥ 44.
-- Tokens (verbatim, from `STAGE_REDESIGN_PROMPT.md`): `bg` gradient (fallback `#03153F`) · `bgDeep #07163A` · `card #132B5C` · `cardHi #16346B` · `border #234480` · `borderStrong #4A6AA5` · `text #EAF2FF` · `textSoft #C9D8EE` · `muted #9FB3D1` · `cyan #5FE3E8` · `cyanHi #8CF5F8` · `aqua #2CCFD6` · `onCyan #07163A` · `success #4ADE80 / bg #14532D` · `danger #F87171 / bg #5B1A1A` · `warning #FBBF24 / bg #2A2418 / border #B45309`.
+- Tokens (verbatim, from `STAGE_REDESIGN_PROMPT.md`): `bg` gradient (fallback `#03153F`) · `bgDeep #07163A` · `card #132B5C` · `cardHi #16346B` · `border #234480` · `borderStrong #4A6AA5` · `text #EAF2FF` · `textSoft #C9D8EE` · `muted #9FB3D1` · `cyan #4A6AA5` · `cyanHi #5B79AF` · `aqua #3C5E99` · `onCyan #EAF2FF` · `success #4ADE80 / bg #14532D` · `danger #F87171 / bg #5B1A1A` · `warning #FBBF24 / bg #2A2418 / border #B45309`.
 - Gradient background (6 Nov): bottom-centre radial glow `rgba(0,82,140,0.95)`→transparent, top-centre radial glow `rgba(14,58,124,0.9)`→transparent, horizontal linear `#020C30`→`#06306A`→`#020C30`. Header bands = `rgba(2,12,48,0.35)`. Live Dark wallpaper mode must keep working on top.
 - Radii: card 16 · button 14 · input/icon button 12 · chip 999 · tab bar 22 · avatar tile 12. Sizes: button h52 · icon button 44×44 · chip h34 · input h50. Type: headings UPPERCASE `EASports15` (`FONT_EA_SPORTS` in `src/lib/fonts.js`), screen titles 34, hero 38–40; section label 11/600/uppercase/0.12em/`muted`; body 14–15. Icons: Ionicons outline 22px, no emoji.
 - Floating tab bar: 16px sides, 24px bottom, h64, radius 22, `bgDeep` + `border`, 5 icon-only tabs (Home · Game Day · Tournaments · Profile · Search), active = cyan icon on a `card` pill.
@@ -100,7 +100,7 @@ The `src/components/ui/` primitives already exist (`Screen, Card, Button, IconBu
 - Modify: `src/lib/stageTheme.js`, `tailwind.config.js`, `src/store/themeStore.js`
 - Test: `src/__tests__/lib/stageTheme.test.js`
 
-- [ ] **Step 1:** Update `stageTheme.test.js` to assert the Global-Constraints token values (fallback `bg #03153F`, `bgDeep #07163A`, `card #132B5C`, `cardHi #16346B`, `cyan #5FE3E8`, radii card 16 / button 14 / input 12 / chip 999 / tab 22) — the test is the spec here.
+- [ ] **Step 1:** Update `stageTheme.test.js` to assert the Global-Constraints token values (fallback `bg #03153F`, `bgDeep #07163A`, `card #132B5C`, `cardHi #16346B`, `cyan #4A6AA5`, radii card 16 / button 14 / input 12 / chip 999 / tab 22) — the test is the spec here.
 - [ ] **Step 2:** Run → FAIL on old values.
 - [ ] **Step 3:** Set the dark-theme tokens in `stageTheme.js` + mirror in `tailwind.config.js`; keep the light theme working.
 - [ ] **Step 4:** Run `stageTheme.test.js` then `yarn test` → section tests green or deliberately updated.

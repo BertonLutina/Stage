@@ -139,7 +139,7 @@ const PLAYER = { id: 'p1', gamertag: 'Kaze', notification_settings: null };
 
 async function renderSettings() {
   const utils = render(<Settings />);
-  await utils.findByText('Store & wallet');
+  await utils.findByText('Live Dark wallpaper');
   return utils;
 }
 
@@ -160,9 +160,9 @@ describe('Settings screen', () => {
     let release;
     mockMe.mockReturnValue(new Promise((r) => { release = r; }));
     const { queryByText, findByText, getByLabelText, toJSON } = render(<Settings />);
-    expect(queryByText('Store & wallet')).toBeNull();
+    expect(queryByText('Live Dark wallpaper')).toBeNull();
     await act(async () => { release({ language: 'en' }); });
-    await findByText('Store & wallet');
+    await findByText('Live Dark wallpaper');
     fireEvent.press(getByLabelText('Back'));
     expect(mockBack).toHaveBeenCalled();
     expect(strayHex(toJSON)).toEqual([]);
@@ -174,13 +174,13 @@ describe('Settings screen', () => {
     const original = Platform.OS;
     Platform.OS = 'ios';
     try {
-      const { UNSAFE_getAllByType, getByText, getByLabelText } = await renderSettings();
+      const { UNSAFE_getAllByType, getAllByText, getByLabelText } = await renderSettings();
       const avoiders = UNSAFE_getAllByType(KeyboardAvoidingView);
       expect(avoiders).toHaveLength(1);
       expect(avoiders[0].props.behavior).toBe('padding');
       // it wraps the page content (the title lives inside it), not just the dialog
       expect(avoiders[0].findAll((n) => n.props?.children === 'Settings').length).toBeGreaterThan(0);
-      expect(getByText('Settings')).toBeTruthy();
+      expect(getAllByText('Settings').length).toBeGreaterThan(0);
       // opening the delete dialog adds its own avoider for the confirm input
       fireEvent.press(getByLabelText('Delete Account'));
       expect(UNSAFE_getAllByType(KeyboardAvoidingView)).toHaveLength(2);
@@ -189,21 +189,26 @@ describe('Settings screen', () => {
     }
   });
 
-  test('the theme switch keeps its translated accessible group name', async () => {
-    const { getByLabelText } = await renderSettings();
-    const group = getByLabelText('App Theme');
-    expect(group.props.accessibilityRole).toBe('radiogroup');
-    // it is the segmented control that holds the Dark / Live Dark options
-    expect(group.findAll((n) => n.props?.accessibilityLabel === 'LIVE DARK').length).toBeGreaterThan(0);
+  test('Appearance and Notifications deeper screens stay reachable from More', async () => {
+    const { getAllByText, getByText, queryByLabelText } = await renderSettings();
+    const appearanceRows = getAllByText('Appearance');
+    fireEvent.press(appearanceRows[appearanceRows.length - 1]);
+    expect(mockPush).toHaveBeenCalledWith('/apps/appearance');
+    fireEvent.press(getByText('Notification settings'));
+    expect(mockPush).toHaveBeenCalledWith('/apps/notification-settings');
+    expect(queryByLabelText('App Theme')).toBeNull();
+    expect(queryByLabelText('Increase blur')).toBeNull();
+    expect(queryByLabelText('Messages, email')).toBeNull();
   });
 
   test('title is the 34px uppercase heading; section labels are muted 11px caps', async () => {
-    const { getByText } = await renderSettings();
-    const title = getByText('Settings');
+    const { getAllByText, getByText } = await renderSettings();
+    const title = getAllByText('Settings').find((n) => flat(n).fontSize === 34);
+    expect(title).toBeTruthy();
     expect(flat(title).fontSize).toBe(34);
     expect(flat(title).textTransform).toBe('uppercase');
     expect(flat(title).color).toBe(useThemeStore.getState().tokens.text);
-    const label = getByText('Store & wallet');
+    const label = getByText('Account');
     expect(flat(label).fontSize).toBe(11);
     expect(flat(label).color).toBe(useThemeStore.getState().tokens.muted);
   });
@@ -269,130 +274,49 @@ describe('Settings screen', () => {
     });
   });
 
-  describe('theme switch', () => {
-    test('Dark / Live Dark segmented control drives the theme store and the Live Dark controls', async () => {
-      const { getByLabelText, queryByLabelText, getByText } = await renderSettings();
-      expect(useThemeStore.getState().stageId).toBe('theme-dark');
-      expect(queryByLabelText('Increase blur')).toBeNull();
-      expect(getByLabelText('Dark').props.accessibilityState.selected).toBe(true);
-      expect(getByLabelText('LIVE DARK').props.accessibilityState.selected).toBe(false);
-
-      fireEvent.press(getByLabelText('LIVE DARK'));
-      await waitFor(() => expect(useThemeStore.getState().stageId).toBe('theme-video'));
-      expect(useThemeStore.getState().tokens.live).toBe(true);
-      expect(getByLabelText('LIVE DARK').props.accessibilityState.selected).toBe(true);
-      expect(getByText(/Background blur: \d+px/)).toBeTruthy();
-
-      fireEvent.press(getByLabelText('Increase blur'));
-      expect(getByText(/Background blur: 2px/)).toBeTruthy();
-      fireEvent.press(getByLabelText('Decrease overlay'));
-      expect(getByText(/Dark blue overlay: 13%/)).toBeTruthy();
-
-      fireEvent.press(getByLabelText('Dark'));
-      await waitFor(() => expect(useThemeStore.getState().stageId).toBe('theme-dark'));
-      expect(queryByLabelText('Increase blur')).toBeNull();
-    });
-
-    test('Live Dark upload slots: filled picks it, empty opens the picker, long press clears', async () => {
-      const ImagePicker = require('expo-image-picker');
-      ImagePicker.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ uri: 'file:///new.jpg' }] });
-      useTheme('theme-video');
-      polyfillStorage.setItem('stage-theme', 'theme-video');
-      polyfillStorage.setItem('stage-live-dark-uploads', JSON.stringify(['file:///a.jpg', '', '']));
-      const { getByLabelText } = await renderSettings();
-
-      fireEvent.press(getByLabelText('Use upload 1 as background'));
-      expect(polyfillStorage.getItem('stage-live-dark-bg')).toBe('custom-0');
-
-      await act(async () => { fireEvent.press(getByLabelText('Upload background 2')); });
-      expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalled();
-      expect(JSON.parse(polyfillStorage.getItem('stage-live-dark-uploads'))[1]).toBe('file:///new.jpg');
-
-      fireEvent(getByLabelText('Use upload 1 as background'), 'longPress');
-      expect(JSON.parse(polyfillStorage.getItem('stage-live-dark-uploads'))[0]).toBe('');
-      polyfillStorage.setItem('stage-live-dark-uploads', '[]');
-    });
-
+  describe('theme', () => {
     test('Live Dark renders without stray hex or undefined style keys', async () => {
       useTheme('theme-video');
       polyfillStorage.setItem('stage-theme', 'theme-video');
-      const { toJSON, getByLabelText } = await renderSettings();
-      expect(getByLabelText('LIVE DARK').props.accessibilityState.selected).toBe(true);
+      const { toJSON } = await renderSettings();
       expect(strayHex(toJSON)).toEqual([]);
       expect(undefinedStyleKeys(toJSON)).toEqual([]);
     });
   });
 
   describe('language and timezone', () => {
-    test('language select is a 50 high field; the sheet changes the language', async () => {
-      const { getByLabelText, getByText } = await renderSettings();
-      const field = getByLabelText(/^Language, /);
-      expect(flat(field).height).toBe(50);
-      expect(flat(field).borderRadius).toBe(12);
-      fireEvent.press(field);
+    test('language row opens a sheet and switches the language', async () => {
+      const { getByText, getByLabelText } = await renderSettings();
+      fireEvent.press(getByText('Language'));
       fireEvent.press(getByLabelText(/Français/));
-      // the screen re-renders in the chosen language
-      expect(getByLabelText(/^Langue, .*Français/)).toBeTruthy();
-      expect(getByText('Match times use this timezone. Brussels automatically switches between CET and CEST.')).toBeTruthy();
+      expect(getByText('Langue')).toBeTruthy();
+      expect(getByText('Français')).toBeTruthy();
     });
 
-    test('an unlisted timezone is still offered, and a long one truncates', async () => {
+    test('an unlisted timezone is still offered in the More sheet', async () => {
       const long = `Region/${'Long_City_'.repeat(8)}`;
       mockMe.mockResolvedValue({ language: 'en', timezone: long });
-      const { getByLabelText, getAllByText } = await renderSettings();
-      const field = getByLabelText(`Timezone, ${long}`);
-      expect(field).toBeTruthy();
-      const valueText = getAllByText(long)[0];
-      expect(valueText.props.numberOfLines).toBe(1);
-      fireEvent.press(field);
-      // 11 options (10 listed + this one) so the sheet shows its search field
+      const { getByText, getByLabelText, getAllByText } = await renderSettings();
+      fireEvent.press(getByText('Timezone'));
       fireEvent.changeText(getByLabelText('Search…'), 'Long_City');
-      expect(getAllByText(long).length).toBeGreaterThan(1);
-      expect(getAllByText(long).every((n) => n.props.numberOfLines === 1)).toBe(true);
+      expect(getAllByText(long).length).toBeGreaterThan(0);
     });
 
-    test('save sends the language, theme fields and timezone', async () => {
-      const { getByLabelText } = await renderSettings();
-      await act(async () => { fireEvent.press(getByLabelText('Save changes')); });
-      expect(mockUpdateMe).toHaveBeenCalledWith(expect.objectContaining({
-        language: 'en',
-        customPrimaryColor: '#00d4ff',
-        customSecondaryTextColor: '#e0e0e0',
-        customBackgroundOpacity: 0.95,
-      }));
-      expect(mockUpdateTimezone).toHaveBeenCalledWith('Europe/Brussels');
-      expect(getByLabelText('Settings saved')).toBeTruthy();
-    });
-
-    test('a failed save keeps the screen usable', async () => {
-      mockUpdateMe.mockRejectedValueOnce(new Error('nope'));
-      const alertSpy = jest.spyOn(require('react-native').Alert, 'alert').mockImplementation(() => {});
-      const { getByLabelText } = await renderSettings();
-      await act(async () => { fireEvent.press(getByLabelText('Save changes')); });
-      expect(alertSpy).toHaveBeenCalledWith('Save failed', 'nope');
-      expect(getByLabelText('Save changes')).toBeTruthy();
-      alertSpy.mockRestore();
+    test('mockup hub shows Live Dark, Home layout, Language and the three quick notification toggles', async () => {
+      const { getByText, getByLabelText } = await renderSettings();
+      expect(getByText('Live Dark wallpaper')).toBeTruthy();
+      expect(getByText('Home layout')).toBeTruthy();
+      expect(getByText('Language')).toBeTruthy();
+      expect(getByLabelText('Match reminders, in-app').props.accessibilityRole).toBe('switch');
+      expect(getByLabelText('Contract offers, in-app')).toBeTruthy();
+      expect(getByLabelText('Club mail, in-app')).toBeTruthy();
+      expect(getByText('Edit profile')).toBeTruthy();
+      expect(getByText('Linked accounts')).toBeTruthy();
+      expect(getByText('Sign out')).toBeTruthy();
     });
   });
 
   describe('notifications', () => {
-    test('toggling a category updates the player and flips the switch', async () => {
-      const { getAllByLabelText } = await renderSettings();
-      const sw = getAllByLabelText('Match reminders, email')[0];
-      expect(sw.props.accessibilityState.checked).toBe(true);
-      await act(async () => { fireEvent.press(sw); });
-      expect(mockPlayerUpdate).toHaveBeenCalledWith('p1', expect.objectContaining({ notification_settings: expect.any(Object) }));
-      expect(getAllByLabelText('Match reminders, email')[0].props.accessibilityState.checked).toBe(false);
-    });
-
-    test('without a player nothing is saved remotely but the toggle still flips', async () => {
-      mockResolve.mockResolvedValue({ user: { id: 'u1' }, player: null, presidentClub: { id: 'c1' } });
-      const { getAllByLabelText } = await renderSettings();
-      await act(async () => { fireEvent.press(getAllByLabelText('Messages, mobile')[0]); });
-      expect(mockPlayerUpdate).not.toHaveBeenCalled();
-      expect(getAllByLabelText('Messages, mobile')[0].props.accessibilityState.checked).toBe(false);
-    });
-
     test('push on: toggling asks the native layer to opt out', async () => {
       const { getByLabelText } = await renderSettings();
       const sw = getByLabelText('Lock screen & banners');
@@ -430,17 +354,6 @@ describe('Settings screen', () => {
       const { getByText, queryByLabelText } = await renderSettings();
       expect(getByText(/Push is not configured on this build/)).toBeTruthy();
       expect(queryByLabelText('Lock screen & banners')).toBeNull();
-    });
-
-    test('test toasts: the all button and each sample chip', async () => {
-      const { getByLabelText, getAllByText } = await renderSettings();
-      fireEvent.press(getByLabelText('Send all test toasts'));
-      expect(mockToast).toHaveBeenCalledTimes(8);
-      mockToast.mockClear();
-      // only the chip is pressable; the 'Messages' row labels in the switches are not
-      getAllByText('Messages').forEach((node) => fireEvent.press(node));
-      expect(mockToast).toHaveBeenCalledTimes(1);
-      expect(mockToast).toHaveBeenCalledWith('Messages · New chat from Neo');
     });
   });
 
@@ -487,7 +400,7 @@ describe('Settings screen', () => {
 
     test('sign out is a danger row that logs out and returns to login', async () => {
       const { getByText } = await renderSettings();
-      const label = getByText('Sign Out');
+      const label = getByText('Sign out');
       expect(flat(label).color).toBe(useThemeStore.getState().tokens.danger);
       await act(async () => { fireEvent.press(label); });
       expect(mockLogout).toHaveBeenCalled();

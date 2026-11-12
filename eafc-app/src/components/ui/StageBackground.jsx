@@ -1,6 +1,8 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import useThemeStore from '@/store/themeStore';
+import { hexToRgba } from '@/lib/stageTheme';
 
 /**
  * The Stage screen background (rebuild spec, 6 Nov 2026). Three layers, bottom
@@ -15,6 +17,20 @@ import { LinearGradient } from 'expo-linear-gradient';
  * Section-2 report. Fills its parent; render it behind screen content.
  */
 export default function StageBackground({ testID = 'stage-bg' }) {
+  const backdrop = useThemeStore((s) => s.tokens.customBackdrop);
+  if (backdrop) {
+    // Custom theme: the user's background colour fading to their gradient colour.
+    return (
+      <View testID={testID} style={StyleSheet.absoluteFill} pointerEvents="none">
+        <LinearGradient
+          colors={[backdrop.from, hexToRgba(backdrop.to, backdrop.opacity)]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
+    );
+  }
   return (
     <View testID={testID} style={StyleSheet.absoluteFill} pointerEvents="none">
       <LinearGradient

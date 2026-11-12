@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, RefreshControl, Text, View } from 'react-
 import { useRouter } from 'expo-router';
 import useAuthStore from '../../../store/authStore';
 import useThemeStore from '@/store/themeStore';
-import useAvailability, { AVAILABILITY_WINDOWS } from '@/hooks/useAvailability';
+import useAvailability, { AVAILABILITY_WINDOWS, nextAvailabilityState } from '@/hooks/useAvailability';
 import { Button, IconButton, Screen, SectionLabel } from '@/components/ui';
 import { headingStyle } from '@/lib/fonts';
 
@@ -14,6 +14,16 @@ const DAYS = [
   { value: 0, short: 'Sun', long: 'Sunday' },
 ];
 const LABELS = ['18–20', '20–22', '22–24', '00–02'];
+
+function cellColors(state, tokens) {
+  if (state === 'available') {
+    return { backgroundColor: tokens.cyan, borderColor: tokens.cyan };
+  }
+  if (state === 'maybe') {
+    return { backgroundColor: '#1E4F7A', borderColor: '#2CCFD6' };
+  }
+  return { backgroundColor: tokens.bgDeep, borderColor: tokens.border };
+}
 
 export default function AvailabilityScreen() {
   const { user } = useAuthStore();
@@ -30,7 +40,7 @@ export default function AvailabilityScreen() {
     dirtyRef.current = true;
     setGrid((current) => current.map((row, index) => (
       index === day ? row.map((value, slot) => (
-        slot === column ? (value === 'available' ? 'busy' : 'available') : value
+        slot === column ? nextAvailabilityState(value) : value
       )) : row
     )));
   };
@@ -78,27 +88,32 @@ export default function AvailabilityScreen() {
             <View key={day.value} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Text style={{ color: tokens.text, fontSize: 13, fontWeight: '700', width: 42 }}>{day.short}</Text>
               {AVAILABILITY_WINDOWS.map((_, column) => {
-                const active = grid?.[day.value]?.[column] === 'available';
+                const state = grid?.[day.value]?.[column] || 'busy';
+                const colors = cellColors(state, tokens);
                 return (
                   <Pressable
                     key={LABELS[column]}
                     accessibilityRole="button"
-                    accessibilityLabel={`${day.long} ${LABELS[column]}, ${active ? 'available' : 'busy'}`}
+                    accessibilityLabel={`${day.long} ${LABELS[column]}, ${state}`}
                     onPress={() => toggle(day.value, column)}
                     style={{
                       flex: 1, minHeight: 48, borderRadius: 10, borderWidth: 1,
-                      borderColor: active ? tokens.cyan : tokens.border,
-                      backgroundColor: active ? tokens.cyan : tokens.bgDeep,
+                      borderColor: colors.borderColor,
+                      backgroundColor: colors.backgroundColor,
                     }}
                   />
                 );
               })}
             </View>
           ))}
-          <View style={{ flexDirection: 'row', gap: 18, marginTop: 4 }}>
-            {[['Available', tokens.cyan], ['Busy', tokens.bgDeep]].map(([label, color]) => (
+          <View style={{ flexDirection: 'row', gap: 18, marginTop: 4, flexWrap: 'wrap' }}>
+            {[
+              ['Available', tokens.cyan, tokens.cyan],
+              ['Maybe', '#1E4F7A', '#2CCFD6'],
+              ['Busy', tokens.bgDeep, tokens.border],
+            ].map(([label, fill, border]) => (
               <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <View style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: color, borderWidth: 1, borderColor: label === 'Busy' ? tokens.border : color }} />
+                <View style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: fill, borderWidth: 1, borderColor: border }} />
                 <Text style={{ color: tokens.muted, fontSize: 12 }}>{label}</Text>
               </View>
             ))}

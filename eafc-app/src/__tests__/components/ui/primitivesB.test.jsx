@@ -51,9 +51,9 @@ describe('ui primitives B', () => {
         <SegmentedControl testID="seg" options={options} value="a" onChange={() => {}} />,
       );
       expect(flat(getByTestId('seg')).backgroundColor).toBe('#07163A');
-      expect(flat(getByTestId('seg-a')).backgroundColor).toBe('#5FE3E8');
-      expect(flat(getByTestId('seg-b')).backgroundColor).not.toBe('#5FE3E8');
-      expect(flat(getByText('Alpha')).color).toBe('#07163A');
+      expect(flat(getByTestId('seg-a')).backgroundColor).toBe('#4A6AA5');
+      expect(flat(getByTestId('seg-b')).backgroundColor).not.toBe('#4A6AA5');
+      expect(flat(getByText('Alpha')).color).toBe('#EAF2FF');
       expect(getByTestId('seg-a').props.accessibilityState.selected).toBe(true);
       expect(getByTestId('seg-b').props.accessibilityState.selected).toBe(false);
     });
@@ -84,7 +84,7 @@ describe('ui primitives B', () => {
       const { getAllByTestId } = render(<StepProgress total={4} current={2} />);
       const bars = getAllByTestId(/^step-bar-/);
       expect(bars).toHaveLength(4);
-      const filled = bars.filter((b) => flat(b).backgroundColor === '#5FE3E8');
+      const filled = bars.filter((b) => flat(b).backgroundColor === '#4A6AA5');
       expect(filled).toHaveLength(2);
       expect(flat(bars[2]).backgroundColor).toBe('#234480');
     });
@@ -93,7 +93,7 @@ describe('ui primitives B', () => {
       const { getAllByTestId } = render(<StepProgress current={9} />);
       const bars = getAllByTestId(/^step-bar-/);
       expect(bars).toHaveLength(4);
-      expect(bars.every((b) => flat(b).backgroundColor === '#5FE3E8')).toBe(true);
+      expect(bars.every((b) => flat(b).backgroundColor === '#4A6AA5')).toBe(true);
     });
   });
 
@@ -236,10 +236,10 @@ describe('ui primitives B', () => {
       const node = getByLabelText('Notifications');
       expect(node.props.accessibilityRole).toBe('switch');
       expect(node.props.accessibilityState.checked).toBe(true);
-      expect(flat(node).backgroundColor).toBe('#5FE3E8');
+      expect(flat(node).backgroundColor).toBe('#4A6AA5');
       rerender(<Toggle value={false} onValueChange={() => {}} accessibilityLabel="Notifications" />);
       expect(getByLabelText('Notifications').props.accessibilityState.checked).toBe(false);
-      expect(flat(getByLabelText('Notifications')).backgroundColor).not.toBe('#5FE3E8');
+      expect(flat(getByLabelText('Notifications')).backgroundColor).not.toBe('#4A6AA5');
     });
   });
 

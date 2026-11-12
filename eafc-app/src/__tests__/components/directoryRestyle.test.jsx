@@ -82,14 +82,18 @@ beforeEach(() => {
 describe('Apps directory', () => {
   test('owns the app grid, filter and navigation', () => {
     const { getByLabelText, getByText, queryByText, toJSON } = render(<AppsIndex />);
-    expect(getByText('Find Players')).toBeTruthy();
-    fireEvent.press(getByLabelText('Find Clubs'));
+    expect(getByText('APP DIRECTORY')).toBeTruthy();
+    expect(getByText('Find players')).toBeTruthy();
+    expect(getByText('Club')).toBeTruthy();
+    expect(getByText('Compete')).toBeTruthy();
+    expect(getByText('Account')).toBeTruthy();
+    fireEvent.press(getByLabelText('Find clubs'));
     expect(mockPush).toHaveBeenCalledWith('/apps/find-clubs');
     fireEvent.changeText(getByLabelText('Search apps'), 'zzzz-none');
     expect(getByText(/No apps match/)).toBeTruthy();
-    expect(queryByText('Find Players')).toBeNull();
+    expect(queryByText('Find players')).toBeNull();
     fireEvent.press(getByLabelText('Clear search'));
-    expect(getByText('Find Players')).toBeTruthy();
+    expect(getByText('Find players')).toBeTruthy();
     expect(strayHex(toJSON)).toEqual([]);
   });
 });

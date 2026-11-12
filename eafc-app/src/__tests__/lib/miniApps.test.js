@@ -1,16 +1,24 @@
 import { getMiniAppGroups } from '../../lib/miniApps';
 
 describe('mini apps catalog', () => {
-  test('keeps only phone destinations', () => {
-    const ids = getMiniAppGroups('player').flatMap((group) => group.items).map((item) => item.id);
+  test('keeps the Apps mockup groups (Club / Compete / Account)', () => {
+    const groups = getMiniAppGroups('player');
+    expect(groups.map((g) => g.id)).toEqual(['club', 'compete', 'account']);
+    const ids = groups.flatMap((group) => group.items).map((item) => item.id);
     expect(ids).toEqual([
-      'find-players',
-      'find-clubs',
-      'transfers',
+      'my-club',
       'inbox',
-      'store',
+      'transfers',
+      'find-players',
+      'competitions',
+      'leagues',
+      'find-clubs',
+      'register',
       'wallet',
+      'store',
       'settings',
+      'news',
+      'lifestyle',
     ]);
   });
 
@@ -20,22 +28,21 @@ describe('mini apps catalog', () => {
     expect(president).toEqual(player);
     expect(player).not.toEqual(expect.arrayContaining([
       'rankings',
-      'lifestyle',
       'scouting',
-      'news',
       'discord',
       'contracts',
       'free-agents',
     ]));
   });
 
-  test('does not duplicate native tab destinations', () => {
+  test('native-tab deep links stay only when keepOnNativeTab is set', () => {
     for (const mode of ['player', 'club']) {
       const items = getMiniAppGroups(mode).flatMap((group) => group.items);
-      const bareNative = items.filter((item) => (
+      const native = items.filter((item) => (
         ['/(tabs)/dashboard', '/(tabs)/matches', '/(tabs)/tournaments', '/(tabs)/profile'].includes(item.href)
       ));
-      expect(bareNative).toEqual([]);
+      expect(native.every((item) => item.keepOnNativeTab)).toBe(true);
+      expect(native.map((item) => item.id)).toEqual(['leagues']);
     }
   });
 });

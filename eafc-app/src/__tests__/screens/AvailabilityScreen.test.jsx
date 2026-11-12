@@ -20,11 +20,13 @@ describe('AvailabilityScreen', () => {
     api.put.mockResolvedValue({ data: { data: [] } });
   });
 
-  test('renders the real 7 by 4 binary grid and saves changed slots', async () => {
-    const { findByLabelText, getByText, queryByText } = render(<AvailabilityScreen />);
+  test('renders the 7 by 4 tri-state grid and saves a cleared slot', async () => {
+    const { findByLabelText, getByText } = render(<AvailabilityScreen />);
     const monday = await findByLabelText('Monday 20–22, available');
-    expect(queryByText('Maybe')).toBeNull();
+    expect(getByText('Maybe')).toBeTruthy();
+    // available → maybe → busy
     fireEvent.press(monday);
+    fireEvent.press(await findByLabelText('Monday 20–22, maybe'));
     fireEvent.press(getByText('Save availability'));
     await waitFor(() => expect(api.put).toHaveBeenCalledWith('/users/u1/availability', { slots: [] }));
   });

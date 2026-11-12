@@ -1,7 +1,7 @@
 /**
- * Mobile Apps catalog — only destinations that belong on the phone.
- * Game Day, Tournaments, Home, and Profile stay in the bottom tabs.
- * GOST / regional leagues / register live on the Tournaments tab.
+ * Mobile Apps catalog — destinations that do not belong in the native tabs.
+ * Layout groups match `docs/design/stage-mockups/5-apps/Apps` (Club / Compete / Account).
+ * Game Day, Tournaments, Home, Profile stay in the bottom tabs; Compete tiles deep-link in.
  */
 
 const NATIVE_TAB_HREFS = new Set([
@@ -20,40 +20,84 @@ function withoutNativeTabs(groups) {
     .filter((group) => group.items.length > 0);
 }
 
-const DISCOVER_ITEMS = [
+const CLUB_ITEMS = [
   {
-    id: 'find-players',
-    label: 'Find Players',
-    icon: 'people-outline',
-    keywords: ['search players', 'directory', 'market'],
-    href: '/apps/find-players',
+    id: 'my-club',
+    label: 'My club',
+    icon: 'shield-outline',
+    keywords: ['club', 'my club', 'squad'],
+    href: 'my-club',
     ready: true,
   },
   {
-    id: 'find-clubs',
-    label: 'Find Clubs',
-    icon: 'shield-outline',
-    keywords: ['search clubs', 'directory', 'club'],
-    href: '/apps/find-clubs',
+    id: 'inbox',
+    label: 'Inbox',
+    icon: 'file-tray-outline',
+    keywords: ['messages', 'offers', 'contracts', 'notifications'],
+    href: '/apps/inbox',
     ready: true,
   },
   {
     id: 'transfers',
     label: 'Transfers',
     icon: 'swap-horizontal-outline',
-    keywords: ['transfer market', 'market', 'buy', 'sell'],
+    keywords: ['transfers', 'mercato', 'transfer market', 'market', 'buy', 'sell'],
     href: '/apps/transfers',
+    ready: true,
+  },
+  {
+    id: 'find-players',
+    label: 'Find players',
+    icon: 'person-add-outline',
+    keywords: ['search players', 'directory', 'market'],
+    href: '/apps/find-players',
+    ready: true,
+  },
+];
+
+const COMPETE_ITEMS = [
+  {
+    id: 'competitions',
+    label: 'Competitions',
+    icon: 'trophy-outline',
+    keywords: ['competitions', 'gost', 'cups'],
+    href: '/apps/competitions',
+    ready: true,
+  },
+  {
+    id: 'leagues',
+    label: 'Leagues',
+    icon: 'list-outline',
+    keywords: ['leagues', 'standings', 'rankings'],
+    href: '/(tabs)/tournaments',
+    keepOnNativeTab: true,
+    ready: true,
+  },
+  {
+    id: 'find-clubs',
+    label: 'Find clubs',
+    icon: 'search-outline',
+    keywords: ['search clubs', 'directory', 'club'],
+    href: '/apps/find-clubs',
+    ready: true,
+  },
+  {
+    id: 'register',
+    label: 'Register',
+    icon: 'clipboard-outline',
+    keywords: ['season', 'registration', 'register'],
+    href: '/apps/register',
     ready: true,
   },
 ];
 
 const ACCOUNT_ITEMS = [
   {
-    id: 'inbox',
-    label: 'Inbox',
-    icon: 'mail-outline',
-    keywords: ['messages', 'offers', 'contracts', 'notifications'],
-    href: '/apps/inbox',
+    id: 'wallet',
+    label: 'Wallet',
+    icon: 'card-outline',
+    keywords: ['stc', 'money', 'coins'],
+    href: '/apps/wallet',
     ready: true,
   },
   {
@@ -65,25 +109,34 @@ const ACCOUNT_ITEMS = [
     ready: true,
   },
   {
-    id: 'wallet',
-    label: 'Wallet',
-    icon: 'flash-outline',
-    keywords: ['stc', 'money', 'coins'],
-    href: '/apps/wallet',
+    id: 'settings',
+    label: 'Settings',
+    icon: 'options-outline',
+    keywords: ['preferences', 'account', 'theme'],
+    href: '/apps/settings',
     ready: true,
   },
   {
-    id: 'settings',
-    label: 'Settings',
-    icon: 'settings-outline',
-    keywords: ['preferences', 'account', 'theme'],
-    href: '/apps/settings',
+    id: 'news',
+    label: 'News',
+    icon: 'newspaper-outline',
+    keywords: ['stage times', 'headlines', 'mercato', 'press', 'world'],
+    href: '/apps/news',
+    ready: true,
+  },
+  {
+    id: 'lifestyle',
+    label: 'Lifestyle',
+    icon: 'diamond-outline',
+    keywords: ['assets', 'rent', 'invest', 'passive income', 'stc'],
+    href: '/apps/lifestyle',
     ready: true,
   },
 ];
 
 export const MINI_APP_GROUPS_PLAYER = [
-  { id: 'discover', label: 'Discover', items: DISCOVER_ITEMS },
+  { id: 'club', label: 'Club', items: CLUB_ITEMS },
+  { id: 'compete', label: 'Compete', items: COMPETE_ITEMS },
   { id: 'account', label: 'Account', items: ACCOUNT_ITEMS },
 ];
 
@@ -105,7 +158,6 @@ export function filterMiniAppGroups(groups, query) {
           item.label,
           item.id,
           ...(item.keywords || []),
-          group.label,
         ].join(' ').toLowerCase();
         return hay.includes(q);
       }),
@@ -114,7 +166,11 @@ export function filterMiniAppGroups(groups, query) {
 }
 
 export function findMiniApp(slug) {
-  const all = [...MINI_APP_GROUPS_PLAYER, ...MINI_APP_GROUPS_PRESIDENT]
-    .flatMap((g) => g.items);
-  return all.find((item) => item.id === slug || item.href === `/apps/${slug}`) || null;
+  const id = String(slug || '').trim().toLowerCase();
+  if (!id) return null;
+  for (const group of getMiniAppGroups('player')) {
+    const hit = group.items.find((item) => item.id === id || item.href?.endsWith(`/${id}`));
+    if (hit) return hit;
+  }
+  return null;
 }

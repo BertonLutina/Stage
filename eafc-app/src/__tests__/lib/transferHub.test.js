@@ -14,22 +14,25 @@ describe('mobile transfer hub', () => {
   });
 
   test('transfers screen mounts the carousel hub instead of the old directory list', () => {
+    // Task 11: the screen is the Mercato; the former hub is its "Free agents" tab.
     const page = read('../../app/apps/transfers.jsx');
-    expect(page).toMatch(/loadTransferMarket/);
-    expect(page).toMatch(/TransferPlayerCarousel/);
-    expect(page).toMatch(/TRANSFER HUB/);
-    expect(page).toMatch(/viewMode/);
-    expect(page).toMatch(/TransferFilters/);
-    expect(page).toMatch(/TransferPlayerList/);
+    expect(page).toMatch(/FreeAgentsView/);
     expect(page).not.toMatch(/AppDirectoryScreen/);
-    expect(page).toMatch(/<PageTitle/);
-    expect(page).toMatch(/tileTitle="TRANSFER HUB"/);
-    expect(page.match(/<PageTile\b[\s\S]*?>/)[0]).not.toMatch(/\beyebrow=/);
+    expect(page).toMatch(/SectionLabel/);
+    expect(page).toMatch(/NewsTabs/);
+    expect(page).toMatch(/stage\.mercato\.title/);
+    const hub = read('../../components/mercato/FreeAgentsView.jsx');
+    expect(hub).toMatch(/loadTransferMarket/);
+    expect(hub).toMatch(/TransferPlayerCarousel/);
+    expect(hub).toMatch(/viewMode/);
+    expect(hub).toMatch(/TransferFilters/);
+    expect(hub).toMatch(/TransferPlayerList/);
   });
 
   test('transfer hub chrome takes its colours from the Stage tokens', () => {
     const hubFiles = [
       '../../app/apps/transfers.jsx',
+      '../../components/mercato/FreeAgentsView.jsx',
       '../../components/transfer/transferHubTheme.js',
       '../../components/transfer/TransferPlayerCarousel.jsx',
       '../../components/transfer/TransferPlayerPhotoCard.jsx',

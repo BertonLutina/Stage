@@ -809,7 +809,7 @@ function LayoutE({ vm }) {
   const opponent = vm.opponentInfo || {};
   const next = vm.nextMatch;
   const contract = vm.tenure?.contractProgress;
-  const unread = Number(vm.glance?.unreadInbox || 0);
+  const unread = Number(vm.glance?.unreadNotifications || 0);
   const formItems = Array.isArray(vm.form?.stage) ? vm.form.stage : [];
   const clubMeta = [
     vm.clubRank?.rank ? `Rank #${vm.clubRank.rank}` : null,
@@ -834,8 +834,8 @@ function LayoutE({ vm }) {
           <View>
             <IconButton
               icon="notifications-outline"
-              accessibilityLabel={unread ? `Inbox, ${unread} unread` : 'Inbox'}
-              onPress={() => vm.open('/apps/inbox')}
+              accessibilityLabel={unread ? `Notifications, ${unread} unread` : 'Notifications'}
+              onPress={() => vm.open('/apps/notifications')}
             />
             {unread > 0 ? (
               <View style={{ position: 'absolute', top: 8, right: 9, width: 9, height: 9, borderRadius: 5, backgroundColor: tokens.cyan }} />

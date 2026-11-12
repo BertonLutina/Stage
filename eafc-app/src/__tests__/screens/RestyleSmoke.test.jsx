@@ -236,6 +236,9 @@ const RENDERS_NULL_OK = new Set([
   // Redirect-only routes render nothing by design.
   'app/auth/registerscreen.jsx',
   'app/index.jsx',
+  // State switch with no children and no flags renders nothing by design.
+  'components/ui/ResourceState.jsx#default',
+  'components/ui/index.js#ResourceState',
 ]);
 
 async function renderChecked(label, element, { expectContent = false } = {}) {
@@ -362,6 +365,7 @@ const STATUS_SCREENS = new Set([
 const COMPONENT_DIRS = [
   'ui', 'dashboard', 'matches', 'schedule', 'tournament', 'club', 'team', 'profile', 'inbox',
   'settings', 'directory', 'transfer', 'chat', 'onboarding', 'auth', 'theme', 'common', 'apps',
+  'competitions', 'rankings',
 ];
 
 const NOW_ISO = '2030-01-02T21:00:00Z';

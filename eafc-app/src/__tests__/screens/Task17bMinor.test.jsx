@@ -278,6 +278,15 @@ describe('Login biometric toggle row', () => {
     expect(queryByLabelText('Face ID login')).toBeNull();
   });
 
+  test('a Forgot password? link under the password field opens the reset flow', async () => {
+    const { findByLabelText } = render(<LoginScreen />);
+    const link = await findByLabelText('Forgot password?');
+    expect(link.props.accessibilityRole).toBe('link');
+    expect(flat(link).minHeight).toBeGreaterThanOrEqual(44);
+    fireEvent.press(link);
+    expect(mockPush).toHaveBeenCalledWith('/auth/forgotpassword');
+  });
+
   test('social buttons on the login screen are labelled "Continue with X"', async () => {
     const { findByLabelText } = render(<LoginScreen />);
     expect(await findByLabelText('Continue with Google')).toBeTruthy();

@@ -12,11 +12,12 @@ describe('themeStore', () => {
     useThemeStore.getState().refresh();
   });
 
-  test('maps Day and Custom onto Dark', () => {
+  test('maps Day and Live White onto Dark; Custom is kept', () => {
     useThemeStore.getState().setStageTheme('theme-light');
     expect(useThemeStore.getState().tokens.id).toBe('theme-dark');
     useThemeStore.getState().setStageTheme('theme-custom');
-    expect(useThemeStore.getState().tokens.id).toBe('theme-dark');
+    expect(useThemeStore.getState().tokens.id).toBe('theme-custom');
+    expect(useThemeStore.getState().liveDark).toBe(false);
     useThemeStore.getState().setStageTheme('theme-white');
     expect(useThemeStore.getState().tokens.id).toBe('theme-dark');
   });

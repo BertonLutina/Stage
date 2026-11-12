@@ -36,12 +36,16 @@ describe('page tiles', () => {
   test('Home, Profile, Apps, Inbox, and GOST wrap content in PageTile', () => {
     expect(read('../../components/dashboard/DashboardLayoutLab.jsx')).toMatch(/tileKey="home"/);
     expect(read('../../app/(tabs)/profile/profilescreen.jsx')).toMatch(/tileKey="profile"/);
-    expect(read('../../app/apps/index.jsx')).toMatch(/tileKey="apps"/);
-    expect(read('../../app/apps/inbox/index.jsx')).toMatch(/tileKey="inbox"/);
-    expect(read('../../app/apps/competitions.jsx')).toMatch(/tileKey="competitions"/);
-    expect(read('../../app/apps/competitions.jsx')).not.toMatch(/PitchAtmosphere/);
-    expect(read('../../app/apps/transfers.jsx')).toMatch(/tileKey="transfers"/);
-    expect(read('../../app/apps/transfers.jsx')).toMatch(/PageTile/);
+    // Apps mockup: flat App directory (no PageTile frame).
+    expect(read('../../app/apps/index.jsx')).not.toMatch(/<PageTile\b/);
+    expect(read('../../app/apps/index.jsx')).toMatch(/APP DIRECTORY/);
+    // Inbox mockup: flat list (no PageTile frame).
+    expect(read('../../app/apps/inbox/index.jsx')).not.toMatch(/<PageTile\b/);
+    expect(read('../../components/competitions/CompetitionsView.jsx')).toMatch(/tileKey="competitions"/);
+    expect(read('../../components/competitions/CompetitionsView.jsx')).not.toMatch(/PitchAtmosphere/);
+    // Mercato / Season registration follow audit mockups (flat header, no PageTile frame).
+    expect(read('../../app/apps/transfers.jsx')).not.toMatch(/<PageTile\b/);
+    expect(read('../../app/apps/register.jsx')).not.toMatch(/<PageTile\b/);
     expect(read('../../app/apps/find-players.jsx')).toMatch(/tileKey="find_players"/);
     expect(read('../../app/apps/find-clubs.jsx')).toMatch(/tileKey="find_clubs"/);
   });
@@ -49,10 +53,7 @@ describe('page tiles', () => {
   test('page titles sit outside the tile background', () => {
     const files = [
       '../../components/theme/PageTile.jsx',
-      '../../app/apps/transfers.jsx',
-      '../../app/apps/inbox/index.jsx',
-      '../../app/apps/competitions.jsx',
-      '../../app/apps/register.jsx',
+      '../../components/competitions/CompetitionsView.jsx',
       '../../app/(tabs)/search/index.jsx',
       '../../app/(tabs)/tournaments/tournamentdetailscreen.jsx',
       '../../app/apps/find-players.jsx',
@@ -67,6 +68,11 @@ describe('page tiles', () => {
       expect(open[0]).not.toMatch(/\beyebrow=/);
       expect(open[0]).toMatch(/tileTitle=/);
     });
+    // Audit / Apps mockups: flat headers without PageTile.
+    expect(read('../../app/apps/register.jsx')).toMatch(/<PageTitle/);
+    expect(read('../../app/apps/transfers.jsx')).toMatch(/SectionLabel/);
+    expect(read('../../app/apps/inbox/index.jsx')).toMatch(/<PageTitle/);
+    expect(read('../../app/apps/inbox/index.jsx')).not.toMatch(/<PageTile\b/);
     const home = read('../../components/dashboard/DashboardLayoutLab.jsx');
     expect(home).toMatch(/<PageTile\b[\s\S]*?tileTitle="HOME"/);
     expect(home).not.toMatch(/<PageTitle/);

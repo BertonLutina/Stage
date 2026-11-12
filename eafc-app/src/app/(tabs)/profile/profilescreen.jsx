@@ -294,11 +294,10 @@ export default function ProfileScreen({
 
   const bannerActions = hideChrome ? null : (
     isOwn ? (
-      <GlassTextButton
-        label="Edit Profile"
+      <GlassIconButton
         icon="settings-outline"
-        tone="outline"
-        onPress={() => router.push('/(tabs)/profile/editprofilescreen')}
+        onPress={() => router.push('/apps/settings')}
+        accessibilityLabel="Settings"
       />
     ) : (
       <GlassIconButton
@@ -450,7 +449,7 @@ export default function ProfileScreen({
           <GamerBanner
             bannerUrl={player.banner_url}
             wash="player"
-            height={188}
+            height={232}
             topLeft={topLeftExtra}
             topRight={bannerActions}
             onPress={isOwn ? pickAndUploadBanner : undefined}

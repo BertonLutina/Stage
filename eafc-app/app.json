@@ -26,6 +26,11 @@
         "android.permission.POST_NOTIFICATIONS"
       ]
     },
+    "androidNavigationBar": {
+      "visible": "sticky-immersive",
+      "barStyle": "light-content",
+      "backgroundColor": "#03153F"
+    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.eafc.platform",

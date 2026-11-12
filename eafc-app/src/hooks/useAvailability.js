@@ -8,12 +8,38 @@ export const AVAILABILITY_WINDOWS = [
   ['00:00', '02:00'],
 ];
 
+/** Cycle order for the weekly grid: busy → available → maybe → busy */
+export const AVAILABILITY_CYCLE = ['busy', 'available', 'maybe'];
+
 const emptyGrid = () => Array.from({ length: 7 }, () => Array(4).fill('busy'));
 
 function minutes(value, end = false) {
   const [hour = 0, minute = 0] = String(value || '').split(':').map(Number);
   if (hour === 0 && end) return 24 * 60 + minute;
   return hour * 60 + minute;
+}
+
+function slotStatus(slot) {
+  const raw = String(slot?.status || 'available').toLowerCase();
+  return raw === 'maybe' ? 'maybe' : 'available';
+}
+
+function pushMergedRanges(slots, day, daySlots, status) {
+  let index = 0;
+  while (index < 4) {
+    if (daySlots?.[index] !== status) { index += 1; continue; }
+    const startIndex = index;
+    // Cap merge at the overnight slot (00–02) so ranges stay same-evening.
+    while (index + 1 < 3 && daySlots[index + 1] === status) index += 1;
+    const entry = {
+      day_of_week: day,
+      start_time: AVAILABILITY_WINDOWS[startIndex][0],
+      end_time: AVAILABILITY_WINDOWS[index][1],
+    };
+    if (status === 'maybe') entry.status = 'maybe';
+    slots.push(entry);
+    index += 1;
+  }
 }
 
 export function slotsToGrid(slots = []) {
@@ -23,10 +49,11 @@ export function slotsToGrid(slots = []) {
     if (!Number.isInteger(day) || day < 0 || day > 6) continue;
     const start = minutes(slot.start_time);
     const end = minutes(slot.end_time, true);
+    const status = slotStatus(slot);
     AVAILABILITY_WINDOWS.forEach(([from, to], index) => {
       const windowStart = minutes(from);
       const windowEnd = minutes(to, true);
-      if (start <= windowStart && end >= windowEnd) grid[day][index] = 'available';
+      if (start <= windowStart && end >= windowEnd) grid[day][index] = status;
     });
   }
   return grid;
@@ -35,20 +62,15 @@ export function slotsToGrid(slots = []) {
 export function gridToSlots(grid = emptyGrid()) {
   const slots = [];
   grid.forEach((daySlots, day) => {
-    let index = 0;
-    while (index < 4) {
-      if (daySlots?.[index] !== 'available') { index += 1; continue; }
-      const startIndex = index;
-      while (index + 1 < 3 && daySlots[index + 1] === 'available') index += 1;
-      slots.push({
-        day_of_week: day,
-        start_time: AVAILABILITY_WINDOWS[startIndex][0],
-        end_time: AVAILABILITY_WINDOWS[index][1],
-      });
-      index += 1;
-    }
+    pushMergedRanges(slots, day, daySlots, 'available');
+    pushMergedRanges(slots, day, daySlots, 'maybe');
   });
   return slots;
+}
+
+export function nextAvailabilityState(current) {
+  const index = AVAILABILITY_CYCLE.indexOf(current);
+  return AVAILABILITY_CYCLE[(index + 1) % AVAILABILITY_CYCLE.length] || 'busy';
 }
 
 export async function loadAvailability(userId) {

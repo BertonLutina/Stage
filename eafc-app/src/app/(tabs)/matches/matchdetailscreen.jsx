@@ -26,6 +26,7 @@ import {
   uniqueIdentityClubs,
 } from '@/lib/gameDayOps';
 import { getKickoffControls, getResultSubmissionControls } from '@/lib/gameDayResultFlow';
+import { isOfficialMatch } from '@/lib/matchFixtureLifecycle';
 import GameDayWagerCard from '@/components/matches/GameDayWagerCard';
 import GameDayFixtureActions from '@/components/matches/GameDayFixtureActions';
 import GameDayResultSheet from '@/components/matches/GameDayResultSheet';
@@ -39,10 +40,12 @@ import { resolveCrestUrl } from '@/lib/gameDayPresentation';
 import { canUseTileBackgrounds, getGameDayTileBackgroundConfig } from '@/lib/gameDayTileBackgrounds';
 import { penaltyOutcome } from '@/lib/penaltyOutcome';
 import { useGameDayMatchRealtime } from '@/hooks/useGameDayMatchRealtime';
+import useT from '@/hooks/useT';
 
 export default function MatchDetailScreen() {
   const { matchId } = useLocalSearchParams();
   const router = useRouter();
+  const t = useT();
   const tokens = useThemeStore((st) => st.tokens);
   const [game, setGame] = useState(null);
   const [myClub, setMyClub] = useState(null);
@@ -289,6 +292,23 @@ export default function MatchDetailScreen() {
           </View>
         </View>
 
+        {sides.isMyMatch && isOfficialMatch(game) ? (
+          <View style={{ gap: 10 }}>
+            <Button
+              variant="secondary"
+              title={t('stage.matchPrep.title')}
+              icon="people-outline"
+              onPress={() => router.push({ pathname: '/apps/match-prep', params: { matchId: game.id } })}
+            />
+            <Button
+              variant="secondary"
+              title={t('stage.reschedule.title')}
+              icon="calendar-outline"
+              onPress={() => router.push({ pathname: '/apps/reschedule', params: { matchId: game.id } })}
+            />
+          </View>
+        ) : null}
+
         <GameDayWagerCard
           game={game}
           isMyMatch={sides.isMyMatch}
@@ -323,7 +343,17 @@ export default function MatchDetailScreen() {
             isCompleted={isCompleted}
             isDisputed={isDisputed}
             showResultForm={showResult}
-            onSubmitPress={() => setShowResult(true)}
+            onSubmitPress={() => {
+              if (resultControls.showConfirmResult) {
+                router.push({ pathname: '/apps/confirm-result', params: { matchId: game.id } });
+                return;
+              }
+              if (resultControls.showHomeSubmit || resultControls.showAwaySubmit) {
+                router.push({ pathname: '/apps/report-result', params: { matchId: game.id } });
+                return;
+              }
+              setShowResult(true);
+            }}
           />
         ) : null}
 

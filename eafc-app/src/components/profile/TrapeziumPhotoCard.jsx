@@ -83,15 +83,6 @@ export default function TrapeziumPhotoCard({
           pointerEvents="none"
         />
         <Line
-          x1={cut}
-          y1={1.25}
-          x2={width}
-          y2={1.25}
-          stroke={edgeColor}
-          strokeWidth={1.5}
-          strokeLinecap="butt"
-        />
-        <Line
           x1={0}
           y1={height - 1.25}
           x2={width - cut}

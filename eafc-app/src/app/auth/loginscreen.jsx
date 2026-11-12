@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import useThemeStore from '@/store/themeStore';
+import useT from '@/hooks/useT';
 import { Screen, Button, TextField } from '@/components/ui';
 import useAuthStore from '../../store/authStore';
 import SocialAuthIconButtons from '../../components/auth/SocialAuthIconButtons';
@@ -33,6 +34,7 @@ export default function LoginScreen() {
   const { login, loading, error, clearError } = useAuthStore();
   const router = useRouter();
   const tokens = useThemeStore((s) => s.tokens);
+  const t = useT();
   const autoPrompted = useRef(false);
 
   useEffect(() => {
@@ -167,6 +169,15 @@ export default function LoginScreen() {
             </Pressable>
           }
         />
+
+        <Pressable
+          onPress={() => router.push('/auth/forgotpassword')}
+          accessibilityRole="link"
+          accessibilityLabel={t('stage.forgot.link')}
+          style={{ alignSelf: 'flex-end', minHeight: 44, justifyContent: 'center', marginTop: -12 }}
+        >
+          <Text style={{ color: tokens.cyan, fontSize: 13, fontWeight: '600' }}>{t('stage.forgot.link')}</Text>
+        </Pressable>
 
         {error ? (
           <Text accessibilityRole="alert" style={{ color: tokens.danger, fontSize: 12, textAlign: 'center' }}>

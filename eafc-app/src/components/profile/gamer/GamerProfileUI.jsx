@@ -66,6 +66,9 @@ export function GamerBanner({
   onPress,
 }) {
   const tokens = useGamerTokens();
+  const insets = useSafeAreaInsets();
+  // Banner is full-bleed under the status bar; chrome sits below the notch/status.
+  const chromeTop = Math.max(insets.top, 0) + 10;
   const washColors = wash === 'player'
     ? [tokens.wash[0], 'transparent', tokens.wash[2]]
     : [tokens.wash[2], 'transparent', tokens.wash[0]];
@@ -116,10 +119,10 @@ export function GamerBanner({
         pointerEvents="none"
       />
       {topLeft ? (
-        <View style={{ position: 'absolute', top: 10, left: 12, zIndex: 20, maxWidth: '62%' }}>{topLeft}</View>
+        <View style={{ position: 'absolute', top: chromeTop, left: 12, zIndex: 20, maxWidth: '62%' }}>{topLeft}</View>
       ) : null}
       {topRight ? (
-        <View style={{ position: 'absolute', top: 10, right: 12, zIndex: 20, flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+        <View style={{ position: 'absolute', top: chromeTop, right: 12, zIndex: 20, flexDirection: 'row', gap: 8, alignItems: 'center' }}>
           {topRight}
         </View>
       ) : null}

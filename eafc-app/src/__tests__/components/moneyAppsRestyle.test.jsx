@@ -135,7 +135,8 @@ describe('Wallet', () => {
     await findByText('450');
     expect(getByText('STC')).toBeTruthy();
     expect(getByText('Weekly salary 300 · next in 3d')).toBeTruthy();
-    expect(getByText('Kaze')).toBeTruthy();
+    expect(getByText(/STC this month/)).toBeTruthy();
+    expect(getByText('This month')).toBeTruthy();
     const tokens = useThemeStore.getState().tokens;
     expect(styleOf(getByText('+150')).color).toBe(tokens.success);
     expect(styleOf(getByText('-200')).color).toBe(tokens.danger);
@@ -144,16 +145,30 @@ describe('Wallet', () => {
     expect(strayHex(toJSON)).toEqual([]);
   });
 
-  test('income / expense filters and the empty state', async () => {
+  test('quick actions: Top up / Collect / Store, and there is no Send', async () => {
     mockLoadWallet.mockResolvedValue(wallet);
-    const { findByText, getByText, queryByText } = render(<Wallet />);
-    await findByText('Objective reward');
-    fireEvent.press(getByText('Out'));
-    expect(queryByText('Objective reward')).toBeNull();
-    expect(getByText('Lifestyle purchase')).toBeTruthy();
-    fireEvent.press(getByText('In'));
-    expect(queryByText('Lifestyle purchase')).toBeNull();
+    const { findByText, getByLabelText, queryByLabelText, queryByText } = render(<Wallet />);
+    await findByText('450');
+    fireEvent.press(getByLabelText('Top up'));
+    expect(mockPush).toHaveBeenCalledWith('/apps/store');
+    fireEvent.press(getByLabelText('Collect'));
+    expect(mockPush).toHaveBeenCalledWith('/apps/lifestyle');
+    fireEvent.press(getByLabelText('Store'));
+    expect(mockPush).toHaveBeenCalledWith('/apps/store');
+    expect(queryByLabelText(/^Send/)).toBeNull();
+    expect(queryByText(/^Send$/)).toBeNull();
+  });
 
+  test('a load failure shows the error with Retry that reloads', async () => {
+    mockLoadWallet.mockRejectedValueOnce(new Error('Wallet offline'));
+    const { findByText, getByText } = render(<Wallet />);
+    expect(await findByText('Wallet offline')).toBeTruthy();
+    mockLoadWallet.mockResolvedValue(wallet);
+    fireEvent.press(getByText('Retry'));
+    expect(await findByText('450')).toBeTruthy();
+  });
+
+  test('empty activity state', async () => {
     mockLoadWallet.mockResolvedValue({ ...wallet, transactions: [], nextSalaryDays: null });
     const empty = render(<Wallet />);
     expect(await empty.findByText('No transactions yet')).toBeTruthy();
@@ -177,121 +192,13 @@ describe('Wallet', () => {
   });
 });
 
-describe('Store', () => {
-  const baseStore = {
-    config: { name: 'STAGE Plus', headline: 'Join', description: 'Perks' },
-    player: { id: 'pl1' },
-    credits: 12,
-    stc: 400,
-  };
-  const activeStore = {
-    ...baseStore,
-    player: {
-      id: 'pl1',
-      subscription: 'stage_plus',
-      subscription_expires_at: '2099-01-01T00:00:00Z',
-      subscription_cancel_at_period_end: 0,
-    },
-  };
-
-  test('not subscribed: Subscribe starts checkout and reports each outcome', async () => {
-    mockLoadStore.mockResolvedValue(baseStore);
-    const { findByText, getByLabelText, getByText } = render(<Store />);
-    await findByText('Join');
-    expect(getByText('12 credits · 400 STC')).toBeTruthy();
-    mockStartPlus.mockResolvedValueOnce({ status: 'activated' });
-    fireEvent.press(getByLabelText('Subscribe'));
-    expect(await findByText('STAGE Plus activated.')).toBeTruthy();
-    expect(mockStartPlus).toHaveBeenCalledWith({ billing: 'monthly' });
-
-    fireEvent.press(getByText('Yearly'));
-    mockStartPlus.mockResolvedValueOnce({ status: 'cancelled' });
-    fireEvent.press(getByLabelText('Subscribe'));
-    const tokens = useThemeStore.getState().tokens;
-    const err = await findByText('Checkout cancelled.');
-    expect(styleOf(err).color).toBe(tokens.danger);
-    expect(mockStartPlus).toHaveBeenLastCalledWith({ billing: 'yearly' });
-
-    mockStartPlus.mockRejectedValueOnce(new Error('Card declined'));
-    fireEvent.press(getByLabelText('Subscribe'));
-    expect(await findByText('Card declined')).toBeTruthy();
-  });
-
-  test('subscribed: shows the active line and cancels renewal after confirmation', async () => {
-    mockLoadStore.mockResolvedValue(activeStore);
-    const { Alert } = require('react-native');
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    const { findByText, getByLabelText } = render(<Store />);
-    expect(await findByText(/Active until 1 January 2099/)).toBeTruthy();
-    fireEvent.press(getByLabelText('Cancel renewal'));
-    expect(alertSpy).toHaveBeenCalled();
-    const buttons = alertSpy.mock.calls[0][2];
-    await act(async () => { await buttons[1].onPress(); });
-    expect(mockCancelPlus).toHaveBeenCalled();
-    expect(await findByText('STAGE Plus will end at the current period.')).toBeTruthy();
-    alertSpy.mockRestore();
-  });
-
-  test('cancelling renewal is reflected in the active line and disables the action', async () => {
-    mockLoadStore.mockResolvedValue({
-      ...activeStore,
-      player: { ...activeStore.player, subscription_cancel_at_period_end: 1 },
-    });
-    const { Alert } = require('react-native');
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    const { findByText, getByLabelText } = render(<Store />);
-    expect(await findByText(/renewal off/)).toBeTruthy();
-    fireEvent.press(getByLabelText('Renewal off'));
-    expect(mockCancelPlus).not.toHaveBeenCalled();
-    expect(alertSpy).not.toHaveBeenCalled();
-    alertSpy.mockRestore();
-  });
-
-  test('credits tab lists the real packs and buys one', async () => {
-    mockLoadStore.mockResolvedValue(baseStore);
-    const { findByText, getByText, getAllByLabelText } = render(<Store />);
-    await findByText('Join');
-    fireEvent.press(getByText('Credits'));
-    expect(getByText('Entry Pack')).toBeTruthy();
-    expect(getByText('€1.99')).toBeTruthy();
-    mockStartPack.mockResolvedValueOnce({ status: 'activated', data: { credits_added: 50 } });
-    fireEvent.press(getAllByLabelText('Buy')[0]);
-    expect(await findByText('+50 credits added.')).toBeTruthy();
-    expect(mockStartPack).toHaveBeenCalledWith(expect.objectContaining({ id: 'credits_entry' }));
-  });
-
-  test('no player profile: asks to create one; load failure shows the error', async () => {
-    mockLoadStore.mockResolvedValue({ ...baseStore, player: null });
-    const first = render(<Store />);
-    await first.findByText('Join');
-    fireEvent.press(first.getByLabelText('Subscribe'));
-    expect(await first.findByText('Create a player profile first.')).toBeTruthy();
-    expect(mockStartPlus).not.toHaveBeenCalled();
-    first.unmount();
-
-    mockLoadStore.mockRejectedValue(new Error('Boom'));
-    const second = render(<Store />);
-    expect(await second.findByText('Boom')).toBeTruthy();
-  });
-
-  test('checkout return params are completed once and the route is reset', async () => {
-    mockParams = { payment: 'success', session_id: 'cs_1' };
-    mockLoadStore.mockResolvedValue(baseStore);
-    mockCompleteReturn.mockResolvedValue({ status: 'activated', data: { credits_added: 100 } });
-    const { findByText, toJSON } = render(<Store />);
-    expect(await findByText('+100 credits added.')).toBeTruthy();
-    expect(mockCompleteReturn).toHaveBeenCalledWith('stage://apps/store?payment=success&session_id=cs_1');
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/apps/store'));
-    expect(strayHex(toJSON)).toEqual([]);
-  });
-});
-
 describe('Transfers hub', () => {
   const market = { entries: [kaze, vix], freeAgents: [kaze.player], expiringPlayers: [vix.player] };
 
   test('carousel, list mode, detail sheet and profile navigation', async () => {
     mockLoadMarket.mockResolvedValue(market);
     const { findByText, getByLabelText, getByText, queryByText, toJSON } = render(<Transfers />);
+    fireEvent.press(getByText('Free agents'));
     expect(await findByText('1  /  2')).toBeTruthy();
     expect(getByText('2 players found  •  1 free  •  1 expiring')).toBeTruthy();
     fireEvent.press(getByLabelText('Next player'));
@@ -314,6 +221,7 @@ describe('Transfers hub', () => {
     mockWindow = { id: 'w1', label: 'Summer', end_date: '2099-01-01T00:00:00Z', status: 'open' };
     mockLoadMarket.mockResolvedValue(market);
     const { findByText, getByText, getByLabelText, queryByText } = render(<Transfers />);
+    fireEvent.press(getByText('Free agents'));
     await findByText('1  /  2');
     fireEvent.press(getByText('Filters'));
     expect(getByText(/Transfer Window:/)).toBeTruthy();
@@ -330,6 +238,7 @@ describe('Transfers hub', () => {
     try {
       Platform.OS = 'ios';
       const ios = render(<Transfers />);
+      fireEvent.press(ios.getByText('Free agents'));
       await ios.findByText('Filters');
       fireEvent.press(ios.getByText('Filters'));
       const search = ios.getByLabelText('Search gamertag');
@@ -341,6 +250,7 @@ describe('Transfers hub', () => {
 
       Platform.OS = 'android';
       const android = render(<Transfers />);
+      fireEvent.press(android.getByText('Free agents'));
       await android.findByText('Filters');
       fireEvent.press(android.getByText('Filters'));
       const sheet = android.UNSAFE_getAllByType(KeyboardAvoidingView);
@@ -353,6 +263,7 @@ describe('Transfers hub', () => {
   test('empty market and list-mode empty state', async () => {
     mockLoadMarket.mockResolvedValue({ entries: [], freeAgents: [], expiringPlayers: [] });
     const { findByText, getByText } = render(<Transfers />);
+    fireEvent.press(getByText('Free agents'));
     expect(await findByText('No players found')).toBeTruthy();
     fireEvent.press(getByText('List'));
     expect(await findByText('Try adjusting filters')).toBeTruthy();
@@ -511,11 +422,12 @@ describe('Live Dark', () => {
 
     mockLoadStore.mockResolvedValue({ config: null, player: { id: 'p' }, credits: 0, stc: 0 });
     const store = render(<Store />);
-    expect(await store.findByText('One membership for serious competitors')).toBeTruthy();
+    expect(await store.findByText(/STAGE Plus benefits/i)).toBeTruthy();
     store.unmount();
 
     mockLoadMarket.mockResolvedValue({ entries: [kaze], freeAgents: [kaze.player], expiringPlayers: [] });
     const hub = render(<Transfers />);
+    fireEvent.press(hub.getByText('Free agents'));
     expect(await hub.findByText('1  /  1')).toBeTruthy();
     expect(strayHex(hub.toJSON)).toEqual([]);
     hub.unmount();

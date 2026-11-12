@@ -1,11 +1,14 @@
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, StatusBar, Text, View } from 'react-native';
+import { Pressable, RefreshControl, StatusBar, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import TournamentCard from '@/components/tournament/TournamentCard';
 import useTournamentsList from '@/hooks/useTournamentsList';
 import useThemeStore from '@/store/themeStore';
-import { Button, Card, Screen, SectionLabel, SegmentedControl } from '@/components/ui';
+import { Button, Card, Screen, SectionLabel, SegmentedControl, SkeletonList } from '@/components/ui';
+import CompetitionsView from '@/components/competitions/CompetitionsView';
+import RankingsView from '@/components/rankings/RankingsView';
+import useT from '@/hooks/useT';
 import { headingStyleLg } from '@/lib/fonts';
 
 const TABS = [
@@ -14,8 +17,19 @@ const TABS = [
   { key: 'finished', label: 'Finished' },
 ];
 
+const SECTION_KEYS = ['tournaments', 'competitions', 'rankings'];
+
+const IDLE_REFRESH = { refreshing: false, refetch: null };
+
+/**
+ * Tournaments tab. Three straight screen tabs (Tournaments | Competitions | Rankings),
+ * not a new bottom tab: the bottom bar keeps its five entries.
+ */
 export default function TournamentListScreen() {
   const router = useRouter();
+  const t = useT();
+  const [section, setSection] = useState('tournaments');
+  const [childRefresh, setChildRefresh] = useState(IDLE_REFRESH);
   const tokens = useThemeStore((state) => state.tokens);
   const {
     loading,
@@ -34,47 +48,25 @@ export default function TournamentListScreen() {
     [finished, my, open, tab],
   );
 
+  const sections = useMemo(
+    () => SECTION_KEYS.map((key) => ({ key, label: t(`stage.hub.${key}`) })),
+    [t],
+  );
+  const onSection = (key) => {
+    setChildRefresh(IDLE_REFRESH);
+    setSection(key);
+  };
+  const activeRefresh = section === 'tournaments'
+    ? { refreshing, refetch }
+    : childRefresh;
+
   const openTournament = (id) => router.push({
     pathname: '/(tabs)/tournaments/tournamentdetailscreen',
     params: { tournamentId: id },
   });
 
-  return (
-    <Screen
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={refetch} tintColor={tokens.cyan} />
-      }
-    >
-      <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
-      <View style={{ gap: 16 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <Text
-            adjustsFontSizeToFit
-            numberOfLines={1}
-            minimumFontScale={0.7}
-            style={[headingStyleLg, { flex: 1, color: tokens.text, fontSize: 34, letterSpacing: 1 }]}
-          >
-            Tournaments
-          </Text>
-          {canCreate ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Create tournament"
-              onPress={() => router.push('/(tabs)/tournaments/createtournamentscreen')}
-              style={({ pressed }) => ({
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                backgroundColor: pressed ? tokens.cyanHi : tokens.cyan,
-                alignItems: 'center',
-                justifyContent: 'center',
-              })}
-            >
-              <Ionicons name="add" size={24} color={tokens.onCyan} />
-            </Pressable>
-          ) : null}
-        </View>
-
+  const tournamentsBody = (
+    <>
         <SegmentedControl
           accessibilityLabel="Tournament status"
           options={TABS}
@@ -83,9 +75,7 @@ export default function TournamentListScreen() {
         />
 
         {loading ? (
-          <View style={{ paddingVertical: 56, alignItems: 'center' }}>
-            <ActivityIndicator color={tokens.cyan} size="large" />
-          </View>
+          <SkeletonList />
         ) : error ? (
           <Card style={{ gap: 14, alignItems: 'center' }}>
             <Ionicons name="cloud-offline-outline" size={30} color={tokens.muted} />
@@ -131,6 +121,64 @@ export default function TournamentListScreen() {
             <Button title="Unlock tournament creation" variant="secondary" onPress={() => router.push('/apps/store')} />
           ) : null}
         </View>
+    </>
+  );
+
+  return (
+    <Screen
+      refreshControl={
+        <RefreshControl
+          refreshing={activeRefresh.refreshing}
+          onRefresh={() => activeRefresh.refetch && activeRefresh.refetch()}
+          tintColor={tokens.cyan}
+        />
+      }
+    >
+      <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
+      <View style={{ gap: 16 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <Text
+            adjustsFontSizeToFit
+            numberOfLines={1}
+            minimumFontScale={0.7}
+            style={[headingStyleLg, { flex: 1, color: tokens.text, fontSize: 34, letterSpacing: 1 }]}
+          >
+            {t(`stage.hub.${section}`)}
+          </Text>
+          {canCreate && section === 'tournaments' ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Create tournament"
+              onPress={() => router.push('/(tabs)/tournaments/createtournamentscreen')}
+              style={({ pressed }) => ({
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                backgroundColor: pressed ? tokens.cyanHi : tokens.cyan,
+                alignItems: 'center',
+                justifyContent: 'center',
+              })}
+            >
+              <Ionicons name="add" size={24} color={tokens.onCyan} />
+            </Pressable>
+          ) : null}
+        </View>
+
+        <SegmentedControl
+          testID="tournaments-sections"
+          accessibilityLabel={t('stage.hub.tabsLabel')}
+          options={sections}
+          value={section}
+          onChange={onSection}
+        />
+
+        {section === 'competitions' ? (
+          <CompetitionsView onRefreshState={setChildRefresh} showTitle={false} />
+        ) : section === 'rankings' ? (
+          <RankingsView onRefreshState={setChildRefresh} />
+        ) : (
+          tournamentsBody
+        )}
       </View>
     </Screen>
   );

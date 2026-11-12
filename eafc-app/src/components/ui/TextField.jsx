@@ -9,6 +9,7 @@ import { INPUT_HEIGHT, INPUT_RADIUS } from './metrics';
  */
 export default function TextField({
   label,
+  accessibilityLabel,
   value,
   onChangeText,
   error,
@@ -45,7 +46,7 @@ export default function TextField({
       ) : null}
       <View>
         <TextInput
-          accessibilityLabel={label}
+          accessibilityLabel={accessibilityLabel || label}
           value={value}
           onChangeText={onChangeText}
           multiline={multiline}

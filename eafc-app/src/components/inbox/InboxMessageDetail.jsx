@@ -294,7 +294,15 @@ export default function InboxMessageDetail({
                   onPress={() => runAction('declined')}
                 />
                 <ActionBtn
-                  label={isCancelRequest ? 'Confirm cancel' : (showScheduleActions ? 'Accept time' : 'Accept')}
+                  label={
+                    isCancelRequest
+                      ? 'Confirm cancel'
+                      : showScheduleActions
+                        ? 'Accept time'
+                        : showContractActions
+                          ? 'ACCEPT OFFER'
+                          : 'Accept'
+                  }
                   tone="good"
                   loading={loading === 'accepted' || loading === 'confirmed'}
                   onPress={() => runAction(showScheduleActions ? 'confirmed' : 'accepted')}

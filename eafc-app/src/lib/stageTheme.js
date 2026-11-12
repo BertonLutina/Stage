@@ -1,6 +1,8 @@
+import { readCustomTheme } from './customTheme';
+
 const THEME_KEY = 'stage-theme';
 
-export const STAGE_THEME_IDS = ['theme-dark', 'theme-video'];
+export const STAGE_THEME_IDS = ['theme-dark', 'theme-video', 'theme-custom'];
 
 /** Stage cards. Player/club identity plates keep their own radii. */
 export const CARD_RADIUS = 16;
@@ -25,7 +27,7 @@ function hexToRgb(hex) {
 
 export function hexToRgba(hex, alpha) {
   const rgb = hexToRgb(hex);
-  if (!rgb) return `rgba(95,227,232,${alpha})`;
+  if (!rgb) return `rgba(74,106,165,${alpha})`;
   return `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`;
 }
 
@@ -65,10 +67,10 @@ const STAGE = {
   borderStrong: '#4A6AA5',
   textSoft: '#C9D8EE',
   muted: '#9FB3D1',
-  cyan: '#5FE3E8',
-  cyanHi: '#8CF5F8',
-  aqua: '#2CCFD6',
-  onCyan: MARINE,
+  cyan: '#4A6AA5',
+  cyanHi: '#5B79AF',
+  aqua: '#3C5E99',
+  onCyan: PAPER,
   success: '#4ADE80',
   successBg: '#14532D',
   danger: '#F87171',
@@ -133,6 +135,65 @@ function tokensFromSurface({ id, bg, primary, text, muted }) {
   };
 }
 
+function toHex(rgb) {
+  const part = (v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0');
+  return `#${part(rgb.r)}${part(rgb.g)}${part(rgb.b)}`;
+}
+
+/** Mixes `a` towards `b` by `t` (0 = a, 1 = b). */
+export function mixHex(a, b, t) {
+  const x = hexToRgb(a);
+  const y = hexToRgb(b);
+  if (!x || !y) return a;
+  return toHex({ r: x.r + (y.r - x.r) * t, g: x.g + (y.g - x.g) * t, b: x.b + (y.b - x.b) * t });
+}
+
+function readable(preferred, bg, minRatio = 4.5) {
+  return contrastRatio(preferred, bg) >= minRatio ? preferred : contrastTextFor(bg);
+}
+
+/** The user's own colours: surfaces are derived from the chosen background, text is kept readable. */
+function customTokens() {
+  const c = readCustomTheme();
+  const bg = c.backgroundColor;
+  const lift = isDarkHex(bg) ? '#FFFFFF' : '#000000';
+  const text = readable(c.textColor, bg, 7);
+  const base = tokensFromSurface({ id: 'theme-custom', bg, primary: c.primaryColor, text });
+  const card = mixHex(bg, lift, 0.1);
+  const cardHi = mixHex(bg, lift, 0.16);
+  const border = mixHex(bg, lift, 0.24);
+  const borderStrong = mixHex(bg, lift, 0.4);
+  const onAccent = readable(c.primaryTextColor, c.primaryColor);
+  return {
+    ...base,
+    bgDeep: mixHex(bg, '#000000', 0.35),
+    textSoft: readable(c.secondaryTextColor, bg),
+    muted: readable(mixHex(c.secondaryTextColor, bg, 0.3), bg),
+    cyan: c.primaryColor,
+    cyanHi: mixHex(c.primaryColor, '#FFFFFF', 0.25),
+    aqua: c.gradientColor,
+    onCyan: onAccent,
+    primaryText: onAccent,
+    cyanBorder: hexToRgba(c.primaryColor, 0.38),
+    tileBorder: hexToRgba(c.primaryColor, 0.32),
+    tileFill: hexToRgba(c.primaryColor, 0.12),
+    border,
+    borderStrong,
+    hairline: border,
+    glass: card,
+    card,
+    cardHi,
+    cardSolid: card,
+    inputFill: mixHex(bg, '#000000', 0.35),
+    inputBorder: border,
+    overlay: hexToRgba(mixHex(bg, '#000000', 0.5), 0.55),
+    barStyle: isDarkHex(bg) ? 'light-content' : 'dark-content',
+    isDark: isDarkHex(bg),
+    /** Read by `StageBackground`: background → gradient colour, softened by the opacity. */
+    customBackdrop: { from: bg, to: c.gradientColor, opacity: c.backgroundOpacity },
+  };
+}
+
 const PRESETS = {
   'theme-dark': () => tokensFromSurface({
     id: 'theme-dark',
@@ -146,12 +207,12 @@ const PRESETS = {
     primary: STAGE.cyan,
     text: PAPER,
   }),
+  'theme-custom': customTokens,
 };
 
 const REMOVED_THEMES = {
   'theme-light': 'theme-dark',
   'theme-white': 'theme-dark',
-  'theme-custom': 'theme-dark',
 };
 
 export function normalizeThemeId(id) {

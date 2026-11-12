@@ -107,7 +107,7 @@ describe('FloatingTabBar', () => {
   it('draws the focused tab as a cyan filled icon on a card pill and idle tabs muted outline', () => {
     const { getByTestId, getByLabelText } = render(<FloatingTabBar {...buildProps(1)} />);
     const icon = getByTestId('icon-football');
-    expect(flat(icon).color).toBe('#5FE3E8');
+    expect(flat(icon).color).toBe('#4A6AA5');
     const pill = getByTestId('tab-pill-matches');
     expect(flat(pill)).toMatchObject({ backgroundColor: '#132B5C', borderRadius: 14, width: 48, height: 48 });
     expect(flat(getByTestId('icon-home-outline')).color).toBe('#9FB3D1');

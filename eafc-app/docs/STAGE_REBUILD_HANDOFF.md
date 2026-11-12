@@ -33,7 +33,7 @@ Continue the **full rebuild of the Stage mobile app** (`eafc-app`, Expo / React 
 
 ## Key conventions already in place (reuse them)
 
-- **Design tokens**: `src/lib/stageTheme.js` + `tailwind.config.js`. `bg` fallback `#03153F`; cyan `#5FE3E8`; navy surfaces. Dark is the target; Live Dark wallpaper mode must keep working.
+- **Design tokens**: `src/lib/stageTheme.js` + `tailwind.config.js`. `bg` fallback `#03153F`; cyan `#4A6AA5`; navy surfaces. Dark is the target; Live Dark wallpaper mode must keep working.
 - **Gradient background**: `src/components/ui/StageBackground.jsx`, rendered by `src/components/ui/Screen.jsx` (non-live) / `LiveDarkWallpaper` (live). Radial glows are approximated with linear gradients (no RN radial; no bg image asset) — swap for a 3× image later if desired.
 - **UI primitives**: `src/components/ui/` (Screen, Card, Button, IconButton, Chip, SegmentedControl, SectionLabel, Avatar, TextField, SelectField, ListRow, Toggle, StepProgress, FormBadge, StatGrid, FloatingTabBar, **BrandLogo**, **StageBackground**). Use these, not raw hex.
 - **Floating tab bar**: `src/components/ui/FloatingTabBar.jsx` + `src/app/(tabs)/_layout.jsx` — already spec-correct (5 tabs: Home · Game Day · Tournaments · Profile · Search).

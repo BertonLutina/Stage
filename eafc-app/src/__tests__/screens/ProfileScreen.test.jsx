@@ -157,7 +157,7 @@ describe('ProfileScreen tabs', () => {
     expect(queryByText('Dashboard')).toBeNull();
     expect(queryByText('LEAVE')).toBeNull();
     expect(queryByText('Leave')).toBeNull();
-    expect(getByLabelText('Edit Profile')).toBeTruthy();
+    expect(getByLabelText('Settings')).toBeTruthy();
   });
 
   it('exposes the mockup profile shortcuts without removing the richer tabs', async () => {

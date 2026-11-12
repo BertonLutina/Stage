@@ -12,6 +12,7 @@ import { getAdminTranslations } from "./adminTranslations.js";
 import { mergeAdminExtras } from "./adminTranslationExtras.js";
 import { applySectionPacks, applySettingsPacks } from "./localePacks.js";
 import { PAGE_GUIDE_STEPS_EN } from "../lib/pageWalkthroughCopy.js";
+import { getStageScreens } from "./stageScreens.js";
 
 function resolveGuideSteps(language, key) {
   const local = pageGuides[language]?.[key];
@@ -1281,5 +1282,6 @@ export function getCoreTranslations(language) {
     languageNames: names,
     walkthrough: guides,
     admin: mergeAdminExtras(getAdminTranslations(language), language),
+    stage: getStageScreens(language),
   };
 }

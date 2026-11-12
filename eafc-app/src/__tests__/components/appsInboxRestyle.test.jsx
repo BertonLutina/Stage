@@ -156,7 +156,7 @@ describe('Apps hub and Inbox on the Stage design', () => {
     fireEvent.press(getByLabelText('Back'));
     expect(onBack).toHaveBeenCalled();
     expect(getByLabelText('Delete message')).toBeTruthy();
-    fireEvent.press(getByText('Accept'));
+    fireEvent.press(getByText('ACCEPT OFFER'));
     await waitFor(() => expect(mockRespond).toHaveBeenCalledWith(offer, 'accepted', expect.anything()));
     await waitFor(() => expect(onStatusChanged).toHaveBeenCalledWith('m1', 'accepted'));
     fireEvent.press(getByText('Decline'));

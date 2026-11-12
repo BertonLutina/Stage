@@ -16,6 +16,7 @@ import { clubStatItems } from '@/lib/clubStatItems';
 import { guideFabClearanceStack } from '@/components/ui/metrics';
 import ClubProfileTabs from '@/app/(tabs)/profile/clubProfileTabs';
 import ClubHero from '@/components/club/ClubHero';
+import ClubRecentResults from '@/components/club/ClubRecentResults';
 import FollowToggleButton from '@/components/profile/FollowToggleButton';
 import { GamerProfileShell } from '@/components/profile/gamer/GamerProfileUI';
 import useThemeStore from '@/store/themeStore';
@@ -80,21 +81,12 @@ export default function PublicClubScreen() {
                 if (route) router.push(route);
               }}
               extraActions={(
-                <>
-                  <FollowToggleButton
-                    targetType="club"
-                    targetId={club.id}
-                    targetName={clubName}
-                    accent="amber"
-                    compact
-                    hidden={String(viewerClub?.id || '') === String(club.id)}
-                  />
+                <View style={{ flexDirection: 'row', gap: 10, width: '100%' }}>
                   {canChallenge ? (
                     <View style={{ flex: 1, minWidth: 132 }}>
                       <Button
-                        title="Challenge"
-                        variant="secondary"
-                        icon="football-outline"
+                        title="CHALLENGE"
+                        accessibilityLabel="Challenge"
                         onPress={() => router.push({
                           pathname: '/(tabs)/matches',
                           params: {
@@ -109,15 +101,26 @@ export default function PublicClubScreen() {
                       />
                     </View>
                   ) : null}
-                </>
+                  <View style={{ flex: 1, minWidth: 120 }}>
+                    <FollowToggleButton
+                      targetType="club"
+                      targetId={club.id}
+                      targetName={clubName}
+                      accent="cyan"
+                      compact
+                      hidden={String(viewerClub?.id || '') === String(club.id)}
+                    />
+                  </View>
+                </View>
               )}
             />
             <View style={{ paddingHorizontal: GUTTER, marginTop: 14, gap: 14 }}>
               {statItems.length > 0 ? (
                 <Card style={{ paddingVertical: 14 }}>
-                  <StatGrid items={statItems} columns={statItems.length} />
+                  <StatGrid items={statItems} columns={Math.min(3, statItems.length)} />
                 </Card>
               ) : null}
+              <ClubRecentResults matches={bundle.matches} clubId={club.id} />
               <ClubProfileTabs
                 club={club}
                 isOwner={false}

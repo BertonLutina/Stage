@@ -282,6 +282,18 @@ export default function TournamentDetailScreen() {
             </Card>
           ) : null}
 
+          {canRegister && !playerTournament ? (
+            <Button
+              variant="secondary"
+              title="Open registration"
+              icon="clipboard-outline"
+              onPress={() => router.push({
+                pathname: '/apps/tournament-register',
+                params: { tournamentId: tournament.id },
+              })}
+            />
+          ) : null}
+
           {canRegister && !playerTournament && !registrationClub ? (
             <Card>
               <Text style={{ color: tokens.textSoft, fontSize: 14, lineHeight: 20 }}>

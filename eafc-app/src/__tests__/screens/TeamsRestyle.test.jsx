@@ -115,7 +115,13 @@ describe('Teams restyle', () => {
       fireEvent.changeText(getByLabelText('Bio'), 'Hello');
       fireEvent.press(getByLabelText('Create Team'));
       await waitFor(() => expect(mockCreateTeam).toHaveBeenCalledWith({
-        club_name: 'FC Test', tag: 'FCT', country: 'Belgium', country_code: 'BE', bio: 'Hello',
+        club_name: 'FC Test',
+        tag: 'FCT',
+        country: 'Belgium',
+        country_code: 'BE',
+        bio: 'Hello',
+        primary_color: '#5FE3E8',
+        open_to_applications: '1',
       }));
       await waitFor(() => expect(replace).toHaveBeenCalledWith('TeamProfile', { teamId: 'new-1' }));
     });
@@ -123,7 +129,7 @@ describe('Teams restyle', () => {
     it('keeps player discovery real instead of pretending an invite was sent', () => {
       const { getByText } = render(<CreateTeamScreen navigation={{ replace: jest.fn() }} />);
       expect(getByText('Invite players')).toBeTruthy();
-      fireEvent.press(getByText('+ Find players'));
+      fireEvent.press(getByText('+ Add player'));
       expect(mockPush).toHaveBeenCalledWith('/(tabs)/search/searchplayer');
     });
 
@@ -161,9 +167,9 @@ describe('Teams restyle', () => {
       });
       const { findByText, getByText, getAllByText } = render(<TeamProfileScreen />);
       expect(await findByText('Night Owls')).toBeTruthy();
-      expect(getByText('24')).toBeTruthy();
-      expect(getByText('Recent wins')).toBeTruthy();
-      expect(getByText('Players')).toBeTruthy();
+      expect(getByText('24-1-2')).toBeTruthy();
+      expect(getByText('Record')).toBeTruthy();
+      expect(getByText('Squad')).toBeTruthy();
       expect(getByText('Trophies')).toBeTruthy();
       expect(getAllByText('2').length).toBeGreaterThan(0);
       expect(getByText('Founded 2025')).toBeTruthy();
@@ -179,8 +185,8 @@ describe('Teams restyle', () => {
       });
       const { findByText, queryByText } = render(<TeamProfileScreen />);
       expect(await findByText('Night Owls')).toBeTruthy();
-      expect(queryByText('Recent wins')).toBeNull();
-      expect(queryByText('Players')).toBeNull();
+      expect(queryByText('Record')).toBeNull();
+      expect(queryByText('Squad')).toBeNull();
       expect(queryByText('Trophies')).toBeNull();
     });
 
@@ -194,8 +200,8 @@ describe('Teams restyle', () => {
       });
       const { findByText, queryByText } = render(<TeamProfileScreen />);
       expect(await findByText('Night Owls')).toBeTruthy();
-      expect(queryByText('Players')).toBeTruthy();
-      expect(queryByText('Recent wins')).toBeNull();
+      expect(queryByText('Squad')).toBeTruthy();
+      expect(queryByText('Record')).toBeNull();
       expect(queryByText('Trophies')).toBeNull();
     });
   });

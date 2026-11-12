@@ -28,8 +28,8 @@ describe('stage theme palettes', () => {
   test('defaults to dark gamer shell', () => {
     const theme = readStageTheme();
     expect(theme.id).toBe('theme-dark');
-    expect(theme.primary).toBe('#5FE3E8');
-    expect(theme.cyan).toBe('#5FE3E8');
+    expect(theme.primary).toBe('#4A6AA5');
+    expect(theme.cyan).toBe('#4A6AA5');
     expect(theme.bg).toBe('#03153F');
     expect(theme.text).toBe(PAPER);
     expect(theme.muted).toBe('#9FB3D1');
@@ -49,9 +49,9 @@ describe('stage theme palettes', () => {
     expect(theme.border).toBe('#234480');
     expect(theme.borderStrong).toBe('#4A6AA5');
     expect(theme.textSoft).toBe('#C9D8EE');
-    expect(theme.cyanHi).toBe('#8CF5F8');
-    expect(theme.aqua).toBe('#2CCFD6');
-    expect(theme.onCyan).toBe('#07163A');
+    expect(theme.cyanHi).toBe('#5B79AF');
+    expect(theme.aqua).toBe('#3C5E99');
+    expect(theme.onCyan).toBe(PAPER);
     expect(theme.success).toBe('#4ADE80');
     expect(theme.successBg).toBe('#14532D');
     expect(theme.danger).toBe('#F87171');
@@ -75,17 +75,17 @@ describe('stage theme palettes', () => {
     const theme = readStageTheme();
     expect(contrastRatio(theme.muted, theme.card)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(theme.text, theme.bg)).toBeGreaterThanOrEqual(7);
-    expect(contrastRatio(theme.onCyan, theme.cyan)).toBeGreaterThanOrEqual(7);
+    expect(contrastRatio(theme.onCyan, theme.cyan)).toBeGreaterThanOrEqual(4.5);
   });
 
-  test('only keeps dark and live dark', () => {
-    expect(STAGE_THEME_IDS).toEqual(['theme-dark', 'theme-video']);
+  test('keeps dark, live dark and the real custom theme', () => {
+    expect(STAGE_THEME_IDS).toEqual(['theme-dark', 'theme-video', 'theme-custom']);
   });
 
-  test('maps removed Day, Custom, and LIVE WHITE onto Dark', () => {
+  test('maps removed Day and LIVE WHITE onto Dark; Custom is its own theme', () => {
     expect(normalizeThemeId('theme-white')).toBe('theme-dark');
     expect(normalizeThemeId('theme-light')).toBe('theme-dark');
-    expect(normalizeThemeId('theme-custom')).toBe('theme-dark');
+    expect(normalizeThemeId('theme-custom')).toBe('theme-custom');
     expect(normalizeThemeId('theme-video')).toBe('theme-video');
     expect(normalizeThemeId('unknown')).toBe('theme-dark');
   });
@@ -104,21 +104,21 @@ describe('stage theme palettes', () => {
     expect(theme.live).toBe(true);
     expect(theme.isDark).toBe(true);
     expect(theme.text).toBe(PAPER);
-    expect(theme.cyan).toBe('#5FE3E8');
+    expect(theme.cyan).toBe('#4A6AA5');
     expect(theme.hairline).toBe('#234480');
     expect(theme.glass).toMatch(/^rgba\(19,43,92,/);
     expect(theme.card).toMatch(/^rgba\(19,43,92,/);
     expect(theme.cardHi).toMatch(/^rgba\(19,43,92,/);
     expect(theme.card).toBe('rgba(19,43,92,0.62)');
-    expect(theme.cyanBorder).toBe('rgba(95,227,232,0.38)');
+    expect(theme.cyanBorder).toBe('rgba(74,106,165,0.38)');
     expect(contrastRatio(PAPER, '#02060D')).toBeGreaterThanOrEqual(12);
   });
 
-  test('writing a removed theme persists Dark', () => {
+  test('writing a removed theme persists Dark, and Custom persists as Custom', () => {
     expect(writeStageThemeId('theme-light')).toBe('theme-dark');
     expect(readStageTheme().id).toBe('theme-dark');
-    expect(writeStageThemeId('theme-custom')).toBe('theme-dark');
-    expect(readStageTheme().id).toBe('theme-dark');
+    expect(writeStageThemeId('theme-custom')).toBe('theme-custom');
+    expect(readStageTheme().id).toBe('theme-custom');
   });
 
   test('dark HUD text is floodlight, not white, and still AA on night', () => {

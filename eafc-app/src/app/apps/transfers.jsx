@@ -1,219 +1,105 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StatusBar,
-  View,
-} from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { RefreshControl, ScrollView, StatusBar, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import useThemeStore from '@/store/themeStore';
 import { IconButton, Screen, SectionLabel } from '@/components/ui';
-import PageTile, { PageTitle } from '@/components/theme/PageTile';
-import HubToggle from '@/components/directory/HubToggle';
+import { NewsTabs } from '@/components/news/NewsStageParts';
 import { useTransferWindowStatus } from '@/hooks/useTransferWindowStatus';
-import {
-  filterTransferEntries,
-  loadTransferMarket,
-} from '@/lib/stageDirectories';
-import TransferDetailSheet from '@/components/transfer/TransferDetailSheet';
-import TransferFilters from '@/components/transfer/TransferFilters';
-import TransferPlayerCarousel from '@/components/transfer/TransferPlayerCarousel';
-import TransferPlayerList from '@/components/transfer/TransferPlayerList';
-import TransferWindowBanner from '@/components/transfer/TransferWindowBanner';
+import { useMercatoDesk, useMyOffers } from '@/hooks/useMercato';
+import useT from '@/hooks/useT';
+import { summarizeOffers } from '@/lib/mercato';
+import MercatoWindowBanner from '@/components/mercato/MercatoWindowBanner';
+import MercatoFeed from '@/components/mercato/MercatoFeed';
+import MyOffersView from '@/components/mercato/MyOffersView';
+import FreeAgentsView from '@/components/mercato/FreeAgentsView';
 
-export default function TransfersScreen() {
+/** Mercato: transfer window, deal feed, free agents (the former Transfers hub) and my offers. */
+export default function MercatoScreen() {
   const router = useRouter();
+  const t = useT();
   const tokens = useThemeStore((s) => s.tokens);
-  const { currentWindow } = useTransferWindowStatus();
-  const [entries, setEntries] = useState([]);
-  const [freeCount, setFreeCount] = useState(0);
-  const [expiringCount, setExpiringCount] = useState(0);
-  const [query, setQuery] = useState('');
-  const [status, setStatus] = useState('all');
-  const [position, setPosition] = useState('All');
-  const [platform, setPlatform] = useState('All');
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [viewMode, setViewMode] = useState('carousel');
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [selected, setSelected] = useState(null);
+  const { currentWindow, loading: windowLoading } = useTransferWindowStatus();
+  const desk = useMercatoDesk();
+  const offers = useMyOffers();
+  const [tab, setTab] = useState('feed');
 
-  const load = useCallback(async () => {
-    const market = await loadTransferMarket();
-    setEntries(market.entries);
-    setFreeCount(market.freeAgents?.length || 0);
-    setExpiringCount(market.expiringPlayers?.length || 0);
-    setLoading(false);
-    setRefreshing(false);
-  }, []);
+  const { liveCount, waitingCount } = useMemo(() => summarizeOffers(offers.data || []), [offers.data]);
 
-  useEffect(() => { load(); }, [load]);
+  const sections = useMemo(() => [
+    { key: 'feed', label: t('stage.mercato.feed') },
+    { key: 'free', label: t('stage.mercato.freeAgents') },
+    { key: 'offers', label: liveCount ? t('stage.mercato.myOffersCount', { count: liveCount }) : t('stage.mercato.myOffers') },
+  ], [t, liveCount]);
 
-  const rows = useMemo(
-    () => filterTransferEntries(entries, { query, status, position, platform }),
-    [entries, query, status, position, platform],
-  );
-
-  useEffect(() => {
-    if (rows.length === 0) {
-      setSelected(null);
-      return;
-    }
-    setSelected((prev) => {
-      const match = prev && rows.find((entry) => entry.player.id === prev.player.id);
-      return match || rows[0];
-    });
-  }, [rows]);
-
-  const selectEntry = useCallback((entry, { openDetails = false } = {}) => {
-    setSelected(entry);
-    if (openDetails) setDetailsOpen(true);
-  }, []);
-
-  const filterCount = [query, position !== 'All' ? position : '', platform !== 'All' ? platform : '']
-    .filter(Boolean).length + (status !== 'all' ? 1 : 0);
-
-  const openProfile = () => {
-    if (!selected?.player?.id) return;
-    setDetailsOpen(false);
-    router.push({
-      pathname: '/(tabs)/profile/profilescreen',
-      params: { playerId: String(selected.player.id) },
-    });
+  const openInbox = () => router.push('/apps/inbox');
+  const openPlayer = (playerId) => router.push({
+    pathname: '/(tabs)/profile/profilescreen',
+    params: { playerId: String(playerId) },
+  });
+  const openOffer = (offer) => {
+    if (offer.direction === 'received' && offer.live) openInbox();
+    else if (offer.playerId) openPlayer(offer.playerId);
   };
+
+  const refresh = (resource) => (
+    <RefreshControl
+      refreshing={Boolean(resource.refreshing)}
+      onRefresh={resource.refetch}
+      tintColor={tokens.cyan}
+      colors={[tokens.cyan]}
+    />
+  );
 
   return (
     <Screen scroll={false} tabBar={false} guideFab>
       <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
       <View style={{ flex: 1, gap: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <IconButton icon="arrow-back" onPress={() => router.back()} accessibilityLabel="Back" />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <IconButton icon="arrow-back" onPress={() => router.back()} accessibilityLabel={t('stage.state.back')} />
+          <SectionLabel>{t('stage.mercato.title')}</SectionLabel>
+          <View style={{ width: 44, height: 44 }} />
         </View>
 
-        <PageTitle
-          eyebrow="TRANSFER HUB"
-          title="TRANSFERS"
-          subtitle={`${rows.length} player${rows.length === 1 ? '' : 's'} found  •  ${freeCount} free  •  ${expiringCount} expiring`}
-          padded={false}
-          style={{ paddingBottom: 0 }}
+        <MercatoWindowBanner window={currentWindow} loading={windowLoading} />
+        <NewsTabs
+          accessibilityLabel={t('stage.mercato.tabsLabel')}
+          tabs={sections}
+          value={tab}
+          onChange={setTab}
         />
 
-        <PageTile
-          tileKey="transfers"
-          tileTitle="TRANSFER HUB"
-          style={{ flex: 1 }}
-          contentStyle={{ flex: 1, paddingHorizontal: 12, gap: 12 }}
-        >
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            <HubToggle
-              label="Carousel"
-              icon="images-outline"
-              active={viewMode === 'carousel'}
-              onPress={() => setViewMode('carousel')}
+        {tab === 'free' ? (
+          <FreeAgentsView currentWindow={currentWindow} />
+        ) : tab === 'offers' ? (
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingBottom: 40 }}
+            refreshControl={refresh(offers)}
+            showsVerticalScrollIndicator={false}
+          >
+            <MyOffersView
+              resource={offers}
+              waitingCount={waitingCount}
+              onOpenInbox={openInbox}
+              onOpenOffer={openOffer}
             />
-            <HubToggle
-              label="List"
-              icon="list-outline"
-              active={viewMode === 'list'}
-              onPress={() => setViewMode('list')}
+          </ScrollView>
+        ) : (
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingBottom: 40 }}
+            refreshControl={refresh(desk)}
+            showsVerticalScrollIndicator={false}
+          >
+            <MercatoFeed
+              resource={desk}
+              waitingCount={waitingCount}
+              onOpenInbox={openInbox}
+              onOpenPlayer={openPlayer}
             />
-            <HubToggle
-              label="Filters"
-              icon="options-outline"
-              badge={filterCount}
-              onPress={() => setFiltersOpen(true)}
-            />
-          </View>
-
-          {loading ? (
-            <ActivityIndicator color={tokens.cyan} style={{ marginTop: 48 }} />
-          ) : viewMode === 'list' ? (
-            <ScrollView
-              style={{ flex: 1 }}
-              contentContainerStyle={{ paddingVertical: 12, paddingBottom: 40 }}
-              refreshControl={(
-                <RefreshControl
-                  refreshing={Boolean(refreshing)}
-                  onRefresh={() => { setRefreshing(true); load(); }}
-                  tintColor={tokens.cyan}
-                  colors={[tokens.cyan]}
-                />
-              )}
-            >
-              <TransferPlayerList
-                players={rows}
-                selectedId={selected?.player?.id}
-                onSelect={selectEntry}
-              />
-            </ScrollView>
-          ) : (
-            <TransferPlayerCarousel
-              entries={rows}
-              selectedId={selected?.player?.id}
-              onSelect={selectEntry}
-            />
-          )}
-        </PageTile>
+          </ScrollView>
+        )}
       </View>
-
-      <Modal visible={filtersOpen} transparent animationType="slide" onRequestClose={() => setFiltersOpen(false)}>
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: tokens.overlay }}>
-            <Pressable
-              style={{ flex: 1 }}
-              onPress={() => setFiltersOpen(false)}
-              accessibilityRole="button"
-              accessibilityLabel="Dismiss filters"
-            />
-            <View
-              style={{
-                backgroundColor: tokens.bgDeep,
-                borderTopWidth: 1,
-                borderLeftWidth: 1,
-                borderRightWidth: 1,
-                borderColor: tokens.border,
-                borderTopLeftRadius: 22,
-                borderTopRightRadius: 22,
-                maxHeight: '86%',
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 20, paddingRight: 12, paddingTop: 12, paddingBottom: 8 }}>
-                <SectionLabel>Filters</SectionLabel>
-                <IconButton icon="close" onPress={() => setFiltersOpen(false)} accessibilityLabel="Close filters" />
-              </View>
-              <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32, gap: 16 }}>
-                <TransferWindowBanner window={currentWindow} />
-                <TransferFilters
-                  search={query}
-                  onSearch={setQuery}
-                  position={position}
-                  onPosition={setPosition}
-                  statusFilter={status}
-                  onStatus={setStatus}
-                  platform={platform}
-                  onPlatform={setPlatform}
-                />
-              </ScrollView>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      <TransferDetailSheet
-        visible={detailsOpen}
-        entry={selected}
-        onClose={() => setDetailsOpen(false)}
-        onViewProfile={openProfile}
-      />
     </Screen>
   );
 }

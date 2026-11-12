@@ -7,9 +7,9 @@ module.exports = {
     extend: {
       colors: {
         // Brand colors
-        primary: '#5FE3E8',   // Neon Cyan - main glow
-        primary2: '#2eaeb3',   // Neon Cyan - main glow
-        accent: '#8CF5F8',    // Electric Cyan - brightest highlight
+        primary: '#4A6AA5',   // borderStrong blue — accent
+        primary2: '#3C5E99',   // deeper step of the same blue
+        accent: '#5B79AF',    // lighter step of borderStrong
         secondary: '#22C55E', // Green - keep as success/confirm
 
         // Stadium blues (dark mode)
@@ -26,13 +26,13 @@ module.exports = {
         border: '#234480',
         borderStrong: '#4A6AA5',
         textSoft: '#C9D8EE',
-        cyanHi: '#8CF5F8',
+        cyanHi: '#5B79AF',
         success: '#4ADE80',
         warning: '#FBBF24',
 
         // Stadium lines detail
-        lineMain: '#5FE3E8',  // same as primary
-        lineInner: '#2CCFD6', // Cool Aqua
+        lineMain: '#4A6AA5',  // same as primary
+        lineInner: '#3C5E99', // deeper accent blue
 
         // Light theme (keep simple for now)
         light: '#F9FAFB',

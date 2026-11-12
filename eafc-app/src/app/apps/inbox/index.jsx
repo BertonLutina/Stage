@@ -8,8 +8,8 @@ import { stageClient } from '@/api/stageClient';
 import { loadInboxMessages, markAllInboxRead } from '@/lib/inboxData';
 import { inboxMessageNeedsAction, upsertInboxMessage } from '@/lib/inboxHelpers';
 import InboxMessageList from '@/components/inbox/InboxMessageList';
-import { Chip, IconButton, Screen } from '@/components/ui';
-import PageTile, { PageTitle } from '@/components/theme/PageTile';
+import { Chip, IconButton, Screen, SectionLabel } from '@/components/ui';
+import { PageTitle } from '@/components/theme/PageTile';
 
 /**
  * Inbox — Outlook-style list (Stage theme). Deep-link: /apps/inbox?id=
@@ -109,6 +109,7 @@ export default function InboxScreen() {
   };
 
   const unreadCount = messages.filter((m) => !m.is_read).length;
+  const actionCount = messages.filter((m) => inboxMessageNeedsAction(m)).length;
   const visibleMessages = messages.filter((message) => {
     if (filter === 'action') return inboxMessageNeedsAction(message);
     if (filter === 'unread') return !message.is_read;
@@ -131,9 +132,12 @@ export default function InboxScreen() {
       <View style={{ flex: 1, gap: 14 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <IconButton icon="arrow-back" accessibilityLabel="Back" onPress={() => router.back()} />
+          <SectionLabel>Inbox</SectionLabel>
           {unreadCount > 0 ? (
             <IconButton icon="checkmark-done" accessibilityLabel="Mark all as read" onPress={onMarkAll} />
-          ) : null}
+          ) : (
+            <View style={{ width: 44, height: 44 }} />
+          )}
         </View>
 
         {error ? (
@@ -143,25 +147,20 @@ export default function InboxScreen() {
           </View>
         ) : null}
 
-        <PageTitle
-          title="INBOX"
-          subtitle={unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
-          padded={false}
-          style={{ paddingBottom: 0 }}
-        />
+        <PageTitle title="INBOX" padded={false} style={{ paddingBottom: 0 }} />
 
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           <Chip testID="inbox-filter-all" label="All" active={filter === 'all'} onPress={() => setFilter('all')} />
-          <Chip testID="inbox-filter-action" label="Needs action" active={filter === 'action'} onPress={() => setFilter('action')} />
+          <Chip
+            testID="inbox-filter-action"
+            label={actionCount > 0 ? `Needs action · ${actionCount}` : 'Needs action'}
+            active={filter === 'action'}
+            onPress={() => setFilter('action')}
+          />
           <Chip testID="inbox-filter-unread" label="Unread" active={filter === 'unread'} onPress={() => setFilter('unread')} />
         </View>
 
-        <PageTile
-          tileKey="inbox"
-          tileTitle="INBOX"
-          style={{ flex: 1 }}
-          contentStyle={{ flex: 1, paddingHorizontal: 0 }}
-        >
+        <View style={{ flex: 1 }}>
           <InboxMessageList
             messages={visibleMessages}
             onSelect={openMessage}
@@ -174,7 +173,7 @@ export default function InboxScreen() {
               />
             )}
           />
-        </PageTile>
+        </View>
       </View>
     </Screen>
   );

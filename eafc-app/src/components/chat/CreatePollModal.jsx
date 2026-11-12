@@ -122,7 +122,7 @@ export default function CreatePollModal({ visible, onClose, onSend, teamId, user
               ))}
               {options.length < MAX_OPTIONS && (
                 <TouchableOpacity onPress={addOption} style={styles.addBtn}>
-                  <Ionicons name="add-circle-outline" size={22} color="#5FE3E8" />
+                  <Ionicons name="add-circle-outline" size={22} color="#4A6AA5" />
                   <STText style={styles.addText}>Add option</STText>
                 </TouchableOpacity>
               )}
@@ -133,8 +133,8 @@ export default function CreatePollModal({ visible, onClose, onSend, teamId, user
               <Switch
                 value={multiple}
                 onValueChange={setMultiple}
-                trackColor={{ false: 'rgba(255,255,255,0.2)', true: 'rgba(95,227,232,0.5)' }}
-                thumbColor={multiple ? '#5FE3E8' : 'rgba(255,255,255,0.6)'}
+                trackColor={{ false: 'rgba(255,255,255,0.2)', true: 'rgba(74,106,165,0.5)' }}
+                thumbColor={multiple ? '#4A6AA5' : 'rgba(255,255,255,0.6)'}
               />
             </View>
           </ScrollView>
@@ -144,7 +144,7 @@ export default function CreatePollModal({ visible, onClose, onSend, teamId, user
             disabled={!canSend || sending}
             style={[styles.sendBtn, !canSend && styles.sendBtnDisabled]}
           >
-            <Ionicons name="send" size={22} color="#02091B" />
+            <Ionicons name="send" size={22} color="#EAF2FF" />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 4,
   },
-  addText: { color: '#5FE3E8', fontSize: 15, marginLeft: 8 },
+  addText: { color: '#4A6AA5', fontSize: 15, marginLeft: 8 },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#5FE3E8',
+    backgroundColor: '#4A6AA5',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 16,

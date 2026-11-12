@@ -148,7 +148,9 @@ describe('Home — Stage mockup layout (E)', () => {
 
     expect(getByText('NightOwl_10')).toBeTruthy();
     expect(getByLabelText('Apps')).toBeTruthy();
-    expect(getByLabelText(/Inbox/)).toBeTruthy();
+    // the bell opens the Notifications screen and counts unread notifications only
+    fireEvent.press(getByLabelText('Notifications, 1 unread'));
+    expect(open).toHaveBeenCalledWith('/apps/notifications');
 
     expect(getByText('Night Owls')).toBeTruthy();
     expect(getByText('Red Foxes')).toBeTruthy();

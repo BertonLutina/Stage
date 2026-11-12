@@ -31,7 +31,8 @@ describe('mobile match / tournament / season parity wiring', () => {
   test('apps directory screens load Stage web data', () => {
     expect(read('../../app/apps/find-players.jsx')).toMatch(/loadPlayerDirectory/);
     expect(read('../../app/apps/find-clubs.jsx')).toMatch(/loadClubDirectory/);
-    expect(read('../../app/apps/transfers.jsx')).toMatch(/loadTransferMarket/);
+    expect(read('../../components/mercato/FreeAgentsView.jsx')).toMatch(/loadTransferMarket/);
+    expect(read('../../lib/mercato.js')).toMatch(/mercato-transfers\/desk/);
     expect(read('../../app/apps/wallet.jsx')).toMatch(/loadWallet/);
     expect(read('../../app/apps/store.jsx')).toMatch(/startStagePlusCheckout/);
     expect(read('../../app/apps/store.jsx')).toMatch(/startCreditPackCheckout/);
@@ -86,12 +87,12 @@ describe('mobile match / tournament / season parity wiring', () => {
   });
 
   test('season and competition screens exist', () => {
-    expect(read('../../app/apps/register.jsx')).toMatch(/applyForLeague/);
-    expect(read('../../app/apps/register.jsx')).toMatch(/entityHasStagePlus/);
-    expect(read('../../app/apps/register.jsx')).toMatch(/presidentClub/);
+    expect(read('../../app/apps/register.jsx')).toMatch(/useSeasonRegistration/);
+    expect(read('../../components/register/RegistrationWindowCard.jsx')).toMatch(/applyToWindow/);
+    expect(read('../../lib/seasonRegistration.js')).toMatch(/registration-windows/);
     expect(read('../../app/(tabs)/profile/editprofilescreen.jsx')).not.toMatch(/President\.update/);
     expect(read('../../lib/clubProfileData.js')).not.toMatch(/entities\.President/);
-    expect(read('../../app/apps/competitions.jsx')).toMatch(/loadCompetitionsHub/);
+    expect(read('../../components/competitions/CompetitionsView.jsx')).toMatch(/loadCompetitionsHub/);
     expect(read('../../app/apps/competitions/[slug].jsx')).toMatch(/createMatchFromFixture/);
     expect(read('../../app/apps/leagues/[slug].jsx')).toMatch(/regional_league/);
   });

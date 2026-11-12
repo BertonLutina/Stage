@@ -25,10 +25,10 @@ Each `*.dc.html` file is one phone screen (390×844) written in HTML with inline
 | `text` | `#EAF2FF` | primary text |
 | `textSoft` | `#C9D8EE` | body copy, chip text |
 | `muted` | `#9FB3D1` | secondary text, labels (replaces `#6B7280`, which fails contrast on navy) |
-| `cyan` | `#5FE3E8` | primary accent, primary button bg, active tab, links |
-| `cyanHi` | `#8CF5F8` | pressed/hover state, avatar initials |
-| `aqua` | `#2CCFD6` | accent border on highlighted cards |
-| `onCyan` | `#07163A` | text/icons on cyan |
+| `cyan` | `#4A6AA5` | primary accent, primary button bg, active tab, links |
+| `cyanHi` | `#5B79AF` | pressed/hover state, avatar initials |
+| `aqua` | `#3C5E99` | accent border on highlighted cards |
+| `onCyan` | `#EAF2FF` | text/icons on cyan |
 | `success` | `#4ADE80` (bg `#14532D`) | wins, checks, completed |
 | `danger` | `#F87171` (bg `#5B1A1A`) | losses, decline, sign out |
 | `warning` | `#FBBF24` (bg `#2A2418`, border `#B45309`) | contract reminders, "Needs action" |

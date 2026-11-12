@@ -1,17 +1,18 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Text } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, RefreshControl, StatusBar, Text, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import useThemeStore from '@/store/themeStore';
-import { Card } from '@/components/ui';
-import AppDirectoryScreen, { DirectoryRow, FilterChips } from '@/components/apps/AppDirectoryScreen';
-import { FONT_EA_SPORTS } from '@/lib/fonts';
-import { entityHasStagePlus } from '@/lib/subscriptionUtils';
+import { guideFabClearanceStack } from '@/components/ui/metrics';
+import { Button, Card, IconButton, ResourceState, Screen, SectionLabel, SegmentedControl } from '@/components/ui';
+import { PageTitle } from '@/components/theme/PageTile';
+import useStoreScreen from '@/hooks/useStoreScreen';
+import useT, { getStoredLanguage } from '@/hooks/useT';
+import { formatStc } from '@/components/lifestyle/lifestyleFormat';
 import {
-  CREDIT_PACKS,
-  STAGE_PLUS_MONTHLY_CREDITS,
-  STAGE_PLUS_PRICE,
-  loadStore,
-} from '@/lib/stageDirectories';
+  creditPacks, describePlus, formatPlusDate, outcomeNotice, plusPrices,
+} from '@/lib/store';
 import {
   cancelStagePlusSubscription,
   completeStoreCheckoutFromUrl,
@@ -19,37 +20,31 @@ import {
   startStagePlusCheckout,
 } from '@/lib/stripeCheckout';
 
+function formatPrice(value) {
+  return Number(value).toFixed(2);
+}
+
+/** Store: STAGE Plus subscription and credit packs. Nothing else is sold here. */
 export default function StoreScreen() {
   const router = useRouter();
+  const t = useT();
+  const language = getStoredLanguage();
   const tokens = useThemeStore((s) => s.tokens);
+  const insets = useSafeAreaInsets();
   const returnParams = useLocalSearchParams();
   const handledReturn = useRef(false);
-  const [store, setStore] = useState(null);
-  const [tab, setTab] = useState('plus');
+  const { data, loading, error, refreshing, refetch } = useStoreScreen();
   const [billing, setBilling] = useState('monthly');
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [purchasing, setPurchasing] = useState('');
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const [busy, setBusy] = useState('');
+  const [notice, setNotice] = useState(null);
 
-  const load = useCallback(async () => {
-    try {
-      setStore(await loadStore());
-    } catch (err) {
-      setError(err?.message || 'Failed to load store');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
+  const showNotice = (n) => setNotice({ ...n, text: t(`stage.store.${n.key}`, n.params) });
+  const showError = (text) => setNotice({ tone: 'error', key: 'error', text });
 
   useEffect(() => {
-    const sub = String(returnParams.sub || '');
-    const payment = String(returnParams.payment || '');
-    const sessionId = String(returnParams.session_id || '');
+    const sub = String(returnParams?.sub || '');
+    const payment = String(returnParams?.payment || '');
+    const sessionId = String(returnParams?.session_id || '');
     if (handledReturn.current || (!sub && !payment)) return;
     handledReturn.current = true;
     const qs = new URLSearchParams({
@@ -60,119 +55,69 @@ export default function StoreScreen() {
     (async () => {
       try {
         const outcome = await completeStoreCheckoutFromUrl(`stage://apps/store?${qs}`);
-        if (outcome.status === 'activated') {
-          setMessage(payment === 'success'
-            ? (outcome.data?.credits_added ? `+${outcome.data.credits_added} credits added.` : 'Credits added.')
-            : 'STAGE Plus activated.');
-          await load();
-        } else if (outcome.status === 'cancelled') {
-          setError('Checkout cancelled.');
-        } else {
-          setMessage('Payment received — pull to refresh if it is not visible yet.');
-          await load();
-        }
+        showNotice(outcomeNotice(outcome, payment ? 'pack' : 'plus'));
+        if (outcome.status !== 'cancelled') await refetch();
       } catch (err) {
-        setError(err?.message || 'Could not finish checkout');
+        showError(err?.message || t('stage.store.checkoutError'));
       } finally {
         router.replace('/apps/store');
       }
     })();
-  }, [load, returnParams.payment, returnParams.session_id, returnParams.sub, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [returnParams?.payment, returnParams?.session_id, returnParams?.sub]);
 
-  const config = store?.config || {};
-  const player = store?.player || null;
-  const plusActive = entityHasStagePlus(player);
-  const plusCancelling = Number(player?.subscription_cancel_at_period_end) === 1;
-  const expiresLabel = player?.subscription_expires_at
-    ? new Date(player.subscription_expires_at).toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    })
-    : null;
-  const monthlyPrice = Number(config.stage_plus_monthly_price || STAGE_PLUS_PRICE.monthly);
-  const yearlyPrice = Number(config.stage_plus_yearly_price || STAGE_PLUS_PRICE.yearly);
-  const price = billing === 'yearly' ? yearlyPrice : monthlyPrice;
+  const config = data?.config || {};
+  const player = data?.player || null;
+  const plus = describePlus({ player });
+  const prices = plusPrices(config);
+  const packs = creditPacks();
+  const renewDate = formatPlusDate(plus.renewsAt, language);
 
   const requirePlayer = () => {
     if (player?.id) return true;
-    setError('Create a player profile first.');
+    showError(t('stage.store.needPlayer'));
     return false;
   };
 
-  const buyPlus = async () => {
-    if (!requirePlayer()) return;
-    if (plusActive && player?.subscription_expires_at && new Date(player.subscription_expires_at) > new Date()) {
-      setError(expiresLabel ? `STAGE Plus is active until ${expiresLabel}.` : 'STAGE Plus is already active.');
-      return;
-    }
-    setPurchasing('plus');
-    setError('');
-    setMessage('');
+  const run = async (id, kind, start, pack) => {
+    if (busy || !requirePlayer()) return;
+    setBusy(id);
+    setNotice(null);
     try {
-      const outcome = await startStagePlusCheckout({ billing });
-      if (outcome.status === 'activated') {
-        setMessage('STAGE Plus activated.');
-        await load();
-      } else if (outcome.status === 'cancelled') {
-        setError('Checkout cancelled.');
-      } else {
-        setMessage('Payment received — STAGE Plus will appear shortly. Pull to refresh.');
-        await load();
-      }
+      const outcome = await start();
+      showNotice(outcomeNotice(outcome, kind, pack));
+      if (outcome?.status !== 'cancelled') await refetch();
     } catch (err) {
-      setError(err?.message || 'Checkout error');
+      showError(err?.message || t('stage.store.checkoutError'));
     } finally {
-      setPurchasing('');
+      setBusy('');
     }
   };
 
-  const buyPack = async (pack) => {
-    if (!requirePlayer()) return;
-    setPurchasing(pack.id);
-    setError('');
-    setMessage('');
-    try {
-      const outcome = await startCreditPackCheckout(pack);
-      if (outcome.status === 'activated') {
-        setMessage(`+${outcome.data?.credits_added || pack.credits} credits added.`);
-        await load();
-      } else if (outcome.status === 'cancelled') {
-        setError('Checkout cancelled.');
-      } else {
-        setMessage('Payment received — credits will appear shortly. Pull to refresh.');
-        await load();
-      }
-    } catch (err) {
-      setError(err?.message || 'Checkout error');
-    } finally {
-      setPurchasing('');
-    }
-  };
+  const subscribe = () => run('plus', 'plus', () => startStagePlusCheckout({ billing }));
+  const buyPack = (pack) => run(pack.id, 'pack', () => startCreditPackCheckout(pack), pack);
 
   const cancelPlus = () => {
-    if (!plusActive || plusCancelling) return;
+    if (plus.state !== 'active' || busy) return;
     Alert.alert(
-      'Cancel STAGE Plus',
-      expiresLabel
-        ? `You keep Plus until ${expiresLabel}. Stripe will not renew after that.`
-        : 'You keep Plus until the end of the current period. Stripe will not renew after that.',
+      t('stage.store.cancelTitle'),
+      renewDate ? t('stage.store.cancelBodyDate', { date: renewDate }) : t('stage.store.cancelBody'),
       [
-        { text: 'Keep Plus', style: 'cancel' },
+        { text: t('stage.store.keepPlus'), style: 'cancel' },
         {
-          text: 'Cancel renewal',
+          text: t('stage.store.confirmCancel'),
           style: 'destructive',
           onPress: async () => {
-            setPurchasing('cancel');
-            setError('');
+            setBusy('cancel');
+            setNotice(null);
             try {
               await cancelStagePlusSubscription();
-              setMessage('STAGE Plus will end at the current period.');
-              await load();
+              showNotice({ tone: 'neutral', key: 'cancelDone', params: {} });
+              await refetch();
             } catch (err) {
-              setError(err?.message || 'Could not cancel STAGE Plus');
+              showError(err?.message || t('stage.store.checkoutError'));
             } finally {
-              setPurchasing('');
+              setBusy('');
             }
           },
         },
@@ -180,100 +125,162 @@ export default function StoreScreen() {
     );
   };
 
+  const credits = Number(data?.credits || 0);
+  const noticeColor = notice?.tone === 'error' ? tokens.danger : notice?.tone === 'success' ? tokens.success : tokens.textSoft;
+  const amber = tokens.warning || tokens.cyan;
+
+  const plusPriceText = billing === 'yearly'
+    ? t('stage.store.perYear', { price: formatPrice(prices.yearly) })
+    : t('stage.store.perMonth', { price: formatPrice(prices.monthly) });
+
+  const plusLine = plus.state === 'active'
+    ? (renewDate ? t('stage.store.activeRenews', { date: renewDate }) : t('stage.store.activeNoDate'))
+    : plus.state === 'ending'
+      ? (renewDate ? t('stage.store.activeEnds', { date: renewDate }) : t('stage.store.activeNoDate'))
+      : null;
+
   return (
-    <AppDirectoryScreen
-      title="Store"
-      subtitle={`${store?.credits || 0} credits · ${store?.stc || 0} STC`}
-      chips={[
-        { id: 'plus', label: 'STAGE Plus' },
-        { id: 'credits', label: 'Credits' },
-      ]}
-      chipValue={tab}
-      onChip={setTab}
-      extraFilters={tab === 'plus' ? (
-        <FilterChips
-          options={[{ id: 'monthly', label: 'Monthly' }, { id: 'yearly', label: 'Yearly' }]}
-          value={billing}
-          onChange={setBilling}
-        />
-      ) : null}
-      loading={loading}
-      refreshing={refreshing}
-      onRefresh={() => { setRefreshing(true); load(); }}
-      data={tab === 'credits' ? CREDIT_PACKS : [{ id: 'stage-plus' }]}
-      keyExtractor={(item) => String(item.id)}
-      emptyIcon="bag-outline"
-      emptyText="Store unavailable"
-      ListHeaderComponent={(
-        <Card highlight style={{ marginBottom: 6, gap: 6 }}>
-          <Text
-            numberOfLines={1}
+    <Screen
+      tabBar={false}
+      scroll={!loading}
+      style={{ paddingBottom: guideFabClearanceStack(insets.bottom) }}
+      refreshControl={loading ? undefined : (
+        <RefreshControl refreshing={refreshing} onRefresh={refetch} tintColor={tokens.cyan} colors={[tokens.cyan]} />
+      )}
+    >
+      <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <IconButton icon="arrow-back" accessibilityLabel={t('stage.state.back')} onPress={() => router.back()} />
+        <SectionLabel>{t('stage.store.eyebrow')}</SectionLabel>
+        {data ? (
+          <View
+            accessibilityLabel={t('stage.store.balanceLabel', { credits: formatStc(data.stc ?? credits) })}
             style={{
-              color: tokens.cyan,
-              fontSize: 11,
-              fontWeight: '600',
-              letterSpacing: 11 * 0.12,
-              textTransform: 'uppercase',
+              height: 44, borderRadius: 999, borderWidth: 1, borderColor: tokens.border, backgroundColor: tokens.card,
+              paddingHorizontal: 16, justifyContent: 'center',
             }}
           >
-            {config.name || 'STAGE Plus'}
-          </Text>
-          <Text
-            style={{
-              color: tokens.text,
-              fontFamily: FONT_EA_SPORTS,
-              fontSize: 22,
-              letterSpacing: 22 * 0.03,
-              textTransform: 'uppercase',
-            }}
-          >
-            {config.headline || 'One membership for serious competitors'}
-          </Text>
-          <Text style={{ color: tokens.muted, fontSize: 13, lineHeight: 19 }}>
-            {config.description || 'Unlock official competitions, custom player card backgrounds, club stats tile backgrounds, uploads, and a monthly credit refresh.'}
-          </Text>
-          {plusActive ? (
-            <Text style={{ color: tokens.success, fontSize: 13, fontWeight: '700', marginTop: 6 }}>
-              {plusCancelling && expiresLabel
-                ? `Active until ${expiresLabel} · renewal off`
-                : expiresLabel
-                  ? `Active until ${expiresLabel}`
-                  : 'STAGE Plus is active'}
+            <Text style={{ color: tokens.text, fontSize: 14, fontWeight: '700' }}>
+              {t('stage.store.balance', { credits: formatStc(data.stc ?? credits) })}
             </Text>
+          </View>
+        ) : <View style={{ width: 44, height: 44 }} />}
+      </View>
+      <PageTitle title={t('stage.store.title').toUpperCase()} padded={false} />
+
+      <View style={{ gap: 14 }}>
+        <ResourceState loading={loading && !data} error={data ? null : error} onRetry={refetch}>
+          {data ? (
+            <>
+              {notice ? (
+                <View accessibilityRole="alert" style={{ gap: 8 }}>
+                  <Text style={{ color: noticeColor, fontSize: 13 }}>{notice.text}</Text>
+                  {notice.tone === 'pending' ? (
+                    <View style={{ alignSelf: 'flex-start', minWidth: 140 }}>
+                      <Button title={t('stage.store.checkAgain')} variant="secondary" onPress={refetch} />
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
+
+              <Card style={{ gap: 12, borderColor: amber }} testID="plus-card">
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <Text style={{ color: amber, fontSize: 20, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', flexShrink: 1 }}>
+                    {config.name || t('stage.store.plusName')}
+                  </Text>
+                  {plus.state === 'inactive' ? (
+                    <View style={{ borderWidth: 1, borderColor: amber, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                      <Text style={{ color: amber, fontSize: 11, fontWeight: '700', letterSpacing: 1 }}>
+                        {billing === 'yearly' ? t('stage.store.badgeYearly') : t('stage.store.badgeMonthly')}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+                <Text style={{ color: tokens.textSoft, fontSize: 13, lineHeight: 19 }}>
+                  {config.headline || t('stage.store.plusHeadline')}
+                </Text>
+
+                {plus.state === 'inactive' ? (
+                  <>
+                    <SegmentedControl
+                      accessibilityLabel={t('stage.store.billingLabel')}
+                      options={[
+                        { key: 'monthly', label: t('stage.store.monthly') },
+                        { key: 'yearly', label: t('stage.store.yearly') },
+                      ]}
+                      value={billing}
+                      onChange={setBilling}
+                    />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <Text style={{ flex: 1, color: tokens.text, fontSize: 24, fontWeight: '800' }}>{plusPriceText}</Text>
+                      <View style={{ minWidth: 128 }}>
+                        <Button
+                          title={t('stage.store.subscribe').toUpperCase()}
+                          accessibilityLabel={t('stage.store.subscribe')}
+                          loading={busy === 'plus'}
+                          disabled={Boolean(busy) && busy !== 'plus'}
+                          onPress={subscribe}
+                        />
+                      </View>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <Text style={{ color: tokens.success, fontSize: 14, fontWeight: '700' }}>{plusLine}</Text>
+                    <Button
+                      title={plus.state === 'ending' ? t('stage.store.renewalOff') : t('stage.store.cancelRenewal')}
+                      variant={plus.state === 'ending' ? 'secondary' : 'danger'}
+                      loading={busy === 'cancel'}
+                      disabled={plus.state === 'ending' || (Boolean(busy) && busy !== 'cancel')}
+                      onPress={cancelPlus}
+                    />
+                  </>
+                )}
+              </Card>
+
+              <SectionLabel>{t('stage.store.packsLabel')}</SectionLabel>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                {packs.map((pack, index) => {
+                  const popular = index === 1;
+                  return (
+                    <Card
+                      key={pack.id}
+                      style={{ width: '47%', flexGrow: 1, gap: 8, borderColor: popular ? tokens.cyan : tokens.border }}
+                      testID={`pack-${pack.id}`}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: tokens.text, fontSize: 26, fontWeight: '800' }}>{formatStc(pack.credits)}</Text>
+                          <Text style={{ color: tokens.textSoft, fontSize: 12 }}>{t('stage.store.packCredits')}</Text>
+                        </View>
+                        {popular ? (
+                          <View style={{ borderRadius: 6, backgroundColor: tokens.bgDeep, paddingHorizontal: 7, paddingVertical: 3 }}>
+                            <Text style={{ color: tokens.cyan, fontSize: 10, fontWeight: '700', letterSpacing: 0.8 }}>
+                              {t('stage.store.popular').toUpperCase()}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </View>
+                      <Button
+                        title={`€${formatPrice(pack.price_eur)}`}
+                        accessibilityLabel={t('stage.store.buyPack', { label: pack.label })}
+                        loading={busy === pack.id}
+                        disabled={Boolean(busy) && busy !== pack.id}
+                        onPress={() => buyPack(pack)}
+                      />
+                    </Card>
+                  );
+                })}
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <Ionicons name="lock-closed-outline" size={16} color={tokens.textSoft} />
+                <Text style={{ color: tokens.textSoft, fontSize: 12, flex: 1 }}>{t('stage.store.secure')}</Text>
+              </View>
+            </>
           ) : null}
-          {message ? (
-            <Text accessibilityRole="alert" style={{ color: tokens.cyan, fontSize: 13, marginTop: 6 }}>{message}</Text>
-          ) : null}
-          {error ? (
-            <Text accessibilityRole="alert" style={{ color: tokens.danger, fontSize: 13, marginTop: 6 }}>{error}</Text>
-          ) : null}
-        </Card>
-      )}
-      renderItem={({ item }) => (
-        tab === 'plus' ? (
-          <DirectoryRow
-            title="STAGE Plus"
-            subtitle={plusActive
-              ? `${STAGE_PLUS_MONTHLY_CREDITS} credits / month`
-              : `${STAGE_PLUS_MONTHLY_CREDITS} credits / month · ${billing}`}
-            fallbackIcon="sparkles-outline"
-            badge={purchasing === 'plus' || purchasing === 'cancel' ? '…' : `€${price}`}
-            actionLabel={purchasing ? 'Please wait' : plusActive ? (plusCancelling ? 'Renewal off' : 'Cancel renewal') : 'Subscribe'}
-            onAction={purchasing ? undefined : (plusActive ? cancelPlus : buyPlus)}
-            onPress={purchasing ? undefined : (plusActive ? cancelPlus : buyPlus)}
-          />
-        ) : (
-          <DirectoryRow
-            title={item.label}
-            subtitle={`${item.credits} credits`}
-            fallbackIcon="diamond-outline"
-            badge={purchasing === item.id ? '…' : `€${item.price_eur}`}
-            actionLabel={purchasing === item.id ? 'Please wait' : 'Buy'}
-            onAction={purchasing ? undefined : () => buyPack(item)}
-            onPress={purchasing ? undefined : () => buyPack(item)}
-          />
-        )
-      )}
-    />
+        </ResourceState>
+      </View>
+    </Screen>
   );
 }

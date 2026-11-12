@@ -40,6 +40,15 @@ export function isPlayerManagedMatch(match = {}) {
   return true;
 }
 
+/** Official competition fixture (regional / engine / knockout) — staff prep & reschedule. */
+export function isOfficialMatch(match = {}) {
+  if (!match?.id) return false;
+  const source = norm(match.source_fixture_type);
+  if (OFFICIAL_SOURCES.has(source)) return true;
+  const tournamentId = norm(match.tournament_id);
+  return Boolean(tournamentId && tournamentId !== 'ranked' && match.source_fixture_id);
+}
+
 export function actorFromProfile({ user, player, club } = {}) {
   return {
     email: user?.email || player?.email || null,
