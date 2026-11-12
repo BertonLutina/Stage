@@ -139,14 +139,14 @@ describe('search tab directories', () => {
   test('unified search preserves profile, club and challenge routes', async () => {
     const { findByText, getByLabelText } = render(<SearchIndex />);
     await findByText('Kaze');
-    fireEvent.press(getByLabelText('Kaze, CAM · OVR 87 · PS5'));
+    fireEvent.press(getByLabelText('Kaze, CAM, Free agent · PS5'));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/(tabs)/profile/profilescreen',
       params: { playerId: 'p1' },
     });
     fireEvent.press(getByLabelText('Clubs'));
     await findByText('Red Foxes');
-    fireEvent.press(getByLabelText('Red Foxes, RFX · EU · OVR 80 · PS5'));
+    fireEvent.press(getByLabelText('Red Foxes, RFX, EU · PS5'));
     expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/apps/club/[id]', params: { id: 'c1' } });
   });
 
@@ -162,23 +162,23 @@ describe('search tab directories', () => {
   test('players: rows, view action and challenge action', async () => {
     const { findByText, getByLabelText, toJSON } = render(<SearchPlayers />);
     await findByText('Kaze');
-    fireEvent.press(getByLabelText('Kaze, CAM · PS5'));
+    fireEvent.press(getByLabelText('Kaze, CAM, Player · PS5'));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/(tabs)/profile/profilescreen',
       params: { playerId: 'p1' },
     });
-    fireEvent.press(getByLabelText('Invite Kaze'));
+    fireEvent.press(getByLabelText('INVITE Kaze'));
     expect(mockPush.mock.calls[1][0].params).toMatchObject({ opponentKind: 'player', opponentId: 'p1' });
     fireEvent.changeText(getByLabelText('Search players...'), 'zzz');
     expect(await findByText('No players found')).toBeTruthy();
     expect(strayHex(toJSON)).toEqual([]);
   });
 
-  test('clubs: owner sees Challenge and rows open the club', async () => {
+  test('clubs: VIEW PROFILE and rows open the club', async () => {
     const { findByText, getByLabelText } = render(<SearchClubs />);
     await findByText('Red Foxes');
-    fireEvent.press(getByLabelText('Challenge Red Foxes'));
-    expect(mockPush.mock.calls[0][0].params).toMatchObject({ opponentKind: 'club', opponentId: 'c1' });
+    fireEvent.press(getByLabelText('VIEW PROFILE Red Foxes'));
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/apps/club/[id]', params: { id: 'c1' } });
     fireEvent.press(getByLabelText(/^Red Foxes, /));
     expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/apps/club/[id]', params: { id: 'c1' } });
   });

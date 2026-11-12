@@ -1,17 +1,16 @@
-import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import useThemeStore from '@/store/themeStore';
 import useTournament from '@/hooks/useTournament';
-import { Button, Card, Chip, Screen } from '@/components/ui';
+import { buildFixtureMatchdays } from '@/lib/fixtureMatchdays';
+import { Button, Card, Screen } from '@/components/ui';
 import { SCREEN_GUTTER, guideFabClearance } from '@/components/ui/metrics';
 import { FONT_EA_SPORTS } from '@/lib/fonts';
 import CompetitionHeader from '@/components/tournament/CompetitionHeader';
 
-const FILTERS = ['all', 'scheduled', 'completed'];
-const capitalize = (value) => value.charAt(0).toUpperCase() + value.slice(1);
 const terminal = (status) => ['completed', 'forfeit'].includes(String(status || '').toLowerCase());
 const teamName = (item, side) => item?.[`${side}_club_name`] || item?.[`${side}_player_name`] || item?.[`${side}_team_name`] || 'TBD';
 
@@ -45,28 +44,85 @@ function FixtureCard({ item, onPress }) {
     </Card>
   );
 }
+
+function MatchdayNav({ days, index, onChange, tokens }) {
+  if (!days.length) return null;
+  const current = days[index] || days[0];
+  const canPrev = index > 0;
+  const canNext = index < days.length - 1;
+  return (
+    <Card style={{ padding: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Previous round"
+        disabled={!canPrev}
+        onPress={() => canPrev && onChange(index - 1)}
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: tokens.border,
+          backgroundColor: tokens.card,
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: canPrev ? 1 : 0.35,
+        }}
+      >
+        <Ionicons name="chevron-back" size={20} color={tokens.text} />
+      </Pressable>
+      <View style={{ flex: 1, alignItems: 'center', paddingHorizontal: 8 }}>
+        <Text numberOfLines={1} style={{ color: tokens.text, fontWeight: '700', fontSize: 15 }}>{current.title}</Text>
+        {current.rangeLabel ? (
+          <Text numberOfLines={1} style={{ color: tokens.muted, fontSize: 12, marginTop: 2 }}>{current.rangeLabel}</Text>
+        ) : null}
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Next round"
+        disabled={!canNext}
+        onPress={() => canNext && onChange(index + 1)}
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: tokens.border,
+          backgroundColor: tokens.card,
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: canNext ? 1 : 0.35,
+        }}
+      >
+        <Ionicons name="chevron-forward" size={20} color={tokens.text} />
+      </Pressable>
+    </Card>
+  );
+}
+
 export default function FixturesScreen() {
   const { tournamentId } = useLocalSearchParams();
   const router = useRouter();
   const tokens = useThemeStore((state) => state.tokens);
   const insets = useSafeAreaInsets();
   const { data, loading, error, refreshing, refetch } = useTournament(tournamentId);
-  const [filter, setFilter] = useState('all');
-  const fixtures = useMemo(() => {
-    const rows = data?.fixtures || [];
-    if (filter === 'completed') return rows.filter((item) => terminal(item.status));
-    if (filter === 'scheduled') return rows.filter((item) => !terminal(item.status));
-    return rows;
-  }, [data?.fixtures, filter]);
+  const matchdays = useMemo(() => buildFixtureMatchdays(data?.fixtures || []), [data?.fixtures]);
+  const [dayIndex, setDayIndex] = useState(0);
+
+  useEffect(() => {
+    if (!matchdays.length) {
+      setDayIndex(0);
+      return;
+    }
+    if (dayIndex > matchdays.length - 1) setDayIndex(matchdays.length - 1);
+  }, [dayIndex, matchdays]);
+
+  const fixtures = matchdays[dayIndex]?.items || [];
 
   const header = (
     <View style={{ gap: 14, paddingBottom: 14, paddingHorizontal: SCREEN_GUTTER }}>
       <CompetitionHeader eyebrow={data?.tournament?.name || 'Tournament'} title="Fixtures" />
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {FILTERS.map((item) => (
-          <Chip key={item} label={capitalize(item)} active={filter === item} onPress={() => setFilter(item)} />
-        ))}
-      </View>
+      <MatchdayNav days={matchdays} index={dayIndex} onChange={setDayIndex} tokens={tokens} />
       {error ? (
         <Card style={{ gap: 12, alignItems: 'center' }}>
           <Text style={{ color: tokens.danger, textAlign: 'center' }}>{error}</Text>

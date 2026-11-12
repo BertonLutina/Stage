@@ -91,9 +91,7 @@ beforeEach(() => {
 describe('WatchMatchScreen', () => {
   it('shows the match line, context, recordings and live chat', async () => {
     const { getByText, getAllByText } = await renderScreen();
-    expect(getByText('Night Owls')).toBeTruthy();
-    expect(getByText('Red Foxes')).toBeTruthy();
-    expect(getByText('3 – 1')).toBeTruthy();
+    expect(getByText('Night Owls 3 – 1 Red Foxes')).toBeTruthy();
     expect(getByText('League')).toBeTruthy();
     expect(getByText('Other recordings')).toBeTruthy();
     expect(getByText('Now playing')).toBeTruthy();

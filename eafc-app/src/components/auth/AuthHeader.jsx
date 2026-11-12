@@ -2,11 +2,11 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import useThemeStore from '@/store/themeStore';
-import { IconButton } from '@/components/ui';
+import { IconButton, BrandLogo } from '@/components/ui';
 import { headingStyle } from '@/lib/fonts';
 
 /** Login / signup top block: back button, 40px display title, 15px muted subtitle. */
-export default function AuthHeader({ title, subtitle }) {
+export default function AuthHeader({ title, subtitle, showLogo = false }) {
   const router = useRouter();
   const tokens = useThemeStore((s) => s.tokens);
 
@@ -23,6 +23,9 @@ export default function AuthHeader({ title, subtitle }) {
         />
       </View>
       <View style={{ gap: 8, marginTop: 4 }}>
+        {showLogo ? (
+          <BrandLogo variant="lockup" width={160} style={{ marginBottom: 6, alignSelf: 'flex-start' }} />
+        ) : null}
         <Text
           accessibilityRole="header"
           numberOfLines={2}

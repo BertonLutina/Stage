@@ -248,26 +248,23 @@ export default function MatchesIndex() {
             </>
           ) : null}
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <View style={{ flexShrink: 1, minWidth: 0 }}>
-              <Text numberOfLines={1} style={[sectionLabelStyle(tokens), { color: tokens.cyan }]}>
-                KICKOFF
-              </Text>
-              <Text
-                accessibilityRole="header"
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.7}
-                style={{
-                  color: tokens.text,
-                  fontFamily: FONT_EA_SPORTS,
-                  fontSize: 34,
-                  letterSpacing: 34 * 0.03,
-                  textTransform: 'uppercase',
-                }}
-              >
-                Game Day
-              </Text>
-            </View>
+            <Text
+              accessibilityRole="header"
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                color: tokens.text,
+                fontFamily: FONT_EA_SPORTS,
+                fontSize: 34,
+                letterSpacing: 34 * 0.03,
+                textTransform: 'uppercase',
+              }}
+            >
+              Game Day
+            </Text>
             <Pressable
               onPress={() => setArrangeOpen(true)}
               accessibilityRole="button"

@@ -2,10 +2,12 @@ import { Appearance } from 'react-native';
 import { create } from 'zustand';
 import { readStageTheme, writeStageThemeId } from '../lib/stageTheme';
 import { getLiveDarkFx, getLiveDarkImageSource } from '../lib/liveDarkBackground';
+import { getAuthBackgroundState } from '../lib/authBackground';
 
 function snapshot() {
   const tokens = readStageTheme();
   const live = tokens.live === true;
+  const authBg = getAuthBackgroundState();
   return {
     stageId: tokens.id,
     tokens,
@@ -13,6 +15,10 @@ function snapshot() {
     liveDark: live,
     liveDarkSource: live ? getLiveDarkImageSource() : null,
     liveDarkFx: live ? getLiveDarkFx() : { blur: 0, overlay: 0 },
+    authBgActive: authBg.active,
+    authBgSource: authBg.source,
+    authBgFx: authBg.fx,
+    authBgPreference: authBg.preference,
   };
 }
 

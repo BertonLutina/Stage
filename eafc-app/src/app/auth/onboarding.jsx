@@ -17,6 +17,7 @@ import {
   StepHeading,
   OnboardingSelect,
   FormError,
+  TextLink,
 } from '../../components/onboarding/OnboardingParts';
 import {
   PlatformStep,
@@ -32,6 +33,7 @@ import {
   userNeedsOnboarding,
 } from '../../api/stageClient';
 import { writeAccountIntent } from '../../lib/accountIntent';
+import { readAccountMode } from '../../lib/accountMode';
 import { isDiscordConfigured } from '../../lib/discordConfig';
 import { markOnboardingComplete } from '../../services/onboardingService';
 import { isFinishedOnboardingProfile } from '../../lib/onboardingGate';
@@ -125,7 +127,9 @@ export default function OnboardingScreen() {
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [timezone, setTimezone] = useState(detectTimezone);
   const [platform, setPlatform] = useState('PS5');
+  const [crossPlay, setCrossPlay] = useState(true);
   const [playerPosition, setPlayerPosition] = useState('ST');
+  const [secondaryPosition, setSecondaryPosition] = useState('none');
   const [gamertag, setGamertag] = useState('');
   const [country, setCountry] = useState('');
   const [linkProClub, setLinkProClub] = useState(false);
@@ -205,11 +209,16 @@ export default function OnboardingScreen() {
     setSavingPlayer(true);
     setPlayerError(null);
     try {
+      try {
+        localStorage.setItem('stage-cross-play', crossPlay ? '1' : '0');
+      } catch {
+        /* ignore — cross-play has no Player field yet */
+      }
       const saved = await savePlayerProfile({
         user,
         gamertag,
         position: playerPosition,
-        secondaryPosition: 'none',
+        secondaryPosition,
         country,
         platform,
       });
@@ -277,14 +286,18 @@ export default function OnboardingScreen() {
                 <View style={{ gap: 14 }}>
                   <StepHeading
                     title="Who are you on the pitch?"
-                    subtitle="Pick a path. You can add the other role later from settings."
+                    subtitle={
+                      readAccountMode() === 'club'
+                        ? 'You chose club manager at signup — pick Player + President to found a club.'
+                        : 'Pick a path. You can add the other role later from settings.'
+                    }
                   />
 
                   <PathCard
                     icon="football-outline"
                     tint={tokens.cyan}
                     label="Player"
-                    description="Get a profile, get verified, get signed."
+                    description="Join a club, sign contracts."
                     onPress={() => {
                       setOnboardingIntent('player', 'player');
                       setStep('platform');
@@ -297,7 +310,7 @@ export default function OnboardingScreen() {
                     icon="shield-outline"
                     tint={tokens.warning}
                     label="Player + President"
-                    description="Play and run your own club from day one."
+                    description="Run a Pro Club — play and manage from day one."
                     onPress={() => {
                       setOnboardingIntent('both', 'player');
                       setStep('player');
@@ -323,14 +336,24 @@ export default function OnboardingScreen() {
 
               {step === 'platform' ? (
                 <View style={{ gap: STEP_GAP }}>
-                  <PlatformStep value={platform} onChange={setPlatform} />
+                  <PlatformStep
+                    value={platform}
+                    onChange={setPlatform}
+                    crossPlay={crossPlay}
+                    onChangeCrossPlay={setCrossPlay}
+                  />
                   <Button title="Continue" onPress={() => setStep('position')} />
                 </View>
               ) : null}
 
               {step === 'position' ? (
                 <View style={{ gap: STEP_GAP }}>
-                  <PositionStep value={playerPosition} onChange={setPlayerPosition} />
+                  <PositionStep
+                    value={playerPosition}
+                    secondary={secondaryPosition}
+                    onChange={setPlayerPosition}
+                    onChangeSecondary={setSecondaryPosition}
+                  />
                   <Button title="Continue" onPress={() => setStep('gamertag')} />
                 </View>
               ) : null}
@@ -344,16 +367,22 @@ export default function OnboardingScreen() {
                     onChangeCountry={setCountry}
                     linked={linkProClub}
                     onToggleLink={() => setLinkProClub((v) => !v)}
+                    platform={platform}
+                    position={playerPosition}
                   />
                   <FormError>{playerError}</FormError>
                   <Button title="Continue" onPress={onGamertagContinue} loading={savingPlayer} />
+                  <TextLink title="Skip for now" onPress={onGamertagContinue} disabled={savingPlayer} />
                 </View>
               ) : null}
 
               {step === 'club_player' ? (
                 <View style={{ gap: STEP_GAP }}>
                   <ClubChoiceStep value={clubChoice} onChange={setClubChoice} />
-                  <Button title="Finish Setup" onPress={onClubChoiceFinish} />
+                  <Button
+                    title={clubChoice === 'create' ? 'Create club & finish' : 'Finish setup'}
+                    onPress={onClubChoiceFinish}
+                  />
                 </View>
               ) : null}
 

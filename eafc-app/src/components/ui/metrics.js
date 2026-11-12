@@ -3,6 +3,8 @@ export const SCREEN_GUTTER = 20;
 export const CARD_PADDING = 16;
 export const BUTTON_HEIGHT = 52;
 export const BUTTON_RADIUS = 14;
+/** Chamfer on primary CTA (mockup clip-path 12px top-left / bottom-right). */
+export const BUTTON_CUT = 12;
 export const ICON_BUTTON_SIZE = 44;
 export const ICON_BUTTON_RADIUS = 12;
 export const CHIP_HEIGHT = 34;

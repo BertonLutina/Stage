@@ -260,22 +260,16 @@ export default function WatchMatchScreen() {
       <View style={{ gap: 16 }}>
         {/* Header: back + match line + competition context */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <IconButton icon="arrow-back" onPress={() => goBackInPlace(router)} accessibilityLabel="Back" />
+          <IconButton icon="chevron-back" onPress={() => goBackInPlace(router)} accessibilityLabel="Back" />
           <View style={{ flex: 1, minWidth: 0, alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <Text numberOfLines={1} style={{ flexShrink: 1, color: tokens.text, fontWeight: '700', fontSize: 14 }}>
-                {match.home_club_name || match.home_player_name || match.home_team_name || 'Home'}
-              </Text>
-              <Text style={{ color: tokens.cyan, fontWeight: '800', fontSize: 15 }}>
-                {match.status === 'completed'
+            <Text numberOfLines={1} style={{ color: tokens.text, fontWeight: '700', fontSize: 14, textAlign: 'center' }}>
+              {`${match.home_club_name || match.home_player_name || match.home_team_name || 'Home'} ${
+                match.status === 'completed'
                   ? `${match.home_score ?? 0} – ${match.away_score ?? 0}`
-                  : 'vs'}
-              </Text>
-              <Text numberOfLines={1} style={{ flexShrink: 1, color: tokens.text, fontWeight: '700', fontSize: 14 }}>
-                {match.away_club_name || match.away_player_name || match.away_team_name || 'Away'}
-              </Text>
-            </View>
-            <Text numberOfLines={1} style={{ color: tokens.muted, fontSize: 12, marginTop: 2 }}>
+                  : 'vs'
+              } ${match.away_club_name || match.away_player_name || match.away_team_name || 'Away'}`}
+            </Text>
+            <Text numberOfLines={1} style={{ color: tokens.muted, fontSize: 12, marginTop: 2, textAlign: 'center' }}>
               {match.tournament_name || match.competition_context || 'Match'}
             </Text>
           </View>

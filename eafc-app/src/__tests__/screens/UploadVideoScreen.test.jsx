@@ -36,7 +36,7 @@ describe('UploadVideoScreen', () => {
 
   it('does not post without a url', () => {
     const { getByLabelText } = render(<UploadVideoScreen />);
-    fireEvent.press(getByLabelText('Save Video'));
+    fireEvent.press(getByLabelText('Publish video'));
     expect(mockPost).not.toHaveBeenCalled();
   });
 
@@ -44,7 +44,7 @@ describe('UploadVideoScreen', () => {
     const { getByLabelText, getByText } = render(<UploadVideoScreen />);
     fireEvent.press(getByText('Twitch'));
     fireEvent.changeText(getByLabelText('Video URL'), 'https://twitch.tv/clip');
-    fireEvent.press(getByLabelText('Save Video'));
+    fireEvent.press(getByLabelText('Publish video'));
     await waitFor(() =>
       expect(mockPost).toHaveBeenCalledWith('/matches/m1/video', {
         video_url: 'https://twitch.tv/clip',

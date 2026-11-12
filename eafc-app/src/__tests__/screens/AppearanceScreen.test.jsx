@@ -48,6 +48,8 @@ beforeEach(() => {
   polyfillStorage.removeItem('stage-live-dark-bg');
   polyfillStorage.removeItem('stage-live-dark-uploads');
   polyfillStorage.removeItem('stage-live-dark-fx');
+  polyfillStorage.removeItem('stage-auth-bg');
+  polyfillStorage.removeItem('stage-auth-bg-fx');
   act(() => { useThemeStore.getState().setStageTheme('theme-dark'); });
   mockMe.mockResolvedValue({ language: 'en' });
 });
@@ -180,6 +182,30 @@ describe('Appearance screen', () => {
       const view = render(<Screen><Text>x</Text></Screen>);
       const colors = view.getByTestId('stage-bg').children.map((c) => c.props.colors).filter(Boolean)[0];
       expect(colors[0]).toBe(readCustomTheme().backgroundColor);
+    });
+  });
+
+  describe('Sign-in background (auth-only system)', () => {
+    test('starts on Neymar and stays independent of Live Dark', async () => {
+      const { getByTestId, getByLabelText, getByText } = await renderAppearance();
+      expect(getByTestId('auth-background')).toBeTruthy();
+      expect(getByText('Sign-in background')).toBeTruthy();
+      expect(getByLabelText('Neymar').props.accessibilityState.selected).toBe(true);
+      expect(useThemeStore.getState().authBgPreference).toBe('neymar');
+      expect(useThemeStore.getState().authBgActive).toBe(true);
+      fireEvent.press(getByLabelText('Penalty'));
+      await waitFor(() => expect(useThemeStore.getState().authBgPreference).toBe('penalty'));
+    });
+
+    test('Reset restores the Neymar default', async () => {
+      const { getByLabelText } = await renderAppearance();
+      fireEvent.press(getByLabelText('Winners'));
+      await waitFor(() => expect(useThemeStore.getState().authBgPreference).toBe('winners'));
+      fireEvent.press(getByLabelText('Reset to default'));
+      await waitFor(() => {
+        expect(useThemeStore.getState().authBgPreference).toBe('neymar');
+        expect(useThemeStore.getState().authBgActive).toBe(true);
+      });
     });
   });
 

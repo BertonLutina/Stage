@@ -4,7 +4,7 @@
 
 | # | Tâche | Agent | État | Fichiers touchés |
 |---|---|---|---|---|
-| 0 | Variante de bouton coupée (`ui/Button.jsx`) | Claude Code | à faire | |
+| 0 | Variante de bouton coupée (`ui/Button.jsx`) | Cursor (demande Lutina / dossier 1) | fait | `Button.jsx` primary = clip 12px + uppercase 800 ; secondary = `.btn2` arrondi ; `metrics.BUTTON_CUT` ; test `Button.test.jsx` |
 | 1 | Retirer l'UI des prêts | Claude Code | à faire | |
 | 2 | Préparer le match officiel | Claude Code | en cours (Cursor: coque UI maquette) | Cursor: `apps/match-prep.jsx`, `lib/matchPrep.js`, `hooks/useMatchPrep.js`, entrée depuis match detail, test `MatchPrepScreen` — wired to documented prep/publish HTTP; Claude encore propriétaire du polish métier |
 | 3 | Déclarer le score | Claude Code | en cours (Cursor: coque UI maquette) | Cursor: `apps/report-result.jsx` + nav depuis `GameDayScoreReport` (submit → écran dédié); sheet existante conservée pour amend/review. Test `ReportResultScreen` |
@@ -27,6 +27,9 @@
 | — | Alignement layouts maquettes `6-audit` (écrans 7–19) | Cursor | fait | Headers / onglets soulignés / bannières (Lifestyle, Mercato, Store, Notifications, NotificationSettings, Appearance, SeasonRegistration, News, ForgotPassword) alignés sur `6-audit/*.png` ; tests Store/Lifestyle/Mercato/Notifs/Appearance/SeasonRegister/Forgot OK |
 | — | Alignement layouts maquettes `5-apps` | Cursor | fait | Apps (Club/Compete/Account), Inbox, Wallet, Club, InboxMessage ; Store/Transfers restent StoreCredits/Mercato (6-audit) |
 | — | Alignement layouts maquettes `4-profile-teams` | Cursor | fait | Availability tri-état Maybe ; EditProfile Display name + Preferred foot ; CreateTeam colours + open applications ; TeamProfile Recruit ; Profile Settings gear |
+| — | Alignement layouts maquettes `3-tournaments` | Cursor | fait | List cards + hub ; Detail sans PageTile (hero Share, Clubs/Prize/Final) ; Fixtures matchday nav ; CreateTournament header ; Standings/Group/Bracket déjà OK |
+| — | Alignement layouts maquettes `2-home-gameday` | Cursor | fait | Game Day header ; MatchDetail competition·Share ; Search flat ; Upload « Add match footage / Publish » ; Watch scoreline ; Home déjà OK |
+| — | Alignement layouts maquettes `1-onboarding` | Cursor | fait | Welcome OK ; Signup rôles Player/Club manager ; Login logo + copy ; Platform cross-play ; Position alt ; Gamertag PSN/preview/Skip ; Club « Set up your club » / Free agent |
 | 2–6 | MatchPrep / Report / Confirm / Reschedule / TournamentRegister (UI maquette) | Cursor (en parallèle Claude) | fait (coques) | Routes `/apps/match-prep|report-result|confirm-result|reschedule|tournament-register` + libs/hooks + smoke tests 387 verts ; Claude reste propriétaire du polish métier |
 
 ## Ajouts aux composants partagés (Cursor — nouveau seulement, rien d'existant modifié)
@@ -36,6 +39,8 @@
 
 ## Modifications annoncées de composants partagés EXISTANTS (Cursor, avant édition)
 
+- `src/components/ui/Screen.jsx` : prop `authBackdrop` pour Welcome/Login/Signup — wallpaper auth dédié (`AuthWallpaper`), indépendant de Live Dark.
+- `src/components/ui/Button.jsx` (dossier 1 / tâche 0) : primary reprend le `.btn` maquette (coins coupés 12px via SVG Polygon, uppercase, weight 800, letter-spacing 0.06em) ; secondary inchangé en contour arrondi. `metrics.js` : `BUTTON_CUT = 12`.
 - `src/lib/stageTheme.js` (tâche 17, demandée par le prompt) : retrait de l'alias `theme-custom → theme-dark` (`REMOVED_THEMES`), ajout de `theme-custom` à `STAGE_THEME_IDS` et d'un preset `theme-custom` construit depuis `lib/customTheme.js`. Seules ces lignes sont touchées.
   - Attention : le fichier a déjà des modifications NON commitées d'une autre main (palette : `cyan #4A6AA5`, `cyanHi`, `aqua`, `onCyan`, fallback de `hexToRgba`). Je ne les modifie pas et ne les commite pas ; `tailwind.config.js` est dans le même cas et reste intact.
 - `src/components/ui/StageBackground.jsx` (tâche 17) : si `tokens.customBackdrop` existe (thème Custom seulement), dégradé fond → couleur de dégradé de l'utilisateur ; sinon rendu inchangé (3 couches Stage).

@@ -4,10 +4,10 @@ import useThemeStore from '@/store/themeStore';
 import { FONT_EA_SPORTS } from '@/lib/fonts';
 import { AVATAR_SIZE, AVATAR_RADIUS } from './metrics';
 
-/** Initials tile (radius 12) or round crest (`round`). */
-export default function Avatar({ initials, uri, size = AVATAR_SIZE, round = false, testID }) {
+/** Initials tile (radius 12) or round crest (`round`). Pass `radius={0}` for sharp corners. */
+export default function Avatar({ initials, uri, size = AVATAR_SIZE, round = false, radius: radiusProp, testID }) {
   const tokens = useThemeStore((s) => s.tokens);
-  const radius = round ? size / 2 : AVATAR_RADIUS;
+  const radius = radiusProp != null ? radiusProp : (round ? size / 2 : AVATAR_RADIUS);
 
   return (
     <View

@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Linking,
   RefreshControl,
+  Share,
   StatusBar,
   Text,
   TouchableOpacity,
@@ -34,10 +35,20 @@ import {
   StatGrid,
   TextField,
 } from '@/components/ui';
-import PageTile, { PageTitle } from '@/components/theme/PageTile';
 import TournamentStages from '@/components/tournament/TournamentStages';
 import TournamentLeaderboard from '@/components/tournament/TournamentLeaderboard';
 import { readAppLanguage, resolveTournamentRules } from '@/lib/tournamentRuleTemplates';
+import { headingStyleLg } from '@/lib/fonts';
+
+const TYPE_LABEL = {
+  knockout: 'Knockout',
+  league: 'League',
+  group_stage: 'Groups + knockout',
+  double_elimination: 'Double Elim',
+  swiss: 'Swiss',
+  swiss_ucl: 'Swiss UCL',
+  group_knockout: 'Groups + knockout',
+};
 
 function parseList(value) {
   if (Array.isArray(value)) return value;
@@ -186,14 +197,25 @@ export default function TournamentDetailScreen() {
   const prizePool = Number(tournament.prize_pool_stc) > 0
     ? Number(tournament.prize_pool_stc)
     : entryStcNeeded * maxTeams;
-  const startLabel = tournament.start_date && !Number.isNaN(new Date(tournament.start_date).getTime())
-    ? new Date(tournament.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  const endOrStart = tournament.end_date || tournament.final_date || tournament.start_date;
+  const dateLabel = endOrStart && !Number.isNaN(new Date(endOrStart).getTime())
+    ? new Date(endOrStart).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
     : null;
+  const statusLive = ['in_progress', 'active'].includes(String(tournament.status || '').toLowerCase());
+  const typeLbl = TYPE_LABEL[tournament.type] || String(tournament.type || 'Cup');
+  const heroEyebrow = `${typeLbl} · ${statusLive ? 'Live' : String(tournament.status || 'Draft').replace(/_/g, ' ')}`;
+  const clubsValue = maxTeams > 0 ? String(maxTeams) : String(participantCount);
   const statItems = [
-    { label: playerTournament ? 'Players' : 'Clubs', value: maxTeams ? `${participantCount} / ${maxTeams}` : String(participantCount) },
-    { label: 'Entry', value: entryStcNeeded > 0 ? `${entryStcNeeded.toLocaleString()} STC` : 'Free' },
-    ...(prizePool > 0 ? [{ label: 'Prize', value: `${prizePool.toLocaleString()} STC` }] : []),
-    ...(startLabel ? [{ label: 'Starts', value: startLabel }] : []),
+    { label: playerTournament ? 'Players' : 'Clubs', value: clubsValue },
+    {
+      label: prizePool > 0 ? 'Prize' : 'Entry',
+      value: prizePool > 0
+        ? `${prizePool.toLocaleString()} STC`
+        : (entryStcNeeded > 0 ? `${entryStcNeeded.toLocaleString()} STC` : 'Free'),
+    },
+    ...(dateLabel
+      ? [{ label: tournament.end_date || tournament.final_date ? 'Final' : 'Starts', value: dateLabel }]
+      : [{ label: 'Registered', value: String(participantCount) }]),
   ];
   const nextMatch = [...matches]
     .filter((match) => !['completed', 'forfeit', 'cancelled'].includes(String(match?.status || '').toLowerCase()))
@@ -205,9 +227,15 @@ export default function TournamentDetailScreen() {
   const nextHome = nextMatch?.home_club_name || nextMatch?.home_player_name || nextMatch?.home_team_name || 'TBD';
   const nextAway = nextMatch?.away_club_name || nextMatch?.away_player_name || nextMatch?.away_team_name || 'TBD';
   const enteredLabel = clubEntered
-    ? registrationClub?.name
+    ? `${registrationClub?.name || 'Club'}${tournament.my_group_name ? ` · ${tournament.my_group_name}` : ''}`
     : (playerEntered ? 'Registered' : null);
   const showRulesChip = hasSavedRulesAcceptance && !(canSubmitClub || canSubmitPlayer);
+  const shareTournament = () => {
+    Share.share({
+      message: `${tournament.name} on STAGE`,
+      title: tournament.name,
+    }).catch(() => {});
+  };
 
   return (
     <Screen
@@ -222,27 +250,37 @@ export default function TournamentDetailScreen() {
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <DetailHero tokens={tokens}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <IconButton icon="arrow-back" accessibilityLabel="Back" onPress={() => router.back()} />
+          <IconButton icon="chevron-back" accessibilityLabel="Back" onPress={() => router.back()} />
+          <IconButton icon="share-outline" accessibilityLabel="Share" onPress={shareTournament} />
         </View>
-        <View style={{ marginTop: 22 }}>
-          <PageTitle
-            eyebrow={(tournament.type || 'CUP').toUpperCase()}
-            title={tournament.name}
-            subtitle={`${tournament.status} · ${playerTournament ? `${players.length} players` : `${clubs.length} clubs`}`}
-            padded={false}
-            style={{ paddingBottom: 0 }}
-          />
+        <View style={{ marginTop: 22, gap: 6 }}>
+          <Text
+            numberOfLines={1}
+            style={{
+              color: tokens.cyan,
+              fontSize: 11,
+              fontWeight: '600',
+              letterSpacing: 11 * 0.12,
+              textTransform: 'uppercase',
+            }}
+          >
+            {heroEyebrow}
+          </Text>
+          <Text
+            accessibilityRole="header"
+            numberOfLines={2}
+            adjustsFontSizeToFit
+            minimumFontScale={0.6}
+            style={[headingStyleLg, { color: tokens.text, fontSize: 36, lineHeight: 38, letterSpacing: 36 * 0.03 }]}
+          >
+            {tournament.name}
+          </Text>
         </View>
       </DetailHero>
-      <View style={{ paddingTop: 18 }}>
-        <PageTile
-          tileKey="tournaments"
-          tileTitle={(tournament.type || 'CUP').toUpperCase()}
-          player={myPlayer}
-          onPlayerChanged={setMyPlayer}
-          contentStyle={{ paddingHorizontal: 12, gap: 14 }}
-        >
-          <StatGrid items={statItems} columns={statItems.length >= 3 ? 2 : 3} />
+      <View style={{ paddingTop: 18, gap: 14 }}>
+          <Card style={{ paddingVertical: 14 }}>
+            <StatGrid items={statItems} columns={3} />
+          </Card>
 
           {showRulesChip || enteredLabel ? (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -488,7 +526,6 @@ export default function TournamentDetailScreen() {
               })}
             />
           ) : null}
-        </PageTile>
       </View>
     </Screen>
   );

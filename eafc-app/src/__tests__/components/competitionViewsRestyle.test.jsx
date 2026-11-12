@@ -95,35 +95,35 @@ describe('competition views restyle', () => {
     expect(render(<BracketView matches={[]} />).getByText('No bracket data')).toBeTruthy();
   });
 
-  test('Fixtures lists matches, filters and opens match detail', async () => {
-    const { findByText, getByText } = render(<FixturesScreen />);
-    fireEvent.press(await findByText('Storm United'));
+  test('Fixtures lists matches, navigates matchdays and opens match detail', async () => {
+    const { findByText, getByText, getByLabelText } = render(<FixturesScreen />);
+    expect(await findByText('Storm United')).toBeTruthy();
+    fireEvent.press(getByText('Storm United'));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/(tabs)/matches/matchdetailscreen',
       params: { matchId: 'k1' },
     });
     expect(getByText('3 - 1')).toBeTruthy();
-    expect(getByText('10:00 PM')).toBeTruthy();
     expect(getByText('Video available')).toBeTruthy();
-    expect(getByText('Scheduled')).toBeTruthy();
+    expect(getByText('Round 1')).toBeTruthy();
+    fireEvent.press(getByLabelText('Next round'));
+    expect(await findByText('Round 2')).toBeTruthy();
   });
 
-  test('Fixtures header and filter chips sit outside the list so they stay reachable', async () => {
-    const { findAllByText, getByText, getByLabelText, queryByText, UNSAFE_getByType } = render(<FixturesScreen />);
+  test('Fixtures header and matchday nav sit outside the list so they stay reachable', async () => {
+    const { findAllByText, getByText, getByLabelText, UNSAFE_getByType } = render(<FixturesScreen />);
     await findAllByText('Blue Comets');
     const list = UNSAFE_getByType(FlatList);
     expect(list.props.ListHeaderComponent).toBeUndefined();
     // the list ends above the tab bar and the Guide button
     expect(StyleSheet.flatten(list.props.contentContainerStyle).paddingBottom).toBe(guideFabClearance(0));
-    // neither the title nor a chip is rendered inside the scrolling list
+    // neither the title nor nav is rendered inside the scrolling list
     expect(list.findAll((n) => n.props?.accessibilityLabel === 'Back')).toHaveLength(0);
-    expect(list.findAll((n) => n.props?.children === 'Completed')).toHaveLength(0);
+    expect(list.findAll((n) => n.props?.accessibilityLabel === 'Next round')).toHaveLength(0);
     expect(getByText('Fixtures')).toBeTruthy();
     expect(getByLabelText('Back')).toBeTruthy();
-    // chips filter the already-loaded real tournament match records.
-    fireEvent.press(getByText('Completed'));
-    await waitFor(() => expect(queryByText('10:00 PM')).toBeNull());
-    expect(getByText('3 - 1')).toBeTruthy();
+    expect(getByLabelText('Previous round')).toBeTruthy();
+    expect(getByLabelText('Next round')).toBeTruthy();
   });
 
   test('Group stage and bracket screens render real match-derived data', async () => {

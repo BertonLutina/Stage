@@ -54,8 +54,6 @@ describe('page tiles', () => {
     const files = [
       '../../components/theme/PageTile.jsx',
       '../../components/competitions/CompetitionsView.jsx',
-      '../../app/(tabs)/search/index.jsx',
-      '../../app/(tabs)/tournaments/tournamentdetailscreen.jsx',
       '../../app/apps/find-players.jsx',
       '../../app/apps/find-clubs.jsx',
     ];
@@ -68,11 +66,13 @@ describe('page tiles', () => {
       expect(open[0]).not.toMatch(/\beyebrow=/);
       expect(open[0]).toMatch(/tileTitle=/);
     });
-    // Audit / Apps mockups: flat headers without PageTile.
+    // Audit / Apps / Search / Tournament detail mockups: flat headers without PageTile.
     expect(read('../../app/apps/register.jsx')).toMatch(/<PageTitle/);
     expect(read('../../app/apps/transfers.jsx')).toMatch(/SectionLabel/);
     expect(read('../../app/apps/inbox/index.jsx')).toMatch(/<PageTitle/);
     expect(read('../../app/apps/inbox/index.jsx')).not.toMatch(/<PageTile\b/);
+    expect(read('../../app/(tabs)/search/index.jsx')).not.toMatch(/<PageTile\b/);
+    expect(read('../../app/(tabs)/tournaments/tournamentdetailscreen.jsx')).not.toMatch(/<PageTile\b/);
     const home = read('../../components/dashboard/DashboardLayoutLab.jsx');
     expect(home).toMatch(/<PageTile\b[\s\S]*?tileTitle="HOME"/);
     expect(home).not.toMatch(/<PageTitle/);

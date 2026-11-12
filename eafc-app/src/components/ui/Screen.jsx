@@ -3,6 +3,7 @@ import { View, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import useThemeStore from '@/store/themeStore';
 import LiveDarkWallpaper from '@/components/theme/LiveDarkWallpaper';
+import AuthWallpaper from '@/components/theme/AuthWallpaper';
 import StageBackground from './StageBackground';
 import { pageBottomPad } from '@/lib/pageInsets';
 import { SCREEN_GUTTER, guideFabClearance, guideFabClearanceStack } from './metrics';
@@ -11,6 +12,9 @@ import { SCREEN_GUTTER, guideFabClearance, guideFabClearanceStack } from './metr
  * Stage page shell: flat `bg` (transparent + wallpaper in Live Dark), top safe area,
  * 20px gutters and room for the floating tab bar. The wallpaper is rendered here
  * because native stack screens hide ancestor backdrops.
+ *
+ * `authBackdrop` — Welcome / Sign in / Sign up: uses the auth-only wallpaper system
+ * (photo + blur + blue overlay), independent of Live Dark.
  *
  * `guideFab` (stack screens only) reserves room for the global Guide button.
  *
@@ -23,6 +27,7 @@ export default function Screen({
   keyboardAvoiding = false,
   tabBar = true,
   guideFab = false,
+  authBackdrop = false,
   refreshControl,
   scrollKey,
   style,
@@ -31,6 +36,7 @@ export default function Screen({
   const tokens = useThemeStore((s) => s.tokens);
   const insets = useSafeAreaInsets();
   const live = tokens.live === true;
+  const authBgActive = useThemeStore((s) => s.authBgActive);
 
   // Tab screens also clear the global Guide button that floats above the tab bar.
   // Stack screens (tabBar=false) that show the Guide button clear it too, without the tab bar offset.
@@ -68,12 +74,20 @@ export default function Screen({
     </View>
   );
 
+  const transparentShell = authBackdrop
+    ? Boolean(authBgActive)
+    : live;
+
+  let backdrop = <StageBackground />;
+  if (authBackdrop) backdrop = <AuthWallpaper />;
+  else if (live) backdrop = <LiveDarkWallpaper />;
+
   return (
     <View
       testID={testID}
-      style={{ flex: 1, backgroundColor: live ? 'transparent' : tokens.bg }}
+      style={{ flex: 1, backgroundColor: transparentShell ? 'transparent' : tokens.bg }}
     >
-      {live ? <LiveDarkWallpaper /> : <StageBackground />}
+      {backdrop}
       {keyboardAvoiding ? (
         <KeyboardAvoidingView
           style={{ flex: 1, zIndex: 1 }}

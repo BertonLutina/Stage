@@ -25,6 +25,17 @@ import {
   setLiveDarkBgPreference,
   setLiveDarkFx,
 } from '@/lib/liveDarkBackground';
+import {
+  AUTH_BG_BLUR_MAX,
+  AUTH_BG_GRADIENT_ID,
+  AUTH_BG_OPTIONS,
+  AUTH_BG_OVERLAY_MAX,
+  getAuthBgFx,
+  getAuthBgPreference,
+  resetAuthBackground,
+  setAuthBgFx,
+  setAuthBgPreference,
+} from '@/lib/authBackground';
 
 const THEMES = [
   { id: 'theme-dark', key: 'dark' },
@@ -113,8 +124,32 @@ export default function AppearanceScreen() {
   const [bg, setBg] = useState(() => getLiveDarkBgPreference());
   const [slots, setSlots] = useState(() => getLiveDarkUploadSlots());
   const [fx, setFx] = useState(() => getLiveDarkFx());
+  const [authBg, setAuthBg] = useState(() => getAuthBgPreference());
+  const [authFx, setAuthFx] = useState(() => getAuthBgFx());
+  const [authGridWidth, setAuthGridWidth] = useState(0);
   const [status, setStatus] = useState('idle');
   const [saveError, setSaveError] = useState('');
+
+  const AUTH_TILE_GAP = 8;
+  const AUTH_TILE_COLS = 3;
+  const authTileWidth = authGridWidth > 0
+    ? Math.floor((authGridWidth - AUTH_TILE_GAP * (AUTH_TILE_COLS - 1)) / AUTH_TILE_COLS)
+    : 0;
+  const authTileHeight = Math.round(authTileWidth * (4 / 3));
+
+  const authLabelKey = {
+    [AUTH_BG_GRADIENT_ID]: 'authDefault',
+    neymar: 'authPhotoNeymar',
+    penalty: 'authPhotoPenalty',
+    screamer: 'authPhotoScreamer',
+    winners: 'authPhotoWinners',
+    losergame: 'authPhotoLosergame',
+    score: 'authPhotoScore',
+    slide: 'authPhotoSlide',
+    team: 'authPhotoTeam',
+    longuevie: 'authPhotoLonguevie',
+    stadium: 'authPhotoStadium',
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -219,6 +254,114 @@ export default function AppearanceScreen() {
           />
         ))}
       </View>
+
+      <Card testID="auth-background" style={{ gap: 14 }}>
+        <View style={{ gap: 4 }}>
+          <SectionLabel>{t('stage.appearance.authBackground')}</SectionLabel>
+          <Text style={{ color: tokens.muted, fontSize: 13 }}>{t('stage.appearance.authBackgroundHint')}</Text>
+        </View>
+        <View
+          onLayout={(e) => {
+            const next = Math.round(e.nativeEvent.layout.width);
+            setAuthGridWidth((prev) => (prev === next ? prev : next));
+          }}
+          style={{ flexDirection: 'row', flexWrap: 'wrap', gap: AUTH_TILE_GAP }}
+        >
+          {AUTH_BG_OPTIONS.map((opt) => {
+            const label = t(`stage.appearance.${authLabelKey[opt.id]}`);
+            const selected = authBg === opt.id;
+            const tileW = authTileWidth || 110;
+            const tileH = authTileHeight || 147;
+            return (
+              <Pressable
+                key={opt.id}
+                accessibilityRole="radio"
+                accessibilityLabel={label}
+                accessibilityState={{ selected }}
+                onPress={() => {
+                  setAuthBg(setAuthBgPreference(opt.id));
+                  refreshTheme();
+                }}
+                style={{
+                  width: tileW,
+                  height: tileH,
+                  borderRadius: 12,
+                  borderWidth: 2,
+                  overflow: 'hidden',
+                  borderColor: selected ? '#5FE3E8' : tokens.border,
+                  backgroundColor: tokens.bgDeep,
+                }}
+              >
+                {opt.src ? (
+                  <Image
+                    source={opt.src}
+                    resizeMode="cover"
+                    style={{ width: tileW, height: tileH }}
+                  />
+                ) : (
+                  <View style={{ width: tileW, height: tileH, backgroundColor: tokens.cardHi }} />
+                )}
+                <View
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    paddingHorizontal: 6,
+                    paddingVertical: 6,
+                    backgroundColor: 'rgba(3,21,63,0.72)',
+                  }}
+                >
+                  <Text numberOfLines={2} style={{ color: '#EAF2FF', fontSize: 11, fontWeight: '700' }}>
+                    {label}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+        <View style={{ gap: 2 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={{ color: tokens.textSoft, fontSize: 14 }}>{t('stage.appearance.blur')}</Text>
+            <Text style={{ color: tokens.text, fontSize: 14, fontWeight: '700' }}>{String(Math.round(authFx.blur))}</Text>
+          </View>
+          <Slider
+            accessibilityLabel={`${t('stage.appearance.authBackground')} ${t('stage.appearance.blur')}`}
+            min={0}
+            max={AUTH_BG_BLUR_MAX}
+            step={1}
+            value={authFx.blur}
+            valueText={`${Math.round(authFx.blur)}`}
+            onChange={(blur) => { setAuthFx(setAuthBgFx({ blur })); refreshTheme(); }}
+          />
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={{ color: tokens.textSoft, fontSize: 14 }}>{t('stage.appearance.overlay')}</Text>
+            <Text style={{ color: tokens.text, fontSize: 14, fontWeight: '700' }}>{`${Math.round(authFx.overlay * 100)}%`}</Text>
+          </View>
+          <Slider
+            accessibilityLabel={`${t('stage.appearance.authBackground')} ${t('stage.appearance.overlay')}`}
+            min={0}
+            max={AUTH_BG_OVERLAY_MAX}
+            step={0.05}
+            value={authFx.overlay}
+            valueText={`${Math.round(authFx.overlay * 100)}%`}
+            onChange={(overlay) => { setAuthFx(setAuthBgFx({ overlay })); refreshTheme(); }}
+          />
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('stage.appearance.authReset')}
+          onPress={() => {
+            const next = resetAuthBackground();
+            setAuthBg(next.preference);
+            setAuthFx(next.fx);
+            refreshTheme();
+          }}
+          style={{ minHeight: 44, justifyContent: 'center' }}
+        >
+          <Text style={{ color: tokens.cyan, fontSize: 14, fontWeight: '700' }}>{t('stage.appearance.authReset')}</Text>
+        </Pressable>
+      </Card>
 
       {isLive ? (
         <Card style={{ gap: 14 }}>

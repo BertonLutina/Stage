@@ -70,6 +70,9 @@ const STAGE = {
   cyan: '#4A6AA5',
   cyanHi: '#5B79AF',
   aqua: '#3C5E99',
+  /** Mockup electric cyan (Welcome CTA / Search cut cards). */
+  accent: '#5FE3E8',
+  accentInk: '#07163A',
   onCyan: PAPER,
   success: '#4ADE80',
   successBg: '#14532D',
@@ -105,6 +108,8 @@ function tokensFromSurface({ id, bg, primary, text, muted }) {
     cyan: STAGE.cyan,
     cyanHi: STAGE.cyanHi,
     aqua: STAGE.aqua,
+    accent: STAGE.accent,
+    accentInk: STAGE.accentInk,
     onCyan: STAGE.onCyan,
     amber: STAGE.warning,
     success: STAGE.success,

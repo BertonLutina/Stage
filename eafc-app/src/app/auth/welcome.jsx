@@ -1,33 +1,15 @@
 import React from 'react';
-import { View, Text, Image } from 'react-native';
+import { View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import useThemeStore from '@/store/themeStore';
 import { Screen, Button, BrandLogo } from '@/components/ui';
-
-/** Faded stadium mark watermark, bottom-left, as in the Welcome mockup. */
-const MARK = require('../../../assets/brand/stage-icon.png');
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const tokens = useThemeStore((s) => s.tokens);
 
   return (
-    <Screen scroll={false} tabBar={false}>
-      <Image
-        source={MARK}
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          left: -70,
-          top: 150,
-          width: 530,
-          height: (530 * 220) / 461,
-          opacity: 0.16,
-          resizeMode: 'contain',
-        }}
-      />
+    <Screen scroll={false} tabBar={false} authBackdrop>
       <View
         style={{
           flex: 1,
@@ -39,14 +21,14 @@ export default function WelcomeScreen() {
       >
         <Text
           style={{
-            color: tokens.cyan,
-            fontSize: 11,
+            color: '#5FE3E8',
+            fontSize: 15,
             fontWeight: '600',
-            letterSpacing: 11 * 0.12,
+            letterSpacing: 15 * 0.12,
             textTransform: 'uppercase',
           }}
         >
-          EA FC Pro Clubs
+          Welcome to
         </Text>
         <BrandLogo variant="lockup" width={320} style={{ maxWidth: '100%', alignSelf: 'flex-start' }} />
         <Text style={{ color: tokens.textSoft, fontSize: 17, lineHeight: 25, marginBottom: 20 }}>

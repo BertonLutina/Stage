@@ -58,7 +58,7 @@ export default function UploadVideoScreen() {
             textTransform: 'uppercase',
           }}
         >
-          Add Match Video
+          Add match footage
         </Text>
 
         <View
@@ -119,7 +119,7 @@ export default function UploadVideoScreen() {
 
         {url && preview && <VideoPlayer url={url} source={source} height={200} radius={16} />}
         {url && !preview && <Button title="Preview Video" variant="secondary" onPress={() => setPreview(true)} />}
-        <Button title="Save Video" onPress={submit} loading={saving} />
+        <Button title="Publish video" onPress={submit} loading={saving} />
       </View>
     </Screen>
   );

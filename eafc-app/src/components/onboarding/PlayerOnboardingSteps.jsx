@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import useThemeStore from '@/store/themeStore';
 import { TextField, Card, SectionLabel, Avatar, SegmentedControl, Chip } from '@/components/ui';
@@ -21,7 +21,8 @@ const PLATFORMS = [
   { value: 'PC', initials: 'PC', title: 'PC', caption: 'EA app ID required' },
 ];
 
-export function PlatformStep({ value, onChange }) {
+export function PlatformStep({ value, onChange, crossPlay, onChangeCrossPlay }) {
+  const tokens = useThemeStore((s) => s.tokens);
   return (
     <View style={{ gap: STEP_GAP }}>
       <StepHeading title="Where do you play?" subtitle="We match you with clubs on the same platform." />
@@ -37,6 +38,40 @@ export function PlatformStep({ value, onChange }) {
           />
         ))}
       </View>
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityLabel="I play with cross-play enabled"
+        accessibilityState={{ checked: !!crossPlay }}
+        onPress={() => onChangeCrossPlay?.(!crossPlay)}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 }}
+      >
+        <View
+          style={{
+            width: 20,
+            height: 20,
+            borderRadius: 4,
+            borderWidth: crossPlay ? 0 : 2,
+            borderColor: tokens.borderStrong,
+            backgroundColor: crossPlay ? tokens.cyan : 'transparent',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {crossPlay ? (
+            <View
+              style={{
+                width: 10,
+                height: 6,
+                borderLeftWidth: 2,
+                borderBottomWidth: 2,
+                borderColor: tokens.onCyan,
+                transform: [{ rotate: '-45deg' }, { translateY: -1 }],
+              }}
+            />
+          ) : null}
+        </View>
+        <Text style={{ flex: 1, color: tokens.muted, fontSize: 13 }}>I play with cross-play enabled</Text>
+      </Pressable>
     </View>
   );
 }
@@ -57,12 +92,33 @@ const POSITION_SPOTS = {
 const PITCH_HEIGHT = 400;
 const BUBBLE = 48;
 
-export function PositionStep({ value, onChange }) {
+export function PositionStep({ value, secondary, onChange, onChangeSecondary }) {
   const tokens = useThemeStore((s) => s.tokens);
+  const [pickingAlt, setPickingAlt] = useState(false);
   const line = { position: 'absolute', borderColor: tokens.border, borderWidth: 2 };
+  const hasAlt = Boolean(secondary && secondary !== 'none');
+
+  const selectPosition = (pos) => {
+    if (pickingAlt) {
+      if (pos === value) return;
+      onChangeSecondary?.(pos === secondary ? 'none' : pos);
+      setPickingAlt(false);
+      return;
+    }
+    if (pos === secondary) {
+      onChangeSecondary?.('none');
+      return;
+    }
+    onChange?.(pos);
+    if (pos === secondary) onChangeSecondary?.('none');
+  };
+
   return (
     <View style={{ gap: STEP_GAP }}>
-      <StepHeading title="Your position" subtitle="Pick your main in-game position." />
+      <StepHeading
+        title="Your position"
+        subtitle="Pick a main position and up to one alternate."
+      />
       <View
         accessibilityRole="radiogroup"
         style={{
@@ -80,13 +136,14 @@ export function PositionStep({ value, onChange }) {
         <View style={[line, { left: '25%', right: '25%', top: 0, height: 64, borderTopWidth: 0 }]} />
         {Object.keys(POSITION_SPOTS).map((pos) => {
           const on = value === pos;
+          const alt = hasAlt && secondary === pos;
           return (
             <Pressable
               key={pos}
               accessibilityRole="radio"
               accessibilityLabel={pos}
-              accessibilityState={{ selected: on }}
-              onPress={() => onChange(pos)}
+              accessibilityState={{ selected: on || alt }}
+              onPress={() => selectPosition(pos)}
               style={{
                 position: 'absolute',
                 ...POSITION_SPOTS[pos],
@@ -96,7 +153,7 @@ export function PositionStep({ value, onChange }) {
                 marginTop: -BUBBLE / 2,
                 borderRadius: BUBBLE / 2,
                 borderWidth: 2,
-                borderColor: on ? tokens.cyanHi : tokens.borderStrong,
+                borderColor: on || alt || pickingAlt ? tokens.cyanHi : tokens.borderStrong,
                 backgroundColor: on ? tokens.cyan : tokens.cardHi,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -109,30 +166,73 @@ export function PositionStep({ value, onChange }) {
           );
         })}
       </View>
-      <View style={{ flexDirection: 'row' }}>
-        <Chip label={`Main · ${value}`} active />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        <Chip label={`Main · ${value || '—'}`} active />
+        {hasAlt ? (
+          <Chip
+            label={`Alt · ${secondary}`}
+            active={false}
+            onPress={() => onChangeSecondary?.('none')}
+          />
+        ) : (
+          <Chip
+            label="+ Add"
+            active={pickingAlt}
+            onPress={() => setPickingAlt((v) => !v)}
+          />
+        )}
       </View>
     </View>
   );
 }
 
+const GAMERTAG_LABELS = {
+  PS5: 'PSN ID',
+  'Xbox Series': 'Xbox gamertag',
+  PC: 'EA app ID',
+};
+
 /** Gamertag + country + optional "Link Pro Club" (the folded identity claim). */
-export function GamertagStep({ gamertag, onChangeGamertag, country, onChangeCountry, linked, onToggleLink }) {
+export function GamertagStep({
+  gamertag,
+  onChangeGamertag,
+  country,
+  onChangeCountry,
+  linked,
+  onToggleLink,
+  platform = 'PS5',
+  position = 'ST',
+}) {
   const tokens = useThemeStore((s) => s.tokens);
   const typed = String(gamertag || '').trim();
   const countryOptions = COUNTRIES.map((c) => ({ id: c.name, label: c.name }));
+  const platformTitle =
+    PLATFORMS.find((p) => p.value === platform)?.title || platform || 'PlayStation 5';
+  const fieldLabel = GAMERTAG_LABELS[platform] || 'Gamertag';
+
   return (
     <View style={{ gap: STEP_GAP }}>
       <StepHeading title="Your gamertag" subtitle="This is how clubs and opponents will find you." />
-      <TextField label="Gamertag" value={gamertag} onChangeText={onChangeGamertag} placeholder="NightOwl_10" />
+      <TextField
+        label={fieldLabel}
+        value={gamertag}
+        onChangeText={onChangeGamertag}
+        placeholder="NightOwl_10"
+        accessibilityLabel={fieldLabel}
+      />
       {typed ? (
         <Card style={{ gap: 14 }}>
           <SectionLabel>Preview</SectionLabel>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <Avatar initials={typed.slice(0, 2)} size={56} />
-            <Text numberOfLines={1} style={[headingStyle, { flex: 1, color: tokens.text, fontSize: 22, letterSpacing: 22 * 0.03 }]}>
-              {typed}
-            </Text>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text numberOfLines={1} style={[headingStyle, { color: tokens.text, fontSize: 22, letterSpacing: 22 * 0.03 }]}>
+                {typed}
+              </Text>
+              <Text numberOfLines={1} style={{ color: tokens.muted, fontSize: 13 }}>
+                {position} · {platformTitle} · Free agent
+              </Text>
+            </View>
           </View>
         </Card>
       ) : null}
@@ -174,18 +274,18 @@ export function GamertagStep({ gamertag, onChangeGamertag, country, onChangeCoun
   );
 }
 
-/** Create a club or stay a free agent. */
+/** Create a club or stay a free agent (Join-with-code is a data gap). */
 const CLUB_CHOICES = [
-  { key: 'create', label: 'Create Club' },
-  { key: 'freeagent', label: 'Free Agent' },
+  { key: 'create', label: 'Create club' },
+  { key: 'freeagent', label: 'Free agent' },
 ];
 
 export function ClubChoiceStep({ value, onChange }) {
   return (
     <View style={{ gap: STEP_GAP }}>
       <StepHeading
-        title="Club or free agent"
-        subtitle="Found a club, or wait for a contract offer. Clubs sign players — you don’t browse to join."
+        title="Set up your club"
+        subtitle="Create a club or stay a free agent until a contract offer."
       />
       <SegmentedControl options={CLUB_CHOICES} value={value} onChange={onChange} />
     </View>

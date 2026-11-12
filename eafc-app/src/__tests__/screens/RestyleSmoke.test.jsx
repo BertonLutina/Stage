@@ -570,7 +570,7 @@ const FIXTURES = {
   'components/chat/ChatFilterChips.jsx#default': () => [{ onToggle: noop }],
   'components/apps/AppDirectoryScreen.jsx#FilterChips': () => [{ options: [{ id: 'all', label: 'All' }, 'income'], value: 'all', onChange: noop }],
   'components/directory/DirectoryResultRow.jsx#default': () => [
-    { imageUrl: 'https://example.com/a.png', initials: 'NO', name: LONG_NAME, meta: 'ST · 84', actionLabel: 'Invite', onPress: noop, onAction: noop },
+    { imageUrl: 'https://example.com/a.png', bannerUrl: 'https://example.com/b.png', bannerZoom: 150, initials: 'NO', name: LONG_NAME, badges: ['ST', 'LB'], meta: 'Belgium · PS5', actionLabel: 'VIEW PROFILE', onPress: noop, onAction: noop },
     { initials: 'X', name: 'X', meta: '', onPress: noop },
   ],
   'components/directory/DirectorySearchField.jsx#default': () => [{ value: 'abc', onChangeText: noop, placeholder: 'Search', accessibilityLabel: 'Search', clearLabel: 'Clear' }],

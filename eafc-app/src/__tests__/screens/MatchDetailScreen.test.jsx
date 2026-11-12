@@ -91,10 +91,11 @@ describe.each(['theme-dark', 'theme-video'])('Match detail screen in %s', (theme
 
   test('shows the match, Watch / Upload video route to their screens, back goes back', async () => {
     mockReloadMatch.mockResolvedValue(match({ status: 'completed', home_score: 3, away_score: 1 }));
-    const { findByText, getByText, getAllByText, getByLabelText, toJSON } = render(<MatchDetailScreen />);
-    expect(await findByText('GAME DAY')).toBeTruthy();
+    const { findAllByText, getByText, getAllByText, getByLabelText, toJSON } = render(<MatchDetailScreen />);
+    expect((await findAllByText('Night Owls')).length).toBeGreaterThan(0);
     expect(getAllByText('Night Owls').length).toBeGreaterThan(0);
     expect(getAllByText('Red Foxes').length).toBeGreaterThan(0);
+    expect(getByLabelText('Share')).toBeTruthy();
 
     fireEvent.press(getByLabelText('Watch'));
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/(tabs)/matches/watchmatchscreen', params: { matchId: 'm1' } });

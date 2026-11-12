@@ -12,8 +12,9 @@ import { resolveMyPlayerAndClub, stageClient } from '@/api/stageClient';
 import DateTimeZoneFields from '@/components/matches/DateTimeZoneFields';
 import useThemeStore from '@/store/themeStore';
 import { Button, Card, IconButton, Screen, SectionLabel, TextField } from '@/components/ui';
-import { PageTitle, SilverPill } from '@/components/theme/PageTile';
+import { SilverPill } from '@/components/theme/PageTile';
 import { combineDateTimeToMysql } from '@/lib/arrangeGame';
+import { headingStyleLg } from '@/lib/fonts';
 import {
   DEFAULT_TOURNAMENT_FORM,
   TOURNAMENT_PLATFORM_OPTIONS,
@@ -199,17 +200,17 @@ export default function CreateTournamentScreen() {
     <Screen keyboardAvoiding>
       <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
       <View style={{ gap: 16 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <IconButton icon="close" accessibilityLabel="Close" onPress={() => router.back()} />
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <PageTitle
-              eyebrow="NEW TOURNAMENT"
-              title="CREATE TOURNAMENT"
-              padded={false}
-              style={{ paddingBottom: 0 }}
-            />
-          </View>
+          <SectionLabel>New tournament</SectionLabel>
+          <View style={{ width: 44 }} />
         </View>
+        <Text
+          accessibilityRole="header"
+          style={[headingStyleLg, { color: tokens.text, fontSize: 34, letterSpacing: 34 * 0.03 }]}
+        >
+          Create tournament
+        </Text>
 
         <View style={{ gap: 16 }}>
           {!canCreate ? (
@@ -243,10 +244,10 @@ export default function CreateTournamentScreen() {
               </View>
 
               <TextField
-                label="Name *"
+                label="Name"
                 value={form.name}
                 onChangeText={(value) => setField('name', value)}
-                placeholder="Cup name"
+                placeholder="Autumn Champions Cup"
               />
 
               <TextField

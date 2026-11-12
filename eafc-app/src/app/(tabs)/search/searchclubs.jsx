@@ -11,28 +11,41 @@ import useThemeStore from '@/store/themeStore';
 import { Card, Screen } from '@/components/ui';
 import DirectoryResultRow from '@/components/directory/DirectoryResultRow';
 import DirectorySearchField from '@/components/directory/DirectorySearchField';
-import { resolveMyPlayerAndClub } from '@/api/stageClient';
 import {
   clubDisplayName,
   filterClubDirectory,
   loadClubDirectory,
 } from '@/lib/stageDirectories';
+import {
+  countryCodeToFlagEmoji, getCountryDisplayName, normalizeCountryCode,
+} from '@/lib/countryDisplay';
 
-function ClubRow({ club, isClubOwner, onChallenge, onPress }) {
+function clubMetaLine(club) {
+  const code = normalizeCountryCode(club.country_code, club.country);
+  const flag = countryCodeToFlagEmoji(code, club.country);
+  const country = code || club.country
+    ? getCountryDisplayName(code, club.country)
+    : (club.region || null);
+  const place = [flag, country].filter(Boolean).join(' ') || null;
+  return [place, club.platform].filter(Boolean).join(' · ') || 'Club';
+}
+
+function ClubRow({ club, onPress }) {
   const name = clubDisplayName(club);
-  const subtitle = [club.tag ? `[${club.tag}]` : null, club.region, club.platform].filter(Boolean).join(' · ');
   const initials = String(club.tag || name || 'C').slice(0, 3).toUpperCase();
 
   return (
     <DirectoryResultRow
       imageUrl={club.logo_url}
+      bannerUrl={club.banner_url || club.banner}
+      bannerZoom={club.banner_zoom}
       initials={initials}
       name={name}
-      meta={subtitle || 'Club'}
-      actionLabel={isClubOwner ? 'Challenge' : 'View'}
-      actionPrimary
+      badges={club.tag ? [club.tag] : []}
+      meta={clubMetaLine(club)}
+      actionLabel="VIEW PROFILE"
       onPress={onPress}
-      onAction={() => onChallenge?.(club)}
+      onAction={onPress}
     />
   );
 }
@@ -43,18 +56,13 @@ export default function SearchClubs() {
   const [query, setQuery] = useState('');
   const [clubs, setClubs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isClubOwner, setIsClubOwner] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [rows, identity] = await Promise.all([
-        loadClubDirectory(),
-        resolveMyPlayerAndClub().catch(() => ({})),
-      ]);
+      const rows = await loadClubDirectory();
       if (cancelled) return;
       setClubs(rows);
-      setIsClubOwner(Boolean(identity.presidentClub?.id));
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -69,20 +77,6 @@ export default function SearchClubs() {
     router.push({
       pathname: '/apps/club/[id]',
       params: { id: club.id },
-    });
-  };
-
-  const handleChallenge = (club) => {
-    router.push({
-      pathname: '/(tabs)/matches',
-      params: {
-        arrange: '1',
-        opponentKind: 'club',
-        opponentId: club.id,
-        opponentName: clubDisplayName(club),
-        opponentTag: club.tag || '',
-        opponentEmail: club.owner_email || '',
-      },
     });
   };
 
@@ -106,8 +100,6 @@ export default function SearchClubs() {
             renderItem={({ item }) => (
               <ClubRow
                 club={item}
-                isClubOwner={isClubOwner}
-                onChallenge={handleChallenge}
                 onPress={() => handleSelectClub(item)}
               />
             )}

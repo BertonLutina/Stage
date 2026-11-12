@@ -18,17 +18,31 @@ import {
   loadPlayerDirectory,
   playerDisplayName,
 } from '@/lib/stageDirectories';
+import { countryCodeToFlagEmoji, getPlayerNationality } from '@/lib/countryDisplay';
+
+function playerMetaLine(player) {
+  const nation = getPlayerNationality(player);
+  const flag = countryCodeToFlagEmoji(nation.code, player.country);
+  const place = [flag, nation.label !== 'Unknown' ? nation.label : null]
+    .filter(Boolean).join(' ')
+    || 'Player';
+  return [place, player.platform].filter(Boolean).join(' · ');
+}
 
 function PlayerRow({ player, isClubOwner, onChallenge, onPress }) {
   const name = playerDisplayName(player);
+  const badges = [player.position, player.secondary_position].filter(Boolean);
 
   return (
     <DirectoryResultRow
       imageUrl={player.avatar_url}
+      bannerUrl={player.banner_url}
+      bannerZoom={player.banner_zoom}
       initials={playerAvatarInitials(player)}
       name={name}
-      meta={[player.position, player.platform].filter(Boolean).join(' · ') || 'Player'}
-      actionLabel={isClubOwner ? 'Invite' : 'Challenge'}
+      badges={badges}
+      meta={playerMetaLine(player)}
+      actionLabel={isClubOwner ? 'INVITE' : 'CHALLENGE'}
       onPress={onPress}
       onAction={() => onChallenge?.(player)}
     />

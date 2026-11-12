@@ -7,14 +7,36 @@ import { useRouter } from 'expo-router';
 import useThemeStore from '@/store/themeStore';
 import useSearchDirectory from '@/hooks/useSearchDirectory';
 import {
-  clubDisplayName, clubOverallRating, filterClubDirectory, filterPlayerDirectory,
-  playerDisplayName, playerOverallRating,
+  clubDisplayName, filterClubDirectory, filterPlayerDirectory, playerDisplayName,
 } from '@/lib/stageDirectories';
 import { playerAvatarInitials } from '@/lib/playerAvatar';
+import {
+  countryCodeToFlagEmoji, getCountryDisplayName, getPlayerNationality, normalizeCountryCode,
+} from '@/lib/countryDisplay';
+import { headingStyleLg } from '@/lib/fonts';
 import { Button, Card, Screen, SectionLabel, SegmentedControl } from '@/components/ui';
 import DirectoryResultRow from '@/components/directory/DirectoryResultRow';
 import DirectorySearchField from '@/components/directory/DirectorySearchField';
-import PageTile, { PageTitle } from '@/components/theme/PageTile';
+
+function playerMetaLine(player, club) {
+  const nation = getPlayerNationality(player);
+  const flag = countryCodeToFlagEmoji(nation.code, player.country);
+  const place = [flag, nation.label !== 'Unknown' ? nation.label : null]
+    .filter(Boolean).join(' ')
+    || club?.name
+    || 'Free agent';
+  return [place, player.platform].filter(Boolean).join(' · ');
+}
+
+function clubMetaLine(club) {
+  const code = normalizeCountryCode(club.country_code, club.country);
+  const flag = countryCodeToFlagEmoji(code, club.country);
+  const country = code || club.country
+    ? getCountryDisplayName(code, club.country)
+    : (club.region || null);
+  const place = [flag, country].filter(Boolean).join(' ') || null;
+  return [place, club.platform].filter(Boolean).join(' · ');
+}
 
 const SEARCH_VIEWS = [
   { key: 'players', label: 'Players' },
@@ -39,8 +61,7 @@ export default function SearchIndex() {
   const [view, setView] = useState('players');
   const [query, setQuery] = useState('');
   const resource = useSearchDirectory();
-  const { players, clubs, playerClubs, identity } = resource.data;
-  const isClubOwner = Boolean(identity?.presidentClub?.id);
+  const { players, clubs, playerClubs } = resource.data;
 
   const results = useMemo(
     () => (view === 'players'
@@ -54,15 +75,6 @@ export default function SearchIndex() {
   });
   const openClub = (club) => router.push({
     pathname: '/apps/club/[id]', params: { id: club.id },
-  });
-  const challenge = (kind, target) => router.push({
-    pathname: '/(tabs)/matches',
-    params: {
-      arrange: '1', opponentKind: kind, opponentId: target.id,
-      opponentName: kind === 'player' ? playerDisplayName(target) : clubDisplayName(target),
-      opponentEmail: target.email || target.owner_email || '',
-      ...(kind === 'club' ? { opponentTag: target.tag || '' } : {}),
-    },
   });
 
   const countLabel = `${results.length} ${view === 'players'
@@ -78,21 +90,29 @@ export default function SearchIndex() {
         refreshControl={<RefreshControl refreshing={resource.refreshing} onRefresh={resource.refetch} tintColor={tokens.cyan} />}
         contentContainerStyle={{ gap: 14, paddingBottom: 28 }}
       >
-        <PageTitle title="SEARCH" subtitle="Find public players and clubs on Stage." padded={false} style={{ paddingBottom: 0 }} />
+        <Text
+          accessibilityRole="header"
+          style={[headingStyleLg, { color: tokens.text, fontSize: 34, letterSpacing: 34 * 0.03 }]}
+        >
+          Search
+        </Text>
+
+        <DirectorySearchField
+          value={query}
+          onChangeText={setQuery}
+          accessibilityLabel={view === 'players' ? 'Search players' : 'Search clubs'}
+          placeholder="Players, clubs, gamertags"
+          clearLabel="Clear search"
+          autoCorrect={false}
+          autoCapitalize="none"
+          returnKeyType="search"
+        />
+
         <SegmentedControl
           accessibilityLabel="Search directory"
           options={SEARCH_VIEWS}
           value={view}
           onChange={(next) => { setView(next); setQuery(''); }}
-        />
-        <DirectorySearchField
-          value={query}
-          onChangeText={setQuery}
-          placeholder={view === 'players' ? 'Search players' : 'Search clubs'}
-          clearLabel="Clear search"
-          autoCorrect={false}
-          autoCapitalize="none"
-          returnKeyType="search"
         />
 
         {resource.loading ? (
@@ -106,51 +126,46 @@ export default function SearchIndex() {
             </View>
           </Card>
         ) : (
-          <PageTile
-            tileKey="search"
-            tileTitle="SEARCH"
-            contentStyle={{ paddingHorizontal: 12, gap: 10 }}
-          >
+          <View style={{ gap: 8 }}>
             <SectionLabel>{countLabel}</SectionLabel>
             {results.length === 0 ? <EmptyResults view={view} /> : results.map((item) => {
               if (view === 'players') {
                 const club = playerClubs?.[item.club_id];
-                const meta = [item.position, `OVR ${playerOverallRating(item)}`, item.platform, club?.name]
-                  .filter(Boolean).join(' · ');
+                const badges = [item.position, item.secondary_position].filter(Boolean);
                 return (
                   <DirectoryResultRow
                     key={String(item.id)}
                     imageUrl={item.avatar_url}
+                    bannerUrl={item.banner_url}
+                    bannerZoom={item.banner_zoom}
                     initials={playerAvatarInitials(item)}
                     name={playerDisplayName(item)}
-                    meta={meta}
-                    actionLabel={isClubOwner ? 'Invite' : 'Challenge'}
+                    badges={badges}
+                    meta={playerMetaLine(item, club)}
+                    actionLabel="VIEW PROFILE"
                     onPress={() => openPlayer(item)}
-                    onAction={() => challenge('player', item)}
+                    onAction={() => openPlayer(item)}
                   />
                 );
               }
               const name = clubDisplayName(item);
-              const meta = [
-                item.tag, item.region,
-                clubOverallRating(item) != null ? `OVR ${clubOverallRating(item)}` : null,
-                item.platform,
-              ].filter(Boolean).join(' · ');
               return (
                 <DirectoryResultRow
                   key={String(item.id)}
                   imageUrl={item.logo_url}
+                  bannerUrl={item.banner_url || item.banner}
+                  bannerZoom={item.banner_zoom}
                   initials={String(item.tag || name).slice(0, 3).toUpperCase()}
                   name={name}
-                  meta={meta}
-                  actionLabel={isClubOwner ? 'Challenge' : 'View'}
-                  actionPrimary={isClubOwner}
+                  badges={item.tag ? [item.tag] : []}
+                  meta={clubMetaLine(item)}
+                  actionLabel="VIEW PROFILE"
                   onPress={() => openClub(item)}
-                  onAction={() => (isClubOwner ? challenge('club', item) : openClub(item))}
+                  onAction={() => openClub(item)}
                 />
               );
             })}
-          </PageTile>
+          </View>
         )}
       </ScrollView>
     </Screen>

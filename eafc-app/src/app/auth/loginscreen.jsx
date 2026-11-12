@@ -127,9 +127,9 @@ export default function LoginScreen() {
   };
 
   return (
-    <Screen keyboardAvoiding tabBar={false}>
+    <Screen keyboardAvoiding tabBar={false} authBackdrop>
       <View style={{ flexGrow: 1, gap: 20 }}>
-        <AuthHeader title="Welcome back" subtitle="Sign in to get back to your club." />
+        <AuthHeader showLogo title="Welcome back" subtitle="Sign in to get back to your club." />
 
         <TextField
           label="Email or gamertag"
@@ -247,8 +247,8 @@ export default function LoginScreen() {
           style={{ marginTop: 'auto', minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
         >
           <Text style={{ color: tokens.muted, fontSize: 14, textAlign: 'center' }}>
-            Don&apos;t have an account?{' '}
-            <Text style={{ color: tokens.cyan, fontWeight: '600' }}>Sign up</Text>
+            No account yet?{' '}
+            <Text style={{ color: tokens.cyan, fontWeight: '600' }}>Create one</Text>
           </Text>
         </Pressable>
       </View>

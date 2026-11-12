@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import TournamentCard from '@/components/tournament/TournamentCard';
 import useTournamentsList from '@/hooks/useTournamentsList';
 import useThemeStore from '@/store/themeStore';
-import { Button, Card, Screen, SectionLabel, SegmentedControl, SkeletonList } from '@/components/ui';
+import { Button, Card, Screen, SegmentedControl, SkeletonList } from '@/components/ui';
 import CompetitionsView from '@/components/competitions/CompetitionsView';
 import RankingsView from '@/components/rankings/RankingsView';
 import useT from '@/hooks/useT';
@@ -89,6 +89,7 @@ export default function TournamentListScreen() {
                 key={tournament.id}
                 tournament={tournament}
                 trophyItems={trophyItems}
+                joined={tab === 'my'}
                 onPress={() => openTournament(tournament.id)}
               />
             ))}
@@ -104,23 +105,11 @@ export default function TournamentListScreen() {
                 ? 'Check back soon for new Stage competitions.'
                 : 'Tournament activity will appear here automatically.'}
             </Text>
+            {!canCreate && tab === 'open' ? (
+              <Button title="Unlock tournament creation" variant="secondary" onPress={() => router.push('/apps/store')} />
+            ) : null}
           </Card>
         )}
-
-        <View style={{ gap: 10, paddingTop: 4 }}>
-          <SectionLabel>Tournament tools</SectionLabel>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <View style={{ flex: 1 }}>
-              <Button title="GOST leagues" variant="secondary" onPress={() => router.push('/apps/competitions')} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Button title="Register" variant="secondary" onPress={() => router.push('/apps/register')} />
-            </View>
-          </View>
-          {!canCreate ? (
-            <Button title="Unlock tournament creation" variant="secondary" onPress={() => router.push('/apps/store')} />
-          ) : null}
-        </View>
     </>
   );
 

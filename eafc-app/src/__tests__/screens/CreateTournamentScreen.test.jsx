@@ -21,11 +21,11 @@ import CreateTournamentScreen from '../../app/(tabs)/tournaments/createtournamen
 
 describe('CreateTournamentScreen', () => {
   test('uses the mockup heading while retaining the richer real tournament form', async () => {
-    const { findByText, getByText, getByLabelText } = render(<CreateTournamentScreen />);
+    const { findByText, getAllByText, getByText, getByLabelText } = render(<CreateTournamentScreen />);
 
-    await findByText('CREATE TOURNAMENT');
-    expect(getByText('NEW TOURNAMENT')).toBeTruthy();
-    expect(getByText('Tournament for')).toBeTruthy();
+    await findByText('Tournament for');
+    expect(getAllByText(/create tournament/i).length).toBeGreaterThan(0);
+    expect(getByText(/new tournament/i)).toBeTruthy();
     expect(getByText('Rules template')).toBeTruthy();
     expect(getByLabelText('Close')).toBeTruthy();
   });

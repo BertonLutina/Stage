@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
+  Share,
   StatusBar,
   Text,
   View,
@@ -10,8 +11,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { resolveMyPlayerAndClub, stageClient } from '@/api/stageClient';
 import useThemeStore from '@/store/themeStore';
 import { hexToRgba } from '@/lib/stageTheme';
-import { Button, Card, IconButton, Screen, SectionLabel } from '@/components/ui';
-import { MIN_TOUCH } from '@/components/ui/metrics';
+import { Button, Card, IconButton, Screen } from '@/components/ui';
 import {
   MATCH_STATUS_LABEL,
   afterMatchCompleted,
@@ -213,7 +213,7 @@ export default function MatchDetailScreen() {
     return (
       <Screen scroll={false}>
         <View style={{ alignItems: 'flex-start' }}>
-          <IconButton icon="arrow-back" onPress={() => router.back()} accessibilityLabel="Back" />
+          <IconButton icon="chevron-back" onPress={() => router.back()} accessibilityLabel="Back" />
         </View>
         <Text style={{ color: tokens.muted, marginTop: 24, textAlign: 'center', fontSize: 14 }}>
           Match not found
@@ -221,6 +221,23 @@ export default function MatchDetailScreen() {
       </Screen>
     );
   }
+
+  const competition = game.competition_context
+    || game.tournament_name
+    || (game.tournament_id === 'ranked' ? 'Ranked' : 'Match');
+  const matchday = game.matchday ?? game.match_day ?? game.round_label ?? game.round;
+  const headerEyebrow = matchday != null && matchday !== ''
+    ? `${competition} · Matchday ${matchday}`
+    : String(competition);
+  const shareMatch = () => {
+    const home = sides.homeName;
+    const away = sides.awayName;
+    const score = isCompleted ? `${game.home_score ?? 0} – ${game.away_score ?? 0}` : 'vs';
+    Share.share({
+      message: `${home} ${score} ${away} · ${headerEyebrow}`,
+      title: `${home} vs ${away}`,
+    }).catch(() => {});
+  };
 
   return (
     <Screen
@@ -236,11 +253,22 @@ export default function MatchDetailScreen() {
       <StatusBar barStyle={tokens.barStyle} translucent backgroundColor="transparent" />
       <View style={{ gap: 16 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <IconButton icon="arrow-back" onPress={() => router.back()} accessibilityLabel="Back" />
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <SectionLabel>GAME DAY</SectionLabel>
-          </View>
-          <View style={{ width: MIN_TOUCH }} />
+          <IconButton icon="chevron-back" onPress={() => router.back()} accessibilityLabel="Back" />
+          <Text
+            numberOfLines={1}
+            style={{
+              flex: 1,
+              textAlign: 'center',
+              color: tokens.muted,
+              fontSize: 11,
+              fontWeight: '600',
+              letterSpacing: 11 * 0.12,
+              textTransform: 'uppercase',
+            }}
+          >
+            {headerEyebrow}
+          </Text>
+          <IconButton icon="share-outline" onPress={shareMatch} accessibilityLabel="Share" />
         </View>
 
         <GameDayKickoffArena

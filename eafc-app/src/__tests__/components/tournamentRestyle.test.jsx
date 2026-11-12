@@ -42,13 +42,15 @@ describe('tournament restyle', () => {
     expect(compact.borderRadius).toBe(12);
   });
 
-  test('detail stat grid uses two columns for long STC values', async () => {
-    const { findByText, getByText, queryByTestId } = render(<TournamentDetailScreen />);
+  test('detail stat grid uses Clubs / Prize / Starts in three columns', async () => {
+    const { findByText, getByText, getAllByText, getByTestId, getByLabelText } = render(<TournamentDetailScreen />);
     await findByText('Autumn Cup');
-    expect(getByText('100,000 STC')).toBeTruthy();
+    expect(getByText('16')).toBeTruthy();
     expect(getByText('1,600,000 STC')).toBeTruthy();
-    expect(queryByTestId('stat-cell-0-1')).toBeTruthy();
-    expect(queryByTestId('stat-cell-0-2')).toBeNull();
+    expect(getAllByText('Clubs').length).toBeGreaterThan(0);
+    expect(getAllByText('Prize').length).toBeGreaterThan(0);
+    expect(getByTestId('stat-cell-0-2')).toBeTruthy();
+    expect(getByLabelText('Share')).toBeTruthy();
   });
 
   test('detail exposes every mockup competition route and the real next match', async () => {
@@ -60,5 +62,6 @@ describe('tournament restyle', () => {
     expect(getAllByText('Fixtures').length).toBeGreaterThan(0);
     expect(getByText('Bracket')).toBeTruthy();
     expect(getByText('Next match · Night Owls vs Blue Comets')).toBeTruthy();
+    expect(getByText(/Groups \+ knockout/i)).toBeTruthy();
   });
 });

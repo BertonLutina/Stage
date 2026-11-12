@@ -138,9 +138,33 @@ Lutina a demandé d'aligner toutes les pages app ↔ `docs/design/stage-mockups/
 - **Club** : Challenge primaire + Follow, stats Record / Squad (pas de Rank inventé).
 - **Settings** : déjà aligné. **Store / Transfers** du dossier 5 : on garde StoreCredits + Mercato (dossier 6), pas le catalogue kits.
 
+## Alignement maquettes `2-home-gameday`
+- **Home** : déjà aligné (Apps + cloche, next match, club/contract, form, objectives) — richesse conservée.
+- **Game Day** : titre + Arrange Game (sans eyebrow KICKOFF) ; Fixtures/Calendar/Results + hub riche conservé.
+- **MatchDetail** : eyebrow compétition · Matchday + Share ; Watch / Upload video ; insights/wager/streams richesse.
+- **Search** : titre Search, champ, Players/Clubs, liste plate (sans PageTile).
+- **UploadVideo** : Add match footage + Publish video (lien URL réel ; upload fichier = GAP).
+- **WatchMatch** : scoreline centrée + chat/vidéo richesse.
+
+## Alignement maquettes `3-tournaments`
+- **Tournaments** : titre + create cyan, chips Open/My/Finished ; cartes Registered/Live + format · clubs + Stage/Prize/Next ; hub Competitions/Rankings conservé.
+- **TournamentDetail** : hero back/Share + eyebrow type · Live, stats Clubs/Prize/Final|Starts (3 col), nav Group/Standings/Fixtures/Bracket, CTA next match ; registration/admin richesse conservée.
+- **Fixtures** : navigateur Matchday prev/next (round/matchday ou jour calendaire).
+- **CreateTournament** : New tournament / Create tournament ; formulaire riche conservé.
+- **Standings / Group stage / Bracket** : déjà alignés (chips Overall… / Group A… + CompetitionHeader).
+
 ## Alignement maquettes `4-profile-teams`
 - **Availability** : grille 7×4 tri-état busy → available → maybe ; légende 3 états ; PUT envoie `status:'maybe'` (serveur echo seulement — GAP).
 - **EditProfile** : Display name + Bio + grille Main/Alt/Platform/Country + Preferred foot chips ; banner/account conservés (richesse).
 - **CreateTeam** : Crest, Colours, Open to applications, `+ Add player` ; country/bio conservés.
 - **TeamProfile** : CTA Recruit players → Mercato (staff) ; stats Record/Squad/Trophies inchangées (pas de Rank inventé).
 - **Profile** : engrenage Settings → `/apps/settings` ; liste Edit / Availability / My team / Wallet.
+
+## Alignement maquettes `1-onboarding`
+- **Welcome** : déjà aligné (eyebrow, watermark, lockup, Create Account / I already have an account).
+- **Signup** : cartes Player / Club manager → `writeAccountMode` ; confirm password + langue + Discord conservés ; footer « Already registered? ».
+- **Login** : logo Stage + Welcome back ; biometrics / email-or-gamertag richesse ; footer « No account yet? Create one ».
+- **Platform → Position → Gamertag → Club** (flux combiné `/auth/onboarding`) : Step N of 4 ; cross-play (local + GAP) ; alt position via `secondary_position` ; label PSN/Xbox/EA + preview ; Skip for now ; « Set up your club » Create club / Free agent (Join code = GAP).
+- **Player + President** : branche riche inchangée.
+- **Boutons (tâche 0)** : `Button` primary = `#5FE3E8` / encre `#07163A`, clip SVG 12px TL/BR, uppercase 800 (screenshot Welcome) ; secondary = contour `#5FE3E8` radius 14. CTA brand indépendant de `tokens.cyan` (`#4A6AA5`).
+- **Fond auth (nouveau système)** : `lib/authBackground.js` + `AuthWallpaper` + 8 photos `src/assets/auth-bg/` ; Welcome/Login/Signup via `Screen authBackdrop` ; Apparence → « Fond connexion » (choix photo, flou, voile bleu, Réinitialiser). Indépendant de Live Dark.

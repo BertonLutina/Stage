@@ -15,6 +15,7 @@ Legend: **GAP** = no endpoint found · **CONFIRM** = client helper exists, endpo
 | MatchDetail | Match stats | {possession, shots, passAccuracy} per side | `GET /api/mobile/matches/:id/stats` → `{home:{...},away:{...}}` — **GAP** |
 | MatchDetail | Scorers line + MOTM | goal events + man-of-the-match {player, rating, goals, assists} | include in `GET /matches/:id` → `{events:[...], motm:{...}}` — **GAP** |
 | WatchMatch | Highlights list | clips {id, label, player, minute, duration, url} | `GET /api/mobile/matches/:id/highlights` → `[{id,label,player,minute,duration,url}]` — **GAP** |
+| UploadVideo | Local MP4/MOV pick + progress | multipart upload + progress events | extend `POST /matches/:id/video` for binary upload (client keeps URL sources today) — **GAP** |
 
 ## Tournaments
 
@@ -29,6 +30,8 @@ Legend: **GAP** = no endpoint found · **CONFIRM** = client helper exists, endpo
 |---|---|---|---|
 | Profile / Gamertag | Pro Club link / unlink / import | {linked, clubName, platform}; link, unlink, import stats | `GET/POST/DELETE /api/mobile/players/me/proclub` — **GAP** |
 | Gamertag | Gamertag availability check | {available:boolean} for a candidate tag | `GET /api/mobile/players/gamertag-available?tag=` — **GAP** |
+| Platform (onboarding) | Cross-play enabled flag | player `cross_play:boolean` persisted with profile | Client stores local preference only; Stage Player schema must accept `cross_play` — **GAP** |
+| ClubSetup (onboarding) | Join with invite code | redeem invite → membership | `POST /api/mobile/clubs/join` `{code}` → `{clubId}` — **GAP** (UI keeps Free agent) |
 | EditProfile | Preferred foot | player `preferred_foot: left|right|both` persisted with the profile | Client sends `preferred_foot` on Player.update; Stage Player schema must accept it — **GAP** |
 | Availability | “Maybe” tri-state | availability slot status `available|maybe|busy` | Client cycles and PUTs `{…, status:'maybe'}`; mobile `PUT /users/:id/availability` still only echoes slots (fixture availability is separate) — **GAP** |
 | CreateTeam | Colours, direct invite list, open-to-applications | confirmed create fields + invitation action | Client sends `primary_color` + `open_to_applications`; invite remains search deep-link until invite action exists — **GAP** |

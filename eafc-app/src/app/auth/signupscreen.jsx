@@ -13,8 +13,14 @@ import { SettingsListbox } from '../../components/settings/SettingsListbox';
 import { DISPLAY_LANGUAGES } from '../../lib/languages';
 import { localStorage } from '../../lib/polyfillStorage';
 import { DISCORD_INVITE_URL, isDiscordConfigured } from '../../lib/discordConfig';
+import { writeAccountMode } from '../../lib/accountMode';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+const ROLE_OPTIONS = [
+  { id: 'player', title: 'Player', caption: 'Join a club, sign contracts' },
+  { id: 'club', title: 'Club manager', caption: 'Run a Pro Club' },
+];
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -26,6 +32,7 @@ export default function SignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [language, setLanguage] = useState(() => localStorage.getItem('language') || 'en');
+  const [role, setRole] = useState('player');
   const [localError, setLocalError] = useState('');
 
   const setFieldError = (message) => {
@@ -50,6 +57,7 @@ export default function SignupScreen() {
       return;
     }
     localStorage.setItem('language', language);
+    writeAccountMode(role === 'club' ? 'club' : 'player');
     const ok = await register({ email: trimmed, password });
     if (ok) router.replace('/auth/onboarding');
   };
@@ -57,9 +65,41 @@ export default function SignupScreen() {
   const displayError = localError || error;
 
   return (
-    <Screen keyboardAvoiding tabBar={false}>
+    <Screen keyboardAvoiding tabBar={false} authBackdrop>
       <View style={{ flexGrow: 1, gap: 18 }}>
         <AuthHeader title="Create account" subtitle="Join Stage as a player or club manager." />
+
+        <View
+          style={{ flexDirection: 'row', gap: 10 }}
+          accessibilityRole="radiogroup"
+          accessibilityLabel="Account role"
+        >
+          {ROLE_OPTIONS.map((opt) => {
+            const selected = role === opt.id;
+            return (
+              <Pressable
+                key={opt.id}
+                accessibilityRole="radio"
+                accessibilityLabel={opt.title}
+                accessibilityState={{ selected }}
+                onPress={() => setRole(opt.id)}
+                style={{
+                  flex: 1,
+                  minHeight: 72,
+                  gap: 4,
+                  padding: 14,
+                  borderRadius: tokens.cardRadius,
+                  borderWidth: 1,
+                  borderColor: selected ? tokens.cyan : tokens.border,
+                  backgroundColor: selected ? tokens.cardHi : tokens.card,
+                }}
+              >
+                <Text style={{ color: tokens.text, fontSize: 15, fontWeight: '700' }}>{opt.title}</Text>
+                <Text style={{ color: tokens.muted, fontSize: 12 }}>{opt.caption}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
 
         <TextField
           label="Email"
@@ -208,7 +248,7 @@ export default function SignupScreen() {
           style={{ marginTop: 'auto', minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
         >
           <Text style={{ color: tokens.muted, fontSize: 14, textAlign: 'center' }}>
-            Already have an account?{' '}
+            Already registered?{' '}
             <Text style={{ color: tokens.cyan, fontWeight: '600' }}>Sign in</Text>
           </Text>
         </Pressable>
