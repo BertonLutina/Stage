@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { resolveMyPlayerAndClub, stageClient } from '@/api/stageClient';
 import useThemeStore from '@/store/themeStore';
 import { hexToRgba } from '@/lib/stageTheme';
@@ -84,7 +84,9 @@ export default function MatchDetailScreen() {
     }
   }, [matchId]);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => {
+    load();
+  }, [load]));
 
   useGameDayMatchRealtime({
     matchId,

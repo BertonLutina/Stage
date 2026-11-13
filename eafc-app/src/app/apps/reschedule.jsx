@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, StatusBar, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import useThemeStore from '@/store/themeStore';
 import {
   Button, Card, ResourceState, Screen, SectionLabel,
@@ -25,13 +26,13 @@ function plannedLabel(match) {
 
 export default function RescheduleScreen() {
   const t = useT();
+  const router = useRouter();
   const tokens = useThemeStore((s) => s.tokens);
   const insets = useSafeAreaInsets();
   const { data, loading, error, refreshing, refetch } = useOfficialReschedule();
   const [selectedSlotId, setSelectedSlotId] = useState(null);
   const [busy, setBusy] = useState(null);
   const [actionError, setActionError] = useState('');
-  const [done, setDone] = useState('');
 
   const selected = useMemo(
     () => (data?.slots || []).find((s) => s.id === selectedSlotId) || null,
@@ -51,7 +52,6 @@ export default function RescheduleScreen() {
     if (!data?.match?.id || !data?.club?.id) return;
     setBusy(action);
     setActionError('');
-    setDone('');
     try {
       await postOfficialReschedule(data.match.id, {
         action,
@@ -59,8 +59,7 @@ export default function RescheduleScreen() {
         engine_fixture_id: data.match.source_fixture_id || null,
         ...extra,
       });
-      setDone(t('stage.reschedule.done'));
-      await refetch();
+      router.back();
     } catch (err) {
       setActionError(err?.message || t('stage.state.error'));
     } finally {
@@ -232,7 +231,6 @@ export default function RescheduleScreen() {
               <Text style={{ color: tokens.muted, fontSize: 13 }}>{t('stage.reschedule.readOnly')}</Text>
             ) : null}
             {actionError ? <Text style={{ color: tokens.danger, fontSize: 13 }}>{actionError}</Text> : null}
-            {done ? <Text style={{ color: tokens.success, fontSize: 13 }}>{done}</Text> : null}
           </View>
         ) : null}
       </ResourceState>

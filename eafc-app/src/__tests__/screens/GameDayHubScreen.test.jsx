@@ -1,17 +1,28 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import useThemeStore from '../../store/themeStore';
 
 const mockPush = jest.fn();
 const mockReload = jest.fn(() => Promise.resolve());
+const mockFocus = { current: null };
 let mockHub;
 let mockArrangeProps = null;
 
-jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: (...a) => mockPush(...a) }),
-  useLocalSearchParams: () => ({}),
-}));
+jest.mock('expo-router', () => {
+  const React = require('react');
+  return {
+    useRouter: () => ({ push: (...a) => mockPush(...a) }),
+    useLocalSearchParams: () => ({}),
+    useFocusEffect: (effect) => {
+      mockFocus.current = effect;
+      React.useEffect(() => {
+        const cleanup = effect();
+        return typeof cleanup === 'function' ? cleanup : undefined;
+      }, [effect]);
+    },
+  };
+});
 jest.mock('expo-linear-gradient', () => {
   const React = require('react');
   const { View } = require('react-native');
@@ -117,12 +128,22 @@ function hubWith(over = {}) {
 beforeEach(() => {
   jest.clearAllMocks();
   mockArrangeProps = null;
+  mockFocus.current = null;
   const store = {};
   global.localStorage = {
     getItem: (key) => (Object.prototype.hasOwnProperty.call(store, key) ? store[key] : null),
     setItem: (key, value) => { store[String(key)] = String(value); },
     removeItem: (key) => { delete store[String(key)]; },
   };
+});
+
+test('returning to Game Day reloads matches in place', async () => {
+  useThemeStore.getState().setStageTheme('theme-dark');
+  mockHub = hubWith();
+  render(<MatchesIndex />);
+  expect(mockReload).not.toHaveBeenCalled();
+  await act(async () => { await mockFocus.current(); });
+  expect(mockReload).toHaveBeenCalledWith({ silent: true });
 });
 
 describe.each(['theme-dark', 'theme-video'])('Game Day hub in %s', (theme) => {

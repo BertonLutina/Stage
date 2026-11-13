@@ -1,16 +1,27 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import useThemeStore from '../../store/themeStore';
 
 const mockPush = jest.fn();
 const mockBack = jest.fn();
 const mockReloadMatch = jest.fn();
+const mockFocus = { current: null };
 
-jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: (...a) => mockPush(...a), back: (...a) => mockBack(...a) }),
-  useLocalSearchParams: () => ({ matchId: 'm1' }),
-}));
+jest.mock('expo-router', () => {
+  const React = require('react');
+  return {
+    useRouter: () => ({ push: (...a) => mockPush(...a), back: (...a) => mockBack(...a) }),
+    useLocalSearchParams: () => ({ matchId: 'm1' }),
+    useFocusEffect: (effect) => {
+      mockFocus.current = effect;
+      React.useEffect(() => {
+        const cleanup = effect();
+        return typeof cleanup === 'function' ? cleanup : undefined;
+      }, [effect]);
+    },
+  };
+});
 jest.mock('expo-linear-gradient', () => {
   const React = require('react');
   const { View } = require('react-native');
@@ -84,6 +95,17 @@ const match = (over = {}) => ({
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockFocus.current = null;
+});
+
+test('reloads the match when the screen is focused again', async () => {
+  useThemeStore.getState().setStageTheme('theme-dark');
+  mockReloadMatch.mockResolvedValue(match());
+  const { findAllByText } = render(<MatchDetailScreen />);
+  expect((await findAllByText('Night Owls')).length).toBeGreaterThan(0);
+  await waitFor(() => expect(mockReloadMatch).toHaveBeenCalledTimes(1));
+  await act(async () => { await mockFocus.current(); });
+  await waitFor(() => expect(mockReloadMatch).toHaveBeenCalledTimes(2));
 });
 
 describe.each(['theme-dark', 'theme-video'])('Match detail screen in %s', (theme) => {

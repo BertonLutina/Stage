@@ -5,10 +5,11 @@ import useThemeStore from '../../store/themeStore';
 jest.setTimeout(20000);
 
 const mockRefetch = jest.fn(() => Promise.resolve());
+const mockBack = jest.fn();
 let mockResource;
 
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ back: jest.fn(), push: jest.fn(), canGoBack: () => true }),
+  useRouter: () => ({ back: (...a) => mockBack(...a), push: jest.fn(), canGoBack: () => true }),
   useLocalSearchParams: () => ({ matchId: 'm1' }),
 }));
 jest.mock('expo-linear-gradient', () => {
@@ -73,5 +74,22 @@ describe('Reschedule screen', () => {
     expect(r.getByLabelText('Accept')).toBeTruthy();
     fireEvent.press(r.getByLabelText('Sat 19:00'));
     expect(r.getByLabelText('Propose Sat 19:00')).toBeTruthy();
+  });
+
+  test('accepting a proposal closes the page', async () => {
+    const r = render(<RescheduleScreen />);
+    await waitFor(() => r.getByLabelText('Accept'));
+    fireEvent.press(r.getByLabelText('Accept'));
+    await waitFor(() => expect(mockBack).toHaveBeenCalledTimes(1));
+    expect(mockPost).toHaveBeenCalled();
+  });
+
+  test('a failed reschedule stays on the page', async () => {
+    mockPost.mockRejectedValueOnce(new Error('Slot refused'));
+    const r = render(<RescheduleScreen />);
+    await waitFor(() => r.getByLabelText('Accept'));
+    fireEvent.press(r.getByLabelText('Accept'));
+    await waitFor(() => expect(r.getByText('Slot refused')).toBeTruthy());
+    expect(mockBack).not.toHaveBeenCalled();
   });
 });

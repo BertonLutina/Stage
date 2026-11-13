@@ -97,4 +97,24 @@ describe('MatchPrep screen', () => {
       clubId: 'c1', fixtureId: 'f1', playerIds: ['p1'],
     }));
   });
+
+  test('a saved lineup closes the page', async () => {
+    const r = render(<MatchPrepScreen />);
+    await waitFor(() => r.getByLabelText('Publish lineup'));
+    fireEvent.press(r.getByLabelText('Publish lineup'));
+    await waitFor(() => expect(mockBack).toHaveBeenCalledTimes(1));
+
+    mockBack.mockClear();
+    fireEvent.press(r.getByLabelText('Save draft'));
+    await waitFor(() => expect(mockBack).toHaveBeenCalledTimes(1));
+  });
+
+  test('a failed lineup save stays on the page', async () => {
+    mockPublish.mockRejectedValueOnce(new Error('Lineup rejected'));
+    const r = render(<MatchPrepScreen />);
+    await waitFor(() => r.getByLabelText('Publish lineup'));
+    fireEvent.press(r.getByLabelText('Publish lineup'));
+    await waitFor(() => expect(r.getByText('Lineup rejected')).toBeTruthy());
+    expect(mockBack).not.toHaveBeenCalled();
+  });
 });

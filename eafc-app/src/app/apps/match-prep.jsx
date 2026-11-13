@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, StatusBar, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import useThemeStore from '@/store/themeStore';
 import {
   Avatar, Button, Card, Chip, ResourceState, Screen, SectionLabel,
@@ -35,6 +36,7 @@ function formatMatchMeta(match) {
 
 export default function MatchPrepScreen() {
   const t = useT();
+  const router = useRouter();
   const tokens = useThemeStore((s) => s.tokens);
   const insets = useSafeAreaInsets();
   const { data, loading, error, refreshing, refetch } = useMatchPrep();
@@ -42,7 +44,6 @@ export default function MatchPrepScreen() {
   const [selected, setSelected] = useState(() => new Set());
   const [busy, setBusy] = useState(null);
   const [actionError, setActionError] = useState('');
-  const [done, setDone] = useState('');
 
   useEffect(() => {
     if (!data?.players) return;
@@ -84,17 +85,14 @@ export default function MatchPrepScreen() {
     if (!data?.club?.id || !data?.fixtureId) return;
     setBusy(kind);
     setActionError('');
-    setDone('');
     try {
       const ids = [...selected];
       if (kind === 'publish') {
         await publishMatchPrep({ clubId: data.club.id, fixtureId: data.fixtureId, playerIds: ids });
-        setDone(t('stage.matchPrep.published'));
       } else {
         await saveMatchPrepDraft({ clubId: data.club.id, fixtureId: data.fixtureId, playerIds: ids });
-        setDone(t('stage.matchPrep.draftSaved'));
       }
-      await refetch();
+      router.back();
     } catch (err) {
       setActionError(err?.message || t('stage.state.error'));
     } finally {
@@ -218,7 +216,6 @@ export default function MatchPrepScreen() {
             ) : null}
 
             {actionError ? <Text style={{ color: tokens.danger, fontSize: 13 }}>{actionError}</Text> : null}
-            {done ? <Text style={{ color: tokens.success, fontSize: 13 }}>{done}</Text> : null}
           </View>
         ) : null}
       </ResourceState>

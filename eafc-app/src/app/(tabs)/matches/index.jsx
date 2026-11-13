@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -11,7 +11,7 @@ import {
   Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { stageClient } from '@/api/stageClient';
 import useMatchesHub, { GAME_DAY_SCOPES, GAME_DAY_STATUSES } from '../../../hooks/useMatchesHub';
@@ -87,6 +87,16 @@ export default function MatchesIndex() {
   const [kickoffLoading, setKickoffLoading] = useState(false);
   const [kickoffError, setKickoffError] = useState('');
   const [view, setView] = useState('fixtures');
+  const opened = useRef(false);
+
+  useFocusEffect(useCallback(() => {
+    if (!opened.current) {
+      opened.current = true;
+      return undefined;
+    }
+    reload({ silent: true });
+    return undefined;
+  }, [reload]));
 
   useEffect(() => {
     let cancelled = false;
