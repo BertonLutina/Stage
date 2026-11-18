@@ -152,7 +152,10 @@ export function resolveNotificationHref(link) {
   if (bare === '/lifestyle') return { pathname: '/(tabs)/profile' };
 
   if (bare === '/game-day' || bare.startsWith('/matches') || bare === '/live' || bare.startsWith('/live/')) {
-    const matchId = matchIdFromLink(path);
+    const fromLive = bare.startsWith('/live/') ? decodeURIComponent(bare.slice('/live/'.length)) : '';
+    const matchPath = bare.match(/^\/matches\/([^/]+)$/);
+    const fromPath = matchPath && matchPath[1] !== 'game-day' ? decodeURIComponent(matchPath[1]) : '';
+    const matchId = matchIdFromLink(path) || fromLive || fromPath;
     return matchId
       ? { pathname: '/(tabs)/matches/matchdetailscreen', params: { matchId } }
       : { pathname: '/(tabs)/matches' };
