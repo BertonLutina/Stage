@@ -11,6 +11,7 @@ import {
   senderInitials,
   previewSnippet,
   formatRelativeInboxTime,
+  inboxActivityAt,
 } from '@/lib/inboxHelpers';
 
 const AVATAR = 44;
@@ -63,7 +64,7 @@ function StatusChip({ message }) {
 function MessageRow({ message, onPress }) {
   const tokens = useThemeStore((s) => s.tokens);
   const unread = !message.is_read;
-  const time = formatRelativeInboxTime(message.created_date);
+  const time = formatRelativeInboxTime(inboxActivityAt(message) || message.created_date);
   const sender = message.is_system ? 'STAGE' : (message.sender_gamertag || 'Unknown');
 
   return (

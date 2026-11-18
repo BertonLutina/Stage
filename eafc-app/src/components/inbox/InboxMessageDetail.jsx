@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
-  View, Text, ScrollView, Alert,
+  View, Text, ScrollView, Alert, TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import useThemeStore from '@/store/themeStore';
@@ -14,6 +15,7 @@ import {
   senderInitials,
   parseInboxMetadata,
   isMatchCancelRequest,
+  matchIdFromInboxMessage,
 } from '@/lib/inboxHelpers';
 import { deleteInboxMessage, respondToInboxMessage } from '@/lib/inboxData';
 import DateTimeZoneFields from '@/components/matches/DateTimeZoneFields';
@@ -36,6 +38,7 @@ export default function InboxMessageDetail({
   onBack,
 }) {
   const tokens = useThemeStore((st) => st.tokens);
+  const router = useRouter();
   const [loading, setLoading] = useState(null);
   const [error, setError] = useState('');
   const [showReschedule, setShowReschedule] = useState(false);
@@ -56,12 +59,26 @@ export default function InboxMessageDetail({
   const isActioned = inboxMessageIsActioned(message);
   const meta = parseInboxMetadata(message);
   const isCancelRequest = isMatchCancelRequest(message);
+  const showOpenMatchAction = hasAction && effectiveActionType === 'open_match';
   const showGenericActions = hasAction
+    && !showOpenMatchAction
     && !['contract_offer', 'trial_request', 'league_schedule', ...LOAN_TYPES].includes(message.message_type);
   const showLoanCard = LOAN_TYPES.includes(message.message_type);
   const showContractActions = hasAction && message.message_type === 'contract_offer';
   const showScheduleActions = hasAction && message.message_type === 'league_schedule';
   const showTrialActions = hasAction && message.message_type === 'trial_request';
+
+  const openGameDay = () => {
+    const matchId = matchIdFromInboxMessage(message);
+    if (!matchId) {
+      setError('Match link missing on this mail.');
+      return;
+    }
+    router.push({
+      pathname: '/(tabs)/matches/matchdetailscreen',
+      params: { matchId: String(matchId) },
+    });
+  };
 
   const runAction = async (action) => {
     if (action === 'date_change_requested' && !showReschedule) {
@@ -244,6 +261,28 @@ export default function InboxMessageDetail({
 
         <Card>
           <Text style={{ color: tokens.textSoft, fontSize: 15, lineHeight: 23 }}>{message.body || ''}</Text>
+
+          {(message.message_type === 'gameday_result' || message.message_type === 'match_result_action' || meta.match_id) ? (
+            <TouchableOpacity
+              style={{
+                marginTop: 16,
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                borderRadius: 8,
+                backgroundColor: tokens.cyan,
+                alignItems: 'center',
+              }}
+              onPress={() => {
+                const matchId = meta.match_id || message.related_entity_id;
+                if (!matchId) return;
+                router.push({ pathname: '/(tabs)/matches/matchdetailscreen', params: { matchId: String(matchId).split('_')[0] } });
+              }}
+            >
+              <Text style={{ color: tokens.background, fontSize: 14, fontWeight: '700', textTransform: 'uppercase' }}>
+                Open Game Day
+              </Text>
+            </TouchableOpacity>
+          ) : null}
           {showLoanCard ? (
             <InboxLoanCard
               message={message}

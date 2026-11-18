@@ -78,7 +78,8 @@ export function toastFromNotification(event, settings) {
 
 export function toastFromInbox(event, settings) {
   const data = event?.data;
-  if (event?.type !== 'create' || !data) return null;
+  if (!data || (event?.type !== 'create' && event?.type !== 'update')) return null;
+  if (event?.type === 'update' && data.is_read) return null;
   const type = data.message_type || data.type || 'message';
   if (!isNotificationEnabled(type, settings, 'mobile')) return null;
   return toastText(data.subject || 'New inbox message', data.body);
